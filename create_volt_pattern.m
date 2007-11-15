@@ -1,7 +1,9 @@
 function eeg = create_volt_pattern(eeg, params, patname, resDir)
-% eeg = create_volt_pattern(eeg, resDir)
+% eeg = create_volt_pattern(eeg, params, patname, resDir)
 %
-% create a voltage pattern for each subject, time bin
+% create a voltage pattern for each subject, time bin, saved in
+% resDir/data.  Filenames will be saved in eeg.subj(s).pat
+% with the patname specified.
 % 
 
 % set the defaults for params
@@ -17,7 +19,6 @@ for b=2:nBins
   binSamp{b} = binSamp{b-1} + binSizeSamp;
 end
 
-% get MS values
 for b=1:length(binSamp)
   params.binMS{b} = fix((binSamp{b}-1)*1000/params.resampledRate) + params.offsetMS;
 end
@@ -31,7 +32,10 @@ end
 
 % write all file info and save eeg struct
 for s=1:length(eeg.subj)
-  p = length(eeg.subj(s).pat) + 1;
+  p = find(inStruct(eeg.subj(s).pat, 'strcmp(name, varargin{1})', patname));
+  if isempty(p)
+    p = length(eeg.subj(s).pat) + 1;
+  end
   
   eeg.subj(s).pat(p).name = patname;
   eeg.subj(s).pat(p).file = fullfile(resDir, 'data', [eeg.subj(s).id '_voltpat.mat']);
@@ -52,10 +56,10 @@ for s=1:length(eeg.subj)
   base_events = [];
   for n=1:length(eeg.subj(s).sess)
     temp = loadEvents(eeg.subj(s).sess(n).eventsFile, params.replace_eegFile);
-    events = [events; filterStruct(temp, params.eventFilter)];
-    base_events = [base_events; filterStruct(temp, params.baseEventFilter)];
+    events = [events; filterStruct(temp(:), params.eventFilter)];
+    base_events = [base_events; filterStruct(temp(:), params.baseEventFilter)];
   end 
-  session = getStructField(events, 'session');
+  sessions = unique(getStructField(events, 'session'));
   
   % check if using custom channels
   if isfield(params, 'channels')
@@ -65,7 +69,7 @@ for s=1:length(eeg.subj)
   end
   
   % initialize this subject's pattern
-  patSize = [nEvents, length(channels), length(params.binMS)];
+  patSize = [length(events), length(channels), length(params.binMS)];
   pat.name = eeg.subj(s).id;
   pat.mat = NaN(patSize);
   
@@ -81,40 +85,34 @@ for s=1:length(eeg.subj)
   if isfield(params, 'artWindow') && ~isempty(params.artWindow)
     mask(m).name = 'artifacts';
     mask(m).mat = false(patSize);
-    m = m + 1;
-  end
-  
-  % make bad channels mask
-  for n=1:length(eeg.subj(s).sess)
-    bad = setdiff(channels, eeg.subj(s).sess(n).goodChans);
-    mask(2).mat(e,bad,session==eeg.subj(s).sess(n).number) = 1;
-  end
 
-  % blink artifacts
-  for e=1:length(events)
-    
-    if isfield(params, 'artWindow') && ~isempty(params.artWindow)
-      
+    for e=1:length(events)
       wind = [events(e).artifactMS events(e).artifactMS+params.artWindow];
       isArt = 0;
       for b=1:length(params.binMS)
 	if wind(1)>params.binMS{b}(1) & wind(1)<params.binMS{b}(end)
 	  isArt = 1;
 	end
-	mask(3).mat(e,:,b) = isArt;
+	mask(m).mat(e,:,b) = isArt;
 	if isArt & wind(2)<params.binMS{b}(end)
 	  isArt = 0;
 	end
       end
-      
     end
+      
   end
-    
+  
+  % make the pattern for this subject
   start_e = 1;
   for n=1:length(eeg.subj(s).sess)
     fprintf('\n%s\n', eeg.subj(s).sess(n).eventsFile);
-    sess_events = events(session==eeg.subj(s).sess(n).number);
-    sess_base_events = base_events(session==eeg.subj(s).sess(n).number);
+    this_sess = inStruct(events, 'session==varargin{1}', sessions(n));
+    sess_events = events(this_sess);
+    sess_base_events = filterStruct(base_events, 'session==varargin{1}', sessions(n));
+    
+    % make bad channels mask
+    bad = setdiff(channels, eeg.subj(s).sess(n).goodChans);
+    mask(1).mat(this_sess, bad, :) = 1;
     
     for c=1:length(channels)
       fprintf('%d.', channels(c));
@@ -132,19 +130,19 @@ for s=1:length(eeg.subj)
 	  base_eeg = run_kurtosis(base_eeg, params.kthresh);
 	end
 	  
-	poss = 1:size(base_eeg,2);
+	rand_eeg = NaN(length(sess_events));
 	for e=1:size(base_eeg,1)
-	  randposs = randperm(length(poss));
+	  randposs = randperm(size(base_eeg,2));
 	  rand_eeg(e) = base_eeg(e,randposs(1));
 	end
 	
-	base_mean = nanmean(rand_eeg(:));
-	base_std = nanstd(rand_eeg(:));	   
+	base_mean = nanmean(rand_eeg);
+	base_std = nanstd(rand_eeg);	   
       end
       
       % get power, z-transform, average each time bin
       e = start_e;
-      for sess_e=1:length(events{n})
+      for sess_e=1:length(sess_events)
 	this_eeg = squeeze(gete_ms(channels(c), sess_events(sess_e), ...
 	                   params.durationMS, params.offsetMS, ...
 			   params.bufferMS, params.filtfreq, ...
