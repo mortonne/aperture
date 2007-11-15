@@ -1,10 +1,14 @@
-function eeg = create_volt_pattern(eeg, params, patname, resDir)
-% eeg = create_volt_pattern(eeg, params, patname, resDir)
+function eeg = create_volt_pattern(eeg, params, resDir, patname)
+% eeg = create_volt_pattern(eeg, params, resDir, patname)
 %
 % create a voltage pattern for each subject, time bin, saved in
 % resDir/data.  Filenames will be saved in eeg.subj(s).pat
 % with the patname specified.
 % 
+
+if ~exist('patname', 'var')
+  patname = 'voltage_pattern';
+end
 
 % set the defaults for params
 params = structDefaults(params,  'eventFilter', '',  'offsetMS', -200,  'durationMS', 1800,  'binSizeMS', 10,  'baseEventFilter', '',  'baseOffsetMS', -200,  'baseDurationMS', 200,  'filttype', 'stop',  'filtfreq', [58 62],  'filtorder', 4,  'bufferMS', 1000,  'resampledRate', 500,  'kthresh', 5,  'ztransform', 1,  'replace_eegFile', {});
@@ -32,9 +36,13 @@ end
 
 % write all file info and save eeg struct
 for s=1:length(eeg.subj)
-  p = find(inStruct(eeg.subj(s).pat, 'strcmp(name, varargin{1})', patname));
-  if isempty(p)
-    p = length(eeg.subj(s).pat) + 1;
+  if isfield(eeg.subj(s), 'pat')
+    p = find(inStruct(eeg.subj(s).pat, 'strcmp(name, varargin{1})', patname));
+    if isempty(p)
+      p = length(eeg.subj(s).pat) + 1;
+    end
+  else
+    p = 1;
   end
   
   eeg.subj(s).pat(p).name = patname;
