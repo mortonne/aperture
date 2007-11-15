@@ -34,9 +34,9 @@ if ~exist(fullfile(resDir, 'data'), 'dir')
   mkdir(fullfile(resDir, 'data'));
 end
 
-% write all file info and save eeg struct
+% write all file info and update the eeg struct
 for s=1:length(eeg.subj)
-  if isfield(eeg.subj(s), 'pat')
+  if isfield(eeg.subj(s), 'pat') && ~isempty(eeg.subj(s).pat)
     p = find(inStruct(eeg.subj(s).pat, 'strcmp(name, varargin{1})', patname));
     if isempty(p)
       p = length(eeg.subj(s).pat) + 1;
@@ -47,10 +47,10 @@ for s=1:length(eeg.subj)
   
   eeg.subj(s).pat(p).name = patname;
   eeg.subj(s).pat(p).file = fullfile(resDir, 'data', [eeg.subj(s).id '_voltpat.mat']);
-  eeg.subj(s).pat(p).params = params;
   eeg.subj(s).pat(p).eventsFile = fullfile(resDir, 'data', [eeg.subj(s).id '_events.mat']);
+  eeg.subj(s).pat(p).params = params;
 end
-save(fullfile(eeg.resDir, 'eeg.mat'), eeg);
+save(fullfile(eeg.resDir, 'eeg.mat'), 'eeg');
 
 for s=1:length(eeg.subj)
   
@@ -138,7 +138,7 @@ for s=1:length(eeg.subj)
 	  base_eeg = run_kurtosis(base_eeg, params.kthresh);
 	end
 	  
-	rand_eeg = NaN(length(sess_events));
+	rand_eeg = NaN(1,length(sess_events));
 	for e=1:size(base_eeg,1)
 	  randposs = randperm(size(base_eeg,2));
 	  rand_eeg(e) = base_eeg(e,randposs(1));
