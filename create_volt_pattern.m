@@ -78,7 +78,7 @@ for s=1:length(eeg.subj)
   
   % initialize this subject's pattern
   patSize = [length(events), length(channels), length(params.binMS)];
-  pat.name = eeg.subj(s).id;
+  pat.id = eeg.subj(s).id;
   pat.mat = NaN(patSize);
   
   % set up masks
