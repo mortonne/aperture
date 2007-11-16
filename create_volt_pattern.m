@@ -36,6 +36,11 @@ end
 
 % write all file info and update the eeg struct
 for s=1:length(eeg.subj)
+  new(s).name = patname;
+  new(s).file = fullfile(resDir, 'data', [eeg.subj(s).id '_voltpat.mat']);
+  new(s).eventsFile = fullfile(resDir, 'data', [eeg.subj(s).id '_events.mat']);
+  new(s).params = params;
+  
   if isfield(eeg.subj(s), 'pat') && ~isempty(eeg.subj(s).pat)
     p = find(inStruct(eeg.subj(s).pat, 'strcmp(name, varargin{1})', patname));
     if isempty(p)
@@ -44,18 +49,14 @@ for s=1:length(eeg.subj)
   else
     p = 1;
   end
-  
-  eeg.subj(s).pat(p).name = patname;
-  eeg.subj(s).pat(p).file = fullfile(resDir, 'data', [eeg.subj(s).id '_voltpat.mat']);
-  eeg.subj(s).pat(p).eventsFile = fullfile(resDir, 'data', [eeg.subj(s).id '_events.mat']);
-  eeg.subj(s).pat(p).params = params;
+  eeg.subj(s).pat(p) = new(s);
 end
 save(fullfile(eeg.resDir, 'eeg.mat'), 'eeg');
 
 for s=1:length(eeg.subj)
   
   % see if this subject has been done
-  if ~lockFile(eeg.subj(s).pat(p).file)
+  if ~lockFile(new(s).file)
     continue
   end
   
@@ -179,8 +180,8 @@ for s=1:length(eeg.subj)
   fprintf('\n');
   
   % save the patterns and corresponding events struct
-  save(eeg.subj(s).pat(p).file, 'pat', 'mask');
-  releaseFile(eeg.subj(s).pat(p).file);
-  save(eeg.subj(s).pat(p).eventsFile, 'events');
+  save(new(s).file, 'pat', 'mask');
+  releaseFile(new(s).file);
+  save(new(s).eventsFile, 'events');
   
 end % subj
