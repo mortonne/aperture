@@ -107,7 +107,7 @@ for s=1:length(eeg.subj)
     end  
   end
   
-  oldpat = loadPat(old(s).file, params.masks, params.eventFilter);
+  oldpat = loadPat(old(s).file, params.masks, new(s).eventsFile, params.eventFilter);
   
   % initalize the new pat
   pat.id = oldpat.id;
