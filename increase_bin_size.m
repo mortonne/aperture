@@ -11,47 +11,46 @@ if ~exist('patname', 'var')
   patname = [params.pat '_mod'];
 end
 
-params = structDefaults(params,  'masks', {},  'eventFilter', '');
+params = structDefaults(params,  'pat', eeg.subj(1).pat(1).name,  'masks', {},  'eventFilter', '');
 
 old = filterStruct(eeg.subj(1).pat, 'strcmp(name, varargin{1})', params.pat);
-oldparams = old.params;
 
 % make the new time bins (if applicable)
 if isfield(params, 'MSbins')
-  for i=1:length(oldparams.binMS)
-    MSvals(i,1) = oldparams.binMS{i}(1);
-    MSvals(i,2) = oldparams.binMS{i}(end);
+  for i=1:length(old.params.binMS)
+    MSvals(i,1) = old.params.binMS{i}(1);
+    MSvals(i,2) = old.params.binMS{i}(end);
   end
-  for b=1:length(MSbins)
-    binb{b} = find(MSvals(:,1)>=MSbins(b,1) & MSvals(:,2)<MSbins(b,2));
+  for b=1:length(params.MSbins)
+    binb{b} = find(MSvals(:,1)>=params.MSbins(b,1) & MSvals(:,2)<params.MSbins(b,2));
     % get ms value for each sample in the new time bin
     allvals = [];
     for j=1:length(binb{b})
-      allvals = [allvals oldparams.binMS{binb{b}(j)}];
+      allvals = [allvals old.params.binMS{binb{b}(j)}];
     end    
     params.binMS{b} = allvals;
   end
 
 else % time dim doesn't change
-  for b=1:length(oldparams.binMS)
+  for b=1:length(old.params.binMS)
     binb{b} = b;
   end
-  params.binMS = oldparams.binMS;
+  params.binMS = old.params.binMS;
 end
 
 % make the new frequency bins (if applicable)
 if isfield(params, 'freqbins')
-  freqs = oldparams.freqs;
+  freqs = old.params.freqs;
   for f=1:length(params.freqbins)
     binf{f} = find(freqs>=freqbins(f,1) & freqs<freqbins(f,2));
     params.binFreq{f} = freqs(binf{f});
   end
   
-elseif isfield(oldparams, 'binFreq') % frequency dim doesn't change
-  for f=1:length(oldparams.binFreq)
+elseif isfield(old.params, 'binFreq') % frequency dim doesn't change
+  for f=1:length(old.params.binFreq)
     binf{f} = f;
   end
-  params.binFreq = oldparams.binFreq;
+  params.binFreq = old.params.binFreq;
   
 else % there is no frequency dimension
   binf{1} = 1;
@@ -64,19 +63,17 @@ end
 
 % write all file info and update the eeg struct
 for s=1:length(eeg.subj)
-  old(s) = filterStruct(eeg.subj(s).pat, 'strcmp(name, varargin{1})', params.pat);
+  old(s) = getobj(eeg.subj(s).pat, params.pat);
   
   new(s).name = patname;
   new(s).file = fullfile(resDir, 'data', [eeg.subj(s).id '_' patname '.mat']);
-  new(s).eventsFile = old.eventsFile;
+  new(s).eventsFile = old(s).eventsFile;
   new(s).params = params;
   
-  p = length(eeg.subj(s).pat) + 1;
-
-  eeg.subj(s).pat(p) = new(s);
+  eeg.subj(s).pat = setobj(eeg.subj(s).pat, new(s));
 end
 save(fullfile(eeg.resDir, 'eeg.mat'), 'eeg');
-
+keyboard
 % make the new patterns
 for s=1:length(eeg.subj)
   fprintf('%s\n', eeg.subj(s).id);

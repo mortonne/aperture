@@ -1,5 +1,5 @@
-function pat = loadPat(patFile, masks, eventfilter)
-%pat = loadPat(patFile, masks, eventfilter)
+function pat = loadPat(patFile, masks, eventsFile, eventfilter)
+%pat = loadPat(patFile, masks, eventsFile, eventfilter)
 %
 %LOADPAT - loads one subject's pattern, and applies any specified
 %masks and event filters
@@ -16,5 +16,6 @@ if exist('masks', 'var') && ~isempty(masks)
 end
 
 if exist('eventFilter', 'var') && ~isempty(eventFilter)
+  load(eventsFile);
   pat.mat = pat.mat(inStruct(events, eventFilter),:,:,:);
 end
