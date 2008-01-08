@@ -29,6 +29,8 @@ end
 
 disp(params);
 
+rand('twister',sum(100*clock));
+
 % prepare dir for the patterns
 if ~exist(fullfile(resDir, 'data'), 'dir')
   mkdir(fullfile(resDir, 'data'));
@@ -36,27 +38,20 @@ end
 
 % write all file info and update the eeg struct
 for s=1:length(eeg.subj)
-  new(s).name = patname;
-  new(s).file = fullfile(resDir, 'data', [eeg.subj(s).id '_voltpat.mat']);
-  new(s).eventsFile = fullfile(resDir, 'data', [eeg.subj(s).id '_events.mat']);
-  new(s).params = params;
+  pat.name = patname;
+  pat.file = fullfile(resDir, 'data', [eeg.subj(s).id '_voltpat.mat']);
+  pat.eventsFile = fullfile(resDir, 'data', [eeg.subj(s).id '_events.mat']);
+  pat.params = params;
   
-  if isfield(eeg.subj(s), 'pat') && ~isempty(eeg.subj(s).pat)
-    p = find(inStruct(eeg.subj(s).pat, 'strcmp(name, varargin{1})', patname));
-    if isempty(p)
-      p = length(eeg.subj(s).pat) + 1;
-    end
-  else
-    p = 1;
-  end
-  eeg.subj(s).pat(p) = new(s);
+  eeg.subj(s) = setobj(eeg.subj(s), 'pat', pat);
 end
 save(fullfile(eeg.resDir, 'eeg.mat'), 'eeg');
 
 for s=1:length(eeg.subj)
+  pat = getobj(eeg.subj(s), 'pat', patname);
   
   % see if this subject has been done
-  if ~lockFile(new(s).file)
+  if ~lockFile(pat.file)
     continue
   end
   
@@ -79,8 +74,7 @@ for s=1:length(eeg.subj)
   
   % initialize this subject's pattern
   patSize = [length(events), length(channels), length(params.binMS)];
-  pat.id = eeg.subj(s).id;
-  pat.mat = NaN(patSize);
+  pattern = NaN(patSize);
   
   % set up masks
   m = 1;
@@ -167,7 +161,7 @@ for s=1:length(eeg.subj)
 	end
 	
 	for b=1:nBins
-	  pat.mat(e,c,b) = nanmean(this_eeg(binSamp{b}));
+	  pattern(e,c,b) = nanmean(this_eeg(binSamp{b}));
 	end
 	
 	e = e + 1;
@@ -180,8 +174,8 @@ for s=1:length(eeg.subj)
   fprintf('\n');
   
   % save the patterns and corresponding events struct
-  save(new(s).file, 'pat', 'mask');
-  releaseFile(new(s).file);
-  save(new(s).eventsFile, 'events');
+  save(pat.file, 'pattern', 'mask');
+  releaseFile(pat.file);
+  save(pat.eventsFile, 'events');
   
 end % subj
