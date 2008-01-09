@@ -68,10 +68,12 @@ for s=1:length(eeg.subj)
   
   % each subject gets the same channel info
   eeg.subj(s).chan = chan;
+  eeg.subj(s).pat = [];
+  eeg.subj(s).ana = [];
   
   % for each session, find out which channels were good
   for n=1:length(eeg.subj(s).sess)
-    bad_chan_dir = fullfile(fileparts(eeg.subj(s).sess(n).eventsFile), 'eeg');
+    bad_chan_dir = fullfile(eeg.subj(s).sess(n).dir, 'eeg');
     temp = dir(fullfile(bad_chan_dir, '*.bad_chan'));
     bad_chans = textread(fullfile(bad_chan_dir, temp.name));
     eeg.subj(s).sess(n).goodChans = setdiff(channels, bad_chans);

@@ -7,8 +7,8 @@ function s = setobj(s,f,obj)
 %object is appended to the existing objects.
 
 
-if ~isfield(s,f)
-  s = setfield(s,f,obj)
+if ~isfield(s,f) || isempty(getfield(s,f))
+  s = setfield(s,f,obj);
   return
 end
 
