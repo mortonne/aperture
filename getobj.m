@@ -7,11 +7,3 @@ if ~isstruct(objs)
 end
 
 obj = filterStruct(objs, 'strcmp(name, varargin{1})', objname);
-
-if isempty(obj)
-  error('no object of that name exists')
-end
-
-if exist('field', 'var')
-  obj = getfield(obj, field);
-end
