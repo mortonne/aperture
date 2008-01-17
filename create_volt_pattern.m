@@ -80,6 +80,7 @@ for s=1:length(eeg.subj)
   m = 1;
   mask(m).name = 'bad_channels';
   mask(m).mat = false(patSize);
+  m = m + 1;
   if ~isempty(params.kthresh)
     mask(m).name = 'kurtosis';
     mask(m).mat = false(patSize);

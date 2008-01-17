@@ -30,8 +30,8 @@ end
 
 params = structDefaults(params, 'eventFilter', '',  'masks', {});
 
-if ~exist(fullfile(eeg.resDir, 'data'), 'dir')
-  mkdir(fullfile(eeg.resDir, 'data'));
+if ~exist(fullfile(resDir, 'data'), 'dir')
+  mkdir(fullfile(resDir, 'data'));
 end
 
 % write all file info
@@ -42,13 +42,13 @@ for s=1:length(eeg.subj)
 end
 channels = ana.pat(1).params.channels;
 for c=1:length(channels)
-  ana.file{c} = fullfile(resDir, 'data', [ananame '_chan' num2str(channels(c) '.mat']);
+  ana.file{c} = fullfile(resDir, 'data', [ananame '_chan' num2str(channels(c)) '.mat']);
 end
 ana.params = params;
 
 % update the eeg struct
 eeg = setobj(eeg, 'ana', ana);
-save(fullfile(eeg.resDir, 'eeg.mat', 'eeg'));
+save(fullfile(eeg.resDir, 'eeg.mat'), 'eeg');
 
 fprintf(['\nStarting Repeated Measures ANOVA:\n']);
 
@@ -74,7 +74,7 @@ for c=1:length(channels)
     events = filterStruct(events, params.eventFilter);
     
     for i=1:length(params.fields)
-      tempgroup{i} = [tempgroup{i}; getStructField(events, params.fields{i})+1];
+      tempgroup{i} = [tempgroup{i}; getStructField(events, params.fields{i})'];
     end
     
     tempsubj_reg = [tempsubj_reg; ones(size(pattern,1),1)*s];
@@ -93,11 +93,11 @@ for c=1:length(channels)
   end
   
   for b=1:size(chan_pats,2)
-    fprintf(' %dms ', params.binMS{b}(1));
+    fprintf(' %dms ', pat.params.binMS{b}(1));
     
     for f=1:size(chan_pats,3)
-      if isfield(params, 'binFreq')
-	fprintf('%.2f ', params.binFreq{f}(1));
+      if isfield(pat.params, 'binFreq')
+	fprintf('%.2f ', pat.params.binFreq{f}(1));
       end
       
       % remove NaNs
@@ -106,6 +106,10 @@ for c=1:length(channels)
       thispat = thispat(good);
       for i=1:length(tempgroup)
 	group{i} = tempgroup{i}(good);
+	vals = unique(group{i});
+	if vals(1)==0
+	  group{i} = group{i} + 1;
+	end
       end
       subj_reg = tempsubj_reg(good);
       
@@ -132,7 +136,7 @@ for c=1:length(channels)
       end
       
     end % freq
-    if isfield(params, 'binFreq')
+    if isfield(pat.params, 'binFreq')
       fprintf('\n');
     end
   end % bin

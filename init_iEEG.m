@@ -10,8 +10,6 @@ function eeg = init_iEEG(dataroot, resDir, sessions, experiment)
 %        sessions - filename of m-file that outputs a 'subj'
 %                   struct, or the subj struct itself (see README).
 %        experiment - name of the experiment (optional)
-%        elecLocsFile - text file containing a list of electrode numbers
-%        and their corresponding regions (optional)
 %
 % OUTPUT: eeg, a struct containing all basic info for this experiment;
 % gets passed into all other eeg analysis scripts
@@ -28,8 +26,8 @@ if ~exist('experiment', 'var')
   expriment = 'unknown';
 end
 
-if ~exist(eeg.resDir)
-  mkdir(eeg.resDir);
+if ~exist(resDir)
+  mkdir(resDir);
 end
 
 % create the eeg struct

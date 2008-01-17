@@ -19,8 +19,8 @@ if exist('masks', 'var') && ~isempty(masks)
   end
 end
 
-if exist('eventFilter', 'var') && ~isempty(eventFilter)
-  load(eventsFile, replace_eegfile);
+if exist('eventFilter', 'var')
+  events = loadEvents(eventsFile, replace_eegfile);
   inds = inStruct(events, eventFilter);
   
   varargout(1) = {pattern(inds,:,:,:)};

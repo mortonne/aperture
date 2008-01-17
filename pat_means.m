@@ -24,6 +24,9 @@ function eeg = pat_means(eeg, params, resDir, ananame)
 if ~exist('ananame', 'var')
   ananame = 'mean';
 end
+if ~isfield(params, 'patname')
+  error('You must specify which pattern to use')
+end
 
 params = structDefaults(params, 'eventFilter', '',  'masks', {},  'field', 'overall');
 
@@ -40,7 +43,7 @@ for s=1:length(eeg.subj)
   
   eeg.subj(s) = setobj(eeg.subj(s), 'ana', ana);
 end
-save(fullfile(eeg.resDir, 'eeg.mat', 'eeg'));
+save(fullfile(eeg.resDir, 'eeg.mat'), 'eeg');
 
 for s=1:length(eeg.subj)
   fprintf('\n%s\n', eeg.subj(s).id);
@@ -48,7 +51,7 @@ for s=1:length(eeg.subj)
   ana = getobj(eeg.subj(s), 'ana', ananame);
   
   % see if this subject has been done
-  if ~lockFile(ana.file)
+  if ~lockFile(ana.file) | exist([ana.pat.file '.lock'], 'file')
     continue
   end
   
