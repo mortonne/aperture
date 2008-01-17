@@ -1,65 +1,92 @@
-function eeg = pat_rm_anova(eeg, resDir, regressors, masks)
+function eeg = pat_rm_anova(eeg, params, resDir, ananame)
 %
-%PAT_RM_ANOVA - calculates an n-way ANOVA across subjects
+%PAT_RM_ANOVA - calculates a 2-way ANOVA across subjects, using two
+%fields from the events struct as regressors
 %
-% FUNCTION: eeg = pat_rm_anova(eeg, resDir, regressors, masks)
+% FUNCTION: eeg = pat_rm_anova(eeg, params, resDir, ananame)
 %
-% INPUT: eeg - struct created by running init_scalp; eeg.params
-%        must contain a field 'field' that has the name of each
-%        field in the events struct to be used as a regressor
-% 
-% OUTPUT: power values with significance, saved by channel in
-%         'eeg.resDir/'
+% INPUT: eeg - struct created by init_iEEG or init_scalp
+%        params - required fields: patname (specifies the name of
+%                 which pattern in the eeg struct to use), fields
+%                 (specifies which fields of the events struct to
+%                 use as regressors)
+%
+%                 optional fields: eventFilter (specify subset of
+%                 events to use), masks (cell array containing
+%                 names of masks to apply to pattern)
+%        resDir - 'stat' files are saved in resDir/data
+%        ananame - analysis name to save under in the eeg struct
+%
+% OUTPUT: new eeg struct with ana object added, which contains file
+% info and parameters of the analysis
 %
 
-if ~exist('masks', 'var')
-  masks = {};
+if ~exist('ananame', 'var')
+  ananame = 'RMAOV2';
+end
+if ~isfield(params, 'fields')
+  error('You must specify two fields to use as regressors');
 end
 
-params = eeg.params;
-eeg.resDir = resDir;
+params = structDefaults(params, 'eventFilter', '',  'masks', {});
 
 if ~exist(fullfile(eeg.resDir, 'data'), 'dir')
   mkdir(fullfile(eeg.resDir, 'data'));
 end
 
+% write all file info
+ana.name = ananame;
+ana.file = {};
+for s=1:length(eeg.subj)
+  ana.pat(s) = getobj(eeg.subj(s), 'pat', params.patname);
+end
+channels = ana.pat(1).params.channels;
+for c=1:length(channels)
+  ana.file{c} = fullfile(resDir, 'data', [ananame '_chan' num2str(channels(c) '.mat']);
+end
+ana.params = params;
+
+% update the eeg struct
+eeg = setobj(eeg, 'ana', ana);
+save(fullfile(eeg.resDir, 'eeg.mat', 'eeg'));
+
 fprintf(['\nStarting Repeated Measures ANOVA:\n']);
 
 % step through channels
-for c=1:length(eeg.chan)
-  fprintf('\nLoading patterns for channel %d: ', eeg.chan(c).number);
+for c=1:length(channels)
+  fprintf('\nLoading patterns for channel %d: ', channels(c));
   
-  eeg.statFile{c} = fullfile(eeg.resDir, 'data', ['chan' num2str(eeg.chan(c).number) '_rm_anova.mat']);
-  if ~lockFile(eeg.statFile{c})
-    save(fullfile(eeg.resDir, 'eeg.mat'), 'eeg');
+  if ~lockFile(ana.file{c})
     continue
   end
   
   chan_pats = []; 
   tempsubj_reg = [];
-  tempgroup = cell(1,length(regressors));
+  tempgroup = cell(1,length(params.fields));
   
   % concatenate subjects
   for s=1:length(eeg.subj)
     fprintf('%s ', eeg.subj(s).id);
-    pat = loadPat(eeg.subj(s).patFile, masks);
-    load(eeg.subj(s).regFile);
+    pat = ana.pat(s);
     
-    reg = filterStruct(reg, 'ismember(name, varargin{1})', regressors);
-    for i=1:length(reg)
-      tempgroup{i} = [tempgroup{i}; reg(i).vec'+1];
+    pattern = loadPat(pat.file, params.masks, pat.eventsFile, params.eventFilter);
+    events = loadEvents(pat.eventsFile, pat.params.replace_eegFile);
+    events = filterStruct(events, params.eventFilter);
+    
+    for i=1:length(params.fields)
+      tempgroup{i} = [tempgroup{i}; getStructField(events, params.fields{i})+1];
     end
     
-    tempsubj_reg = [tempsubj_reg; ones(size(pat.mat,1),1)*s];
-    chan_pats = cat(1, chan_pats, squeeze(pat.mat(:,c,:,:)));
+    tempsubj_reg = [tempsubj_reg; ones(size(pattern,1),1)*s];
+    chan_pats = cat(1, chan_pats, squeeze(pattern(:,c,:,:)));
   end
   fprintf('\n');
   
   % initialize the stat struct
   fprintf('ANOVA: ');
-  stat(1).name = regressors{1};
-  stat(2).name = regressors{2};
-  stat(3).name = [regressors{1} 'X' regressors{2}];
+  stat(1).name = params.fields{1};
+  stat(2).name = params.fields{2};
+  stat(3).name = [params.fields{1} 'X' params.fields{2}];
   stat(4).name = 'subject';
   for i=1:length(stat)
     stat(i).p = NaN(size(chan_pats,2), size(chan_pats,3));
@@ -111,9 +138,8 @@ for c=1:length(eeg.chan)
   end % bin
   fprintf('\n');
   
-  save(eeg.statFile{c}, 'stat');
-  releaseFile(eeg.statFile{c});
-  save(fullfile(eeg.resDir, 'eeg.mat'), 'eeg');
+  save(ana.file{c}, 'stat');
+  releaseFile(ana.file{c});
   
 end % channel
 

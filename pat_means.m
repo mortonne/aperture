@@ -1,55 +1,83 @@
-function eeg = pat_means(eeg, resDir, regressors, masks, overall)
-%eeg = pat_means(eeg, resDir, regressors, masks, overall)
+function eeg = pat_means(eeg, params, resDir, ananame)
+%
+%PAT_MEANS - for a given field in the events struct, calculate a
+%mean over each unique value
+%
+% FUNCTION: eeg = pat_means(eeg, params, resDir, ananame)
+%
+% INPUT: eeg - struct created by init_iEEG or init_scalp
+%        params - required fields: patname (specifies the name of
+%                 which pattern in the eeg struct to use)
+%
+%                 optional fields: eventFilter (specify subset of
+%                 events to use), masks (cell array containing
+%                 names of masks to apply to pattern), field (name
+%                 of field of events struct to use in calculating mean -
+%                 omit to average over all events)
+%        resDir - 'mean' files are saved in resDir/data
+%        ananame - analysis name to save under in the eeg struct
+%
+% OUTPUT: new eeg struct with ana object added, which contains file
+% info and parameters of the analysis
+%
 
-if ~exist('overall', 'var')
-  overall = 1;
+if ~exist('ananame', 'var')
+  ananame = 'mean';
 end
+
+params = structDefaults(params, 'eventFilter', '',  'masks', {},  'field', 'overall');
 
 if ~exist(fullfile(resDir, 'data'), 'dir')
   mkdir(fullfile(resDir, 'data'));
 end
 
-eeg.resDir = resDir;
+% write all file info and update the eeg struct
+for s=1:length(eeg.subj)
+  ana.name = ananame;
+  ana.file = fullfile(resDir, 'data', [eeg.subj(s).id '_' ananame '.mat']);
+  ana.pat = getobj(eeg.subj(s), 'pat', params.patname);
+  ana.params = params;
+  
+  eeg.subj(s) = setobj(eeg.subj(s), 'ana', ana);
+end
+save(fullfile(eeg.resDir, 'eeg.mat', 'eeg'));
 
 for s=1:length(eeg.subj)
   fprintf('\n%s\n', eeg.subj(s).id);
   
-  eeg.subj(s).meansFile = fullfile(resDir, 'data', [eeg.subj(s).id '_means.mat']);
+  ana = getobj(eeg.subj(s), 'ana', ananame);
   
-  if ~lockFile(eeg.subj(s).meansFile)
-    save(fullfile(eeg.resDir, 'eeg.mat'), 'eeg');
+  % see if this subject has been done
+  if ~lockFile(ana.file)
     continue
   end
   
-  pat = loadPat(eeg.subj(s).patFile, masks);
-  load(eeg.subj(s).regFile);
+  % load pat and events with masks and filters applied
+  pattern = loadPat(ana.pat.file, params.masks, ana.pat.eventsFile, params.eventFilter);
+  events = loadEvents(ana.pat.eventsFile, ana.pat.params.replace_eegFile);
+  events = filterStruct(events, params.eventFilter);
   
-  reg = filterStruct(reg, 'ismember(name, varargin{1})', regressors);
+  if strcmp(params.field, 'overall')
+    vec = ones(1, length(events));
+  else
+    vec = getStructField(events, params.field);
+  end
   
   % get mean values for each regressor
-  for i=1:length(reg)
-    means(i).name = reg(i).name;
-    means(i).vals = unique(reg(i).vec);    
-    means(i).mat = NaN(length(means(i).vals), size(pat.mat,2), size(pat.mat, 3), size(pat.mat, 4));
-    for j=1:length(means(i).vals)
-      if iscell(means(i).vals)
-	thiscond = strcmp(reg(i).vec, means(i).vals{j});
-      else
-	thiscond = reg(i).vec==means(i).vals(j);
-      end
-      means(i).mat(j,:,:,:) = squeeze(nanmean(pat.mat(thiscond,:,:,:),1));
+  mean.name = params.field;
+  mean.vals = unique(vec);
+  mean.mat = NaN(length(mean.vals), size(pattern,2), size(pattern, 3), size(pattern, 4));
+  for j=1:length(mean.vals)
+    if iscell(mean.vals)
+      thiscond = strcmp(vec, mean.vals{j});
+    else
+      thiscond = vec==mean.vals(j);
     end
-    
+    mean.mat(j,:,:,:) = squeeze(nanmean(pattern(thiscond,:,:,:),1));
   end
   
-  if overall
-    means(i+1).name = 'overall';
-    means(i+1).vals = 'N/A';
-    means(i+1).mat(1,:,:) = squeeze(nanmean(pat.mat, 1));
-  end
-  
-  save(eeg.subj(s).meansFile, 'means');
-  releaseFile(eeg.subj(s).meansFile);
-  save(fullfile(eeg.resDir, 'eeg.mat'), 'eeg');
+  % save the mean file for this subject
+  save(ana.file, 'mean');
+  releaseFile(ana.file);
   
 end

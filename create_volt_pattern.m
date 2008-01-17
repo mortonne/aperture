@@ -39,8 +39,8 @@ end
 % write all file info and update the eeg struct
 for s=1:length(eeg.subj)
   pat.name = patname;
-  pat.file = fullfile(resDir, 'data', [eeg.subj(s).id '_voltpat.mat']);
-  pat.eventsFile = fullfile(resDir, 'data', [eeg.subj(s).id '_events.mat']);
+  pat.file = fullfile(resDir, 'data', [eeg.subj(s).id '_' patname '.mat']);
+  pat.eventsFile = fullfile(resDir, 'data', [eeg.subj(s).id '_' patname '_events.mat']);
   pat.params = params;
   
   eeg.subj(s) = setobj(eeg.subj(s), 'pat', pat);

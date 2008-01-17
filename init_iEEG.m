@@ -67,6 +67,5 @@ for s=1:length(eeg.subj)
 end
 
 % save the struct, which holds filenames of all saved data
-
 save(fullfile(resDir, 'eeg.mat'), 'eeg');
 
