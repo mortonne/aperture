@@ -42,6 +42,7 @@ for s=1:length(eeg.subj)
   pat.file = fullfile(resDir, 'data', [eeg.subj(s).id '_' patname '.mat']);
   pat.eventsFile = fullfile(resDir, 'data', [eeg.subj(s).id '_' patname '_events.mat']);
   pat.params = params;
+  pat.dim = struct('event', [],  'chan', [],  'bin', [],  'freq', []);
   
   eeg.subj(s) = setobj(eeg.subj(s), 'pat', pat);
 end
@@ -178,5 +179,7 @@ for s=1:length(eeg.subj)
   save(pat.file, 'pattern', 'mask');
   releaseFile(pat.file);
   save(pat.eventsFile, 'events');
+  load(fullfile(eeg.resDir, 'eeg.mat'));
+  
   
 end % subj
