@@ -23,8 +23,9 @@ for b=2:nBins
   binSamp{b} = binSamp{b-1} + binSizeSamp;
 end
 
-for b=1:length(binSamp)
-  params.binMS{b} = fix((binSamp{b}-1)*1000/params.resampledRate) + params.offsetMS;
+for t=1:length(binSamp)
+  time(t).MSvals = fix((binSamp{b}-1)*1000/params.resampledRate) + params.offsetMS;
+  time(t).avg = mean(dim.time(t).MSvals);
 end
 
 disp(params);
@@ -40,10 +41,22 @@ end
 for s=1:length(eeg.subj)
   pat.name = patname;
   pat.file = fullfile(resDir, 'data', [eeg.subj(s).id '_' patname '.mat']);
-  pat.eventsFile = fullfile(resDir, 'data', [eeg.subj(s).id '_' patname '_events.mat']);
   pat.params = params;
-  pat.dim = struct('event', [],  'chan', [],  'bin', [],  'freq', []);
   
+  % manage the dimensions info
+  pat.dim = struct('event', [],  'chan', [],  'time', [],  'freq', []);
+
+  pat.dim.event.num = [];
+  pat.dim.event.file = fullfile(resDir, 'data', [eeg.subj(s).id '_' patname '_events.mat']);
+  
+  if isfield(params, 'channels')
+    pat.dim.chan = filterStruct(eeg.subj(s).chan, 'ismember(number, varargin{1})', params.channels);
+  else
+    pat.dim.chan = eeg.subj(s).chan;
+  end
+  pat.dim.time = time;
+
+  % add new pat object to the eeg struct
   eeg.subj(s) = setobj(eeg.subj(s), 'pat', pat);
 end
 save(fullfile(eeg.resDir, 'eeg.mat'), 'eeg');
@@ -65,16 +78,10 @@ for s=1:length(eeg.subj)
     base_events = [base_events; filterStruct(temp(:), params.baseEventFilter)];
   end 
   sessions = unique(getStructField(events, 'session'));
-  
-  % check if using custom channels
-  if isfield(params, 'channels')
-    channels = params.channels;
-  else
-    channels = getStructField(eeg.subj(s).chan, 'number');
-  end
+  channels = getStructField(pat.dim.chan, 'number');
   
   % initialize this subject's pattern
-  patSize = [length(events), length(channels), length(params.binMS)];
+  patSize = [pat.dim.event.num, length(pat.dim.chan), length(pat.dim.time)];
   pattern = NaN(patSize);
   
   % set up masks
@@ -180,6 +187,5 @@ for s=1:length(eeg.subj)
   releaseFile(pat.file);
   save(pat.eventsFile, 'events');
   load(fullfile(eeg.resDir, 'eeg.mat'));
-  
   
 end % subj

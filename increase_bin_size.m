@@ -41,59 +41,68 @@ if ~exist(fullfile(resDir, 'data'), 'dir');
   mkdir(fullfile(resDir, 'data'));
 end 
 
+pat1 = getobj(eeg.subj(1), 'pat', params.patname);
+
+% make the new time bins (if applicable)
+if isfield(params, 'MSbins') && ~isempty(params.MSbins)
+  for t=1:length(params.MSbins)
+    bint{t} = find(inStruct(pat1.dim.time, 'avg>=varargin{1} & avg<varargin{2}', params.MSbins(t,1), params.MSbins(t,2)));
+    
+    % get ms value for each sample in the new time bin
+    allvals = [];
+    for i=1:length(bint{t})
+      allvals = [allvals pat1.dim.time(bint{t}(i)).MSvals];
+    end    
+    time(t).MSvals = allvals;
+    time(t).avg = mean(allvals);
+  end
+
+else % time dim doesn't change
+  for t=1:length(pat1.params.binMS)
+    bint{t} = t;
+  end
+  time = pat1.dim.time;
+end
+
+% make the new frequency bins (if applicable)
+if isfield(params, 'freqbins') && ~isempty(params.freqbins)
+  for f=1:length(params.freqbins)
+    binf{f} = find(inStruct(pat1.dim.freq, 'avg>=varargin{1} & avg<varargin{2}', params.freqbins(f,1), params.freqbins(f,2)));
+    
+    allvals = [];
+    for i=1:length(binf{f})
+      allvals = [allvals pat1.dim.freq(binf{f}(i)).vals];
+    end    
+    freq(f).vals = allvals;
+    freq(f).avg = mean(allvals);
+  end
+  
+elseif isfield(pat1.dim, 'freq') && ~isempty(pat1.dim.freq)
+  for f=1:length(pat1.params.binFreq)
+    binf{f} = f;
+  end
+  freq = pat1.dim.freq;
+  
+else % there is no frequency dimension
+  binf{1} = 1;
+  freq = [];
+end
+
 % write all file info and update the eeg struct
 for s=1:length(eeg.subj)
   pat1 = getobj(eeg.subj(s), 'pat', params.patname);
   
   pat2.name = patname;
   pat2.file = fullfile(resDir, 'data', [eeg.subj(s).id '_' patname '.mat']);
-  pat2.eventsFile = pat1.eventsFile;
   pat2.params = params;
+  
+  event.num = pat1.dim.event.num;
+  event.file = fullfile(resDir, 'data', [eeg.subj(s).id '_' patname '_events.mat']);
+  pat2.dim = struct('event', event, 'chan', chan, 'time', time, 'freq', freq);
   
   eeg.subj(s) = setobj(eeg.subj(s), 'pat', pat2);
 end
 save(fullfile(eeg.resDir, 'eeg.mat'), 'eeg');
-
-% make the new time bins (if applicable)
-if isfield(params, 'MSbins') && ~isempty(params.MSbins)
-  for i=1:length(pat1.params.binMS)
-    MSvals(i,1) = pat1.params.binMS{i}(1);
-    MSvals(i,2) = pat1.params.binMS{i}(end);
-  end
-  for b=1:length(params.MSbins)
-    binb{b} = find(MSvals(:,1)>=params.MSbins(b,1) & MSvals(:,2)<params.MSbins(b,2));
-    % get ms value for each sample in the new time bin
-    allvals = [];
-    for j=1:length(binb{b})
-      allvals = [allvals pat1.params.binMS{binb{b}(j)}];
-    end    
-    params.binMS{b} = allvals;
-  end
-
-else % time dim doesn't change
-  for b=1:length(pat1.params.binMS)
-    binb{b} = b;
-  end
-  params.binMS = pat1.params.binMS;
-end
-
-% make the new frequency bins (if applicable)
-if isfield(params, 'freqbins') && ~isempty(params.MSbins)
-  freqs = pat1.params.freqs;
-  for f=1:length(params.freqbins)
-    binf{f} = find(freqs>=freqbins(f,1) & freqs<freqbins(f,2));
-    params.binFreq{f} = freqs(binf{f});
-  end
-  
-elseif isfield(pat1.params, 'binFreq') % frequency dim doesn't change
-  for f=1:length(pat1.params.binFreq)
-    binf{f} = f;
-  end
-  params.binFreq = pat1.params.binFreq;
-  
-else % there is no frequency dimension
-  binf{1} = 1;
-end
 
 keyboard
 % make the new patterns
