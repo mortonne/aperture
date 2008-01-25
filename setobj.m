@@ -32,6 +32,19 @@ if isempty(i)
 end
 
 % if other objects exist, make sure fields are in same order
+fields = fieldnames(obj);
+old_fields = fieldnames(objs);
+
+to_add = setdiff(fields, old_fields);
+if ~isempty(to_add)
+  for k=1:length(to_add)
+    for j=1:length(objs)
+      new(j) = setfield(objs(j), to_add{k}, []);
+    end
+  end
+  objs = new;
+end
+
 if length(objs)>0
   obj = orderfields(obj, objs);
 end

@@ -35,12 +35,13 @@ if ~exist('patname', 'var')
   patname = [params.patname '_mod'];
 end
 
-params = structDefaults(params, 'eventFilter', '',  'masks', {});
+params = structDefaults(params, 'eventFilter', '',  'masks', {},  'MSbinlabels', {},  'chanbinlabels', {},  'freqbinlabels', {});
 
 if ~exist(fullfile(resDir, 'data'), 'dir');
   mkdir(fullfile(resDir, 'data'));
 end 
 
+% time and freq dimensions should be same for all subjects
 pat1 = getobj(eeg.subj(1), 'pat', params.patname);
 
 % make the new time bins (if applicable)
@@ -55,6 +56,11 @@ if isfield(params, 'MSbins') && ~isempty(params.MSbins)
     end    
     time(t).MSvals = allvals;
     time(t).avg = mean(allvals);
+    if ~isempty(params.MSbinlabels)
+      time(t).label = params.MSbinlabels{t};
+    else
+      time(t).label = [num2str(time(t).MSvals(1)) ' to ' num2str(time(t).MSvals(end)) 'ms'];
+    end
   end
 
 else % time dim doesn't change
@@ -64,7 +70,7 @@ else % time dim doesn't change
   time = pat1.dim.time;
 end
 
-% make the new frequency bins (if applicable)
+% make the new frequency bins
 if isfield(params, 'freqbins') && ~isempty(params.freqbins)
   for f=1:length(params.freqbins)
     binf{f} = find(inStruct(pat1.dim.freq, 'avg>=varargin{1} & avg<varargin{2}', params.freqbins(f,1), params.freqbins(f,2)));
@@ -75,6 +81,11 @@ if isfield(params, 'freqbins') && ~isempty(params.freqbins)
     end    
     freq(f).vals = allvals;
     freq(f).avg = mean(allvals);
+    if ~isempty(params.freqbinlabels)
+      freq(f).label = params.freqbinlabels{f};
+    else
+      freq(f).label = [num2str(freq(f).vals(1)) ' to ' num2str(freq(f).vals(end)) 'Hz'];
+    end
   end
   
 elseif isfield(pat1.dim, 'freq') && ~isempty(pat1.dim.freq)
@@ -88,23 +99,53 @@ else % there is no frequency dimension
   freq = [];
 end
 
-% write all file info and update the eeg struct
+
 for s=1:length(eeg.subj)
   pat1 = getobj(eeg.subj(s), 'pat', params.patname);
   
+  % get event info
+  event = pat1.dim.event;
+  if ~isempty(params.eventFilter)
+    event.file = fullfile(resDir, 'data', [eeg.subj(s).id '_' patname '_events.mat']);
+  end
+  
+  % make new channel bins
+  if isfield(params, 'chanbins')
+    
+    for c=1:length(params.chanbins)
+      if isnumeric(params.chanbins{c})
+	binc{c} = find(inStruct(pat1.dim.chan, 'ismember(number, varargin{1})', params.chanbins{c}));
+      elseif iscell(params.chanbins{c})
+	binc{c} = find(inStruct(pat1.dim.chan, 'ismember(region, varargin{1})', params.chanbins{c}));
+      else
+	binc{c} = find(inStruct(pat1.dim.chan, 'strcmp(region, varargin{1})', params.chanbins{c}));
+      end
+      
+      chans = pat1.dim.chan(binc{c});
+      chan(c).number = getStructField(chans, 'number');
+      chan(c).region = getStructField(chans, 'region');
+      if ~isempty(params.chanbinlabels)
+	chan(c).label = params.chanbinlabels{c};
+      end
+      
+    end
+  else % no averaging across channels
+    for c=1:length(pat1.dim.chan)
+      binc{c} = c;
+      chan = pat1.dim.chan;
+    end
+  end
+  
+  % write all file info and update the eeg struct
   pat2.name = patname;
   pat2.file = fullfile(resDir, 'data', [eeg.subj(s).id '_' patname '.mat']);
   pat2.params = params;
-  
-  event.num = pat1.dim.event.num;
-  event.file = fullfile(resDir, 'data', [eeg.subj(s).id '_' patname '_events.mat']);
   pat2.dim = struct('event', event, 'chan', chan, 'time', time, 'freq', freq);
   
   eeg.subj(s) = setobj(eeg.subj(s), 'pat', pat2);
 end
 save(fullfile(eeg.resDir, 'eeg.mat'), 'eeg');
 
-keyboard
 % make the new patterns
 for s=1:length(eeg.subj)
   pat1 = getobj(eeg.subj(s), 'pat', params.patname);
@@ -114,47 +155,27 @@ for s=1:length(eeg.subj)
   if ~lockFile(pat2.file) | ~exist(pat1.file, 'file') | exist([pat1.file '.lock'], 'file')
     continue
   end
-  
-  % check if using custom channels
-  if isfield(pat1.params, 'channels')
-    eeg.subj(s).chan = filterStruct(eeg.subj(s).chan, 'ismember(number, varargin{1})', pat1.params.channels);
-  end
-  
-  if isfield(params, 'binChan')
-    channels = getStructField(eeg.subj(s).chan, 'number');
-    regions = getStructField(eeg.subj(s).chan, 'region');
-    
-    for c=1:length(params.binChan)
-      if isnumeric(binc{c})
-	[vals, binc{c}] = intersect(channels, chanbins{c});
-      else
-	[vals, binc{c}] = intersect(regions, chanbins{c});	
-      end
-    end
-  else % no averaging across channels
-    for c=1:length(eeg.subj(s).chan)
-      binc{c} = c;
-    end  
-  end
-  
-  pattern1 = loadPat(pat1.file, params.masks, .eventsFile, params.eventFilter);
+
+  [pattern1, events] = loadPat(pat1.file, params.masks, pat1.dim.event.file, params.eventFilter);
   
   % initalize the new pat
-  pattern2 = NaN(size(oldpat.mat,1), length(binc), length(binb), length(binf));
+  pattern = NaN(size(pattern1,1), length(binc), length(bint), length(binf));
   
   for f=1:length(binf)
-    fmean = nanmean(oldpat.mat(:,:,:,binf{f}),4);
-    for b=1:length(binb)
-      fprintf('%d.', b);
-      bmean = nanmean(fmean(:,:,binb{b}),3);
+    fmean = nanmean(pattern1(:,:,:,binf{f}),4);
+    for t=1:length(bint)
+      fprintf('%d.', t);
+      tmean = nanmean(fmean(:,:,bint{t}),3);
       for c=1:length(binc)
-	pat.mat(:,c,b,f) = nanmean(bmean(:,binc{c}),2);
+	pattern(:,c,t,f) = nanmean(tmean(:,binc{c}),2);
       end
     end
   end
   fprintf('\n');
   
-  save(new(s).file, 'pat');
-  releaseFile(new(s).file);
-  
+  save(pat2.file, 'pattern');
+  releaseFile(pat2.file);
+  if ~isempty(params.eventFilter)
+    save(pat2.dim.event.file, 'events')
+  end
 end % subj

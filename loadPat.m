@@ -1,5 +1,5 @@
-function varargout = loadPat(patFile, masks, eventsFile, eventFilter, replace_eegfile)
-%varargout = loadPat(patFile, masks, eventsFile, eventFilter, replace_eegfile)
+function [pattern, events] = loadPat(patFile, masks, eventsFile, eventFilter)
+%[pattern, events] = loadPat(patFile, masks, eventsFile, eventFilter)
 %
 %LOADPAT - loads one subject's pattern, and applies any specified
 %masks and event filters
@@ -19,12 +19,15 @@ if exist('masks', 'var') && ~isempty(masks)
   end
 end
 
-if exist('eventFilter', 'var')
-  events = loadEvents(eventsFile, replace_eegfile);
-  inds = inStruct(events, eventFilter);
-  
-  varargout(1) = {pattern(inds,:,:,:)};
-  varargout(2) = {events(inds)};
+if exist('eventsFile', 'var')
+  events = loadEvents(eventsFile);
 else
-  varargout(1) = {pattern};
+  events = [];
+end
+
+if exist('eventFilter', 'var') && ~isempty(eventFilter)
+  
+  inds = inStruct(events, eventFilter);  
+  pattern = pattern(inds,:,:,:);
+  events = events(inds);
 end

@@ -53,6 +53,7 @@ for s=1:length(eeg.subj)
   for c=1:length(channels)
     eeg.subj(s).chan(c).number = channels(c);
     eeg.subj(s).chan(c).region = regions{cidx(c)};
+    eeg.subj(s).chan(c).label = regions{cidx(c)};
   end
   
   for n=1:length(eeg.subj(s).sess)

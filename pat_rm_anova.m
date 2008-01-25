@@ -40,9 +40,9 @@ ana.file = {};
 for s=1:length(eeg.subj)
   ana.pat(s) = getobj(eeg.subj(s), 'pat', params.patname);
 end
-channels = ana.pat(1).params.channels;
-for c=1:length(channels)
-  ana.file{c} = fullfile(resDir, 'data', [ananame '_chan' num2str(channels(c)) '.mat']);
+chan = ana.pat(1).dim.chan;
+for c=1:length(chan)
+  ana.file{c} = fullfile(resDir, 'data', [ananame '_chan' num2str(chan(c).number) '.mat']);
 end
 ana.params = params;
 
@@ -53,8 +53,8 @@ save(fullfile(eeg.resDir, 'eeg.mat'), 'eeg');
 fprintf(['\nStarting Repeated Measures ANOVA:\n']);
 
 % step through channels
-for c=1:length(channels)
-  fprintf('\nLoading patterns for channel %d: ', channels(c));
+for c=1:length(chan(c).number)
+  fprintf('\nLoading patterns for channel %d: ', chan(c).number);
   
   if ~lockFile(ana.file{c})
     continue
@@ -69,9 +69,7 @@ for c=1:length(channels)
     fprintf('%s ', eeg.subj(s).id);
     pat = ana.pat(s);
     
-    pattern = loadPat(pat.file, params.masks, pat.eventsFile, params.eventFilter);
-    events = loadEvents(pat.eventsFile, pat.params.replace_eegFile);
-    events = filterStruct(events, params.eventFilter);
+    [pattern, events] = loadPat(pat.file, params.masks, pat.dim.event.file, params.eventFilter);
     
     for i=1:length(params.fields)
       tempgroup{i} = [tempgroup{i}; getStructField(events, params.fields{i})'];
@@ -92,23 +90,26 @@ for c=1:length(channels)
     stat(i).p = NaN(size(chan_pats,2), size(chan_pats,3));
   end
   
-  for b=1:size(chan_pats,2)
-    fprintf(' %dms ', pat.params.binMS{b}(1));
+  for t=1:size(chan_pats,2)
+    fprintf(' %s ', pat.dim.time(t).label);
     
     for f=1:size(chan_pats,3)
-      if isfield(pat.params, 'binFreq')
-	fprintf('%.2f ', pat.params.binFreq{f}(1));
+      if ~isempty(pat.dim.freq)
+	fprintf('%s ', pat.dim.freq(f).label);
       end
       
       % remove NaNs
-      thispat = squeeze(chan_pats(:,b,f));
+      thispat = squeeze(chan_pats(:,t,f));
       good = ~isnan(thispat);
+      if length(good)==0
+	continue
+      end
       thispat = thispat(good);
       for i=1:length(tempgroup)
 	group{i} = tempgroup{i}(good);
 	vals = unique(group{i});
-	if vals(1)==0
-	  group{i} = group{i} + 1;
+	for j=1:length(vals)
+	  group{i}(group{i}==vals(j)) = j;
 	end
       end
       subj_reg = tempsubj_reg(good);
@@ -122,7 +123,7 @@ for c=1:length(channels)
       % do a two-way rm anova
       p = RMAOV2_mod([thispat group{1} group{2} subj_reg], 0.05, 0);
       for i=1:length(p)
-	stat(i).p(b,f) = p(i);
+	stat(i).p(t,f) = p(i);
       end
       
       % if two cats, get the direction of the effect
@@ -130,13 +131,13 @@ for c=1:length(channels)
 	cats = unique(group{i});
 	if length(cats)==2
 	  if mean(thispat(group{i}==cats(1))) < mean(thispat(group{i}==cats(2)))
-	    stat(i).p(b,f) = -stat(i).p(b,f);
+	    stat(i).p(t,f) = -stat(i).p(t,f);
 	  end
 	end
       end
       
     end % freq
-    if isfield(pat.params, 'binFreq')
+    if ~isempty(pat.dim.freq)
       fprintf('\n');
     end
   end % bin
@@ -144,7 +145,6 @@ for c=1:length(channels)
   
   save(ana.file{c}, 'stat');
   releaseFile(ana.file{c});
-  
 end % channel
 
 

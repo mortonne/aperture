@@ -54,6 +54,7 @@ if ~isempty(elecLocsFile)
   for c=1:length(channels)
     chan(c).number = channels(c);
     chan(c).region = regions{c};
+    chan(c).label = regions{c};
   end
 else
   channels = 1:129;
@@ -61,6 +62,7 @@ else
   for c=1:length(channels)
     chan(c).number = channels(c);
     chan(c).region = '';
+    chan(c).label = num2str(channels(c));
   end
 end
 

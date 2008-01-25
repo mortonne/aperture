@@ -11,7 +11,7 @@ if ~exist('patname', 'var')
 end
 
 % set the defaults for params
-params = structDefaults(params,  'eventFilter', '',  'offsetMS', -200,  'durationMS', 1800,  'binSizeMS', 10,  'baseEventFilter', '',  'baseOffsetMS', -200,  'baseDurationMS', 200,  'filttype', 'stop',  'filtfreq', [58 62],  'filtorder', 4,  'bufferMS', 1000,  'resampledRate', 500,  'kthresh', 5,  'ztransform', 1,  'replace_eegFile', {});
+params = structDefaults(params,  'eventFilter', '',  'offsetMS', -200,  'durationMS', 1800,  'binSizeMS', 10,  'baseEventFilter', '',  'baseOffsetMS', -200,  'baseDurationMS', 200,  'filttype', 'stop',  'filtfreq', [58 62],  'filtorder', 4,  'bufferMS', 1000,  'resampledRate', 500,  'kthresh', 5,  'ztransform', 1,  'replace_eegFile', {},  'timebinlabels', {});
 
 % get bin information
 durationSamp = fix(params.durationMS*params.resampledRate./1000);
@@ -24,8 +24,13 @@ for b=2:nBins
 end
 
 for t=1:length(binSamp)
-  time(t).MSvals = fix((binSamp{b}-1)*1000/params.resampledRate) + params.offsetMS;
-  time(t).avg = mean(dim.time(t).MSvals);
+  time(t).MSvals = fix((binSamp{t}-1)*1000/params.resampledRate) + params.offsetMS;
+  time(t).avg = mean(time(t).MSvals);
+  if ~isempty(params.timebinlabels)
+    time(t).label = params.timebinlabels{t};
+  else
+    time(t).label = [num2str(time(t).MSvals(1)) ' to ' num2str(time(t).MSvals(end)) 'ms'];
+  end
 end
 
 disp(params);
@@ -81,7 +86,7 @@ for s=1:length(eeg.subj)
   channels = getStructField(pat.dim.chan, 'number');
   
   % initialize this subject's pattern
-  patSize = [pat.dim.event.num, length(pat.dim.chan), length(pat.dim.time)];
+  patSize = [length(events), length(pat.dim.chan), length(pat.dim.time)];
   pattern = NaN(patSize);
   
   % set up masks
@@ -101,17 +106,17 @@ for s=1:length(eeg.subj)
     for e=1:length(events)
       wind = [events(e).artifactMS events(e).artifactMS+params.artWindow];
       isArt = 0;
-      for b=1:length(params.binMS)
-	if wind(1)>params.binMS{b}(1) & wind(1)<params.binMS{b}(end)
+      for t=1:length(time)
+	if wind(1)>time(t).MSvals(1) & wind(1)<time(t).MSvals(end)
 	  isArt = 1;
 	end
-	mask(m).mat(e,:,b) = isArt;
-	if isArt & wind(2)<params.binMS{b}(end)
+	mask(m).mat(e,:,t) = isArt;
+	if isArt & wind(2)<time(t).MSvals(end)
 	  isArt = 0;
 	end
       end
     end
-      
+    
   end
   
   % make the pattern for this subject
@@ -185,7 +190,6 @@ for s=1:length(eeg.subj)
   % save the patterns and corresponding events struct
   save(pat.file, 'pattern', 'mask');
   releaseFile(pat.file);
-  save(pat.eventsFile, 'events');
-  load(fullfile(eeg.resDir, 'eeg.mat'));
+  save(pat.dim.event.file, 'events');
   
 end % subj
