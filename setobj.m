@@ -45,6 +45,13 @@ if ~isempty(to_add)
   objs = new;
 end
 
+to_add = setdiff(old_fields, fields);
+if ~isempty(to_add)
+  for k=1:length(to_add)
+    obj = setfield(obj, to_add{k}, []);
+  end
+end
+
 if length(objs)>0
   obj = orderfields(obj, objs);
 end

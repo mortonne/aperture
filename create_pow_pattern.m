@@ -11,7 +11,7 @@ if ~exist('patname', 'var')
 end
 
 % set the defaults for params
-params = structDefaults(params,  'eventFilter', '',  'freqs', 2.^(1:(1/8):6),  'offsetMS', -200,  'durationMS', 1800,  'binSizeMS', 100,  'baseEventFilter', '',  'baseOffsetMS', -200,  'baseDurationMS', 200,  'filttype', 'stop',  'filtfreq', [58 62],  'filtorder', 4,  'bufferMS', 1000,  'resampledRate', 500,  'width', 6,  'kthresh', 5,  'ztransform', 1,  'logtransform', 0,  'replace_eegFile', {});
+params = structDefaults(params,  'eventFilter', '',  'freqs', 2.^(1:(1/8):6),  'offsetMS', -200,  'durationMS', 1800,  'binSizeMS', 100,  'baseEventFilter', '',  'baseOffsetMS', -200,  'baseDurationMS', 200,  'filttype', 'stop',  'filtfreq', [58 62],  'filtorder', 4,  'bufferMS', 1000,  'resampledRate', 500,  'width', 6,  'kthresh', 5,  'ztransform', 1,  'logtransform', 0,  'replace_eegFile', {},  'timebinlabels', {},  'freqbinlabels', {});
 
 % get bin information
 durationSamp = fix(params.durationMS*params.resampledRate./1000);
@@ -23,12 +23,25 @@ binSamp{1} = [1:binSizeSamp];
 for b=2:nBins
   binSamp{b} = binSamp{b-1} + binSizeSamp;
 end
-for b=1:length(binSamp)
-  params.binMS{b} = fix((binSamp{b}-1)*1000/params.resampledRate) + params.offsetMS;
+
+for t=1:length(binSamp)
+  time(t).MSvals = fix((binSamp{t}-1)*1000/params.resampledRate) + params.offsetMS;
+  time(t).avg = mean(time(t).MSvals);
+  if ~isempty(params.timebinlabels)
+    time(t).label = params.timebinlabels{t};
+  else
+    time(t).label = [num2str(time(t).MSvals(1)) ' to ' num2str(time(t).MSvals(end)) 'ms'];
+  end
 end
 
 for f=1:length(params.freqs)
-  params.binFreq{f} = params.freqs(f);
+  freq(f).vals = params.freqs(f)
+  freq(f).avg = mean(freq(f).vals);
+  if ~isempty(params.freqbinlabels)
+    freq(f).label = params.freqbinlabels{f};
+  else
+    freq(f).label = [num2str(freq(f).vals(1)) ' to ' num2str(freq(f).vals(end)) 'ms'];
+  end
 end
 
 disp(params);
@@ -44,9 +57,23 @@ end
 for s=1:length(eeg.subj)
   pat.name = patname;
   pat.file = fullfile(resDir, 'data', [eeg.subj(s).id '_powpat.mat']);
-  pat.eventsFile = fullfile(resDir, 'data', [eeg.subj(s).id '_events.mat']);
   pat.params = params;
   
+  % manage the dimensions info
+  pat.dim = struct('event', [],  'chan', [],  'time', [],  'freq', []);
+  
+  pat.dim.event.num = [];
+  pat.dim.event.file = fullfile(resDir, 'data', [eeg.subj(s).id '_events.mat']);
+  
+  if isfield(params, 'channels')
+    pat.dim.chan = filterStruct(eeg.subj(s).chan, 'ismember(number, varargin{1})', params.channels);
+  else
+    pat.dim.chan = eeg.subj(s).chan;
+  end
+  pat.dim.time = time;
+  pat.dim.freq = freq;
+  
+  % add new pat object to the eeg struct
   eeg.subj(s) = setobj(eeg.subj(s), 'pat', pat);
 end
 save(fullfile(eeg.resDir, 'eeg.mat'), 'eeg');
@@ -66,18 +93,13 @@ for s=1:length(eeg.subj)
     temp = loadEvents(eeg.subj(s).sess(n).eventsFile, params.replace_eegFile);
     events = [events; filterStruct(temp(:), params.eventFilter)];
     base_events = [base_events; filterStruct(temp(:), params.baseEventFilter)];
-  end 
-  sessions = unique(getStructField(events, 'session'));
-  
-  % check if using custom channels
-  if isfield(params, 'channels')
-    channels = params.channels;
-  else
-    channels = getStructField(eeg.subj(s).chan, 'number');
   end
+  pat.dim.event.num = length(events);
+  sessions = unique(getStructField(events, 'session'));
+  channels = getStructField(pat.dim.chan, 'number');
   
   % initialize this subject's pattern
-  patSize = [length(events), length(channels), length(params.binMS), length(params.binFreq)];
+  patSize = [pat.dim.event.num, length(pat.dim.chan), length(pat.dim.time), length(pat.dim.freq)];
   pattern = NaN(patSize);
   
   % set up masks
@@ -96,17 +118,17 @@ for s=1:length(eeg.subj)
     for e=1:length(events)
       wind = [events(e).artifactMS events(e).artifactMS+params.artWindow];
       isArt = 0;
-      for b=1:length(params.binMS)
-	if wind(1)>params.binMS{b}(1) & wind(1)<params.binMS{b}(end)
+      for t=1:length(time)
+	if wind(1)>time(t).MSvals(1) & wind(1)<time(t).MSvals(end)
 	  isArt = 1;
 	end
-	mask(m).mat(e,:,b) = isArt;
-	if isArt & wind(2)<params.binMS{b}(end)
+	mask(m).mat(e,:,t) = isArt;
+	if isArt & wind(2)<time(t).MSvals(end)
 	  isArt = 0;
 	end
       end
     end
-      
+    
   end
   
   % get the patterns for each frequency and time bin
@@ -122,7 +144,7 @@ for s=1:length(eeg.subj)
     mask(1).mat(this_sess, bad, :) = 1;
     
     for f=1:length(params.freqs)
-      fprintf('\nLoading power values (%.2fHz)...', params.freqs(f));
+      fprintf('\nLoading power values (%s)...', pat.dim.freq(f).label);
       
       for c=1:length(channels)
 	fprintf('%d.', channels(c));
@@ -205,6 +227,9 @@ for s=1:length(eeg.subj)
   releaseFile(pat.file);
   save(pat.eventsFile, 'events');
   
+  load(fullfile(eeg.resDir, 'eeg.mat'));
+  eeg.subj(s) = setobj(eeg.subj(s), 'pat', pat);
+  save(fullfile(eeg.resDir, 'eeg.mat'), 'eeg');
 end % subj
 
 

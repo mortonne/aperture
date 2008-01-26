@@ -50,7 +50,7 @@ for s=1:length(eeg.subj)
   
   % manage the dimensions info
   pat.dim = struct('event', [],  'chan', [],  'time', [],  'freq', []);
-
+  
   pat.dim.event.num = [];
   pat.dim.event.file = fullfile(resDir, 'data', [eeg.subj(s).id '_' patname '_events.mat']);
   
@@ -82,11 +82,12 @@ for s=1:length(eeg.subj)
     events = [events; filterStruct(temp(:), params.eventFilter)];
     base_events = [base_events; filterStruct(temp(:), params.baseEventFilter)];
   end 
+  pat.dim.event.num = length(events);
   sessions = unique(getStructField(events, 'session'));
   channels = getStructField(pat.dim.chan, 'number');
   
   % initialize this subject's pattern
-  patSize = [length(events), length(pat.dim.chan), length(pat.dim.time)];
+  patSize = [pat.dim.event.num, length(pat.dim.chan), length(pat.dim.time)];
   pattern = NaN(patSize);
   
   % set up masks
@@ -192,4 +193,7 @@ for s=1:length(eeg.subj)
   releaseFile(pat.file);
   save(pat.dim.event.file, 'events');
   
+  load(fullfile(eeg.resDir, 'eeg.mat'));
+  eeg.subj(s) = setobj(eeg.subj(s), 'pat', pat);
+  save(fullfile(eeg.resDir, 'eeg.mat'), 'eeg');
 end % subj

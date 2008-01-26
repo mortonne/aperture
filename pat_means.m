@@ -46,7 +46,6 @@ for s=1:length(eeg.subj)
   
   % see if this subject has been done
   if ~lockFile(pat2.file) | exist([pat1.file '.lock'], 'file')
-    keyboard
     continue
   end
   

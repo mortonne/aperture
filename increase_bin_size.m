@@ -64,7 +64,7 @@ if isfield(params, 'MSbins') && ~isempty(params.MSbins)
   end
 
 else % time dim doesn't change
-  for t=1:length(pat1.params.binMS)
+  for t=1:length(pat1.dim.time)
     bint{t} = t;
   end
   time = pat1.dim.time;
@@ -89,7 +89,7 @@ if isfield(params, 'freqbins') && ~isempty(params.freqbins)
   end
   
 elseif isfield(pat1.dim, 'freq') && ~isempty(pat1.dim.freq)
-  for f=1:length(pat1.params.binFreq)
+  for f=1:length(pat1.dim.freq)
     binf{f} = f;
   end
   freq = pat1.dim.freq;
