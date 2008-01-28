@@ -97,7 +97,7 @@ if nargin==2 & ~isempty(repStr) & isstruct(s)
 		  end
 		  
 		  
-		  if isstruct(F4)
+		  if isstruct(F3)
 		    
 		    F4s = fieldnames(F3);
 		    for d=1:length(F3)
