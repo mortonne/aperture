@@ -96,6 +96,36 @@ if nargin==2 & ~isempty(repStr) & isstruct(s)
 		    end
 		  end
 		  
+		  
+		  if isstruct(F4)
+		    
+		    F4s = fieldnames(F3);
+		    for d=1:length(F3)
+		      for q=1:length(F4s)
+			Fname4 = F4s{q};
+			F4 = getfield(F3(d), Fname4);
+			
+			if iscell(F4)
+			  for k=1:length(F4)
+			    for r=1:size(repStr, 1)
+			      F4{k} = strrep(F4{k}, repStr{r,1}, repStr{r,2});
+			    end
+			  end
+			  F3(d) = setfield(F3(d), Fname4, F4);
+			end
+			
+			% replace string
+			if isstr(F4) 
+			  for r=1:size(repStr, 1)
+			    F3(d) = setfield(F3(d), Fname4, strrep(getfield(F3(d), Fname4), repStr{r,1}, repStr{r,2}));
+			  end
+			end
+			
+		      end
+		    end
+		  end
+		  F2(c) = setfield(F2(c), Fname3, F3);
+		  
 		end
 	      end
 	      F1(b) = setfield(F1(b), Fname2, F2);
