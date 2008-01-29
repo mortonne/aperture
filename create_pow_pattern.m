@@ -35,12 +35,12 @@ for t=1:length(binSamp)
 end
 
 for f=1:length(params.freqs)
-  freq(f).vals = params.freqs(f)
+  freq(f).vals = params.freqs(f);
   freq(f).avg = mean(freq(f).vals);
   if ~isempty(params.freqbinlabels)
     freq(f).label = params.freqbinlabels{f};
   else
-    freq(f).label = [num2str(freq(f).vals(1)) ' to ' num2str(freq(f).vals(end)) 'ms'];
+    freq(f).label = [num2str(freq(f).vals) 'Hz'];
   end
 end
 
@@ -134,7 +134,7 @@ for s=1:length(eeg.subj)
   % get the patterns for each frequency and time bin
   start_e = 1;
   for n=1:length(eeg.subj(s).sess)
-    fprintf('\n%s\n', eeg.subj(s).sess(n).eventsFile);
+    fprintf('\n%s', eeg.subj(s).sess(n).eventsFile);
     this_sess = inStruct(events, 'session==varargin{1}', sessions(n));
     sess_events = events(this_sess);
     sess_base_events = filterStruct(base_events, 'session==varargin{1}', sessions(n));
@@ -217,7 +217,7 @@ for s=1:length(eeg.subj)
       end % channel
       
     end % freq
-    start_e = start_e + length(events{n});
+    start_e = start_e + length(sess_events);
     
   end % session
   fprintf('\n');
@@ -225,7 +225,7 @@ for s=1:length(eeg.subj)
   % save the patterns and masks
   save(pat.file, 'pattern', 'mask');
   releaseFile(pat.file);
-  save(pat.eventsFile, 'events');
+  save(pat.dim.event.file, 'events');
   
   load(fullfile(eeg.resDir, 'eeg.mat'));
   eeg.subj(s) = setobj(eeg.subj(s), 'pat', pat);

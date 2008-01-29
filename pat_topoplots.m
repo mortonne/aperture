@@ -1,9 +1,9 @@
-function eeg = pat_plots(eeg, params, resDir, figname)
+function eeg = pat_topoplots(eeg, params, resDir, figname)
 %
 %PAT_PLOTS - manages event-related potential/power figures, plus
 %topo plots of both voltage and power
 %
-% FUNCTION: eeg = pat_plots(eeg, params, resDir, figname)
+% FUNCTION: eeg = pat_topoplots(eeg, params, resDir, figname)
 %
 % INPUT: eeg - struct created by init_iEEG or init_scalp
 %        params - required fields: patname (specifies the name of
@@ -12,7 +12,10 @@ function eeg = pat_plots(eeg, params, resDir, figname)
 %                 optional fields: eventFilter (specify subset of
 %                 events to use), masks (cell array containing
 %                 names of masks to apply to pattern), subjects
-%                 (cell array of ids of subjects to include) diff
+%                 (cell array of ids of subjects to include) erp (set to
+%                 1 to make an event-related plot for each
+%                 channel), topo (set to 1 to make a headplot for
+%                 each event type, time bin and frequency), diff
 %                 (set to 1 to plot difference of eventypes)
 %                 across_subj (set to 1 to plot patterns saved in eeg.pat)
 %
@@ -42,7 +45,7 @@ end
 clf reset
 
 for i=1:length(params.subjects)
-  
+
   % get the pat object, load pattern
   if strcmp(params.subjects{i}, 'across_subj')
     id = 'across_subj';
@@ -52,44 +55,31 @@ for i=1:length(params.subjects)
     id = eeg.subj(s).id;
     pat = getobj(eeg.subj(s), 'pat', params.patname);
   end
-  pattern = loadPat(pat.file);
+  pattern = loadPat(strrep(pat.file, '~', '/Volumes/mortonne'));
   
   fig.name = figname;
-  fig.type = 'erp';
+  fig.type = 'topo';
   fig.file = {};
   fig.params = params;
   
   if params.diff & size(pattern,1)==2
     pattern = pattern(2,:,:,:)-pattern(1,:,:,:);
   end
-  
-  for c=1:size(pattern,2)
-    
-    if isempty(pat.dim.freq) % plotting voltage values
-      for e=1:size(pattern,1)
-	h = plot(getStructField(pat.dim.time, 'avg'), squeeze(pattern(e,c,:)), params.sym{mod(e,length(params.sym))+1});
-	xlabel('Time (ms)')
-	ylabel('Voltage')
-	hold on
-      end
-      hold off
-      
-      if sum(~isnan(get(h, 'YData')))>0
-	fig.file{1,c} = fullfile(resDir, 'figs', [params.patname '_erp_' id 'e1c' num2str(c) '.eps']);
-	print(gcf, '-depsc', fig.file{1,c});
-      end
-      
-    else % plotting power values
-      for e=1:size(pattern,1)
-	h = plot_pow(squeeze(pattern(e,c,:,:))', pat.dim);
+
+
+  for e=1:size(pattern,1)
+    for t=1:size(pattern,3)
+      for f=1:size(pattern,4)
 	
-	fig.file{e,c} = fullfile(resDir, 'figs', [params.patname '_erpow_' id '_e' num2str(e) 'c' num2str(c) '.eps']);
-	print(gcf, '-depsc', fig.file{e,c});
+	h = topoplot(squeeze(pattern(e,:,t,f)), params);
+	for v=1:length(h)
+	  fig.file{e,v,t,f} = fullfile(resDir, 'figs', [params.patname '_topo_' id 'e' num2str(e) 'v' num2str(v) 't' num2str(t) 'f' num2str(f) '.eps']);
+	  print(h(v), '-depsc', '-r100', fig.file{e,v,t,f});
+	end
       end
-      
     end
     
-  end % channels
+  end
   
   pat = setobj(pat, 'fig', fig);
   
@@ -100,4 +90,4 @@ for i=1:length(params.subjects)
     eeg.subj(s) = setobj(eeg.subj(s), 'pat', pat);
   end
   save(fullfile(eeg.resDir, 'eeg.mat'), 'eeg');
-end % subjects
+end
