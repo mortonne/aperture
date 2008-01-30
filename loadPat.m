@@ -9,7 +9,13 @@ if ~exist('replace_eegfile', 'var')
   replace_eegfile = {};
 end
 
-load(patFile)
+if iscell(patFile)
+  for i=1:length(patFile)
+    
+  end
+else
+  load(patFile)
+end
 
 if exist('masks', 'var') && ~isempty(masks)
   

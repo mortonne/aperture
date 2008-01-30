@@ -1,9 +1,9 @@
-function eeg = pat_rm_anova(eeg, params, resDir, ananame)
+function eeg = pat_rm_anova(eeg, params, resDir, patname)
 %
 %PAT_RM_ANOVA - calculates a 2-way ANOVA across subjects, using two
 %fields from the events struct as regressors
 %
-% FUNCTION: eeg = pat_rm_anova(eeg, params, resDir, ananame)
+% FUNCTION: eeg = pat_rm_anova(eeg, params, resDir, patname)
 %
 % INPUT: eeg - struct created by init_iEEG or init_scalp
 %        params - required fields: patname (specifies the name of
@@ -15,14 +15,14 @@ function eeg = pat_rm_anova(eeg, params, resDir, ananame)
 %                 events to use), masks (cell array containing
 %                 names of masks to apply to pattern)
 %        resDir - 'stat' files are saved in resDir/data
-%        ananame - analysis name to save under in the eeg struct
+%        patname - analysis name to save under in the eeg struct
 %
 % OUTPUT: new eeg struct with ana object added, which contains file
 % info and parameters of the analysis
 %
 
-if ~exist('ananame', 'var')
-  ananame = 'RMAOV2';
+if ~exist('patname', 'var')
+  patname = 'RMAOV2';
 end
 if ~isfield(params, 'fields')
   error('You must specify two fields to use as regressors');
@@ -34,20 +34,29 @@ if ~exist(fullfile(resDir, 'data'), 'dir')
   mkdir(fullfile(resDir, 'data'));
 end
 
-% write all file info
-ana.name = ananame;
-ana.file = {};
+tot_events = 0;
 for s=1:length(eeg.subj)
-  ana.pat(s) = getobj(eeg.subj(s), 'pat', params.patname);
+  subjpat(s) = getobj(eeg.subj(s), 'pat', params.patname);
+  tot_events = tot_events + subjpat(s).dim.event.num;
 end
-chan = ana.pat(1).dim.chan;
+
+% write all file info
+pat.name = patname;
+pat.file = {};
+
+pat.dim.event.num = 4;
+pat.dim.event.file = subjpat(1).dim.event.file;
+pat.dim.event.label = {params.fields{1} params.fields{2} [params.fields{1} 'X' params.fields{2}] 'subject'};
+pat.dim.chan = subjpat(1).dim.chan;
+pat.dim.time = subjpat(1).dim.time;
+pat.dim.freq = subjpat(1).dim.freq;
 for c=1:length(chan)
-  ana.file{c} = fullfile(resDir, 'data', [ananame '_chan' num2str(chan(c).number) '.mat']);
+  pat.file{c} = fullfile(resDir, 'data', [patname '_chan' num2str(chan(c).number) '.mat']);
 end
-ana.params = params;
+pat.params = params;
 
 % update the eeg struct
-eeg = setobj(eeg, 'ana', ana);
+eeg = setobj(eeg, 'pat', pat);
 save(fullfile(eeg.resDir, 'eeg.mat'), 'eeg');
 
 fprintf(['\nStarting Repeated Measures ANOVA:\n']);
@@ -56,20 +65,19 @@ fprintf(['\nStarting Repeated Measures ANOVA:\n']);
 for c=1:length(chan(c).number)
   fprintf('\nLoading patterns for channel %d: ', chan(c).number);
   
-  if ~lockFile(ana.file{c})
+  if ~lockFile(pat.file{c})
     continue
   end
   
-  chan_pats = []; 
+  chan_pats = NaN(tot_events, length(pat.dim.time), length(pat.dim.freq));
   tempsubj_reg = [];
   tempgroup = cell(1,length(params.fields));
   
   % concatenate subjects
   for s=1:length(eeg.subj)
     fprintf('%s ', eeg.subj(s).id);
-    pat = ana.pat(s);
     
-    [pattern, events] = loadPat(pat.file, params.masks, pat.dim.event.file, params.eventFilter);
+    [pattern, events] = loadPat(subjpat.file, params.masks, subjpat.dim.event.file, params.eventFilter);
     
     for i=1:length(params.fields)
       tempgroup{i} = [tempgroup{i}; getStructField(events, params.fields{i})'];
@@ -82,20 +90,14 @@ for c=1:length(chan(c).number)
   
   % initialize the stat struct
   fprintf('ANOVA: ');
-  stat(1).name = params.fields{1};
-  stat(2).name = params.fields{2};
-  stat(3).name = [params.fields{1} 'X' params.fields{2}];
-  stat(4).name = 'subject';
-  for i=1:length(stat)
-    stat(i).p = NaN(size(chan_pats,2), size(chan_pats,3));
-  end
+  pattern = NaN(tot_events, length(pat.dim.time), length(pat.dim.freq));
   
   for t=1:size(chan_pats,2)
-    fprintf(' %s ', pat.dim.time(t).label);
+    fprintf(' %s ', subjpat.dim.time(t).label);
     
     for f=1:size(chan_pats,3)
       if ~isempty(pat.dim.freq)
-	fprintf('%s ', pat.dim.freq(f).label);
+	fprintf('%s ', subjpat.dim.freq(f).label);
       end
       
       % remove NaNs
@@ -122,16 +124,16 @@ for c=1:length(chan(c).number)
       
       % do a two-way rm anova
       p = RMAOV2_mod([thispat group{1} group{2} subj_reg], 0.05, 0);
-      for i=1:length(p)
-	stat(i).p(t,f) = p(i);
+      for e=1:length(p)
+	pattern(e,1,t,f) = p(e);
       end
       
       % if two cats, get the direction of the effect
-      for i=1:2
-	cats = unique(group{i});
+      for e=1:2
+	cats = unique(group{e});
 	if length(cats)==2
-	  if mean(thispat(group{i}==cats(1))) < mean(thispat(group{i}==cats(2)))
-	    stat(i).p(t,f) = -stat(i).p(t,f);
+	  if mean(thispat(group{e}==cats(1))) < mean(thispat(group{e}==cats(2)))
+	    pattern(e,1,t,f) = -pattern(e,1,t,f);
 	  end
 	end
       end
@@ -143,8 +145,8 @@ for c=1:length(chan(c).number)
   end % bin
   fprintf('\n');
   
-  save(ana.file{c}, 'stat');
-  releaseFile(ana.file{c});
+  save(pat.file{c}, 'pattern');
+  releaseFile(pat.file{c});
 end % channel
 
 
