@@ -50,20 +50,20 @@ rand('twister',sum(100*clock));
 
 % prepare dir for the patterns
 if ~exist(fullfile(resDir, 'data'), 'dir')
-  mkdir(fullfile(resDir, 'data'))
+  mkdir(fullfile(resDir, 'data'));
 end
 
 % write all file info and update the eeg struct
 for s=1:length(eeg.subj)
   pat.name = patname;
-  pat.file = fullfile(resDir, 'data', [eeg.subj(s).id '_powpat.mat']);
+  pat.file = fullfile(resDir, 'data', [patname '_' eeg.subj(s).id '.mat']);
   pat.params = params;
   
   % manage the dimensions info
   pat.dim = struct('event', [],  'chan', [],  'time', [],  'freq', []);
   
   pat.dim.event.num = [];
-  pat.dim.event.file = fullfile(resDir, 'data', [eeg.subj(s).id '_events.mat']);
+  pat.dim.event.file = fullfile(resDir, 'data', [patname '_' eeg.subj(s).id '_events.mat']);
   
   if isfield(params, 'channels')
     pat.dim.chan = filterStruct(eeg.subj(s).chan, 'ismember(number, varargin{1})', params.channels);
