@@ -31,7 +31,7 @@ if ~exist(resDir)
 end
 
 % create the eeg struct
-eeg = struct('experiment', experiment, 'recordingType', 'iEEG', 'dataroot', dataroot, 'resDir', resDir);
+eeg = struct('experiment', experiment, 'recordingType', 'iEEG', 'dataroot', dataroot, 'file', fullfile(resDir, 'eeg.mat'), 'resDir', resDir);
 
 % add eventsFile info for each subj, session
 if isstr(sessions)
@@ -59,9 +59,6 @@ for s=1:length(eeg.subj)
   for n=1:length(eeg.subj(s).sess)
     eeg.subj(s).sess(n).goodChans = good_chans;
   end
-  
-  eeg.subj(s).pat = [];
-  eeg.subj(s).ana = [];
   
 end
 

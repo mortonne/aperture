@@ -37,7 +37,7 @@ if ~exist(resDir)
 end  
 
 % create the eeg struct
-eeg = struct('experiment', experiment, 'recordingType', 'scalp', 'dataroot', dataroot, 'resDir', resDir);
+eeg = struct('experiment', experiment, 'recordingType', 'scalp', 'dataroot', dataroot, 'file', fullfile(resDir, 'eeg.mat'), 'resDir', resDir);
 
 % add eventsFile info for each subj, session
 if isstr(sessions)
@@ -70,9 +70,7 @@ for s=1:length(eeg.subj)
   
   % each subject gets the same channel info
   eeg.subj(s).chan = chan;
-  eeg.subj(s).pat = [];
-  eeg.subj(s).ana = [];
-  
+    
   % for each session, find out which channels were good
   for n=1:length(eeg.subj(s).sess)
     bad_chan_dir = fullfile(eeg.subj(s).sess(n).dir, 'eeg');

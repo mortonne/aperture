@@ -1,10 +1,10 @@
 function S = recursive_strrep(S, repStr)
+%S = recursive_strrep(S, repStr)
 
 Fnames = fieldnames(S);
 for i=1:length(Fnames)
-  Fname = Fnames{i};
   for j=1:length(S)
-    F = getfield(S(j), Fname);
+    F = getfield(S(j), Fnames{i});
     
     % run strrep if applicable
     if isstr(F) | iscell(F)

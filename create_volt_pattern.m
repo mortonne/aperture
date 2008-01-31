@@ -64,7 +64,7 @@ for s=1:length(eeg.subj)
   % add new pat object to the eeg struct
   eeg.subj(s) = setobj(eeg.subj(s), 'pat', pat);
 end
-save(fullfile(eeg.resDir, 'eeg.mat'), 'eeg');
+save(eeg.file, 'eeg');
 
 for s=1:length(eeg.subj)
   pat = getobj(eeg.subj(s), 'pat', patname);
@@ -193,7 +193,8 @@ for s=1:length(eeg.subj)
   releaseFile(pat.file);
   save(pat.dim.event.file, 'events');
   
-  load(fullfile(eeg.resDir, 'eeg.mat'));
+  % add event info to pat, so save eeg again
+  load(eeg.file);
   eeg.subj(s) = setobj(eeg.subj(s), 'pat', pat);
-  save(fullfile(eeg.resDir, 'eeg.mat'), 'eeg');
+  save(eeg.file, 'eeg');
 end % subj

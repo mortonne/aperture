@@ -34,6 +34,7 @@ if ~exist(fullfile(resDir, 'data'), 'dir')
   mkdir(fullfile(resDir, 'data'));
 end
 
+files = cell(length(eeg.subj),1);
 for s=1:length(eeg.subj)
   fprintf('\n%s\n', eeg.subj(s).id);
   
@@ -43,6 +44,7 @@ for s=1:length(eeg.subj)
   pat2.file = fullfile(resDir, 'data', [eeg.subj(s).id '_' patname '.mat']);
   pat2.params = params;
   pat2.dim = pat1.dim;
+  files{s} = pat2.file;
   
   % see if this subject has been done
   if ~lockFile(pat2.file) | exist([pat1.file '.lock'], 'file')
@@ -79,7 +81,27 @@ for s=1:length(eeg.subj)
   save(pat2.file, 'pattern');
   releaseFile(pat2.file);
   
-  load(fullfile(eeg.resDir, 'eeg.mat'));
+  load(eeg.file);
   eeg.subj(s) = setobj(eeg.subj(s), 'pat', pat2);
-  save(fullfile(eeg.resDir, 'eeg.mat'), 'eeg');
+  save(eeg.file, 'eeg');
 end
+
+% wait for all the individual subjects to finish
+waitforfiles(files, 5000);
+
+% create grand average pattern
+pat2.file = fullfile(resDir, 'data', [patname '_ga.mat']);
+load(eeg.file);
+eeg = setobj(eeg, 'pat', pat2);
+save(eeg.file, 'eeg');
+
+pattern = NaN(length(eeg.subj), size(pattern,1), size(pattern,2), size(pattern,3), size(pattern,4));
+
+% average across subjects
+for s=1:length(files)
+  subjpat = loadPat(files{s});
+  pattern(s,:,:,:,:) = subjpat;
+end
+
+pattern = squeeze(mean(pattern,1));
+save(pat2.file, 'pattern');

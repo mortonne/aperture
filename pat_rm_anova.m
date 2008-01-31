@@ -34,70 +34,66 @@ if ~exist(fullfile(resDir, 'data'), 'dir')
   mkdir(fullfile(resDir, 'data'));
 end
 
-tot_events = 0;
+% get pat objects from all subjects
 for s=1:length(eeg.subj)
   subjpat(s) = getobj(eeg.subj(s), 'pat', params.patname);
-  tot_events = tot_events + subjpat(s).dim.event.num;
 end
 
-% write all file info
+% create the new across subject pat object
 pat.name = patname;
-pat.file = {};
-
-pat.dim.event.num = 4;
-pat.dim.event.file = subjpat(1).dim.event.file;
-pat.dim.event.label = {params.fields{1} params.fields{2} [params.fields{1} 'X' params.fields{2}] 'subject'};
-pat.dim.chan = subjpat(1).dim.chan;
-pat.dim.time = subjpat(1).dim.time;
-pat.dim.freq = subjpat(1).dim.freq;
-for c=1:length(chan)
-  pat.file{c} = fullfile(resDir, 'data', [patname '_chan' num2str(chan(c).number) '.mat']);
+for c=1:length(subjpat(1).dim.chan)
+  pat.file{c} = fullfile(resDir, 'data', [patname '_chan' subjpat(1).dim.chan(c).label '.mat']);
 end
+
+pat.dim = subjpat(1).dim;
+pat.dim.event.num = 4;
+pat.dim.event.label = {params.fields{1} params.fields{2} [params.fields{1} 'X' params.fields{2}] 'subject'};
+
 pat.params = params;
 
 % update the eeg struct
 eeg = setobj(eeg, 'pat', pat);
 save(fullfile(eeg.resDir, 'eeg.mat'), 'eeg');
 
+
 fprintf(['\nStarting Repeated Measures ANOVA:\n']);
 
 % step through channels
-for c=1:length(chan(c).number)
-  fprintf('\nLoading patterns for channel %d: ', chan(c).number);
+for c=1:length(pat.dim.chan)
+  fprintf('\nLoading patterns for channel %d: ', pat.dim.chan(c).label);
   
   if ~lockFile(pat.file{c})
     continue
   end
   
-  chan_pats = NaN(tot_events, length(pat.dim.time), length(pat.dim.freq));
-  tempsubj_reg = [];
-  tempgroup = cell(1,length(params.fields));
+  chan_pats = [];
+  tempgroup = cell(1,length(params.fields)+1);
   
   % concatenate subjects
   for s=1:length(eeg.subj)
     fprintf('%s ', eeg.subj(s).id);
     
-    [pattern, events] = loadPat(subjpat.file, params.masks, subjpat.dim.event.file, params.eventFilter);
+    [pattern, events] = loadPat(subjpat(s).file, params.masks, subjpat(s).dim.event.file, params.eventFilter);
     
     for i=1:length(params.fields)
       tempgroup{i} = [tempgroup{i}; getStructField(events, params.fields{i})'];
     end
-    
-    tempsubj_reg = [tempsubj_reg; ones(size(pattern,1),1)*s];
+    tempgroup{i+1} = [tempgroup{i+1}; ones(size(pattern,1),1)*s];
+
     chan_pats = cat(1, chan_pats, squeeze(pattern(:,c,:,:)));
   end
   fprintf('\n');
   
-  % initialize the stat struct
+  % initialize the pattern that will hold p-values
   fprintf('ANOVA: ');
-  pattern = NaN(tot_events, length(pat.dim.time), length(pat.dim.freq));
+  pattern = NaN(pat.dim.event.num, 1, length(pat.dim.time), length(pat.dim.freq));
   
   for t=1:size(chan_pats,2)
-    fprintf(' %s ', subjpat.dim.time(t).label);
+    fprintf(' %s ', pat.dim.time(t).label);
     
     for f=1:size(chan_pats,3)
       if ~isempty(pat.dim.freq)
-	fprintf('%s ', subjpat.dim.freq(f).label);
+	fprintf('%s ', pat.dim.freq(f).label);
       end
       
       % remove NaNs
@@ -107,6 +103,8 @@ for c=1:length(chan(c).number)
 	continue
       end
       thispat = thispat(good);
+      
+      % fix regressors
       for i=1:length(tempgroup)
 	group{i} = tempgroup{i}(good);
 	vals = unique(group{i});
@@ -114,16 +112,9 @@ for c=1:length(chan(c).number)
 	  group{i}(group{i}==vals(j)) = j;
 	end
       end
-      subj_reg = tempsubj_reg(good);
-      
-      % fix the subject regressor numbers
-      subjs = unique(subj_reg);
-      for s=1:length(subjs)
-	subj_reg(subj_reg==subjs(s)) = s;
-      end
       
       % do a two-way rm anova
-      p = RMAOV2_mod([thispat group{1} group{2} subj_reg], 0.05, 0);
+      p = RMAOV2_mod([thispat group{1} group{2} group{3}], 0.05, 0);
       for e=1:length(p)
 	pattern(e,1,t,f) = p(e);
       end
