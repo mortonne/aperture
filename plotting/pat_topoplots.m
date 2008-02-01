@@ -29,7 +29,7 @@ if ~isfield(params, 'patname')
   error('You must specify which pattern to use')
 end
 
-params = structDefaults(params, 'diff', 0,  'across_subj', 0,  'sym', {'-r', '-b'});
+params = structDefaults(params, 'diff', 0,  'across_subj', 0);
 
 if ~isfield(params, 'subjects')
   params.subjects = getStructField(eeg.subj, 'id');
@@ -55,7 +55,7 @@ for i=1:length(params.subjects)
     id = eeg.subj(s).id;
     pat = getobj(eeg.subj(s), 'pat', params.patname);
   end
-  pattern = loadPat(strrep(pat.file, '~', '/Volumes/mortonne'));
+  pattern = loadPat(pat, params, 0);
   
   fig.name = figname;
   fig.type = 'topo';
@@ -65,7 +65,6 @@ for i=1:length(params.subjects)
   if params.diff & size(pattern,1)==2
     pattern = pattern(2,:,:,:)-pattern(1,:,:,:);
   end
-
 
   for e=1:size(pattern,1)
     for t=1:size(pattern,3)

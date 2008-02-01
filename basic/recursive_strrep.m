@@ -18,7 +18,7 @@ for i=1:length(Fnames)
       F = recursive_strrep(F, repStr);
     end
     
-    S(j) = setfield(S(j), Fname, F);
+    S(j) = setfield(S(j), Fnames{i}, F);
     
   end
 end

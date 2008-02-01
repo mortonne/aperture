@@ -52,7 +52,7 @@ for i=1:length(params.subjects)
     id = eeg.subj(s).id;
     pat = getobj(eeg.subj(s), 'pat', params.patname);
   end
-  pattern = loadPat(pat.file);
+  pattern = loadPat(pat, params, 0);
   
   fig.name = figname;
   fig.type = 'erp';

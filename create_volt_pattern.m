@@ -49,7 +49,7 @@ for s=1:length(eeg.subj)
   pat.params = params;
   
   % manage the dimensions info
-  pat.dim = struct('event', [],  'chan', [],  'time', [],  'freq', []);
+  pat.dim = struct('event', [],  'chan', [],  'time', [],  'freq', NaN);
   
   pat.dim.event.num = [];
   pat.dim.event.file = fullfile(resDir, 'data', [patname '_' eeg.subj(s).id '_events.mat']);

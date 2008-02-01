@@ -73,7 +73,7 @@ for c=1:length(pat.dim.chan)
   for s=1:length(eeg.subj)
     fprintf('%s ', eeg.subj(s).id);
     
-    [pattern, events] = loadPat(subjpat(s).file, params.masks, subjpat(s).dim.event.file, params.eventFilter);
+    [pattern, events] = loadPat(subjpat(s).file, params, 1);
     
     for i=1:length(params.fields)
       tempgroup{i} = [tempgroup{i}; getStructField(events, params.fields{i})'];

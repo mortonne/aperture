@@ -35,7 +35,7 @@ if ~exist('patname', 'var')
   patname = [params.patname '_mod'];
 end
 
-params = structDefaults(params, 'eventFilter', '',  'masks', {},  'MSbinlabels', {},  'chanbinlabels', {},  'freqbinlabels', {});
+params = structDefaults(params, 'MSbinlabels', {},  'chanbinlabels', {},  'freqbinlabels', {});
 
 if ~exist(fullfile(resDir, 'data'), 'dir');
   mkdir(fullfile(resDir, 'data'));
@@ -156,7 +156,7 @@ for s=1:length(eeg.subj)
     continue
   end
 
-  [pattern1, events] = loadPat(pat1.file, params.masks, pat1.dim.event.file, params.eventFilter);
+  [pattern1, events] = loadPat(pat1, params, 1);
   
   % initalize the new pat
   pattern = NaN(size(pattern1,1), length(binc), length(bint), length(binf));

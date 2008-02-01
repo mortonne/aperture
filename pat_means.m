@@ -28,7 +28,7 @@ if ~isfield(params, 'patname')
   error('You must specify which pattern to use')
 end
 
-params = structDefaults(params, 'eventFilter', '',  'masks', {},  'field', 'overall');
+params = structDefaults(params, 'field', 'overall');
 
 if ~exist(fullfile(resDir, 'data'), 'dir')
   mkdir(fullfile(resDir, 'data'));
@@ -44,7 +44,6 @@ for s=1:length(eeg.subj)
   pat2.file = fullfile(resDir, 'data', [eeg.subj(s).id '_' patname '.mat']);
   pat2.params = params;
   pat2.dim = pat1.dim;
-  files{s} = pat2.file;
   
   % see if this subject has been done
   if ~lockFile(pat2.file) | exist([pat1.file '.lock'], 'file')
@@ -52,7 +51,7 @@ for s=1:length(eeg.subj)
   end
   
   % load pat and events with masks and filters applied
-  [pattern1, events] = loadPat(pat1.file, params.masks, pat1.dim.event.file, params.eventFilter);
+  [pattern1, events] = loadPat(pat1, params, 1);
   
   if strcmp(params.field, 'overall')
     vec = ones(1, length(events));
@@ -80,6 +79,7 @@ for s=1:length(eeg.subj)
   % save the mean file for this subject
   save(pat2.file, 'pattern');
   releaseFile(pat2.file);
+  subjpat(s) = pat2;
   
   load(eeg.file);
   eeg.subj(s) = setobj(eeg.subj(s), 'pat', pat2);
@@ -98,9 +98,9 @@ save(eeg.file, 'eeg');
 pattern = NaN(length(eeg.subj), size(pattern,1), size(pattern,2), size(pattern,3), size(pattern,4));
 
 % average across subjects
-for s=1:length(files)
-  subjpat = loadPat(files{s});
-  pattern(s,:,:,:,:) = subjpat;
+for s=1:length(subjpat)
+  subj_pattern = loadPat(subjpat(s));
+  pattern(s,:,:,:,:) = subj_pattern;
 end
 
 pattern = squeeze(mean(pattern,1));
