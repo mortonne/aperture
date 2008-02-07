@@ -75,7 +75,11 @@ for s=1:length(eeg.subj)
   for n=1:length(eeg.subj(s).sess)
     bad_chan_dir = fullfile(eeg.subj(s).sess(n).dir, 'eeg');
     temp = dir(fullfile(bad_chan_dir, '*.bad_chan'));
-    bad_chans = textread(fullfile(bad_chan_dir, temp.name));
+    if exist(fullfile(bad_chan_dir, temp.name),'file')
+      bad_chans = textread(fullfile(bad_chan_dir, temp.name));
+    else
+      bad_chans = [];
+    end
     eeg.subj(s).sess(n).goodChans = setdiff(channels, bad_chans);
   end
 end
