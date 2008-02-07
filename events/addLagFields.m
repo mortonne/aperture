@@ -33,7 +33,7 @@ for i = 1:length(eeg.subj)
       
       evalstr1 = strcat('list==',num2str(k));
       evalstr2 = 'strcmp(type,''REC_WORD'')';
-      evalstr3 = strcat('strcmp(type,''',itemstr,''')';
+      evalstr3 = strcat('strcmp(type,''',itemstr,''')');
       evalstr4 = 'recalled == 1';
       evalstr5 = 'intrusion == 0';
       
