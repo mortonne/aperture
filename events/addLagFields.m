@@ -1,10 +1,15 @@
-function [all_ev] = addLagFields(eeg)
-% [all_ev] = addLagFields(eeg)
+function [all_ev] = addLagFields(eeg,param)
+% [all_ev] = addLagFields(eeg,param)
 %
 % Loads all of the events tied to an eeg structure and does some
 % basic lag analysis, adding certain fields
+% 
+% param = [];
+% param.itemstr = 'WORD';
 %
 % [ev] = addLagFields(eeg);
+
+itemstr = getValFromStruct(param,'itemstr','WORD');
 
 % label recall events by the lag of the transition
 all_ev = [];
@@ -28,7 +33,7 @@ for i = 1:length(eeg.subj)
       
       evalstr1 = strcat('list==',num2str(k));
       evalstr2 = 'strcmp(type,''REC_WORD'')';
-      evalstr3 = 'strcmp(type,''WORD'')';
+      evalstr3 = strcat('strcmp(type,''',itemstr,''')';
       evalstr4 = 'recalled == 1';
       evalstr5 = 'intrusion == 0';
       
