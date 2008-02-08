@@ -110,7 +110,7 @@ for i = 1:length(eeg.subj)
     % save modified events to disk
     pathstr = fileparts(eeg.subj(i).sess(j).eventsFile);
     events = ev;
-    save(fullfile(pathstr,new_event_file),'events');
+    save(fullfile(pathstr,new_event_name),'events');
     
     % concatenate into a big events struct
     all_ev = [all_ev ev];
