@@ -6,10 +6,16 @@ function [all_ev] = addLagFields(eeg,param)
 % 
 % param = [];
 % param.itemstr = 'WORD';
+% param.new_event_name = 'mod_events.mat';
+%
+% param.clust_thresh = 3;
 %
 % [ev] = addLagFields(eeg);
 
 itemstr = getValFromStruct(param,'itemstr','WORD');
+% if this or smaller, then it is counted as clustered
+clust_thresh = getValFromStruct(param,'clust_thresh',3);
+new_event_name = getValFromStruct(param,'new_event_name','mod_events.mat');
 
 % label recall events by the lag of the transition
 all_ev = [];
@@ -19,11 +25,12 @@ for i = 1:length(eeg.subj)
   
   % step over sessions
   for j = 1:length(eeg.subj(i).sess)
-    % load events
+    % load events for this session
     ev = loadEvents(eeg.subj(i).sess(j).eventsFile);
     for k = 1:length(ev)
       ev(k).prelag = -999;
       ev(k).minlag = -999;
+      ev(k).subclust = -999;
     end
     % step over lists
     % how many lists
@@ -90,15 +97,25 @@ for i = 1:length(eeg.subj)
 	sind = find(study_itemno==rec_itemnos(r));
 	% add minlag to the study event
 	ev(these_study(sind)).minlag = minlag;
+	if minlag <= clust_thresh
+	  ev(these_study(sind)).subclust = 1;
+	else
+	  ev(these_study(sind)).subclust = 0;
+	end
 	
-      end
+      end 
       	
     end % k list
+    
+    % save modified events to disk
+    pathstr = fileparts(eeg.subj(i).sess(j).eventsFile);
+    events = ev;
+    save(fullfile(pathstr,new_event_file),'events');
     
     % concatenate into a big events struct
     all_ev = [all_ev ev];
     
-  end
+  end % j session
   
 end
 
