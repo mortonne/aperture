@@ -1,9 +1,9 @@
-function eeg = init_scalp(dataroot, resDir, sessions, experiment, elecLocsFile)
+function exp = init_scalp(dataroot, resDir, sessions, experiment, elecLocsFile)
 %
 %INIT_SCALP - after post-processing of all subjects, running this
 %script prepares a scalp EEG experiment for analysis
 %
-% FUNCTION: eeg = init_scalp(dataroot, resDir, sessions, experiment, elecLocsFile)
+% FUNCTION: exp = init_scalp(dataroot, resDir, sessions, experiment, elecLocsFile)
 % INPUT: dataroot - directory containing subject folders
 %        resDir - directory in which to save eeg results
 %        sessions - filename of m-file that outputs a 'subj'
@@ -12,7 +12,7 @@ function eeg = init_scalp(dataroot, resDir, sessions, experiment, elecLocsFile)
 %        elecLocsFile - text file containing a list of electrode numbers
 %        and their corresponding regions (optional)
 %
-% OUTPUT: eeg, a struct containing all basic info for this experiment;
+% OUTPUT: exp, a struct containing all basic info for this experiment;
 % gets passed into all other eeg analysis scripts
 %
 % EXAMPLE:
@@ -36,15 +36,15 @@ if ~exist(resDir)
   mkdir(resDir);
 end  
 
-% create the eeg struct
-eeg = struct('experiment', experiment, 'recordingType', 'scalp', 'dataroot', dataroot, 'file', fullfile(resDir, 'eeg.mat'), 'resDir', resDir);
+% create the exp struct
+exp = struct('experiment', experiment, 'recordingType', 'scalp', 'dataroot', dataroot, 'file', fullfile(resDir, 'exp.mat'), 'resDir', resDir);
 
 % add eventsFile info for each subj, session
 if isstr(sessions)
   run(sessions);
-  eeg.subj = subj;
+  exp.subj = subj;
 elseif isstruct(sessions)
-  eeg.subj = sessions;
+  exp.subj = sessions;
 end
 
 % if an electrode locations file is available, read it
@@ -66,24 +66,24 @@ else
   end
 end
 
-for s=1:length(eeg.subj)
+for s=1:length(exp.subj)
   
   % each subject gets the same channel info
-  eeg.subj(s).chan = chan;
-    
+  exp.subj(s).chan = chan;
+  
   % for each session, find out which channels were good
-  for n=1:length(eeg.subj(s).sess)
-    bad_chan_dir = fullfile(eeg.subj(s).sess(n).dir, 'eeg');
+  for n=1:length(exp.subj(s).sess)
+    bad_chan_dir = fullfile(exp.subj(s).sess(n).dir, 'eeg');
     temp = dir(fullfile(bad_chan_dir, '*.bad_chan'));
     if ~isempty(temp)
       bad_chans = textread(fullfile(bad_chan_dir, temp.name));
     else
       bad_chans = [];
     end
-    eeg.subj(s).sess(n).goodChans = setdiff(channels, bad_chans);
+    exp.subj(s).sess(n).goodChans = setdiff(channels, bad_chans);
   end
 end
 
-save(fullfile(eeg.resDir, 'eeg.mat'), 'eeg');
+save(fullfile(exp.resDir, 'exp.mat'), 'exp');
 
 
