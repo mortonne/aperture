@@ -62,7 +62,13 @@ for s=1:length(eeg.subj)
   % get mean values for each regressor
   vals = unique(vec);
   pat2.dim.event.num = length(vals);
-  pat2.dim.event.label = params.field;
+  for j=1:length(vals)
+    if iscell(vals)
+      pat2.dim.event.label{j} = [params.field ' ' vals{j}];
+    else
+      pat2.dim.event.label{j} = [params.field ' ' str2num(vals(j))];
+    end
+  end
   pat2.dim.event.vals = vals;
   
   pattern = NaN(length(vals), size(pattern1,2), size(pattern1,3), size(pattern1,4));

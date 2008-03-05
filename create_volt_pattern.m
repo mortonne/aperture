@@ -1,13 +1,16 @@
-function eeg = create_volt_pattern(eeg, params, resDir, patname)
-% eeg = create_volt_pattern(eeg, params, resDir, patname)
+function exp = create_volt_pattern(exp, params, resDir, patname)
+% exp = create_volt_pattern(exp, params, resDir, patname)
 %
 % create a voltage pattern for each subject, time bin, saved in
-% resDir/data.  Filenames will be saved in eeg.subj(s).pat
+% resDir/data.  Filenames will be saved in exp.subj(s).pat
 % with the patname specified.
 % 
 
 if ~exist('patname', 'var')
   patname = 'voltage_pattern';
+end
+if ~isfield(params, 'evname')
+  params.evname = 'events';
 end
 
 % set the defaults for params
@@ -42,32 +45,32 @@ if ~exist(fullfile(resDir, 'data'), 'dir')
   mkdir(fullfile(resDir, 'data'));
 end
 
-% write all file info and update the eeg struct
-for s=1:length(eeg.subj)
+% write all file info and update the exp struct
+for s=1:length(exp.subj)
   pat.name = patname;
-  pat.file = fullfile(resDir, 'data', [patname '_' eeg.subj(s).id '.mat']);
+  pat.file = fullfile(resDir, 'data', [patname '_' exp.subj(s).id '.mat']);
   pat.params = params;
   
   % manage the dimensions info
   pat.dim = struct('event', [],  'chan', [],  'time', [],  'freq', NaN);
   
   pat.dim.event.num = [];
-  pat.dim.event.file = fullfile(resDir, 'data', [patname '_' eeg.subj(s).id '_events.mat']);
+  pat.dim.event.file = fullfile(resDir, 'data', [patname '_' exp.subj(s).id '_events.mat']);
   
   if isfield(params, 'channels')
-    pat.dim.chan = filterStruct(eeg.subj(s).chan, 'ismember(number, varargin{1})', params.channels);
+    pat.dim.chan = filterStruct(exp.subj(s).chan, 'ismember(number, varargin{1})', params.channels);
   else
-    pat.dim.chan = eeg.subj(s).chan;
+    pat.dim.chan = exp.subj(s).chan;
   end
   pat.dim.time = time;
 
-  % add new pat object to the eeg struct
-  eeg.subj(s) = setobj(eeg.subj(s), 'pat', pat);
+  % add new pat object to the exp struct
+  exp.subj(s) = setobj(exp.subj(s), 'pat', pat);
 end
-save(eeg.file, 'eeg');
+save(exp.file, 'exp');
 
-for s=1:length(eeg.subj)
-  pat = getobj(eeg.subj(s), 'pat', patname);
+for s=1:length(exp.subj)
+  pat = getobj(exp.subj(s), 'pat', patname);
   
   % see if this subject has been done
   if ~lockFile(pat.file)
@@ -75,13 +78,12 @@ for s=1:length(eeg.subj)
   end
   
   % get all events for this subject, w/filter that will be used to get voltage
-  events = [];
-  base_events = [];
-  for n=1:length(eeg.subj(s).sess)
-    temp = loadEvents(eeg.subj(s).sess(n).eventsFile, params.replace_eegFile);
-    events = [events; filterStruct(temp(:), params.eventFilter)];
-    base_events = [base_events; filterStruct(temp(:), params.baseEventFilter)];
-  end 
+  ev = getobj(exp.subj(s), 'ev', evname);
+  events = loadEvents(ev.file, params.replace_eegfile);
+  base_events = filterStruct(events(:), params.baseEventFilter);
+  events = filterStruct(events(:), params.eventFilter);
+
+  % get some stats
   pat.dim.event.num = length(events);
   sessions = unique(getStructField(events, 'session'));
   channels = getStructField(pat.dim.chan, 'number');
@@ -122,14 +124,14 @@ for s=1:length(eeg.subj)
   
   % make the pattern for this subject
   start_e = 1;
-  for n=1:length(eeg.subj(s).sess)
-    fprintf('\n%s\n', eeg.subj(s).sess(n).eventsFile);
+  for n=1:length(exp.subj(s).sess)
+    fprintf('\n%s\n', exp.subj(s).sess(n).eventsFile);
     this_sess = inStruct(events, 'session==varargin{1}', sessions(n));
     sess_events = events(this_sess);
     sess_base_events = filterStruct(base_events, 'session==varargin{1}', sessions(n));
     
     % make bad channels mask
-    bad = setdiff(channels, eeg.subj(s).sess(n).goodChans);
+    bad = setdiff(channels, exp.subj(s).sess(n).goodChans);
     mask(1).mat(this_sess, bad, :) = 1;
     
     for c=1:length(channels)
@@ -193,8 +195,8 @@ for s=1:length(eeg.subj)
   releaseFile(pat.file);
   save(pat.dim.event.file, 'events');
   
-  % add event info to pat, so save eeg again
-  load(eeg.file);
-  eeg.subj(s) = setobj(eeg.subj(s), 'pat', pat);
-  save(eeg.file, 'eeg');
+  % add event info to pat, so save exp again
+  load(exp.file);
+  exp.subj(s) = setobj(exp.subj(s), 'pat', pat);
+  save(exp.file, 'exp');
 end % subj

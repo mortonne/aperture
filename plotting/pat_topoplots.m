@@ -82,11 +82,11 @@ for i=1:length(params.subjects)
   
   pat = setobj(pat, 'fig', fig);
   
-  load(fullfile(eeg.resDir, 'eeg.mat'));
+  load(eeg.file);
   if strcmp(id, 'across_subj')
     eeg = setobj(eeg, 'pat', pat);
   else
     eeg.subj(s) = setobj(eeg.subj(s), 'pat', pat);
   end
-  save(fullfile(eeg.resDir, 'eeg.mat'), 'eeg');
+  save(eeg.file, 'eeg');
 end

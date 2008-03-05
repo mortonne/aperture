@@ -1,4 +1,4 @@
-function post_process_exp(exp, eventsFunction)
+function post_process_exp(exp, eventsFcnHandle, overwrite)
 %
 %POST_PROCESS - processes free recall experimental data 
 %
@@ -26,15 +26,20 @@ save(exp.file, 'exp');
 for s=1:length(exp.subj)
   for n=1:length(exp.subj(s).sess)
     
-    if ~exist(exp.subj(s).sess(n).eventsFile, 'file')
+    if overwrite | ~exist(exp.subj(s).sess(n).eventsFile, 'file')
       % create events
-      events = eventsFunction(exp.dataroot, exp.subj(s).id, exp.subj(s).sess(n).number);
+      events = eventsFcnHandle(exp.dataroot, exp.subj(s).id, exp.subj(s).sess(n).number);
       save(exp.subj(s).sess(n).eventsFile, 'events');
       
       % post-process
-      badchans = textread(fullfile(exp.subj(s).sess(n).dir, 'eeg', 'bad_channels.txt'));
-      prep_egi_data(exp.subj(s).id, exp.subj(s).sess(n).dir, {'events.mat'}, badchans, 'mstime');
-
+      try
+	badchans = textread(fullfile(exp.subj(s).sess(n).dir, 'eeg', 'bad_channels.txt'));
+      catch
+	fprintf('Warning: error reading bad channel file for %s, session_%d.\n', exp.subj(s).id, exp.subj(s).sess(n).number);
+	badchans = [];
+      end
+	prep_egi_data(exp.subj(s).id, exp.subj(s).sess(n).dir, {'events.mat'}, badchans, 'mstime');
+	
     end
   
   end
