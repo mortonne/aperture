@@ -37,7 +37,7 @@ if ~exist(resDir)
 end  
 
 % create the exp struct
-exp = struct('experiment', experiment, 'recordingType', 'scalp', 'dataroot', dataroot, 'file', fullfile(resDir, 'exp.mat'), 'resDir', resDir);
+exp = struct('experiment', experiment, 'recordingType', 'scalp', 'dataroot', dataroot, 'resDir', resDir, 'file', fullfile(resDir, 'exp.mat'));
 
 % add eventsFile info for each subj, session
 if isstr(sessions)

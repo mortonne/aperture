@@ -14,6 +14,10 @@ function post_process_exp(exp, eventsFcnHandle, overwrite)
 %   post_process_catFR(subj, resDir)
 %
 
+if ~exist('overwrite', 'var')
+  overwrite = 0;
+end
+
 % write all file info first
 for s=1:length(exp.subj)
   for n=1:length(exp.subj(s).sess)
@@ -23,8 +27,8 @@ end
 save(exp.file, 'exp');
 
 % do any necessary post-processing, save events file for each subj
-for s=1:length(exp.subj)
-  for n=1:length(exp.subj(s).sess)
+for s=1%:length(exp.subj)
+  for n=1%:length(exp.subj(s).sess)
     
     if overwrite | ~exist(exp.subj(s).sess(n).eventsFile, 'file')
       % create events
@@ -38,7 +42,9 @@ for s=1:length(exp.subj)
 	fprintf('Warning: error reading bad channel file for %s, session_%d.\n', exp.subj(s).id, exp.subj(s).sess(n).number);
 	badchans = [];
       end
-	prep_egi_data(exp.subj(s).id, exp.subj(s).sess(n).dir, {'events.mat'}, badchans, 'mstime');
+      
+      cd(exp.subj(s).sess(n).dir);
+      prep_egi_data(exp.subj(s).id, '.', {'events.mat'}, badchans, 'mstime');
 	
     end
   
