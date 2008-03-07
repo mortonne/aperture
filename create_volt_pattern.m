@@ -9,12 +9,9 @@ function exp = create_volt_pattern(exp, params, resDir, patname)
 if ~exist('patname', 'var')
   patname = 'voltage_pattern';
 end
-if ~isfield(params, 'evname')
-  params.evname = 'events';
-end
 
 % set the defaults for params
-params = structDefaults(params,  'eventFilter', '',  'offsetMS', -200,  'durationMS', 1800,  'binSizeMS', 10,  'baseEventFilter', '',  'baseOffsetMS', -200,  'baseDurationMS', 200,  'filttype', 'stop',  'filtfreq', [58 62],  'filtorder', 4,  'bufferMS', 1000,  'resampledRate', 500,  'kthresh', 5,  'ztransform', 1,  'replace_eegFile', {},  'timebinlabels', {});
+params = structDefaults(params,  'evname', 'events',  'eventFilter', '',  'offsetMS', -200,  'durationMS', 1800,  'binSizeMS', 10,  'baseEventFilter', '',  'baseOffsetMS', -200,  'baseDurationMS', 200,  'filttype', 'stop',  'filtfreq', [58 62],  'filtorder', 4,  'bufferMS', 1000,  'resampledRate', 500,  'kthresh', 5,  'ztransform', 1,  'replace_eegfile', {},  'timebinlabels', {});
 
 % get bin information
 durationSamp = fix(params.durationMS*params.resampledRate./1000);
@@ -52,7 +49,7 @@ for s=1:length(exp.subj)
   pat.params = params;
   
   % manage the dimensions info
-  pat.dim = struct('event', [],  'chan', [],  'time', [],  'freq', NaN);
+  pat.dim = struct('event', [],  'chan', [],  'time', [],  'freq', []);
   
   pat.dim.event.num = [];
   pat.dim.event.file = fullfile(resDir, 'data', [patname '_' exp.subj(s).id '_events.mat']);
@@ -73,13 +70,14 @@ for s=1:length(exp.subj)
   pat = getobj(exp.subj(s), 'pat', patname);
   
   % see if this subject has been done
-  if ~lockFile(pat.file)
-    continue
-  end
+  %if ~lockFile(pat.file)
+  %  continue
+  %end
   
   % get all events for this subject, w/filter that will be used to get voltage
-  ev = getobj(exp.subj(s), 'ev', evname);
+  ev = getobj(exp.subj(s), 'ev', params.evname);
   events = loadEvents(ev.file, params.replace_eegfile);
+  events = filterStruct(events, '~strcmp(eegfile, '''')');
   base_events = filterStruct(events(:), params.baseEventFilter);
   events = filterStruct(events(:), params.eventFilter);
 
@@ -124,7 +122,7 @@ for s=1:length(exp.subj)
   
   % make the pattern for this subject
   start_e = 1;
-  for n=1:length(exp.subj(s).sess)
+  for n=1:length(sessions)
     fprintf('\n%s\n', exp.subj(s).sess(n).eventsFile);
     this_sess = inStruct(events, 'session==varargin{1}', sessions(n));
     sess_events = events(this_sess);
@@ -192,7 +190,7 @@ for s=1:length(exp.subj)
   
   % save the patterns and corresponding events struct
   save(pat.file, 'pattern', 'mask');
-  releaseFile(pat.file);
+  %releaseFile(pat.file);
   save(pat.dim.event.file, 'events');
   
   % add event info to pat, so save exp again

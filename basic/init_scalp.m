@@ -66,10 +66,15 @@ else
   end
 end
 
+exp.ev = [];
+exp.pat = [];
+
 for s=1:length(exp.subj)
-  
   % each subject gets the same channel info
   exp.subj(s).chan = chan;
+  
+  exp.subj(s).ev = [];
+  exp.subj(s).pat = [];
   
   % for each session, find out which channels were good
   for n=1:length(exp.subj(s).sess)

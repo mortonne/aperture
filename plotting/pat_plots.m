@@ -1,35 +1,41 @@
-function eeg = pat_plots(eeg, params, resDir, figname)
+function exp = pat_plots(exp, params, figname, resDir)
 %
 %PAT_PLOTS - manages event-related potential/power figures, plus
 %topo plots of both voltage and power
 %
-% FUNCTION: eeg = pat_plots(eeg, params, resDir, figname)
+% FUNCTION: exp = pat_plots(exp, params, resDir, figname)
 %
-% INPUT: eeg - struct created by init_iEEG or init_scalp
+% INPUT: exp - struct created by init_iEEG or init_scalp
 %        params - required fields: patname (specifies the name of
-%                 which pattern in the eeg struct to use)
+%                 which pattern in the exp struct to use)
 %
 %                 optional fields: eventFilter (specify subset of
 %                 events to use), masks (cell array containing
 %                 names of masks to apply to pattern), subjects
 %                 (cell array of ids of subjects to include) diff
 %                 (set to 1 to plot difference of eventypes)
-%                 across_subj (set to 1 to plot patterns saved in eeg.pat)
+%                 across_subj (set to 1 to plot patterns saved in exp.pat)
 %
 %        resDir - plots saved in resDir/figs
 %
-% OUTPUT: new eeg struct with filenames of all figures created
+% OUTPUT: new exp struct with filenames of all figures created
 % saved in pat.figs
 %
 
 if ~isfield(params, 'patname')
   error('You must specify which pattern to use')
 end
+if ~exist('resDir', 'var')
+  resDir = fullfile(exp.resDir, params.patname);
+end
+if ~exist('figname', 'var')
+  figname = 'plots';
+end
 
 params = structDefaults(params, 'diff', 0,  'across_subj', 0,  'sym', {'-r', '-b'});
 
 if ~isfield(params, 'subjects')
-  params.subjects = getStructField(eeg.subj, 'id');
+  params.subjects = getStructField(exp.subj, 'id');
 end
 if params.across_subj
   params.subjects = [params.subjects 'across_subj'];
@@ -46,11 +52,11 @@ for i=1:length(params.subjects)
   % get the pat object, load pattern
   if strcmp(params.subjects{i}, 'across_subj')
     id = 'across_subj';
-    pat = getobj(eeg, 'pat', params.patname);
+    pat = getobj(exp, 'pat', params.patname);
   else
-    s = find(inStruct(eeg.subj, 'strcmp(id, varargin{1})', params.subjects{i}));
-    id = eeg.subj(s).id;
-    pat = getobj(eeg.subj(s), 'pat', params.patname);
+    s = find(inStruct(exp.subj, 'strcmp(id, varargin{1})', params.subjects{i}));
+    id = exp.subj(s).id;
+    pat = getobj(exp.subj(s), 'pat', params.patname);
   end
   pattern = loadPat(pat, params, 0);
   
@@ -93,11 +99,11 @@ for i=1:length(params.subjects)
   
   pat = setobj(pat, 'fig', fig);
   
-  load(fullfile(eeg.resDir, 'eeg.mat'));
+  load(fullfile(exp.resDir, 'exp.mat'));
   if strcmp(id, 'across_subj')
-    eeg = setobj(eeg, 'pat', pat);
+    exp = setobj(exp, 'pat', pat);
   else
-    eeg.subj(s) = setobj(eeg.subj(s), 'pat', pat);
+    exp.subj(s) = setobj(exp.subj(s), 'pat', pat);
   end
-  save(fullfile(eeg.resDir, 'eeg.mat'), 'eeg');
+  save(fullfile(exp.resDir, 'exp.mat'), 'exp');
 end % subjects
