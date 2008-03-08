@@ -3,7 +3,7 @@ function exp = pat_plots(exp, params, figname, resDir)
 %PAT_PLOTS - manages event-related potential/power figures, plus
 %topo plots of both voltage and power
 %
-% FUNCTION: exp = pat_plots(exp, params, resDir, figname)
+% FUNCTION: exp = pat_plots(exp, params, figname, resDir)
 %
 % INPUT: exp - struct created by init_iEEG or init_scalp
 %        params - required fields: patname (specifies the name of
@@ -98,12 +98,12 @@ for i=1:length(params.subjects)
   end % channels
   
   pat = setobj(pat, 'fig', fig);
-  
-  load(fullfile(exp.resDir, 'exp.mat'));
+
+  % update exp with filenames of the new figures
   if strcmp(id, 'across_subj')
-    exp = setobj(exp, 'pat', pat);
+    exp = update_exp(exp, 'pat', pat);
   else
-    exp.subj(s) = setobj(exp.subj(s), 'pat', pat);
+    exp = update_exp(exp, 'subj', exp.subj(s).id, 'pat', pat);
   end
-  save(fullfile(exp.resDir, 'exp.mat'), 'exp');
+  
 end % subjects

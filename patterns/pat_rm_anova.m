@@ -1,13 +1,13 @@
-function eeg = pat_rm_anova(eeg, params, resDir, patname)
+function exp = pat_rm_anova(exp, params, patname, resDir)
 %
 %PAT_RM_ANOVA - calculates a 2-way ANOVA across subjects, using two
 %fields from the events struct as regressors
 %
-% FUNCTION: eeg = pat_rm_anova(eeg, params, resDir, patname)
+% FUNCTION: exp = pat_rm_anova(exp, params, patname, resDir)
 %
-% INPUT: eeg - struct created by init_iEEG or init_scalp
+% INPUT: exp - struct created by init_iEEG or init_scalp
 %        params - required fields: patname (specifies the name of
-%                 which pattern in the eeg struct to use), fields
+%                 which pattern in the exp struct to use), fields
 %                 (specifies which fields of the events struct to
 %                 use as regressors)
 %
@@ -15,28 +15,30 @@ function eeg = pat_rm_anova(eeg, params, resDir, patname)
 %                 events to use), masks (cell array containing
 %                 names of masks to apply to pattern)
 %        resDir - 'stat' files are saved in resDir/data
-%        patname - analysis name to save under in the eeg struct
+%        patname - analysis name to save under in the exp struct
 %
-% OUTPUT: new eeg struct with ana object added, which contains file
+% OUTPUT: new exp struct with ana object added, which contains file
 % info and parameters of the analysis
 %
 
-if ~exist('patname', 'var')
-  patname = 'RMAOV2';
+if ~isfield(params, 'patname')
+  error('You must specify which pattern to use')
 end
 if ~isfield(params, 'fields')
   error('You must specify two fields to use as regressors');
 end
+if ~exist('resDir', 'var')
+  resDir = fullfile(exp.resDir, params.patname);
+end
+if ~exist('patname', 'var')
+  patname = 'RMAOV2';
+end
 
 params = structDefaults(params, 'eventFilter', '',  'masks', {});
 
-if ~exist(fullfile(resDir, 'data'), 'dir')
-  mkdir(fullfile(resDir, 'data'));
-end
-
 % get pat objects from all subjects
-for s=1:length(eeg.subj)
-  subjpat(s) = getobj(eeg.subj(s), 'pat', params.patname);
+for s=1:length(exp.subj)
+  subjpat(s) = getobj(exp.subj(s), 'pat', params.patname);
 end
 
 % create the new across subject pat object
@@ -51,18 +53,17 @@ pat.dim.event.label = {params.fields{1} params.fields{2} [params.fields{1} 'X' p
 
 pat.params = params;
 
-% update the eeg struct
-eeg = setobj(eeg, 'pat', pat);
-save(fullfile(eeg.resDir, 'eeg.mat'), 'eeg');
-
+% update the exp struct
+exp = update_exp(exp, 'pat', pat);
 
 fprintf(['\nStarting Repeated Measures ANOVA:\n']);
 
 % step through channels
 for c=1:length(pat.dim.chan)
   fprintf('\nLoading patterns for channel %d: ', pat.dim.chan(c).label);
-  
-  if ~lockFile(pat.file{c})
+
+  % check input and prepare output files
+  if prepFiles({}, pat.file{c}, params)~=0
     continue
   end
   
@@ -70,8 +71,8 @@ for c=1:length(pat.dim.chan)
   tempgroup = cell(1,length(params.fields)+1);
   
   % concatenate subjects
-  for s=1:length(eeg.subj)
-    fprintf('%s ', eeg.subj(s).id);
+  for s=1:length(exp.subj)
+    fprintf('%s ', exp.subj(s).id);
     
     [pattern, events] = loadPat(subjpat(s).file, params, 1);
     
@@ -136,8 +137,7 @@ for c=1:length(pat.dim.chan)
   end % bin
   fprintf('\n');
   
-  save(pat.file{c}, 'pattern');
-  releaseFile(pat.file{c});
+  closeFile(pat.file{c}, 'pattern');
 end % channel
 
 

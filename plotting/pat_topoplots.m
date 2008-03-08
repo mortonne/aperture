@@ -82,11 +82,11 @@ for i=1:length(params.subjects)
   
   pat = setobj(pat, 'fig', fig);
   
-  load(eeg.file);
+  % update exp with filenames of the new figures
   if strcmp(id, 'across_subj')
-    eeg = setobj(eeg, 'pat', pat);
+    exp = update_exp(exp, 'pat', pat);
   else
-    eeg.subj(s) = setobj(eeg.subj(s), 'pat', pat);
+    exp = update_exp(exp, 'subj', exp.subj(s).id, 'pat', pat);
   end
-  save(eeg.file, 'eeg');
+
 end
