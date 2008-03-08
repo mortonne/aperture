@@ -1,27 +1,27 @@
-function exp = create_pow_pattern(exp, params, resDir, patname)
-%exp = create_pow_pattern(exp, params, resDir, patname)
+function exp = create_pow_pattern(exp, params, patname, resDir)
+%exp = create_pow_pattern(exp, params, patname, resDir)
 %
 % create a power pattern for each subject, time bin, saved in
 % resDir/data.  Filenames will be saved in exp.subj(s).pat
 % with the patname specified.
-% 
+%
 
 if ~exist('patname', 'var')
   patname = 'power_pattern';
 end
-if ~isfield(params, 'evname')
-  params.evname = 'events';
+if ~exist('resDir', 'var')
+  resDir = fullfile(exp.resDir, patname);
 end
 
 % set the defaults for params
-params = structDefaults(params,  'eventFilter', '',  'freqs', 2.^(1:(1/8):6),  'offsetMS', -200,  'durationMS', 1800,  'binSizeMS', 100,  'baseEventFilter', '',  'baseOffsetMS', -200,  'baseDurationMS', 200,  'filttype', 'stop',  'filtfreq', [58 62],  'filtorder', 4,  'bufferMS', 1000,  'resampledRate', 500,  'width', 6,  'kthresh', 5,  'ztransform', 1,  'logtransform', 0,  'replace_eegFile', {},  'timebinlabels', {},  'freqbinlabels', {});
+params = structDefaults(params,  'evname', 'events',  'eventFilter', '',  'freqs', 2.^(1:(1/8):6),  'offsetMS', -200,  'durationMS', 1800,  'binSizeMS', 100,  'baseEventFilter', '',  'baseOffsetMS', -200,  'baseDurationMS', 200,  'filttype', 'stop',  'filtfreq', [58 62],  'filtorder', 4,  'bufferMS', 1000,  'resampledRate', 500,  'width', 6,  'kthresh', 5,  'ztransform', 1,  'logtransform', 0,  'replace_eegFile', {},  'timebinlabels', {},  'freqbinlabels', {},  'lock', 1  'overwrite', 0);
 
 % get bin information
 durationSamp = fix(params.durationMS*params.resampledRate./1000);
 binSizeSamp = fix(params.binSizeMS*params.resampledRate./1000);
 nBins = fix(durationSamp/binSizeSamp);
 
-% prepare time and frequency bins
+% initialize the time dimension
 binSamp{1} = [1:binSizeSamp];
 for b=2:nBins
   binSamp{b} = binSamp{b-1} + binSizeSamp;
@@ -37,6 +37,7 @@ for t=1:length(binSamp)
   end
 end
 
+% initialize the frequency dimension
 for f=1:length(params.freqs)
   freq(f).vals = params.freqs(f);
   freq(f).avg = mean(freq(f).vals);
@@ -50,11 +51,6 @@ end
 disp(params);
 
 rand('twister',sum(100*clock));
-
-% prepare dir for the patterns
-if ~exist(fullfile(resDir, 'data'), 'dir')
-  mkdir(fullfile(resDir, 'data'));
-end
 
 % write all file info and update the exp struct
 for s=1:length(exp.subj)
@@ -76,16 +72,16 @@ for s=1:length(exp.subj)
   pat.dim.time = time;
   pat.dim.freq = freq;
   
-  % add new pat object to the exp struct
-  exp.subj(s) = setobj(exp.subj(s), 'pat', pat);
+  % update exp with the new pat object
+  exp = update_exp(exp, 'subj', exp.subj(s).id, 'pat', pat);
 end
-save(exp.file, 'exp');
 
+% make the pattern for each subject
 for s=1:length(exp.subj)
   pat = getobj(exp.subj(s), 'pat', patname);
   
   % see if this subject has been done
-  if ~lockFile(pat.file)
+  if prepFiles({}, pat.file, params)~=0
     continue
   end
   
@@ -117,20 +113,10 @@ for s=1:length(exp.subj)
     mask(m).name = 'artifacts';
     mask(m).mat = false(patSize);
 
-    for e=1:length(events)
-      wind = [events(e).artifactMS events(e).artifactMS+params.artWindow];
-      isArt = 0;
-      for t=1:length(time)
-	if wind(1)>time(t).MSvals(1) & wind(1)<time(t).MSvals(end)
-	  isArt = 1;
-	end
-	mask(m).mat(e,:,t) = isArt;
-	if isArt & wind(2)<time(t).MSvals(end)
-	  isArt = 0;
-	end
-      end
+    artMask = rmArtifacts(events, time, params.artWindow);
+    for c=1:size(mask(m),2)
+      mask(m).mat(:,c,:) = artMask;
     end
-    
   end
   
   % get the patterns for each frequency and time bin
@@ -224,14 +210,12 @@ for s=1:length(exp.subj)
   end % session
   fprintf('\n');
   
-  % save the patterns and masks
-  save(pat.file, 'pattern', 'mask');
-  releaseFile(pat.file);
+  % save the pattern and corresponding events struct and masks
+  closeFile(pat.file, 'pattern', 'mask');
   save(pat.dim.event.file, 'events');
   
-  load(exp.file);
-  exp.subj(s) = setobj(exp.subj(s), 'pat', pat);
-  save(exp.file, 'exp');
+  % added event info to pat, so update exp again
+  exp = update_exp(exp, 'subj', exp.subj(s).id, 'pat', pat);
 end % subj
 
 

@@ -1,5 +1,5 @@
-function exp = create_volt_pattern(exp, params, resDir, patname)
-% exp = create_volt_pattern(exp, params, resDir, patname)
+function exp = create_volt_pattern(exp, params, patname, resDir)
+% exp = create_volt_pattern(exp, params, patname, resDir)
 %
 % create a voltage pattern for each subject, time bin, saved in
 % resDir/data.  Filenames will be saved in exp.subj(s).pat
@@ -9,9 +9,12 @@ function exp = create_volt_pattern(exp, params, resDir, patname)
 if ~exist('patname', 'var')
   patname = 'voltage_pattern';
 end
+if ~exist('resDir', 'var')
+  resDir = fullfile(exp.resDir, patname);
+end
 
 % set the defaults for params
-params = structDefaults(params,  'evname', 'events',  'eventFilter', '',  'offsetMS', -200,  'durationMS', 1800,  'binSizeMS', 10,  'baseEventFilter', '',  'baseOffsetMS', -200,  'baseDurationMS', 200,  'filttype', 'stop',  'filtfreq', [58 62],  'filtorder', 4,  'bufferMS', 1000,  'resampledRate', 500,  'kthresh', 5,  'ztransform', 1,  'replace_eegfile', {},  'timebinlabels', {});
+params = structDefaults(params,  'evname', 'events',  'eventFilter', '',  'offsetMS', -200,  'durationMS', 1800,  'binSizeMS', 10,  'baseEventFilter', '',  'baseOffsetMS', -200,  'baseDurationMS', 200,  'filttype', 'stop',  'filtfreq', [58 62],  'filtorder', 4,  'bufferMS', 1000,  'resampledRate', 500,  'kthresh', 5,  'ztransform', 1,  'replace_eegfile', {},  'timebinlabels', {},  'lock', 1,  'overwrite', 0);
 
 % get bin information
 durationSamp = fix(params.durationMS*params.resampledRate./1000);
@@ -23,6 +26,7 @@ for b=2:nBins
   binSamp{b} = binSamp{b-1} + binSizeSamp;
 end
 
+% initialize the time dimension
 for t=1:length(binSamp)
   time(t).MSvals = fix((binSamp{t}-1)*1000/params.resampledRate) + params.offsetMS;
   time(t).avg = mean(time(t).MSvals);
@@ -36,11 +40,6 @@ end
 disp(params);
 
 rand('twister',sum(100*clock));
-
-% prepare dir for the patterns
-if ~exist(fullfile(resDir, 'data'), 'dir')
-  mkdir(fullfile(resDir, 'data'));
-end
 
 % write all file info and update the exp struct
 for s=1:length(exp.subj)
@@ -61,18 +60,18 @@ for s=1:length(exp.subj)
   end
   pat.dim.time = time;
 
-  % add new pat object to the exp struct
-  exp.subj(s) = setobj(exp.subj(s), 'pat', pat);
+  % update exp with the new pat object
+  exp = update_exp(exp, 'subj', exp.subj(s).id, 'pat', pat);
 end
-save(exp.file, 'exp');
 
+% make the pattern for each subject
 for s=1:length(exp.subj)
   pat = getobj(exp.subj(s), 'pat', patname);
   
-  % see if this subject has been done
-  %if ~lockFile(pat.file)
-  %  continue
-  %end
+  % check input files and prepare output files
+  if prepFiles({}, pat.file, params)~=0
+    continue
+  end
   
   % get all events for this subject, w/filter that will be used to get voltage
   ev = getobj(exp.subj(s), 'ev', params.evname);
@@ -104,20 +103,10 @@ for s=1:length(exp.subj)
     mask(m).name = 'artifacts';
     mask(m).mat = false(patSize);
 
-    for e=1:length(events)
-      wind = [events(e).artifactMS events(e).artifactMS+params.artWindow];
-      isArt = 0;
-      for t=1:length(time)
-	if wind(1)>time(t).MSvals(1) & wind(1)<time(t).MSvals(end)
-	  isArt = 1;
-	end
-	mask(m).mat(e,:,t) = isArt;
-	if isArt & wind(2)<time(t).MSvals(end)
-	  isArt = 0;
-	end
-      end
+    artMask = rmArtifacts(events, time, params.artWindow);
+    for c=1:size(mask(m),2)
+      mask(m).mat(:,c,:) = artMask;
     end
-    
   end
   
   % make the pattern for this subject
@@ -188,13 +177,10 @@ for s=1:length(exp.subj)
   end % session
   fprintf('\n');
   
-  % save the patterns and corresponding events struct
-  save(pat.file, 'pattern', 'mask');
-  %releaseFile(pat.file);
+  % save the pattern and corresponding events struct and masks
+  closeFile(pat.file, 'pattern', 'mask');
   save(pat.dim.event.file, 'events');
   
-  % add event info to pat, so save exp again
-  load(exp.file);
-  exp.subj(s) = setobj(exp.subj(s), 'pat', pat);
-  save(exp.file, 'exp');
+  % added event info to pat, so update exp again
+  exp = update_exp(exp, 'subj', exp.subj(s).id, 'pat', pat);
 end % subj

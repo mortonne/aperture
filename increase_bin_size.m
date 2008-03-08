@@ -1,26 +1,26 @@
-function eeg = increase_bin_size(eeg, params, resDir, patname)
+function exp = increase_bin_size(exp, params, patname, resDir)
 %
 %INCREASE_BIN_SIZE - average over adjacent time or frequency bins
 %to decrease the size of patterns, or average over channels for ROI
 %analyses; new patterns will be saved in a new directory
 %
-% FUNCTION: eeg = increase_bin_size(eeg, params, resDir, ananame)
+% FUNCTION: exp = increase_bin_size(exp, params, patname, resDir)
 %
-% INPUT: eeg - struct created by init_iEEG or init_scalp
+% INPUT: exp - struct created by init_iEEG or init_scalp
 %        params - required fields: patname (specifies the name of
-%                 which pattern in the eeg struct to use)
+%                 which pattern in the exp struct to use)
 %
 %                 optional fields: eventFilter (specify subset of
 %                 events to use), masks (cell array containing
 %                 names of masks to apply to pattern)
 %        resDir - 'pattern' files are saved in resDir/data
-%        patname - name of new pattern to save under in the eeg struct
+%        patname - name of new pattern to save under in the exp struct
 %
-% OUTPUT: new eeg struct with ana object added, which contains file
+% OUTPUT: new exp struct with ana object added, which contains file
 % info and parameters of the analysis
 %
 
-%eeg = increase_bin_size(eeg, params, resDir, patname)
+%exp = increase_bin_size(exp, params, resDir, patname)
 %
 %EXAMPLES: params.binChan = {'LF', 'RF'} OR {{'LF', 'LFp'}, {'RF',
 %'RFp'}} OR {[1 2 125], [45 35 76 17 18]}
@@ -29,20 +29,19 @@ function eeg = increase_bin_size(eeg, params, resDir, patname)
 %
 
 if ~isfield(params, 'patname')
-  error('You must specify which pattern to use')
+  error('You must specify which pattern to use');
 end
 if ~exist('patname', 'var')
   patname = [params.patname '_mod'];
 end
+if ~exist('resDir', 'var')
+  resDir = fullfile(exp.resDir, patname);
+end
 
 params = structDefaults(params, 'MSbinlabels', {},  'chanbinlabels', {},  'freqbinlabels', {});
 
-if ~exist(fullfile(resDir, 'data'), 'dir');
-  mkdir(fullfile(resDir, 'data'));
-end 
-
 % time and freq dimensions should be same for all subjects
-pat1 = getobj(eeg.subj(1), 'pat', params.patname);
+pat1 = getobj(exp.subj(1), 'pat', params.patname);
 
 % make the new time bins (if applicable)
 if isfield(params, 'MSbins') && ~isempty(params.MSbins)
@@ -100,13 +99,16 @@ else % there is no frequency dimension
 end
 
 
-for s=1:length(eeg.subj)
-  pat1 = getobj(eeg.subj(s), 'pat', params.patname);
+% create the new pattern for each subject
+for s=1:length(exp.subj)
+  fprintf('%s\n', exp.subj(s).id);
+  
+  pat1 = getobj(exp.subj(s), 'pat', params.patname);
   
   % get event info
   event = pat1.dim.event;
   if ~isempty(params.eventFilter)
-    event.file = fullfile(resDir, 'data', [eeg.subj(s).id '_' patname '_events.mat']);
+    event.file = fullfile(resDir, 'data', [exp.subj(s).id '_' patname '_events.mat']);
   end
   
   % make new channel bins
@@ -136,31 +138,27 @@ for s=1:length(eeg.subj)
     end
   end
   
-  % write all file info and update the eeg struct
+  % write all file info and update the exp struct
   pat2.name = patname;
-  pat2.file = fullfile(resDir, 'data', [eeg.subj(s).id '_' patname '.mat']);
+  pat2.file = fullfile(resDir, 'data', [exp.subj(s).id '_' patname '.mat']);
   pat2.params = params;
   pat2.dim = struct('event', event, 'chan', chan, 'time', time, 'freq', freq);
   
-  eeg.subj(s) = setobj(eeg.subj(s), 'pat', pat2);
-end
-save(fullfile(eeg.resDir, 'eeg.mat'), 'eeg');
+  % update exp with the new pat object
+  exp = update_exp(exp, 'subj', exp.subj(s).id, 'pat', pat2);
 
-% make the new patterns
-for s=1:length(eeg.subj)
-  pat1 = getobj(eeg.subj(s), 'pat', params.patname);
-  pat2 = getobj(eeg.subj(s), 'pat', patname);
-  fprintf('%s\n', eeg.subj(s).id);
-
-  if ~lockFile(pat2.file) | ~exist(pat1.file, 'file') | exist([pat1.file '.lock'], 'file')
+  % check input files and prepare output files
+  if prepFiles(pat1.file, pat2.file, params)~=0
     continue
   end
 
+  % load the original pattern and corresponding events
   [pattern1, events] = loadPat(pat1, params, 1);
   
   % initalize the new pat
   pattern = NaN(size(pattern1,1), length(binc), length(bint), length(binf));
   
+  % do the averaging
   for f=1:length(binf)
     fmean = nanmean(pattern1(:,:,:,binf{f}),4);
     for t=1:length(bint)
@@ -172,9 +170,9 @@ for s=1:length(eeg.subj)
     end
   end
   fprintf('\n');
-  
-  save(pat2.file, 'pattern');
-  releaseFile(pat2.file);
+
+  % save the new pattern
+  closeFile(pat2.file, 'pattern');
   if ~isempty(params.eventFilter)
     save(pat2.dim.event.file, 'events')
   end
