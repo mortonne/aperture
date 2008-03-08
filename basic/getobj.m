@@ -6,4 +6,8 @@ if ~isstruct(objs)
   error('Field is not a struct.');
 end
 
-obj = filterStruct(objs, 'strcmp(name, varargin{1})', objname);
+try
+  obj = filterStruct(objs, 'strcmp(name, varargin{1})', objname);
+catch
+  obj = filterStruct(objs, 'strcmp(id, varargin{1})', objname);
+end

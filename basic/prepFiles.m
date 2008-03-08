@@ -1,0 +1,73 @@
+function status = prepFiles(filesToRead, filesToWrite, params)
+%
+%PREPFILES Prepare files for use in analysis on the cluster.
+%   status = prepFiles(filesToRead, filesToWrite, params) checks if
+%   each file in filesToRead exists, and prepares each file in
+%   filesToWrite according to options specified in the params
+%   struct.  filesToRead and filesToWrite can be either strings (if
+%   only one file) or cell arrays of strings (if multiple files).
+%
+%   optional params fields:
+%      overwrite - 0 if overwriting is not allowed
+%      lock - 1 to attempt to lock each file in filesToWrite
+%
+%   output:
+%      status - 0 if successful
+%               1 if problem with one of the filesToRead
+%               2 if problem with one of the filesToWrite
+%
+
+if ~exist('params', 'var')
+  params = [];
+end
+
+params = structDefaults(params, 'lock', 1,  'overwrite', 0,  'mkdirs', 1);
+
+% checking read files
+status = 1;
+if isstr(filesToRead)
+  filesToRead = {filesToRead};
+end
+for f=1:length(filesToRead)
+  file = filesToRead{f};
+  if ~exist(file) | exist([file '.lock'], 'file')
+    % one of the files doesn't exist or is locked
+    return
+  end
+end
+
+% checking write files
+status = 2;
+if isstr(filesToWrite)
+  filesToWrite = {filesToWrite};
+end
+for f=1:length(filesToWrite)
+  file = filesToWrite{f};
+  
+  if ~exist(fileparts(file), 'dir')
+    if params.mkdirs
+      % make the containing directory
+      mkdir(fileparts(file));
+    else % the needed dir doesn't exist
+      return
+    end
+  end
+  
+  if params.lock
+    % lock the file if desired
+    locked = lockFile(file, params.overwrite);
+    if ~locked
+      return
+    end
+    
+  elseif ~params.overwrite
+    % if overwriting not allowed, check if file exists
+    if exist(file, 'file')
+      return
+    end
+  end
+  
+end
+
+% if no errors
+status = 0;
