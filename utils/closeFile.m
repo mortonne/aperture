@@ -9,9 +9,11 @@ if exist([filename '.lock'], 'file')
   releaseFile(filename);
 end
 
-% save all variables specified
-saveStr = ['save ' filename];
-for i=1:length(varargin)
-  saveStr = [saveStr ' ' varargin{i}];
+if length(varargin)>0
+  % save all variables specified
+  saveStr = ['save ' filename];
+  for i=1:length(varargin)
+    saveStr = [saveStr ' ' varargin{i}];
+  end
+  eval(saveStr);
 end
-eval(saveStr);

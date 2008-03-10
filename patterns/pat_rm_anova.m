@@ -34,11 +34,15 @@ if ~exist('patname', 'var')
   patname = 'RMAOV2';
 end
 
-params = structDefaults(params, 'eventFilter', '',  'masks', {});
+params = structDefaults(params, 'eventFilter', '',  'masks', {},  'lock', 1,  'overwrite', 0);
 
 % get pat objects from all subjects
 for s=1:length(exp.subj)
-  subjpat(s) = getobj(exp.subj(s), 'pat', params.patname);
+  try
+    subjpat(s) = getobj(exp.subj(s), 'pat', params.patname);
+  catch
+    continue
+  end
 end
 
 % create the new across subject pat object
@@ -137,6 +141,7 @@ for c=1:length(pat.dim.chan)
   end % bin
   fprintf('\n');
   
+  % release and save
   closeFile(pat.file{c}, 'pattern');
 end % channel
 

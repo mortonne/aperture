@@ -35,7 +35,7 @@ for s=1:length(exp.subj)
     
     fprintf('\nCreating event structure for %s, session %d...\n', subj.id, sess.number);
     
-    if overwrite | ~exist(sess.eventsFile, 'file')
+    if prepFiles({}, sess.eventsFile, params)==0 % outfile is ok to go
       % create events
       events = eventsFcnHandle(sess.dir, subj.id, sess.number, varargin{:});
       save(sess.eventsFile, 'events');
@@ -56,7 +56,9 @@ for s=1:length(exp.subj)
 	errs = [errs err];
       end
     end
-  
+    
+    % if the eventsfile was locked, release it
+    closeFile(sess.eventsFile);
   end
 end
 if ~isempty(errs)

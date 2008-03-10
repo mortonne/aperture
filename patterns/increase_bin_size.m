@@ -55,6 +55,8 @@ if isfield(params, 'MSbins') && ~isempty(params.MSbins)
     end    
     time(t).MSvals = allvals;
     time(t).avg = mean(allvals);
+    
+    % update the time bin label
     if ~isempty(params.MSbinlabels)
       time(t).label = params.MSbinlabels{t};
     else
@@ -72,6 +74,7 @@ end
 % make the new frequency bins
 if isfield(params, 'freqbins') && ~isempty(params.freqbins)
   for f=1:length(params.freqbins)
+    % define the new bins
     binf{f} = find(inStruct(pat1.dim.freq, 'avg>=varargin{1} & avg<varargin{2}', params.freqbins(f,1), params.freqbins(f,2)));
     
     allvals = [];
@@ -80,6 +83,8 @@ if isfield(params, 'freqbins') && ~isempty(params.freqbins)
     end    
     freq(f).vals = allvals;
     freq(f).avg = mean(allvals);
+    
+    % update the frequency label
     if ~isempty(params.freqbinlabels)
       freq(f).label = params.freqbinlabels{f};
     else
@@ -98,12 +103,21 @@ else % there is no frequency dimension
   freq = [];
 end
 
-
 % create the new pattern for each subject
 for s=1:length(exp.subj)
   fprintf('%s\n', exp.subj(s).id);
   
   pat1 = getobj(exp.subj(s), 'pat', params.patname);
+  
+  % initialize the new pat
+  pat2.name = patname;
+  pat2.file = fullfile(resDir, 'data', [exp.subj(s).id '_' patname '.mat']);
+  pat2.params = params;
+  
+  % check input files and prepare output files
+  if prepFiles(pat1.file, pat2.file, params)~=0
+    continue
+  end
   
   % get event info
   event = pat1.dim.event;
@@ -115,6 +129,7 @@ for s=1:length(exp.subj)
   if isfield(params, 'chanbins')
     
     for c=1:length(params.chanbins)
+      % define the new channel bins
       if isnumeric(params.chanbins{c})
 	binc{c} = find(inStruct(pat1.dim.chan, 'ismember(number, varargin{1})', params.chanbins{c}));
       elseif iscell(params.chanbins{c})
@@ -122,8 +137,9 @@ for s=1:length(exp.subj)
       else
 	binc{c} = find(inStruct(pat1.dim.chan, 'strcmp(region, varargin{1})', params.chanbins{c}));
       end
-      
       chans = pat1.dim.chan(binc{c});
+      
+      % update the channel labels
       chan(c).number = getStructField(chans, 'number');
       chan(c).region = getStructField(chans, 'region');
       if ~isempty(params.chanbinlabels)
@@ -137,21 +153,13 @@ for s=1:length(exp.subj)
       chan = pat1.dim.chan;
     end
   end
-  
-  % write all file info and update the exp struct
-  pat2.name = patname;
-  pat2.file = fullfile(resDir, 'data', [exp.subj(s).id '_' patname '.mat']);
-  pat2.params = params;
+
+  % add all dimension info to the new pat
   pat2.dim = struct('event', event, 'chan', chan, 'time', time, 'freq', freq);
   
   % update exp with the new pat object
   exp = update_exp(exp, 'subj', exp.subj(s).id, 'pat', pat2);
-
-  % check input files and prepare output files
-  if prepFiles(pat1.file, pat2.file, params)~=0
-    continue
-  end
-
+  
   % load the original pattern and corresponding events
   [pattern1, events] = loadPat(pat1, params, 1);
   

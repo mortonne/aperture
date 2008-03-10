@@ -94,8 +94,11 @@ end
 if params.grandAvg
   % wait for all the individual subjects to finish
   waitforfiles(files, 5000);
-  
+
+  % lock the ga file so other processes can't get it  
   pat2.file = fullfile(resDir, 'data', [patname '_ga.mat']);
+  prepFiles(files, pat2.file, params);
+  
   exp = update_exp(exp, 'pat', pat2);
   
   % initialize pattern to hold all subjects
@@ -109,5 +112,5 @@ if params.grandAvg
   
   % average across subjects
   pattern = squeeze(mean(pattern,1));
-  save(pat2.file, 'pattern');
+  closeFile(pat2.file, 'pattern');
 end

@@ -8,10 +8,11 @@ function status = prepFiles(filesToRead, filesToWrite, params)
 %   only one file) or cell arrays of strings (if multiple files).
 %
 %   optional params fields:
-%      mkdirs - 1 if for filesToWrite, make the containing dir if it
+%      mkdirs - for filesToWrite, make the containing dir if it
 %               doesn't already exist
 %      overwrite - 0 if overwriting is not allowed
 %      lock - 1 to attempt to lock each file in filesToWrite
+%      ignoreLock - 1 to first remove any existing lockfiles
 %
 %   output:
 %      status - 0 if successful
@@ -19,6 +20,9 @@ function status = prepFiles(filesToRead, filesToWrite, params)
 %               2 if problem with one of the filesToWrite
 %
 
+if ~exist('filesToWrite', 'var')
+  filesToWrite = {};
+end
 if ~exist('params', 'var')
   params = [];
 end
@@ -52,6 +56,15 @@ for f=1:length(filesToWrite)
       mkdir(fileparts(file));
     else % the needed dir doesn't exist
       return
+    end
+  end
+  
+  if params.ignoreLock
+    % sometimes the cluster can leave files unprocessed; run again
+    % with one process to get them
+    if exist([file '.lock'])
+      releaseFile(file); % remove lockfile 
+      params.overwrite = 1; % change so file can be overwritten
     end
   end
   
