@@ -20,11 +20,10 @@ for s=1:length(exp.subj)
   ev.len = length(events);
   save(ev.file, 'events');
   
-  
   if ~isfield(exp.subj(s), 'ev')
     exp.subj(s).ev = [];
   end
 
-  exp.subj(s) = setobj(exp.subj(s), 'ev', ev);
+  exp = update_exp(exp, 'subj', exp.subj(s).id, 'ev', ev);
 end
-save(exp.file);
+
