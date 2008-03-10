@@ -8,6 +8,8 @@ function status = prepFiles(filesToRead, filesToWrite, params)
 %   only one file) or cell arrays of strings (if multiple files).
 %
 %   optional params fields:
+%      mkdirs - 1 if for filesToWrite, make the containing dir if it
+%               doesn't already exist
 %      overwrite - 0 if overwriting is not allowed
 %      lock - 1 to attempt to lock each file in filesToWrite
 %

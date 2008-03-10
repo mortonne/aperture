@@ -131,49 +131,47 @@ for s=1:length(exp.subj)
     bad = setdiff(channels, exp.subj(s).sess(n).goodChans);
     mask(1).mat(this_sess, bad, :) = 1;
     
-    for f=1:length(params.freqs)
-      fprintf('\nLoading power values (%s)...', pat.dim.freq(f).label);
+    for c=1:length(channels)
+      fprintf('%d.', channels(c));
       
-      for c=1:length(channels)
-	fprintf('%d.', channels(c));
-	
-	% get baseline stats for this freq, sess, channel
-	if params.ztransform
-	  base_pow = getphasepow(channels(c), sess_base_events, ...
-	                             params.baseDurationMS, ...
-			             params.baseOffsetMS, params.bufferMS, ... 
-			             'freqs', params.freqs(f), ... 
-				     'filtfreq', params.filtfreq, ... 
-				     'filttype', params.filttype, ...
-				     'filtorder', params.filtorder, ... 
-				     'kthresh', params.kthresh, ...
-				     'width', params.width, ...
-                                     'resampledRate', params.resampledRate, ...
-			             'powonly');
+      % if z-transforming, get baseline stats for this sess, channel
+      if params.ztransform
+	base_pow = getphasepow(channels(c), sess_base_events, ...
+	                       params.baseDurationMS, ...
+			       params.baseOffsetMS, params.bufferMS, ... 
+			       'freqs', params.freqs, ... 
+			       'filtfreq', params.filtfreq, ... 
+			       'filttype', params.filttype, ...
+			       'filtorder', params.filtorder, ... 
+			       'kthresh', params.kthresh, ...
+			       'width', params.width, ...
+                               'resampledRate', params.resampledRate, ...
+			       'powonly');
 	  
-	  if params.logtransform
-	    base_pow(base_pow<=0) = eps(0);
-	    base_pow = log10(base_pow);
-	  end
-	  
-	  rand_pow = NaN(1,length(sess_events));
-	  for e=1:size(base_pow,1)
-	    randposs = randperm(size(base_pow,2));
-	    rand_pow(e) = base_pow(e,randposs(1));
-	  end
-	  
-	  base_mean = nanmean(rand_pow);
-	  base_std = nanstd(rand_pow);	   
+	% do log transform if desired
+	if params.logtransform
+	  base_pow(base_pow<=0) = eps(0);
+	  base_pow = log10(base_pow);
 	end
-	
-	% get power, z-transform, average each time bin
-	e = start_e;
-	for sess_e=1:length(sess_events)
 	  
-	  [this_pow, kInd] = getphasepow(channels(c), sess_events(sess_e), ...
-				   params.durationMS, ...
+	for f=1:length(freqs)
+	  % if multiple samples given, use the first
+	  base_pow_vec = base_pow(:,f,1);
+	  
+	  % get separate baseline stats for each freq
+	  base_mean(f) = nanmean(base_pow_vec);
+	  base_std(f) = nanstd(base_pow_vec);
+	end
+      end % baseline
+	
+      % get power, z-transform, average each time bin
+      e = start_e;
+      for sess_e=1:length(sess_events)
+	
+	[this_pow, kInd] = getphasepow(channels(c), sess_events(sess_e), ...
+				     params.durationMS, ...
 			             params.offsetMS, params.bufferMS, ... 
-			             'freqs', params.freqs(f), ... 
+			             'freqs', params.freqs, ... 
 				     'filtfreq', params.filtfreq, ... 
 				     'filttype', params.filttype, ...
 				     'filtorder', params.filtorder, ... 
@@ -181,30 +179,36 @@ for s=1:length(exp.subj)
 				     'width', params.width, ...
                                      'resampledRate', params.resampledRate, ...
 			             'powonly', 'keepk');   
-	  
-	  this_pow = squeeze(this_pow);
+	
+	% make it time X frequency
+	this_pow = shiftdim(squeeze(this_pow),1);
+	
+	for f=1:length(params.freqs)
+	  % add kurtosis information to the mask
 	  mask(1).mat(e,c,:,f) = kInd;
-	  
+
 	  if params.ztransform
 	    if params.logtransform
 	      this_pow(this_pow<=0) = eps(0);
 	      this_pow = log10(this_pow);
 	    end
-	    this_pow = (this_pow - base_mean)/base_std;
+	    
+	    % z-transform
+	    this_pow = (this_pow - base_mean(f))/base_std(f);
 	  end
-	  
-	  if ~isempty(this_pow)
-	    for b=1:nBins
-	      pattern(e,c,b,f) = nanmean(this_pow(binSamp{b}));
-	    end
-	  end
-	  
-	  e = e + 1;
-	end % events
+	end
 	
-      end % channel
+	% average over adjacent time bins
+	if ~isempty(this_pow)
+	  for b=1:nBins
+	    pattern(e,c,b,:) = nanmean(this_pow(binSamp{b},:));
+	  end
+	end
+	
+	e = e + 1;
+      end % events
       
-    end % freq
+    end % channel
     start_e = start_e + length(sess_events);
     
   end % session
