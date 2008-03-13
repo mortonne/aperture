@@ -3,4 +3,4 @@ function exp = update_exp(exp, varargin)
 
 load(exp.file);
 exp = recursive_setobj(exp, varargin);
-save(exp.file);
+save(exp.file, 'exp');

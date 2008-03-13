@@ -21,3 +21,7 @@ s = getfield(struct, struct_name{1});
 if exist('repStr', 'var') && ~isempty(repStr)
   s = recursive_strrep(s, repStr);
 end
+
+if isfield(s, 'file')
+  save(s.file, 's');
+end

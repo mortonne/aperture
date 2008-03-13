@@ -1,4 +1,4 @@
-function exp = post_process_exp(exp, eventsFcnHandle, overwrite, varargin)
+function exp = post_process_exp(exp, eventsFcnHandle, params, varargin)
 %
 %POST_PROCESS - processes free recall experimental data 
 %
@@ -14,9 +14,11 @@ function exp = post_process_exp(exp, eventsFcnHandle, overwrite, varargin)
 %   post_process_catFR(subj, resDir)
 %
 
-if ~exist('overwrite', 'var')
-  overwrite = 0;
+if ~exist('params', 'var')
+  params = struct();
 end
+
+params = structDefaults(params, 'overwrite', 0,  'lock', 1,  'ignoreLock', 0);
 
 % write all file info first
 for s=1:length(exp.subj)
@@ -26,6 +28,7 @@ for s=1:length(exp.subj)
 end
 save(exp.file, 'exp');
 
+event_errs = '';
 errs = '';
 % do any necessary post-processing, save events file for each subj
 for s=1:length(exp.subj)
@@ -36,19 +39,28 @@ for s=1:length(exp.subj)
     fprintf('\nCreating event structure for %s, session %d...\n', subj.id, sess.number);
     
     if prepFiles({}, sess.eventsFile, params)==0 % outfile is ok to go
-      % create events
-      events = eventsFcnHandle(sess.dir, subj.id, sess.number, varargin{:});
-      save(sess.eventsFile, 'events');
-      
-      % post-process
       try
+	% create events
+	events = eventsFcnHandle(sess.dir, subj.id, sess.number, varargin{:});
+	save(sess.eventsFile, 'events');
+      catch
+	% if problem with events, note and continue to next session
+	err = [subj.id ' session_' num2str(sess.number) '\n'];
+	event_errs = [event_errs err];
+	continue
+      end
+      
+      try
+	% read the bad channels file if there is one
 	badchans = textread(fullfile(sess.dir, 'eeg', 'bad_channels.txt'));
       catch
+	% continue without excluding bad channels from rereferencing
 	fprintf('Warning: error reading bad channel file for %s, session_%d.\n', subj.id, sess.number);
 	badchans = [];
       end
       
       try
+	% split, sync, rereference, detect blink artifacts
 	cd(sess.dir);
 	prep_egi_data(subj.id, sess.dir, {'events.mat'}, badchans, 'mstime');
       catch
@@ -61,6 +73,9 @@ for s=1:length(exp.subj)
     closeFile(sess.eventsFile);
   end
 end
+if ~isempty(event_errs)
+  fprintf(['\nWarning: problems creating events for:\n' event_errs]);
+end
 if ~isempty(errs)
-  fprintf(['Warning: problems processing:\n' errs]);
+  fprintf(['\nWarning: problems processing:\n' errs]);
 end

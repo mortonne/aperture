@@ -1,4 +1,4 @@
-function blink_stats(exp, params)
+function exp = blink_stats(exp, params)
 %
 %BLINK_STATS - get info from events structs about blink artifacts
 %
@@ -15,6 +15,10 @@ function blink_stats(exp, params)
 % OUTPUT: printed blink stats for each subject
 % 
 
+if ~exist('params', 'var')
+  params = [];
+end
+
 params = structDefaults(params, 'evname', 'events',  'eventFilter', '',  'windowEnd', 2000);
 
 for s=1:length(exp.subj)
@@ -28,6 +32,7 @@ for s=1:length(exp.subj)
   events = filterStruct(events, params.eventFilter);
   
   sessions = unique(getStructField(events, 'session'));
+  ev.blinks = NaN(length(sessions),1);
   for n=1:length(sessions)
     sess_events = filterStruct(events, 'session==varargin{1}', sessions(n));
     
@@ -45,6 +50,13 @@ for s=1:length(exp.subj)
     
     % print percentage
     fprintf('%s-%d\t%f\n', exp.subj(s).id, sessions(n), percent_art);
+    
+    % add to the ev object
+    ev.blinks(n) = percent_art;
   end
+  
+  % update exp
+  exp = update_exp(exp, 'subj', exp.subj(s).id, 'ev', ev);
+  
   fprintf('\n');
 end

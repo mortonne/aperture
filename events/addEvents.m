@@ -13,7 +13,19 @@ for s=1:length(exp.subj)
   subj_events = [];
   for n=1:length(exp.subj(s).sess)
     load(fullfile(exp.subj(s).sess(n).dir, eventsFile));
+    if ~isfield(events, 'eegfile')
+      keyboard
+      [events(:).eegfile] = deal('');
+      [events(:).eegoffset] = deal([]);
+      [events(:).artifactMS] = deal([]);
+    end
+    
     subj_events = [subj_events(:); events(:)]';
+  end
+  if isempty(unique(getStructField(events, 'eegfile')))
+    events = rmfield(events, 'eegfile');
+    events = rmfield(events, 'eegoffset');
+    events = rmfield(events, 'artifactMS');
   end
   
   events = subj_events;
