@@ -14,81 +14,51 @@ if ~exist('resDir', 'var')
 end
 
 % set the defaults for params
-params = structDefaults(params,  'evname', 'events',  'eventFilter', '',  'chanbins', {},  'offsetMS', -200,  'durationMS', 1800,  'binSizeMS', 10,  'baseEventFilter', '',  'baseOffsetMS', -200,  'baseDurationMS', 200,  'filttype', 'stop',  'filtfreq', [58 62],  'filtorder', 4,  'bufferMS', 1000,  'resampledRate', 500,  'kthresh', 5,  'ztransform', 1,  'replace_eegfile', {},  'timebinlabels', {},  'lock', 1,  'overwrite', 0);
+params = structDefaults(params,  'evname', 'events',  'eventFilter', '',  'chanbins', {},  'MSbins', {},  'offsetMS', -200,  'durationMS', 1800,  'baseEventFilter', '',  'baseOffsetMS', -200,  'baseDurationMS', 200,  'filttype', 'stop',  'filtfreq', [58 62],  'filtorder', 4,  'bufferMS', 1000,  'resampledRate', 500,  'kthresh', 5,  'ztransform', 1,  'replace_eegfile', {},  'timebinlabels', {},  'lock', 1,  'overwrite', 0);
 
-% get bin information
-durationSamp = fix(params.durationMS*params.resampledRate./1000);
-binSizeSamp = fix(params.binSizeMS*params.resampledRate./1000);
-nBins = fix(durationSamp/binSizeSamp);
-
-binSamp{1} = [1:binSizeSamp];
-for b=2:nBins
-  binSamp{b} = binSamp{b-1} + binSizeSamp;
-end
-
-% initialize the time dimension
-for t=1:length(binSamp)
-  time(t).MSvals = fix((binSamp{t}-1)*1000/params.resampledRate) + params.offsetMS;
-  time(t).avg = mean(time(t).MSvals);
-  if ~isempty(params.timebinlabels)
-    time(t).label = params.timebinlabels{t};
-  else
-    time(t).label = [num2str(time(t).MSvals(1)) ' to ' num2str(time(t).MSvals(end)) 'ms'];
-  end
-end
+% get time bin information
+stepSize = fix(1000/params.resampledRate);
+MSvals = [params.offsetMS:stepSize:(params.offsetMS+params.durationMS)];
+[time, bint] = timeBins(MSvals, params);
 
 disp(params);
 
 rand('twister',sum(100*clock));
 
-% write all file info and update the exp struct
 for s=1:length(exp.subj)
-  pat.name = patname;
-  pat.file = fullfile(resDir, 'data', [patname '_' exp.subj(s).id '.mat']);
-  pat.params = params;
-  
-  % manage the dimensions info
-  pat.dim = struct('event', [],  'chan', [],  'time', [],  'freq', []);
-  
-  pat.dim.ev = getobj(exp.subj(s), 'ev', params.evname);
-  
-  [pat.dim.chan, binc] = chanBins(exp.subj(s).chan, params);
-  pat.dim.time = time;
-
-  % update exp with the new pat object
-  exp = update_exp(exp, 'subj', exp.subj(s).id, 'pat', pat);
-end
-
-% make the pattern for each subject
-for s=1:length(exp.subj)
-  pat = getobj(exp.subj(s), 'pat', patname);
+  % set where the pattern will be saved
+  patfile = fullfile(resDir, 'data', [patname '_' exp.subj(s).id '.mat']);
   
   % check input files and prepare output files
-  if prepFiles({}, pat.file, params)~=0
+  if prepFiles({}, patfile, params)~=0
     continue
   end
   
-  % get all events for this subject, w/filter that will be used to get voltage
+  % get the ev object to be used for this pattern
+  ev = getobj(exp.subj(s), 'ev', params.evname);
   
+  % get all events for this subject, w/filter that will be used to get voltage
   events = loadEvents(ev.file, params.replace_eegfile);
   events = filterStruct(events, '~strcmp(eegfile, '''')');
   base_events = filterStruct(events(:), params.baseEventFilter);
   events = filterStruct(events(:), params.eventFilter);
-
-  % get some stats
-  pat.dim.event.num = length(events);
-  sessions = unique(getStructField(events, 'session'));
-  channels = getStructField(pat.dim.chan, 'number');
+  ev.length = length(events);
   
+  % get chan, divide the channels into regions to be averaged over later
+  [chan, binc, channels] = chanBins(exp.subj(s).chan, params);
+  
+  % create a pat object to keep track of this pattern
+  pat = init_pat(patname, patfile, params, ev, chan, time);
+  
+  % update exp with the new pat object
+  exp = update_exp(exp, 'subj', exp.subj(s).id, 'pat', pat);
+
   % initialize this subject's pattern
-  patSize = [pat.dim.event.num, length(pat.dim.chan), length(pat.dim.time)];
+  patSize = [pat.dim.ev.length, length(channels), length(MSvals)];
   pattern = NaN(patSize);
   
   % set up masks
   m = 1;
-  mask(m).name = 'bad_channels';
-  mask(m).mat = false(patSize);
-  m = m + 1;
   if ~isempty(params.kthresh)
     mask(m).name = 'kurtosis';
     mask(m).mat = false(patSize);
@@ -98,23 +68,22 @@ for s=1:length(exp.subj)
     mask(m).name = 'artifacts';
     mask(m).mat = false(patSize);
 
-    artMask = rmArtifacts(events, time, params.artWindow);
+    artMask = rmArtifacts(events, pat.dim.time, params.artWindow);
     for c=1:size(mask(m),2)
       mask(m).mat(:,c,:) = artMask;
     end
   end
+
+  % get a list of sessions in the filtered event struct
+  sessions = unique(getStructField(events, 'session'));
   
   % make the pattern for this subject
   start_e = 1;
   for n=1:length(sessions)
-    fprintf('\n%s\n', exp.subj(s).sess(n).eventsFile);
+    fprintf('\nProcessing %s session_%d:\n', exp.subj(s), sessions(n));
     this_sess = inStruct(events, 'session==varargin{1}', sessions(n));
     sess_events = events(this_sess);
     sess_base_events = filterStruct(base_events, 'session==varargin{1}', sessions(n));
-    
-    % make bad channels mask
-    bad = setdiff(channels, exp.subj(s).sess(n).goodChans);
-    mask(1).mat(this_sess, bad, :) = 1;
     
     for c=1:length(channels)
       fprintf('%d.', channels(c));
@@ -131,13 +100,8 @@ for s=1:length(exp.subj)
 	if ~isempty(params.kthresh)
 	  base_eeg = run_kurtosis(base_eeg, params.kthresh);
 	end
-	  
-	rand_eeg = NaN(1,length(sess_events));
-	for e=1:size(base_eeg,1)
-	  randposs = randperm(size(base_eeg,2));
-	  rand_eeg(e) = base_eeg(e,randposs(1));
-	end
-	
+
+	rand_eeg = base_eeg(:,1);
 	base_mean = nanmean(rand_eeg);
 	base_std = nanstd(rand_eeg);	   
       end
@@ -151,18 +115,17 @@ for s=1:length(exp.subj)
 			   params.filttype, params.filtorder, ...
 			   params.resampledRate, params.relativeMS));
 	
+	% check kurtosis for this event, add info to boolean mask for later
 	if ~isempty(params.kthresh)
-	  mask(2).mat(e,c,:) = kurtosis(this_eeg)>params.kthresh;
+	  mask(1).mat(e,c,:) = kurtosis(this_eeg)>params.kthresh;
 	end
 	
+	% normalize across sessions
 	if params.ztransform
 	  this_eeg = (this_eeg - base_mean)/base_std;
 	end
 	
-	for b=1:nBins
-	  pattern(e,c,b) = nanmean(this_eeg(binSamp{b}));
-	end
-	
+	pattern(e,c,:) = this_eeg;
 	e = e + 1;
       end % events
       
@@ -172,10 +135,26 @@ for s=1:length(exp.subj)
   end % session
   fprintf('\n');
   
+  % apply masks
+  if ~isempty(params.masks)
+    mask = filterStruct(mask, 'ismember(name, varargin{1})', params.masks);
+    for m=1:length(mask)
+      pattern(mask(m).mat) = NaN;
+    end
+  end
+  
+  % do binning
+  for e=1:length(bine)
+    emean = nanmean(pattern(bine{e},:,:),1);
+    for c=1:length(binc)
+      cmean = nanmean(emean(:,binc{c},:),2);
+      for t=1:length(bint)
+	pattern(e,c,t) = nanmean(cmean(:,:,bint{t}),3);
+      end
+    end
+  end
+  
   % save the pattern and corresponding events struct and masks
   closeFile(pat.file, 'pattern', 'mask');
   save(pat.dim.event.file, 'events');
-  
-  % added event info to pat, so update exp again
-  exp = update_exp(exp, 'subj', exp.subj(s).id, 'pat', pat);
 end % subj
