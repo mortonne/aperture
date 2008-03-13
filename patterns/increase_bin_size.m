@@ -125,34 +125,7 @@ for s=1:length(exp.subj)
     event.file = fullfile(resDir, 'data', [exp.subj(s).id '_' patname '_events.mat']);
   end
   
-  % make new channel bins
-  if isfield(params, 'chanbins')
-    
-    for c=1:length(params.chanbins)
-      % define the new channel bins
-      if isnumeric(params.chanbins{c})
-	binc{c} = find(inStruct(pat1.dim.chan, 'ismember(number, varargin{1})', params.chanbins{c}));
-      elseif iscell(params.chanbins{c})
-	binc{c} = find(inStruct(pat1.dim.chan, 'ismember(region, varargin{1})', params.chanbins{c}));
-      else
-	binc{c} = find(inStruct(pat1.dim.chan, 'strcmp(region, varargin{1})', params.chanbins{c}));
-      end
-      chans = pat1.dim.chan(binc{c});
-      
-      % update the channel labels
-      chan(c).number = getStructField(chans, 'number');
-      chan(c).region = getStructField(chans, 'region');
-      if ~isempty(params.chanbinlabels)
-	chan(c).label = params.chanbinlabels{c};
-      end
-      
-    end
-  else % no averaging across channels
-    for c=1:length(pat1.dim.chan)
-      binc{c} = c;
-      chan = pat1.dim.chan;
-    end
-  end
+  [chan, binc] = chanBins(pat1.dim.chan, params);
 
   % add all dimension info to the new pat
   pat2.dim = struct('event', event, 'chan', chan, 'time', time, 'freq', freq);

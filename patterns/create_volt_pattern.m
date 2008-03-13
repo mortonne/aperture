@@ -14,7 +14,7 @@ if ~exist('resDir', 'var')
 end
 
 % set the defaults for params
-params = structDefaults(params,  'evname', 'events',  'eventFilter', '',  'offsetMS', -200,  'durationMS', 1800,  'binSizeMS', 10,  'baseEventFilter', '',  'baseOffsetMS', -200,  'baseDurationMS', 200,  'filttype', 'stop',  'filtfreq', [58 62],  'filtorder', 4,  'bufferMS', 1000,  'resampledRate', 500,  'kthresh', 5,  'ztransform', 1,  'replace_eegfile', {},  'timebinlabels', {},  'lock', 1,  'overwrite', 0);
+params = structDefaults(params,  'evname', 'events',  'eventFilter', '',  'chanbins', {},  'offsetMS', -200,  'durationMS', 1800,  'binSizeMS', 10,  'baseEventFilter', '',  'baseOffsetMS', -200,  'baseDurationMS', 200,  'filttype', 'stop',  'filtfreq', [58 62],  'filtorder', 4,  'bufferMS', 1000,  'resampledRate', 500,  'kthresh', 5,  'ztransform', 1,  'replace_eegfile', {},  'timebinlabels', {},  'lock', 1,  'overwrite', 0);
 
 % get bin information
 durationSamp = fix(params.durationMS*params.resampledRate./1000);
@@ -50,14 +50,9 @@ for s=1:length(exp.subj)
   % manage the dimensions info
   pat.dim = struct('event', [],  'chan', [],  'time', [],  'freq', []);
   
-  pat.dim.event.num = [];
-  pat.dim.event.file = fullfile(resDir, 'data', [patname '_' exp.subj(s).id '_events.mat']);
+  pat.dim.ev = getobj(exp.subj(s), 'ev', params.evname);
   
-  if isfield(params, 'channels')
-    pat.dim.chan = filterStruct(exp.subj(s).chan, 'ismember(number, varargin{1})', params.channels);
-  else
-    pat.dim.chan = exp.subj(s).chan;
-  end
+  [pat.dim.chan, binc] = chanBins(exp.subj(s).chan, params);
   pat.dim.time = time;
 
   % update exp with the new pat object
@@ -74,7 +69,7 @@ for s=1:length(exp.subj)
   end
   
   % get all events for this subject, w/filter that will be used to get voltage
-  ev = getobj(exp.subj(s), 'ev', params.evname);
+  
   events = loadEvents(ev.file, params.replace_eegfile);
   events = filterStruct(events, '~strcmp(eegfile, '''')');
   base_events = filterStruct(events(:), params.baseEventFilter);
