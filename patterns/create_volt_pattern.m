@@ -1,20 +1,54 @@
 function exp = create_volt_pattern(exp, params, patname, resDir)
-% exp = create_volt_pattern(exp, params, patname, resDir)
 %
-% create a voltage pattern for each subject, time bin, saved in
-% resDir/data.  Filenames will be saved in exp.subj(s).pat
-% with the patname specified.
-% 
+%CREATE_VOLT_PATTERN Gets voltage values for a set of events for
+%   each subject included in the exp struct.
+%   exp = create_volt_pattern(exp, params, patname, resDir) creates
+%   a voltage pattern for each subject in exp using options listed
+%   in the params struct, saves filenames and details about the
+%   pattern in a "pat" substruct of exp.subj named patname, and saves the
+%   pattern in resDir.
+%
+%   optional params fields:
+%      evname - string specifying name of the ev object to use
+%         (default "events")
+%      eventFilter - string to be passed into filterStruct;
+%         specifies the events to be included in the pattern
+%      offsetMS - time in milliseconds from the start of each event
+%      durationMS - time window of the pattern will be
+%         offsetMS:offsetMS+durationMS
+%      baseEventFilter - filter to use for baseline events, if ztransform==1
+%      baseOffsetMS
+%      baseDurationMS
+%      filttype
+%      filtfreq
+%      filtorder
+%      bufferMS
+%      resampledRate
+%      kthresh
+%      ztransform
+%      replace_eegfile - used in loadEvents to run strrep on the
+%         eegfile field of the events struct
+%      
+%   output:
+%      exp - updated with pat objects added to exp.subj.pat;
+%         pat.name - string identifier of the pat object
+%         pat.file - filename of the saved pattern
+%         pat.params - stores the params used to create the pattern
+%         pat.dim - contains information about each dimension of the pattern
+%
+%      pattern - one for each subject s is saved in
+%         exp.subj(s).pat.file.  Dimensions are events X channels X time.
+%
 
 if ~exist('patname', 'var')
-  patname = 'voltage_pattern';
+  patname = 'volt_pattern';
 end
 if ~exist('resDir', 'var')
   resDir = fullfile(exp.resDir, patname);
 end
 
 % set the defaults for params
-params = structDefaults(params,  'evname', 'events',  'eventFilter', '',  'chanbins', {},  'MSbins', {},  'offsetMS', -200,  'durationMS', 1800,  'baseEventFilter', '',  'baseOffsetMS', -200,  'baseDurationMS', 200,  'filttype', 'stop',  'filtfreq', [58 62],  'filtorder', 4,  'bufferMS', 1000,  'resampledRate', 500,  'kthresh', 5,  'ztransform', 1,  'replace_eegfile', {},  'timebinlabels', {},  'lock', 1,  'overwrite', 0);
+params = structDefaults(params,  'evname', 'events',  'eventFilter', '',  'offsetMS', -200,  'durationMS', 1800,  'baseEventFilter', '',  'baseOffsetMS', -200,  'baseDurationMS', 200,  'filttype', 'stop',  'filtfreq', [58 62],  'filtorder', 4,  'bufferMS', 1000,  'resampledRate', 500,  'kthresh', 5,  'ztransform', 1,  'replace_eegfile', {},  'lock', 1,  'overwrite', 0);
 
 % get time bin information
 stepSize = fix(1000/params.resampledRate);
