@@ -9,4 +9,3 @@ elseif length(vars)>2
   obj = recursive_setobj(obj, vars(3:end));
   S = setobj(S, vars{1}, obj);
 end
-

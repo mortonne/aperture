@@ -64,6 +64,9 @@ for s=1:length(exp.subj)
 	cd(sess.dir);
 	prep_egi_data(subj.id, sess.dir, {'events.mat'}, badchans, 'mstime');
       catch
+	% if there was an error, remove the events so this session
+        % will be processed again next time
+	system(['rm ' sess.eventsFile]);
 	err = [subj.id ' session_' num2str(sess.number) '\n'];
 	errs = [errs err];
       end

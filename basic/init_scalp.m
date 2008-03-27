@@ -66,9 +66,6 @@ else
   end
 end
 
-exp.ev = [];
-exp.pat = [];
-
 for s=1:length(exp.subj)
   % each subject gets the same channel info
   exp.subj(s).chan = chan;

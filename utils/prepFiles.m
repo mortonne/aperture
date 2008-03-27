@@ -27,7 +27,7 @@ if ~exist('params', 'var')
   params = [];
 end
 
-params = structDefaults(params, 'lock', 1,  'overwrite', 0,  'mkdirs', 1);
+params = structDefaults(params, 'lock', 1,  'overwrite', 0,  'mkdirs', 1,  'ignoreLock', 0);
 
 % checking read files
 status = 1;
