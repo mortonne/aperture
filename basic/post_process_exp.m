@@ -18,7 +18,7 @@ if ~exist('params', 'var')
   params = struct();
 end
 
-params = structDefaults(params, 'overwrite', 0,  'lock', 1,  'ignoreLock', 0);
+params = structDefaults(params, 'skipError', 0,  'overwrite', 0,  'lock', 1,  'ignoreLock', 0);
 
 % write all file info first
 for s=1:length(exp.subj)
@@ -59,16 +59,21 @@ for s=1:length(exp.subj)
 	badchans = [];
       end
       
-      try
+      cd(sess.dir);
+      if ~params.skipError
 	% split, sync, rereference, detect blink artifacts
-	cd(sess.dir);
 	prep_egi_data(subj.id, sess.dir, {'events.mat'}, badchans, 'mstime');
-      catch
-	% if there was an error, remove the events so this session
-        % will be processed again next time
-	system(['rm ' sess.eventsFile]);
-	err = [subj.id ' session_' num2str(sess.number) '\n'];
-	errs = [errs err];
+      else
+	try
+	  % split, sync, rereference, detect blink artifacts
+	  prep_egi_data(subj.id, sess.dir, {'events.mat'}, badchans, 'mstime');
+	catch
+	  % if there was an error, remove the events so this session
+	  % will be processed again next time
+	  system(['rm ' sess.eventsFile]);
+	  err = [subj.id ' session_' num2str(sess.number) '\n'];
+	  errs = [errs err];
+	end
       end
     end
     
