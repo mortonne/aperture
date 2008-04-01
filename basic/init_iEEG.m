@@ -1,9 +1,9 @@
-function eeg = init_iEEG(dataroot, resDir, sessions, experiment)
+function exp = init_iEEG(dataroot, resDir, sessions, experiment)
 %
 %INIT_IEEG - after post-processing of all subjects, running this
 %script prepares an intracranial EEG experiment for analysis
 %
-% FUNCTION: eeg = init_iEEG(dataroot, resDir, sessions, experiment)
+% FUNCTION: exp = init_iEEG(dataroot, resDir, sessions, experiment)
 %
 % INPUT: dataroot - directory containing subject folders
 %        resDir - directory in which to save eeg results
@@ -11,7 +11,7 @@ function eeg = init_iEEG(dataroot, resDir, sessions, experiment)
 %                   struct, or the subj struct itself (see README).
 %        experiment - name of the experiment (optional)
 %
-% OUTPUT: eeg, a struct containing all basic info for this experiment;
+% OUTPUT: exp, a struct containing all basic info for this experiment;
 % gets passed into all other eeg analysis scripts
 %
 % EXAMPLE:
@@ -30,38 +30,37 @@ if ~exist(resDir)
   mkdir(resDir);
 end
 
-% create the eeg struct
-eeg = struct('experiment', experiment, 'recordingType', 'iEEG', 'dataroot', dataroot, 'file', fullfile(resDir, 'eeg.mat'), 'resDir', resDir);
+% create the exp struct
+exp = struct('experiment', experiment, 'recordingType', 'iEEG', 'dataroot', dataroot, 'resDir', resDir, 'file', fullfile(resDir, 'exp.mat'));
 
 % add eventsFile info for each subj, session
-if isstr(sessions)
-  run(sessions);
-  eeg.subj = subj;
+if isa(sessions, 'function_handle')
+  exp.subj = sessions(dataroot);  
 elseif isstruct(sessions)
-  eeg.subj = sessions;
+  exp.subj = sessions;
 end
 
-for s=1:length(eeg.subj)
+for s=1:length(exp.subj)
   
   % find out which ones were good, find out what brain region each was in
-  good_chans_file = fullfile(dataroot, eeg.subj(s).id, 'tal', 'good_leads.txt');
+  good_chans_file = fullfile(dataroot, exp.subj(s).id, 'tal', 'good_leads.txt');
   good_chans = textread(good_chans_file, '%n');
-  jacksheet = fullfile(dataroot, eeg.subj(s).id, 'docs', 'jacksheet.txt');
+  jacksheet = fullfile(dataroot, exp.subj(s).id, 'docs', 'jacksheet.txt');
   [channels, regions] = textread(jacksheet, '%d%s');
   
   [channels, gidx, cidx] = intersect(good_chans, channels);
   for c=1:length(channels)
-    eeg.subj(s).chan(c).number = channels(c);
-    eeg.subj(s).chan(c).region = regions{cidx(c)};
-    eeg.subj(s).chan(c).label = regions{cidx(c)};
+    exp.subj(s).chan(c).number = channels(c);
+    exp.subj(s).chan(c).region = regions{cidx(c)};
+    exp.subj(s).chan(c).label = num2str(channels(c));
   end
   
-  for n=1:length(eeg.subj(s).sess)
-    eeg.subj(s).sess(n).goodChans = good_chans;
+  for n=1:length(exp.subj(s).sess)
+    exp.subj(s).sess(n).goodChans = good_chans;
   end
   
 end
 
 % save the struct, which holds filenames of all saved data
-save(fullfile(resDir, 'eeg.mat'), 'eeg');
+save(fullfile(resDir, 'exp.mat'), 'exp');
 

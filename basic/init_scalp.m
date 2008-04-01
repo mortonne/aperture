@@ -40,9 +40,8 @@ end
 exp = struct('experiment', experiment, 'recordingType', 'scalp', 'dataroot', dataroot, 'resDir', resDir, 'file', fullfile(resDir, 'exp.mat'));
 
 % add eventsFile info for each subj, session
-if isstr(sessions)
-  run(sessions);
-  exp.subj = subj;
+if isa(sessions, 'function_handle')
+  exp.subj = sessions(dataroot);
 elseif isstruct(sessions)
   exp.subj = sessions;
 end
@@ -54,7 +53,7 @@ if ~isempty(elecLocsFile)
   for c=1:length(channels)
     chan(c).number = channels(c);
     chan(c).region = regions{c};
-    chan(c).label = regions{c};
+    chan(c).label = num2str(channels(c));
   end
 else
   channels = 1:129;

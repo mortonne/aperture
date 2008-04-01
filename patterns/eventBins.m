@@ -4,10 +4,11 @@ if ~exist('params', 'var')
   params = struct();
 end
 
-params = structDefaults(params, 'field', '');
+params = structDefaults(params, 'field', '',  'eventBinLabels', '');
 
 if ~exist('events1', 'var')
   load(ev1.file);
+  events1 = events;
 end
 
 if strcmp(params.field, 'overall')
@@ -29,12 +30,19 @@ ev2.length = length(vals);
 for j=1:length(vals)
   if iscell(vals)
     events2(j).value = vals{j};
-    events2(j).type = [params.field ' ' vals{j}];
+    if ~isempty(params.eventBinLabels)
+      events2(j).type = params.eventBinLabels{j};
+    else
+      events2(j).type = [params.field ' ' vals{j}];
+    end
     bine{j} = strcmp(vec, vals{j});
   else
     events2(j).value = vals(j);
-    events2(j).type = [params.field ' ' num2str(vals(j))];
+    if ~isempty(params.eventBinLabels)
+      events2(j).type = params.eventBinLabels{j};
+    else
+      events2(j).type = [params.field ' ' num2str(vals(j))];
+    end
     bine{j} = vec==vals(j);
   end
 end
-

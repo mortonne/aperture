@@ -26,6 +26,10 @@ if ~isempty(params.chanbins)
     chan2(c).region = getStructField(theseChans, 'region');
     if ~isempty(params.chanbinlabels)
       chan2(c).label = params.chanbinlabels{c};
+    elseif length(unique({chan2.region}))==length(chan2)
+      chan2(c).label = chan2(c).region;
+    else
+      chan2(c).label = num2str(chan2(c).number);
     end
     
   end

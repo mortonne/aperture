@@ -17,7 +17,7 @@ if ~exist('resDir', 'var')
 end
 
 % set the defaults for params
-params = structDefaults(params,  'evname', 'events',  'eventFilter', '',  'freqs', 2.^(1:(1/8):6),  'offsetMS', -200,  'durationMS', 1800,  'binSizeMS', 100,  'baseEventFilter', '',  'baseOffsetMS', -200,  'baseDurationMS', 200,  'filttype', 'stop',  'filtfreq', [58 62],  'filtorder', 4,  'bufferMS', 1000,  'resampledRate', 500,  'width', 6,  'kthresh', 5,  'ztransform', 1,  'logtransform', 0,  'replace_eegFile', {},  'timebinlabels', {},  'freqbinlabels', {},  'lock', 1  'overwrite', 0);
+params = structDefaults(params,  'evname', 'events',  'eventFilter', '',  'chanFilter', '',  'resampledRate', 500,  'freqs', 2.^(1:(1/8):6),  'offsetMS', -200,  'durationMS', 1800,  'binSizeMS', 100,  'baseEventFilter', '',  'baseOffsetMS', -200,  'baseDurationMS', 100,  'filttype', 'stop',  'filtfreq', [58 62],  'filtorder', 4,  'bufferMS', 1000,  'width', 6,  'kthresh', 5,  'ztransform', 1,  'logtransform', 0,  'replace_eegFile', {},  'timebinlabels', {},  'freqbinlabels', {},  'lock', 1  'overwrite', 0,  'doBinning', 0);
 
 % get time bin information
 stepSize = fix(1000/params.resampledRate);
@@ -48,16 +48,16 @@ for s=1:length(exp.subj)
   events = filterStruct(events, '~strcmp(eegfile, '''')');
   base_events = filterStruct(events(:), params.baseEventFilter);
   events = filterStruct(events(:), params.eventFilter);
-  ev.length = length(events);
+  ev.len = length(events);
 
   % get chan, filter if desired
-  chan = filterStruct(exp.subj(s).chan, chanFilter);
+  chan = filterStruct(exp.subj(s).chan, params.chanFilter);
 
   % create a pat object to keep track of this pattern
   pat = init_pat(patname, patfile, params, ev, chan, time, freq);
   
   % initialize this subject's pattern
-  patSize = [ev.length, length(chan), length(time), length(freq)];
+  patSize = [ev.len, length(chan), length(time), length(freq)];
   pattern = NaN(patSize);
   
   % set up masks
@@ -83,7 +83,7 @@ for s=1:length(exp.subj)
   % get the patterns for each frequency and time bin
   start_e = 1;
   for n=1:length(exp.subj(s).sess)
-    fprintf('\n%s', exp.subj(s).sess(n).eventsFile);
+    fprintf('\nProcessing %s session_%d:\n', exp.subj(s).id, sessions(n));
     this_sess = inStruct(events, 'session==varargin{1}', sessions(n));
     sess_events = events(this_sess);
     sess_base_events = filterStruct(base_events, 'session==varargin{1}', sessions(n));
@@ -165,9 +165,11 @@ for s=1:length(exp.subj)
   end % session
   fprintf('\n');
 
-  % do binning if desired
-  [pat, pattern, events] = patBins(pat, pattern, mask, events);
-
+  if params.doBinning
+    % do binning if desired
+    [pat, pattern, events] = patBins(pat, pattern, mask, events);
+  end
+  
   % save the pattern and corresponding events struct and masks
   closeFile(pat.file, 'pattern', 'mask');
   save(pat.dim.event.file, 'events');

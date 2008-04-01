@@ -11,16 +11,16 @@ if ~exist('params', 'var')
   params = struct();
 end
 if ~exist('ev', 'var')
-  ev = struct();
+  ev = struct('name', '',  'file', '',  'len', []);
 end
 if ~exist('chan', 'var')
-  chan = struct();
+  chan = struct('number', [],  'region', {},  'label', {});
 end
 if ~exist('time', 'var')
-  time = struct();
+  time = init_time();
 end
 if ~exist('freq', 'var')
-  freq = struct();
+  freq = init_freq();
 end
 
 dim = struct('ev', ev,  'chan', chan,  'time', time,  'freq', freq);

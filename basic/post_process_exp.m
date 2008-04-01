@@ -18,7 +18,7 @@ if ~exist('params', 'var')
   params = struct();
 end
 
-params = structDefaults(params, 'skipError', 0,  'overwrite', 0,  'lock', 1,  'ignoreLock', 0);
+params = structDefaults(params, 'skipError', 0,  'overwrite', 0,  'lock', 0,  'ignoreLock', 0);
 
 % write all file info first
 for s=1:length(exp.subj)
@@ -39,15 +39,21 @@ for s=1:length(exp.subj)
     fprintf('\nCreating event structure for %s, session %d...\n', subj.id, sess.number);
     
     if prepFiles({}, sess.eventsFile, params)==0 % outfile is ok to go
-      try
+      if ~params.skipError
 	% create events
 	events = eventsFcnHandle(sess.dir, subj.id, sess.number, varargin{:});
 	save(sess.eventsFile, 'events');
-      catch
-	% if problem with events, note and continue to next session
-	err = [subj.id ' session_' num2str(sess.number) '\n'];
-	event_errs = [event_errs err];
-	continue
+      else
+	try
+	  % create events
+	  events = eventsFcnHandle(sess.dir, subj.id, sess.number, varargin{:});
+	  save(sess.eventsFile, 'events');
+	catch
+	  % if problem with events, note and continue to next session
+	  err = [subj.id ' session_' num2str(sess.number) '\n'];
+	  event_errs = [event_errs err];
+	  continue
+	end
       end
       
       try
