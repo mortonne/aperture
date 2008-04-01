@@ -45,17 +45,27 @@ for s=1:length(exp.subj)
   end
 end
 
-% create the new across subject pat object
-pat.name = patname;
+% write the filenames for each piece of the final pattern
 for c=1:length(subjpat(1).dim.chan)
-  pat.file{c} = fullfile(resDir, 'data', [patname '_chan' subjpat(1).dim.chan(c).label '.mat']);
+  patfile{c} = fullfile(resDir, 'data', [patname '_chan' subjpat(1).dim.chan(c).label '.mat']);
 end
 
-pat.dim = subjpat(1).dim;
-pat.dim.event.num = 4;
-pat.dim.event.label = {params.fields{1} params.fields{2} [params.fields{1} 'X' params.fields{2}] 'subject'};
+% update the events dimension
+ev.file = fullfile(resDir, 'data', [patname '_events.mat']);
+ev.length = 4;
 
-pat.params = params;
+events(1).type = params.fields{1};
+events(2).type = params.fields{2};
+events(3).type = [params.fields{1} 'X' params.fields{2}];
+events(4).type = 'subject';
+save(ev.file, 'events');
+
+chan = subjpat(1).chan;
+time = subjpat(1).time;
+freq = subjpat(1).freq;
+
+% create the new across subject pat object
+pat = init_pat(patname, patfile, params, ev, chan, time, freq);
 
 % update the exp struct
 exp = update_exp(exp, 'pat', pat);
@@ -63,8 +73,8 @@ exp = update_exp(exp, 'pat', pat);
 fprintf(['\nStarting Repeated Measures ANOVA:\n']);
 
 % step through channels
-for c=1:length(pat.dim.chan)
-  fprintf('\nLoading patterns for channel %d: ', pat.dim.chan(c).label);
+for c=1:length(chan)
+  fprintf('\nLoading patterns for channel %d: ', chan(c).label);
 
   % check input and prepare output files
   if prepFiles({}, pat.file{c}, params)~=0
@@ -91,14 +101,14 @@ for c=1:length(pat.dim.chan)
   
   % initialize the pattern that will hold p-values
   fprintf('ANOVA: ');
-  pattern = NaN(pat.dim.event.num, 1, length(pat.dim.time), length(pat.dim.freq));
+  pattern = NaN(ev.length, 1, length(time), length(freq));
   
   for t=1:size(chan_pats,2)
-    fprintf(' %s ', pat.dim.time(t).label);
+    fprintf(' %s ', time(t).label);
     
     for f=1:size(chan_pats,3)
-      if ~isempty(pat.dim.freq)
-	fprintf('%s ', pat.dim.freq(f).label);
+      if ~isempty(freq)
+	fprintf('%s ', freq(f).label);
       end
       
       % remove NaNs
@@ -135,7 +145,7 @@ for c=1:length(pat.dim.chan)
       end
       
     end % freq
-    if ~isempty(pat.dim.freq)
+    if ~isempty(freq)
       fprintf('\n');
     end
   end % bin

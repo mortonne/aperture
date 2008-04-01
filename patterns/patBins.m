@@ -1,8 +1,6 @@
-function [pat2, pattern2, events2] = patBins(pat1, params, pattern1, events1, mask1)
+function [pat2, pattern2, events2] = patBins(pat1, pattern1, events1, mask1)
 
-if ~exist('params', 'var')
-  params = struct();
-end
+params = pat1.params;
 
 params = structDefaults(params,  'field', '',  'chanBins', [],  'chanBinLabels', {},  'MSbins', [],  'MSbinLabels', {},  'freqBins', [],  'freqBinLabels', {});
 

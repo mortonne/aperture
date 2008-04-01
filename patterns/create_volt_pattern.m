@@ -40,6 +40,9 @@ function exp = create_volt_pattern(exp, params, patname, resDir)
 %         exp.subj(s).pat.file.  Dimensions are events X channels X time.
 %
 
+if ~exist('params', 'var')
+  params = struct();
+end
 if ~exist('patname', 'var')
   patname = 'volt_pattern';
 end
@@ -167,7 +170,7 @@ for s=1:length(exp.subj)
   fprintf('\n');
 
   % do binning if desired
-  [pat, pattern, events] = patBins(pat, params, pattern, mask, events);
+  [pat, pattern, events] = patBins(pat, pattern, mask, events);
 
   % save the pattern and corresponding events struct and masks
   closeFile(pat.file, 'pattern', 'mask');

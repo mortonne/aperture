@@ -6,6 +6,9 @@ function exp = create_pow_pattern(exp, params, patname, resDir)
 % with the patname specified.
 %
 
+if ~exist('params', 'var')
+  params = struct();
+end
 if ~exist('patname', 'var')
   patname = 'power_pattern';
 end
@@ -24,72 +27,41 @@ time = init_time(MSvals);
 % initialize the frequency dimension
 freq = init_freq(params.freqs);
 
-for f=1:length(params.freqs)
-  freq(f).vals = params.freqs(f);
-  freq(f).avg = mean(freq(f).vals);
-  if ~isempty(params.freqbinlabels)
-    freq(f).label = params.freqbinlabels{f};
-  else
-    freq(f).label = [num2str(freq(f).vals) 'Hz'];
-  end
-end
-
 disp(params);
 
 rand('twister',sum(100*clock));
 
-% write all file info and update the exp struct
 for s=1:length(exp.subj)
-  pat.name = patname;
-  pat.file = fullfile(resDir, 'data', [patname '_' exp.subj(s).id '.mat']);
-  pat.params = params;
+  % set where the pattern will be saved
+  patfile = fullfile(resDir, 'data', [patname '_' exp.subj(s).id '.mat']);
   
-  % manage the dimensions info
-  pat.dim = struct('event', [],  'chan', [],  'time', [],  'freq', []);
-  
-  pat.dim.event.num = [];
-  pat.dim.event.file = fullfile(resDir, 'data', [patname '_' exp.subj(s).id '_events.mat']);
-  
-  if isfield(params, 'channels')
-    pat.dim.chan = filterStruct(exp.subj(s).chan, 'ismember(number, varargin{1})', params.channels);
-  else
-    pat.dim.chan = exp.subj(s).chan;
-  end
-  pat.dim.time = time;
-  pat.dim.freq = freq;
-  
-  % update exp with the new pat object
-  exp = update_exp(exp, 'subj', exp.subj(s).id, 'pat', pat);
-end
-
-% make the pattern for each subject
-for s=1:length(exp.subj)
-  pat = getobj(exp.subj(s), 'pat', patname);
-  
-  % see if this subject has been done
+  % check input files and prepare output files
   if prepFiles({}, pat.file, params)~=0
     continue
   end
   
+  % get the ev object to be used for this pattern
+  ev = getobj(exp.subj(s), 'ev', params.evname);
+
   % get all events for this subject, w/filter that will be used to get voltage
-  ev = getobj(exp.subj(s), 'ev', evname);
   events = loadEvents(ev.file, params.replace_eegfile);
+  events = filterStruct(events, '~strcmp(eegfile, '''')');
   base_events = filterStruct(events(:), params.baseEventFilter);
   events = filterStruct(events(:), params.eventFilter);
+  ev.length = length(events);
 
-  % get some stats
-  pat.dim.event.num = length(events);
-  sessions = unique(getStructField(events, 'session'));
-  channels = getStructField(pat.dim.chan, 'number');
+  % get chan, filter if desired
+  chan = filterStruct(exp.subj(s).chan, chanFilter);
+
+  % create a pat object to keep track of this pattern
+  pat = init_pat(patname, patfile, params, ev, chan, time, freq);
   
   % initialize this subject's pattern
-  patSize = [pat.dim.event.num, length(pat.dim.chan), length(pat.dim.time), length(pat.dim.freq)];
+  patSize = [ev.length, length(chan), length(time), length(freq)];
   pattern = NaN(patSize);
   
   % set up masks
   m = 1;
-  mask(m).name = 'bad_channels';
-  mask(m).mat = false(patSize);
   if ~isempty(params.kthresh)
     mask(m).name = 'kurtosis';
     mask(m).mat = false(patSize);
@@ -104,6 +76,9 @@ for s=1:length(exp.subj)
       mask(m).mat(:,c,:) = artMask;
     end
   end
+
+  % get a list of sessions in the filtered event struct
+  sessions = unique(getStructField(events, 'session'));
   
   % get the patterns for each frequency and time bin
   start_e = 1;
@@ -113,16 +88,12 @@ for s=1:length(exp.subj)
     sess_events = events(this_sess);
     sess_base_events = filterStruct(base_events, 'session==varargin{1}', sessions(n));
     
-    % make bad channels mask
-    bad = setdiff(channels, exp.subj(s).sess(n).goodChans);
-    mask(1).mat(this_sess, bad, :) = 1;
-    
-    for c=1:length(channels)
-      fprintf('%d.', channels(c));
+    for c=1:length(chan)
+      fprintf('%d.', chan(c).number);
       
       % if z-transforming, get baseline stats for this sess, channel
       if params.ztransform
-	base_pow = getphasepow(channels(c), sess_base_events, ...
+	base_pow = getphasepow(chan(c).number, sess_base_events, ...
 	                       params.baseDurationMS, ...
 			       params.baseOffsetMS, params.bufferMS, ... 
 			       'freqs', params.freqs, ... 
@@ -184,13 +155,7 @@ for s=1:length(exp.subj)
 	  end
 	end
 	
-	% average over adjacent time bins
-	if ~isempty(this_pow)
-	  for b=1:nBins
-	    pattern(e,c,b,:) = nanmean(this_pow(binSamp{b},:));
-	  end
-	end
-	
+	pattern(e,c,:,:) = this_pow;
 	e = e + 1;
       end % events
       
@@ -199,15 +164,14 @@ for s=1:length(exp.subj)
     
   end % session
   fprintf('\n');
-  
+
+  % do binning if desired
+  [pat, pattern, events] = patBins(pat, pattern, mask, events);
+
   % save the pattern and corresponding events struct and masks
   closeFile(pat.file, 'pattern', 'mask');
   save(pat.dim.event.file, 'events');
   
-  % added event info to pat, so update exp again
+  % update exp with the new pat object
   exp = update_exp(exp, 'subj', exp.subj(s).id, 'pat', pat);
 end % subj
-
-
-
-
