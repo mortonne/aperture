@@ -38,96 +38,38 @@ if ~exist('resDir', 'var')
   resDir = fullfile(exp.resDir, patname);
 end
 
-params = structDefaults(params, 'MSbinlabels', {},  'chanbinlabels', {},  'freqbinlabels', {});
-
-% time and freq dimensions should be same for all subjects
-pat1 = getobj(exp.subj(1), 'pat', params.patname);
-
-% make the new time bins (if applicable)
-[time, bint] = timeBins(pat.dim.time, params);
-
-% make the new frequency bins
-if isfield(params, 'freqbins') && ~isempty(params.freqbins)
-  for f=1:length(params.freqbins)
-    % define the new bins
-    binf{f} = find(inStruct(pat1.dim.freq, 'avg>=varargin{1} & avg<varargin{2}', params.freqbins(f,1), params.freqbins(f,2)));
-    
-    allvals = [];
-    for i=1:length(binf{f})
-      allvals = [allvals pat1.dim.freq(binf{f}(i)).vals];
-    end    
-    freq(f).vals = allvals;
-    freq(f).avg = mean(allvals);
-    
-    % update the frequency label
-    if ~isempty(params.freqbinlabels)
-      freq(f).label = params.freqbinlabels{f};
-    else
-      freq(f).label = [num2str(freq(f).vals(1)) ' to ' num2str(freq(f).vals(end)) 'Hz'];
-    end
-  end
-  
-elseif isfield(pat1.dim, 'freq') && ~isempty(pat1.dim.freq)
-  for f=1:length(pat1.dim.freq)
-    binf{f} = f;
-  end
-  freq = pat1.dim.freq;
-  
-else % there is no frequency dimension
-  binf{1} = 1;
-  freq = [];
-end
+params = structDefaults(params, 'eventFilter', '',  'masks', {});
 
 % create the new pattern for each subject
 for s=1:length(exp.subj)
   fprintf('%s\n', exp.subj(s).id);
   
-  % get the pat obj for the original pattern
-  pat1 = getobj(exp.subj(s), 'pat', params.patname);  
-  
   % set where the pattern will be saved
   patfile = fullfile(resDir, 'data', [exp.subj(s).id '_' patname '.mat']);
+  
+  % get the pat obj for the original pattern
+  pat1 = getobj(exp.subj(s), 'pat', params.patname);  
   
   % check input files and prepare output files
   if prepFiles(pat1.file, patfile, params)~=0
     continue
   end
   
-  % get event info
-  ev = pat1.dim.ev;
-  if ~isempty(params.eventFilter) % we'll need to save a new events struct
-    ev.file = fullfile(resDir, 'data', [exp.subj(s).id '_' patname '_events.mat']);
+  % load the original pattern with filters and masks
+  [pattern1, events] = loadPat(pat1, params, 1);
+  
+  % do the binning
+  [pat, pattern, events] = patBins(pat1, params, pattern1
+  
+  if pat.dim.ev.length<pat1.dim.ev.length 
+    % we need to save a new events struct
+    pat.dim.ev.file = fullfile(resDir, 'data', [exp.subj(s).id '_' patname '_events.mat']);
+    save(pat.dim.ev.file, 'events');
   end
 
-  % divide the channels into regions to be averaged over later
-  [chan, binc] = chanBins(pat1.dim.chan, params);
-
-  % create a pat object to keep track of this pattern
-  pat = init_pat(patname, patfile, params, ev, chan, time, freq);
-  
   % update exp with the new pat object
   exp = update_exp(exp, 'subj', exp.subj(s).id, 'pat', pat);
   
-  % load the original pattern, initialize the new pattern
-  [pattern1, events] = loadPat(pat1, params, 1);
-  pattern = NaN(size(pattern1,1), length(binc), length(bint), length(binf));
-  
-  % do the averaging
-  for f=1:length(binf)
-    fmean = nanmean(pattern1(:,:,:,binf{f}),4);
-    for t=1:length(bint)
-      fprintf('%d.', t);
-      tmean = nanmean(fmean(:,:,bint{t}),3);
-      for c=1:length(binc)
-	pattern(:,c,t,f) = nanmean(tmean(:,binc{c}),2);
-      end
-    end
-  end
-  fprintf('\n');
-
   % save the new pattern
-  closeFile(pat2.file, 'pattern');
-  if ~isempty(params.eventFilter)
-    save(pat2.dim.ev.file, 'events')
-  end
+  closeFile(pat.file, 'pattern');
 end % subj

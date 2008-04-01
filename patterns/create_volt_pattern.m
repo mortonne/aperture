@@ -48,12 +48,12 @@ if ~exist('resDir', 'var')
 end
 
 % set the defaults for params
-params = structDefaults(params,  'evname', 'events',  'eventFilter', '',  'offsetMS', -200,  'durationMS', 1800,  'baseEventFilter', '',  'baseOffsetMS', -200,  'baseDurationMS', 200,  'filttype', 'stop',  'filtfreq', [58 62],  'filtorder', 4,  'bufferMS', 1000,  'resampledRate', 500,  'kthresh', 5,  'ztransform', 1,  'replace_eegfile', {},  'lock', 1,  'overwrite', 0);
+params = structDefaults(params,  'evname', 'events',  'eventFilter', '',  'chanFilter', '',  'offsetMS', -200,  'durationMS', 1800,  'baseEventFilter', '',  'baseOffsetMS', -200,  'baseDurationMS', 200,  'filttype', 'stop',  'filtfreq', [58 62],  'filtorder', 4,  'bufferMS', 1000,  'resampledRate', 500,  'kthresh', 5,  'ztransform', 1,  'replace_eegfile', {},  'lock', 1,  'overwrite', 0);
 
 % get time bin information
 stepSize = fix(1000/params.resampledRate);
 MSvals = [params.offsetMS:stepSize:(params.offsetMS+params.durationMS)];
-[time, bint] = timeBins(MSvals, params);
+time = init_time(MSvals);
 
 disp(params);
 
@@ -78,17 +78,14 @@ for s=1:length(exp.subj)
   events = filterStruct(events(:), params.eventFilter);
   ev.length = length(events);
   
-  % get chan, divide the channels into regions to be averaged over later
-  [chan, binc, channels] = chanBins(exp.subj(s).chan, params);
+  % get chan, filter if desired
+  chan = filterStruct(exp.subj(s).chan, chanFilter);
   
   % create a pat object to keep track of this pattern
   pat = init_pat(patname, patfile, params, ev, chan, time);
-  
-  % update exp with the new pat object
-  exp = update_exp(exp, 'subj', exp.subj(s).id, 'pat', pat);
 
   % initialize this subject's pattern
-  patSize = [pat.dim.ev.length, length(channels), length(MSvals)];
+  patSize = [pat.dim.ev.length, length(pat.dim.chan), length(pat.dim.time)];
   pattern = NaN(patSize);
   
   % set up masks
@@ -119,12 +116,12 @@ for s=1:length(exp.subj)
     sess_events = events(this_sess);
     sess_base_events = filterStruct(base_events, 'session==varargin{1}', sessions(n));
     
-    for c=1:length(channels)
-      fprintf('%d.', channels(c));
+    for c=1:length(chan)
+      fprintf('%d.', chan(c).label);
       
       % get baseline stats for this channel, sess
       if params.ztransform
-	base_eeg = gete_ms(channels(c), sess_base_events, ...
+	base_eeg = gete_ms(chan(c).number, sess_base_events, ...
 	                   params.baseDurationMS, ...
 			   params.baseOffsetMS, params.bufferMS, ... 
 			   params.filtfreq, params.filttype, ...
@@ -168,27 +165,14 @@ for s=1:length(exp.subj)
     
   end % session
   fprintf('\n');
-  
-  % apply masks
-  if ~isempty(params.masks)
-    mask = filterStruct(mask, 'ismember(name, varargin{1})', params.masks);
-    for m=1:length(mask)
-      pattern(mask(m).mat) = NaN;
-    end
-  end
-  
-  % do binning
-  for e=1:length(bine)
-    emean = nanmean(pattern(bine{e},:,:),1);
-    for c=1:length(binc)
-      cmean = nanmean(emean(:,binc{c},:),2);
-      for t=1:length(bint)
-	pattern(e,c,t) = nanmean(cmean(:,:,bint{t}),3);
-      end
-    end
-  end
-  
+
+  % do binning if desired
+  [pat, pattern, events] = patBins(pat, params, pattern, mask, events);
+
   % save the pattern and corresponding events struct and masks
   closeFile(pat.file, 'pattern', 'mask');
-  save(pat.dim.event.file, 'events');
+  save(pat.dim.ev.file, 'events');
+    
+  % update exp with the new pat object
+  exp = update_exp(exp, 'subj', exp.subj(s).id, 'pat', pat);
 end % subj

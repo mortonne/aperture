@@ -1,4 +1,4 @@
-function [chan2, binc, channels] = chanBins(chan1, params)
+function [chan2, binc] = chanBins(chan1, params)
 %[chan2, binc] = chanBins(chan1, params)
 
 if ~exist('params', 'var')
@@ -7,7 +7,6 @@ end
 
 params = structDefaults(params, 'chanbins', {},  'chanbinlabels', {})
 
-channels = [];
 if ~isempty(params.chanbins)
   for c=1:length(params.chanbins)
     % define the new channel bins
@@ -29,13 +28,11 @@ if ~isempty(params.chanbins)
       chan2(c).label = params.chanbinlabels{c};
     end
     
-    channels = [channels; chan2(c).number];
   end
   
 else
   for c=1:length(chan1)
     binc{c} = c;
-    channels = [channels; c];
   end
   chan2 = chan1;
 end
