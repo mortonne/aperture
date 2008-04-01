@@ -16,28 +16,14 @@ end
 % set the defaults for params
 params = structDefaults(params,  'evname', 'events',  'eventFilter', '',  'freqs', 2.^(1:(1/8):6),  'offsetMS', -200,  'durationMS', 1800,  'binSizeMS', 100,  'baseEventFilter', '',  'baseOffsetMS', -200,  'baseDurationMS', 200,  'filttype', 'stop',  'filtfreq', [58 62],  'filtorder', 4,  'bufferMS', 1000,  'resampledRate', 500,  'width', 6,  'kthresh', 5,  'ztransform', 1,  'logtransform', 0,  'replace_eegFile', {},  'timebinlabels', {},  'freqbinlabels', {},  'lock', 1  'overwrite', 0);
 
-% get bin information
-durationSamp = fix(params.durationMS*params.resampledRate./1000);
-binSizeSamp = fix(params.binSizeMS*params.resampledRate./1000);
-nBins = fix(durationSamp/binSizeSamp);
-
-% initialize the time dimension
-binSamp{1} = [1:binSizeSamp];
-for b=2:nBins
-  binSamp{b} = binSamp{b-1} + binSizeSamp;
-end
-
-for t=1:length(binSamp)
-  time(t).MSvals = fix((binSamp{t}-1)*1000/params.resampledRate) + params.offsetMS;
-  time(t).avg = mean(time(t).MSvals);
-  if ~isempty(params.timebinlabels)
-    time(t).label = params.timebinlabels{t};
-  else
-    time(t).label = [num2str(time(t).MSvals(1)) ' to ' num2str(time(t).MSvals(end)) 'ms'];
-  end
-end
+% get time bin information
+stepSize = fix(1000/params.resampledRate);
+MSvals = [params.offsetMS:stepSize:(params.offsetMS+params.durationMS)];
+time = init_time(MSvals);
 
 % initialize the frequency dimension
+freq = init_freq(params.freqs);
+
 for f=1:length(params.freqs)
   freq(f).vals = params.freqs(f);
   freq(f).avg = mean(freq(f).vals);
