@@ -57,5 +57,4 @@ elseif ~isempty(time1) % just copy info from time1
 else % no time info; can't create the struct or bin it
   time2 = init_time();
   bint = {};
-  return
 end

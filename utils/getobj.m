@@ -1,4 +1,4 @@
-function obj = getobj(s,f,objname)
+function [obj,ind] = getobj(s,f,objname)
 %obj = getobj(s,f,objname)
 
 objs = getfield(s,f);
@@ -7,7 +7,9 @@ if ~isstruct(objs)
 end
 
 try
-  obj = filterStruct(objs, 'strcmp(name, varargin{1})', objname);
+  [obj,ind] = filterStruct(objs, 'strcmp(name, varargin{1})', objname);
 catch
-  obj = filterStruct(objs, 'strcmp(id, varargin{1})', objname);
+  [obj,ind] = filterStruct(objs, 'strcmp(id, varargin{1})', objname);
 end
+
+ind = find(ind);

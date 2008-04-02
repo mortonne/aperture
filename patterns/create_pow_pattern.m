@@ -17,11 +17,11 @@ if ~exist('resDir', 'var')
 end
 
 % set the defaults for params
-params = structDefaults(params,  'evname', 'events',  'eventFilter', '',  'chanFilter', '',  'resampledRate', 500,  'freqs', 2.^(1:(1/8):6),  'offsetMS', -200,  'durationMS', 1800,  'binSizeMS', 100,  'baseEventFilter', '',  'baseOffsetMS', -200,  'baseDurationMS', 100,  'filttype', 'stop',  'filtfreq', [58 62],  'filtorder', 4,  'bufferMS', 1000,  'width', 6,  'kthresh', 5,  'ztransform', 1,  'logtransform', 0,  'replace_eegFile', {},  'timebinlabels', {},  'freqbinlabels', {},  'lock', 1  'overwrite', 0,  'doBinning', 0);
+params = structDefaults(params,  'evname', 'events',  'eventFilter', '',  'chanFilter', '',  'resampledRate', 500,  'freqs', 2.^(1:(1/8):6),  'offsetMS', -200,  'durationMS', 1800,  'binSizeMS', 100,  'baseEventFilter', '',  'baseOffsetMS', -200,  'baseDurationMS', 100,  'filttype', 'stop',  'filtfreq', [58 62],  'filtorder', 4,  'bufferMS', 1000,  'width', 6,  'kthresh', 5,  'ztransform', 1,  'logtransform', 0,  'replace_eegFile', {},  'lock', 1,  'overwrite', 0,  'doBinning', 0);
 
 % get time bin information
 stepSize = fix(1000/params.resampledRate);
-MSvals = [params.offsetMS:stepSize:(params.offsetMS+params.durationMS)];
+MSvals = [params.offsetMS:stepSize:(params.offsetMS+params.durationMS-1)];
 time = init_time(MSvals);
 
 % initialize the frequency dimension
@@ -36,7 +36,7 @@ for s=1:length(exp.subj)
   patfile = fullfile(resDir, 'data', [patname '_' exp.subj(s).id '.mat']);
   
   % check input files and prepare output files
-  if prepFiles({}, pat.file, params)~=0
+  if prepFiles({}, patfile, params)~=0
     continue
   end
   
@@ -111,7 +111,7 @@ for s=1:length(exp.subj)
 	  base_pow = log10(base_pow);
 	end
 	  
-	for f=1:length(freqs)
+	for f=1:length(params.freqs)
 	  % if multiple samples given, use the first
 	  base_pow_vec = base_pow(:,f,1);
 	  
@@ -125,7 +125,7 @@ for s=1:length(exp.subj)
       e = start_e;
       for sess_e=1:length(sess_events)
 	
-	[this_pow, kInd] = getphasepow(channels(c), sess_events(sess_e), ...
+	[this_pow, kInd] = getphasepow(chan(c).number, sess_events(sess_e), ...
 				     params.durationMS, ...
 			             params.offsetMS, params.bufferMS, ... 
 			             'freqs', params.freqs, ... 
