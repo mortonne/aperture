@@ -26,7 +26,7 @@ if ~isfield(params, 'patname')
   error('You must specify which pattern to use')
 end
 if ~exist('resDir', 'var')
-  resDir = fullfile(exp.resDir, params.patname);
+  resDir = fullfile(exp.resDir, 'eeg', params.patname);
 end
 if ~exist('figname', 'var')
   figname = 'plots';
@@ -71,7 +71,7 @@ for i=1:length(params.subjects)
   
   for c=1:size(pattern,2)
     
-    if isempty(pat.dim.freq) % plotting voltage values
+    if length(pat.dim.freq)==1 % plotting voltage values
       for e=1:size(pattern,1)
 	h = plot(getStructField(pat.dim.time, 'avg'), squeeze(pattern(e,c,:)), params.sym{mod(e,length(params.sym))+1});
 	xlabel('Time (ms)')
@@ -96,7 +96,7 @@ for i=1:length(params.subjects)
     end
     
   end % channels
-  
+
   pat = setobj(pat, 'fig', fig);
 
   % update exp with filenames of the new figures

@@ -23,9 +23,9 @@ if ~isstruct(objs)
 end
 
 % check if object with this name already exists
-if isfield(obj, 'name')
+if isfield(obj, 'name') & isfield(objs, 'name')
   i = find(inStruct(objs, 'strcmp(name, varargin{1})', obj.name));
-elseif isfield(obj, 'id')
+elseif isfield(obj, 'id') & isfield(objs, 'id')
   i = find(inStruct(objs, 'strcmp(id, varargin{1})', obj.id));
 else
   i = [];
@@ -45,13 +45,16 @@ old_fields = fieldnames(objs);
 if ~isempty(c)
   % add fields in obj but not objs
   to_add = setdiff(fields, old_fields);
+
   if ~isempty(to_add)
-    for k=1:length(to_add)
-      for j=1:length(objs)
-	new(j) = setfield(objs(j), to_add{k}, []);
+    for j=1:length(objs)
+      newobj = objs(j);
+      for k=1:length(to_add)
+	newobj = setfield(newobj, to_add{k}, []);
       end
+      newobjs(j) = newobj;
     end
-    objs = new;
+    objs = newobjs;
   end
   
   % add fields in objs but not obj
@@ -62,7 +65,7 @@ if ~isempty(c)
     end
   end
 end
-  
+
 % make sure the fields are in the same order
 if length(objs)>0
   obj = orderfields(obj, objs);

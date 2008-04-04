@@ -8,24 +8,24 @@ if ~exist('params', 'var')
   params = struct();
 end
 
-params = structDefaults(params, 'freqBins', {},  'freqBinLabels', {});
+params = structDefaults(params, 'freqbins', {},  'freqbinlabels', {});
 
 % make the new freq bins
-if ~isempty(params.freqBins)
+if ~isempty(params.freqbins)
   
   % get the current list of frequencies
   avgfreq = [freq1.avg];
   
   for f=1:length(params.freqbins)
     % define this bin
-    binf{f} = find(avgfreq>=params.freqBins(f,1) & avgfreq<params.freqBins(f,2));
+    binf{f} = find(avgfreq>=params.freqbins(f,1) & avgfreq<params.freqbins(f,2));
     
     freq2(f).vals = avgfreq(binf{f});
     freq2(f).avg = mean(freq2(f).vals);
     
     % update the labels
-    if ~isempty(params.freqBinLabels)
-      freq2(f).label = params.freqBinLabels{f};
+    if ~isempty(params.freqbinlabels)
+      freq2(f).label = params.freqbinlabels{f};
     else
       freq2(f).label = sprintf('%d to %d Hz', freq2(f).vals(1), freq2(f).vals(end));
     end
