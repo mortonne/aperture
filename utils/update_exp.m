@@ -9,7 +9,8 @@ bk_dir = fullfile(exp.resDir, 'exp_bk');
 if ~exist(bk_dir)
   mkdir(bk_dir);
 end
-bk_file = fullfile(bk_dir, ['exp_' datestr(now) '.mat']);
+timestamp = datestr(now, 'ddmmmyy_HHMM');
+bk_file = fullfile(bk_dir, ['exp_' timestamp '.mat']);
 save(bk_file, 'exp');
 
 % add the object in place specified

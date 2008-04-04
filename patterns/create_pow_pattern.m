@@ -17,10 +17,10 @@ if ~exist('resDir', 'var')
 end
 
 % set the defaults for params
-params = structDefaults(params,  'evname', 'events',  'eventFilter', '',  'chanFilter', '',  'resampledRate', 500,  'freqs', 2.^(1:(1/8):6),  'offsetMS', -200,  'durationMS', 1800,  'binSizeMS', 100,  'baseEventFilter', '',  'baseOffsetMS', -200,  'baseDurationMS', 100,  'filttype', 'stop',  'filtfreq', [58 62],  'filtorder', 4,  'bufferMS', 1000,  'width', 6,  'kthresh', 5,  'ztransform', 1,  'logtransform', 0,  'replace_eegFile', {},  'lock', 1,  'overwrite', 0,  'doBinning', 0);
+params = structDefaults(params,  'evname', 'events',  'eventFilter', '',  'chanFilter', '',  'resampledRate', 500,  'downsample', 500,  'freqs', 2.^(1:(1/8):6),  'offsetMS', -200,  'durationMS', 1800,  'baseEventFilter', '',  'baseOffsetMS', -200,  'baseDurationMS', 100,  'filttype', 'stop',  'filtfreq', [58 62],  'filtorder', 4,  'bufferMS', 1000,  'width', 6,  'kthresh', 5,  'ztransform', 1,  'logtransform', 0,  'replace_eegFile', {},  'lock', 1,  'overwrite', 0,  'doBinning', 0);
 
 % get time bin information
-stepSize = fix(1000/params.resampledRate);
+stepSize = fix(1000/params.downsample);
 MSvals = [params.offsetMS:stepSize:(params.offsetMS+params.durationMS-1)];
 time = init_time(MSvals);
 
@@ -29,14 +29,13 @@ freq = init_freq(params.freqs);
 
 disp(params);
 
-rand('twister',sum(100*clock));
-
 for s=1:length(exp.subj)
   % set where the pattern will be saved
   patfile = fullfile(resDir, 'data', [patname '_' exp.subj(s).id '.mat']);
-  
+  evfile = fullfile(resDir, 'events', [patname '_' exp.subj(s).id '.mat']);
+    
   % check input files and prepare output files
-  if prepFiles({}, patfile, params)~=0
+  if prepFiles({}, {patfile, evfile}, params)~=0
     continue
   end
   
@@ -48,6 +47,9 @@ for s=1:length(exp.subj)
   events = filterStruct(events, '~strcmp(eegfile, '''')');
   base_events = filterStruct(events(:), params.baseEventFilter);
   events = filterStruct(events(:), params.eventFilter);
+  
+  % change the ev object
+  ev.file = evfile;
   ev.len = length(events);
 
   % get chan, filter if desired
@@ -56,25 +58,27 @@ for s=1:length(exp.subj)
   % create a pat object to keep track of this pattern
   pat = init_pat(patname, patfile, params, ev, chan, time, freq);
   
+  % update exp with the new pat object
+  exp = update_exp(exp, 'subj', exp.subj(s).id, 'pat', pat);
+  
   % initialize this subject's pattern
   patSize = [ev.len, length(chan), length(time), length(freq)];
   pattern = NaN(patSize);
   
-  % set up masks
-  m = 1;
-  if ~isempty(params.kthresh)
-    mask(m).name = 'kurtosis';
-    mask(m).mat = false(patSize);
-    m = m + 1;
-  end
-  if isfield(params, 'artWindow') && ~isempty(params.artWindow)
-    mask(m).name = 'artifacts';
-    mask(m).mat = false(patSize);
+  % initialize a boolean matrix to keep track of kurtosis
+  kMask = false(patSize);
 
-    artMask = rmArtifacts(events, time, params.artWindow);
-    for c=1:size(mask(m),2)
-      mask(m).mat(:,c,:) = artMask;
+  % create a boolean matrix to keep track of artifacts
+  mask = struct();
+  if isfield(params, 'artWindow') && ~isempty(params.artWindow)
+    artMask = false(patSize);
+    timeArtMask = rmArtifacts(events, pat.dim.time, params.artWindow);
+    for c=1:size(artMask,2)
+      for f=1:size(artMask,4)
+	artMask(:,c,:,f) = timeArtMask;
+      end
     end
+    mask = setobj(mask, struct('name', 'artifacts', 'mat', artMask));
   end
 
   % get a list of sessions in the filtered event struct
@@ -84,8 +88,7 @@ for s=1:length(exp.subj)
   start_e = 1;
   for n=1:length(exp.subj(s).sess)
     fprintf('\nProcessing %s session_%d:\n', exp.subj(s).id, sessions(n));
-    this_sess = inStruct(events, 'session==varargin{1}', sessions(n));
-    sess_events = events(this_sess);
+    sess_events = filterStruct(events, 'session==varargin{1}', sessions(n));
     sess_base_events = filterStruct(base_events, 'session==varargin{1}', sessions(n));
     
     for c=1:length(chan)
@@ -135,6 +138,7 @@ for s=1:length(exp.subj)
 				     'kthresh', params.kthresh, ...
 				     'width', params.width, ...
                                      'resampledRate', params.resampledRate, ...
+				     'downsample', params.downsample, ...
 			             'powonly', 'keepk');   
 	
 	% make it time X frequency
@@ -142,7 +146,7 @@ for s=1:length(exp.subj)
 	
 	for f=1:length(params.freqs)
 	  % add kurtosis information to the mask
-	  mask(1).mat(e,c,:,f) = kInd;
+	  kMask(e,c,:,f) = kInd;
 
 	  if params.ztransform
 	    if params.logtransform
@@ -165,15 +169,18 @@ for s=1:length(exp.subj)
   end % session
   fprintf('\n');
 
+  % put the masks in one struct
+  mask = setobj(mask, struct('name', 'kurtosis', 'mat', kMask));
+  
   if params.doBinning
     % do binning if desired
     [pat, pattern, events] = patBins(pat, pattern, mask, events);
+    mask = struct();
   end
   
   % save the pattern and corresponding events struct and masks
-  closeFile(pat.file, 'pattern', 'mask');
-  save(pat.dim.event.file, 'events');
-  
-  % update exp with the new pat object
-  exp = update_exp(exp, 'subj', exp.subj(s).id, 'pat', pat);
+  save(pat.file, 'pattern', 'mask');
+  releaseFile(pat.file);
+  save(pat.dim.ev.file, 'events');
+  releaseFile(pat.dim.ev.file);
 end % subj

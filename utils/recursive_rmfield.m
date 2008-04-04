@@ -43,6 +43,9 @@ if length(vars)==2
     
     % it's ok; remove this file
     system(['rm ' files{f}]);
+    if exist([files{f} '.lock'], 'file')
+      system(['rm -f' files{f} '.lock']);
+    end
   end
 
   if query

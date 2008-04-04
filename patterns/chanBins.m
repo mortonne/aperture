@@ -5,7 +5,7 @@ if ~exist('params', 'var')
   params = struct();
 end
 
-params = structDefaults(params, 'chanbins', {},  'chanbinlabels', {})
+params = structDefaults(params, 'chanbins', {},  'chanbinlabels', {});
 
 if ~isempty(params.chanbins)
   for c=1:length(params.chanbins)

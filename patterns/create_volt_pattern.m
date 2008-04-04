@@ -60,15 +60,13 @@ time = init_time(MSvals);
 
 disp(params);
 
-rand('twister',sum(100*clock));
-
 for s=1:length(exp.subj)
   % set where the pattern will be saved
   patfile = fullfile(resDir, 'data', [patname '_' exp.subj(s).id '.mat']);
+  evfile = fullfile(resDir, 'events', [patname '_' exp.subj(s).id '.mat']);
   
   % check input files and prepare output files
-  if prepFiles({}, patfile, params)~=0
-    keyboard
+  if prepFiles({}, {patfile, evfile}, params)~=0
     continue
   end
   
@@ -80,7 +78,14 @@ for s=1:length(exp.subj)
   events = filterStruct(events, '~strcmp(eegfile, '''')');
   base_events = filterStruct(events(:), params.baseEventFilter);
   events = filterStruct(events(:), params.eventFilter);
+  
+  % change the ev object
+  ev.file = evfile;
   ev.len = length(events);
+  
+  % save the events corresponding to this pattern
+  save(ev.file, 'events');
+  releaseFile(ev.file);
   
   % get chan, filter if desired
   chan = filterStruct(exp.subj(s).chan, params.chanFilter);
@@ -88,25 +93,25 @@ for s=1:length(exp.subj)
   % create a pat object to keep track of this pattern
   pat = init_pat(patname, patfile, params, ev, chan, time);
 
+  % update exp with the new pat object
+  exp = update_exp(exp, 'subj', exp.subj(s).id, 'pat', pat);
+  
   % initialize this subject's pattern
   patSize = [pat.dim.ev.len, length(pat.dim.chan), length(pat.dim.time)];
   pattern = NaN(patSize);
   
-  % set up masks
-  m = 1;
-  if ~isempty(params.kthresh)
-    mask(m).name = 'kurtosis';
-    mask(m).mat = false(patSize);
-    m = m + 1;
-  end
-  if isfield(params, 'artWindow') && ~isempty(params.artWindow)
-    mask(m).name = 'artifacts';
-    mask(m).mat = false(patSize);
+  % initialize a boolean matrix to keep track of kurtosis
+  kMask = false(patSize);
 
-    artMask = rmArtifacts(events, pat.dim.time, params.artWindow);
-    for c=1:size(mask(m),2)
-      mask(m).mat(:,c,:) = artMask;
+  % create a boolean matrix to keep track of artifacts
+  mask = struct();
+  if isfield(params, 'artWindow') && ~isempty(params.artWindow)
+    artMask = false(patSize);
+    timeArtMask = rmArtifacts(events, pat.dim.time, params.artWindow);
+    for c=1:size(artMask,2)
+      artMask(:,c,:) = timeArtMask;
     end
+    mask = setobj(mask, struct('name', 'artifacts', 'mat', artMask));
   end
 
   % get a list of sessions in the filtered event struct
@@ -116,8 +121,7 @@ for s=1:length(exp.subj)
   start_e = 1;
   for n=1:length(sessions)
     fprintf('\nProcessing %s session_%d:\n', exp.subj(s).id, sessions(n));
-    this_sess = inStruct(events, 'session==varargin{1}', sessions(n));
-    sess_events = events(this_sess);
+    sess_events = filterStruct(events, 'session==varargin{1}', sessions(n));
     sess_base_events = filterStruct(base_events, 'session==varargin{1}', sessions(n));
     
     for c=1:length(chan)
@@ -136,9 +140,10 @@ for s=1:length(exp.subj)
 	  base_eeg = run_kurtosis(base_eeg, params.kthresh);
 	end
 
-	rand_eeg = base_eeg(:,1);
-	base_mean = nanmean(rand_eeg);
-	base_std = nanstd(rand_eeg);	   
+	% if multiple samples given, use the first
+	base_eeg_vec = base_eeg(:,1);
+	base_mean = nanmean(base_eeg_vec);
+	base_std = nanstd(base_eeg_vec);   
       end
       
       % get power, z-transform, average each time bin
@@ -152,7 +157,7 @@ for s=1:length(exp.subj)
 	
 	% check kurtosis for this event, add info to boolean mask for later
 	if ~isempty(params.kthresh)
-	  mask(1).mat(e,c,:) = kurtosis(this_eeg)>params.kthresh;
+	  kMask(e,c,:) = kurtosis(this_eeg)>params.kthresh;
 	end
 	
 	% normalize across sessions
@@ -170,16 +175,16 @@ for s=1:length(exp.subj)
   end % session
   fprintf('\n');
 
+  % put the masks in one struct
+  mask = setobj(mask, struct('name', 'kurtosis', 'mat', kMask));
+  
   if params.doBinning
     % do binning if desired
     [pat, pattern, events] = patBins(pat, pattern, events, mask);
+    mask = struct();
   end
   
   % save the pattern and corresponding events struct and masks
   save(pat.file, 'pattern', 'mask');
   releaseFile(pat.file);
-  save(pat.dim.ev.file, 'events');
-  
-  % update exp with the new pat object
-  exp = update_exp(exp, 'subj', exp.subj(s).id, 'pat', pat);
 end % subj

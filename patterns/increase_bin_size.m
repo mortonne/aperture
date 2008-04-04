@@ -19,13 +19,12 @@ function exp = increase_bin_size(exp, params, patname, resDir)
 % OUTPUT: new exp struct with ana object added, which contains file
 % info and parameters of the analysis
 %
-
-%exp = increase_bin_size(exp, params, resDir, patname)
-%
-%EXAMPLES: params.binChan = {'LF', 'RF'} OR {{'LF', 'LFp'}, {'RF',
-%'RFp'}} OR {[1 2 125], [45 35 76 17 18]}
-%          params.MSbins = [0 100; 100 200]
-%          params.freqbins = [2 4; 4 8]
+% params.chanbins = {{'Fp1', 'LFp'}, {'Fp2', 'RFp'}, {'F3', 'F7',
+% 'LF'}, {'F4', 'F7', 'RF'}, 'LFT', 'RFT', {'T3', 'T5', 'LT'},
+% {'T4', 'T6', 'RT'}, {'P3', 'LP'}, {'P4', 'RP'}, {'O1', 'LO'},
+% {'O2', 'RO'}};
+% params.chanbinlabels = {'LFp', 'RFp', 'LF', 'RF', 'LFT', 'RFT',
+% 'LT', 'RT', 'LP', 'RP', 'LO', 'RO'};
 %
 
 if ~isfield(params, 'patname')
@@ -35,7 +34,7 @@ if ~exist('patname', 'var')
   patname = [params.patname '_mod'];
 end
 if ~exist('resDir', 'var')
-  resDir = fullfile(exp.resDir, patname);
+  resDir = fullfile(exp.resDir, 'eeg', patname);
 end
 
 params = structDefaults(params, 'eventFilter', '',  'masks', {});
@@ -55,13 +54,13 @@ for s=1:length(exp.subj)
     continue
   end
   
-  % load the original pattern with filters and masks
-  [pattern1, events] = loadPat(pat1, params, 1);
-  
   % do the binning
-  [pat, pattern, events] = patBins(pat1, params, pattern1
+  [pat, pattern, events] = patBins(pat1, params);
+
+  pat.name = patname;
+  pat.file = patfile;
   
-  if pat.dim.ev.length<pat1.dim.ev.length 
+  if pat.dim.ev.len<pat1.dim.ev.len 
     % we need to save a new events struct
     pat.dim.ev.file = fullfile(resDir, 'data', [exp.subj(s).id '_' patname '_events.mat']);
     save(pat.dim.ev.file, 'events');
@@ -71,5 +70,6 @@ for s=1:length(exp.subj)
   exp = update_exp(exp, 'subj', exp.subj(s).id, 'pat', pat);
   
   % save the new pattern
-  closeFile(pat.file, 'pattern');
+  save(pat.file, 'pattern');
+  releaseFile(pat.file);
 end % subj

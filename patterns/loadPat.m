@@ -30,7 +30,7 @@ if ~exist('params', 'var')
   params = [];
 end
 
-params = structDefaults(params, 'masks', {},  'eventFilter', '',  'whichPat', [],  'catDim', []);
+params = structDefaults(params, 'masks', {},  'eventFilter', '',  'chanFilter', '',  'whichPat', [],  'catDim', []);
 
 % if there are multiple patterns for this pat object, choose one
 if iscell(pat.file) & ~isempty(params.whichPat)
@@ -40,7 +40,7 @@ end
 % reconstitute pattern if necessary
 if iscell(pat.file) & ~isempty(params.catDim)
   
-  pattern = NaN(pat.dim.event.num, length(pat.dim.chan), length(pat.dim.time), length(pat.dim.freq));
+  pattern = NaN(pat.dim.ev.len, length(pat.dim.chan), length(pat.dim.time), length(pat.dim.freq));
   for i=1:length(pat.file)
     s = load(pat.file{i});
     if params.catDim==2
@@ -53,12 +53,11 @@ if iscell(pat.file) & ~isempty(params.catDim)
   end
   
 else
-  load(pat.file)
+  load(pat.file);
 end
 
 % apply masks
 if ~isempty(params.masks)
-  
   mask = filterStruct(mask, 'ismember(name, varargin{1})', params.masks);
   for m=1:length(mask)
     pattern(mask(m).mat) = NaN;
@@ -66,16 +65,21 @@ if ~isempty(params.masks)
 end
 
 % load events
-if loadEv
-  events = loadEvents(pat.dim.event.file);
+if loadEv | ~isempty(params.eventFilter)
+  events = loadEvents(pat.dim.ev.file);
 else
   events = [];
 end
 
 % filter events and pattern
 if ~isempty(params.eventFilter)
-  
   inds = inStruct(events, params.eventFilter);  
   pattern = pattern(inds,:,:,:);
   events = events(inds);
+end
+
+% filter channels
+if ~isempty(params.chanFilter)
+  inds = inStruct(pat.dim.chan, params.chanFilter);
+  pattern = pattern(:,inds,:,:);
 end
