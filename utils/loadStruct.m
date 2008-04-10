@@ -1,4 +1,4 @@
-function s = loadStruct(structFile, repStr)
+function s = loadStruct(structFile, repStr, lock)
 %
 %LOADSTRUCT - load a structure from file, and recursively 
 %replace a string found anywhere in the struct 
@@ -13,21 +13,19 @@ function s = loadStruct(structFile, repStr)
 % eeg = loadStruct(structFile,repStr);
 %
 
-% tic
-% loading = 1;
-% while loading
-%   loading = 0;
-%   if ~lockFile(structFile,1)
-%     loading = 1;
-%   else
-%     fprintf('SUCCESS!!!11!');
-%   end
-  
-%   if toc>100
-%     error('Locking timed out.')
-%     break
-%   end
-% end
+if ~exist('lock', 'var')
+  lock = 1;
+end
+
+fprintf('In loadStruct: ');
+
+if lock
+  if ~lockFile(structFile, 1);
+    error('Locking timed out.')
+  else
+    fprintf('Locked, ready to load.\n');
+  end
+end
 
 struct = load(structFile);
 struct_name = fieldnames(struct);
@@ -41,4 +39,6 @@ end
 if isfield(s, 'file')
   save(s.file, 's');
 end
-releaseFile(structFile);
+if lock
+  releaseFile(structFile);
+end

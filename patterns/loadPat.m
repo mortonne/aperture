@@ -57,10 +57,11 @@ else
 end
 
 % apply masks
-if ~isempty(params.masks)
-  mask = filterStruct(mask, 'ismember(name, varargin{1})', params.masks);
+if exist('mask', 'var')
   for m=1:length(mask)
-    pattern(mask(m).mat) = NaN;
+    if ~isempty(mask(m).name) && ismember(mask(m).name, params.masks)
+      pattern(mask(m).mat) = NaN;
+    end
   end
 end
 

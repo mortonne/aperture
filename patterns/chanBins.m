@@ -15,12 +15,13 @@ if ~isempty(params.chanbins)
     elseif isnumeric(params.chanbins{c})
       binc{c} = find(inStruct(chan1, 'ismember(number, varargin{1})', params.chanbins{c}));
     elseif iscell(params.chanbins{c})
+      regions = getStructField(chan1, 'region');
       binc{c} = find(inStruct(chan1, 'ismember(region, varargin{1})', params.chanbins{c}));
     elseif isstr(params.chanbins{c})
       binc{c} = find(inStruct(chan1, 'strcmp(region, varargin{1})', params.chanbins{c}));
     end
     theseChans = chan1(binc{c});
-    
+
     % update the channel labels
     chan2(c).number = getStructField(theseChans, 'number');
     chan2(c).region = getStructField(theseChans, 'region');

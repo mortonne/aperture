@@ -17,6 +17,7 @@ end
 % initialize
 pat2 = pat1;
 pattern2 = pattern1;
+events2 = events1;
 
 % start the averaging
 fprintf('Binning pattern "%s"...', pat1.name); 

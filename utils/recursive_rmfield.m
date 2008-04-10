@@ -23,6 +23,11 @@ if length(vars)==2
   
   cont = 1;
   for f=1:length(files)
+    % check if this file still exists
+    if ~exist(files{f}, 'file')
+      continue
+    end
+    
     % make sure these files are ok to delete
     if query
       promptStr = sprintf('Removing data in %s. Continue? >> ', files{f});
@@ -42,10 +47,10 @@ if length(vars)==2
     end
     
     % it's ok; remove this file
-    system(['rm ' files{f}]);
     if exist([files{f} '.lock'], 'file')
       system(['rm -f' files{f} '.lock']);
     end
+    system(['rm ' files{f}]);
   end
 
   if query

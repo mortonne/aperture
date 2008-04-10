@@ -19,32 +19,30 @@ function exp = increase_bin_size(exp, params, patname, resDir)
 % OUTPUT: new exp struct with ana object added, which contains file
 % info and parameters of the analysis
 %
-% params.chanbins = {{'Fp1', 'LFp'}, {'Fp2', 'RFp'}, {'F3', 'F7',
-% 'LF'}, {'F4', 'F7', 'RF'}, 'LFT', 'RFT', {'T3', 'T5', 'LT'},
-% {'T4', 'T6', 'RT'}, {'P3', 'LP'}, {'P4', 'RP'}, {'O1', 'LO'},
+% params.chanbins = {{'Fp1', 'LFp'}, {'Fp2', 'RFp'}, {'F3', 'F7', ...
+% 'LF'}, {'F4', 'F7', 'RF'}, 'LFT', 'RFT', {'T3', 'T5', 'LT'}, ...
+% {'T4', 'T6', 'RT'}, {'P3', 'LP'}, {'P4', 'RP'}, {'O1', 'LO'}, ...
 % {'O2', 'RO'}};
-% params.chanbinlabels = {'LFp', 'RFp', 'LF', 'RF', 'LFT', 'RFT',
+% params.chanbinlabels = {'LFp', 'RFp', 'LF', 'RF', 'LFT', 'RFT', ...
 % 'LT', 'RT', 'LP', 'RP', 'LO', 'RO'};
 %
 
-if ~isfield(params, 'patname')
-  error('You must specify which pattern to use');
-end
-if ~exist('patname', 'var')
-  patname = [params.patname '_mod'];
-end
 if ~exist('resDir', 'var')
   resDir = fullfile(exp.resDir, 'eeg', patname);
 end
 
-params = structDefaults(params, 'eventFilter', '',  'masks', {});
+params = structDefaults(params, 'patname', '',  'eventFilter', '',  'masks', {});
+
+if ~exist('patname', 'var')
+  patname = [params.patname '_mod'];
+end
 
 % create the new pattern for each subject
 for s=1:length(exp.subj)
   fprintf('%s\n', exp.subj(s).id);
   
   % set where the pattern will be saved
-  patfile = fullfile(resDir, 'data', [exp.subj(s).id '_' patname '.mat']);
+  patfile = fullfile(resDir, 'patterns', [exp.subj(s).id '_' patname '.mat']);
   
   % get the pat obj for the original pattern
   pat1 = getobj(exp.subj(s), 'pat', params.patname);  
@@ -62,7 +60,7 @@ for s=1:length(exp.subj)
   
   if pat.dim.ev.len<pat1.dim.ev.len 
     % we need to save a new events struct
-    pat.dim.ev.file = fullfile(resDir, 'data', [exp.subj(s).id '_' patname '_events.mat']);
+    pat.dim.ev.file = fullfile(resDir, 'events', [exp.subj(s).id '_' patname '_events.mat']);
     save(pat.dim.ev.file, 'events');
   end
 

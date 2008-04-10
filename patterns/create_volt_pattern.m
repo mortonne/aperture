@@ -39,7 +39,7 @@ function exp = create_volt_pattern(exp, params, patname, resDir)
 %      pattern - one for each subject s is saved in
 %         exp.subj(s).pat.file.  Dimensions are events X channels X time.
 %
-
+fprintf('In create_volt_pattern');
 if ~exist('params', 'var')
   params = struct();
 end
@@ -62,13 +62,8 @@ disp(params);
 
 for s=1:length(exp.subj)
   % set where the pattern will be saved
-  patfile = fullfile(resDir, 'data', ['pattern_' patname '_' exp.subj(s).id '.mat']);
+  patfile = fullfile(resDir, 'patterns', ['pattern_' patname '_' exp.subj(s).id '.mat']);
   evfile = fullfile(resDir, 'events', ['events_' patname '_' exp.subj(s).id '.mat']);
-  
-  % check input files and prepare output files
-  if prepFiles({}, {patfile, evfile}, params)~=0
-    continue
-  end
   
   % get the ev object to be used for this pattern
   ev = getobj(exp.subj(s), 'ev', params.evname);
@@ -95,6 +90,11 @@ for s=1:length(exp.subj)
 
   % update exp with the new pat object
   exp = update_exp(exp, 'subj', exp.subj(s).id, 'pat', pat);
+  
+  % check input files and prepare output files
+  if prepFiles({}, {patfile, evfile}, params)~=0
+    continue
+  end
   
   % initialize this subject's pattern
   patSize = [pat.dim.ev.len, length(pat.dim.chan), length(pat.dim.time)];
