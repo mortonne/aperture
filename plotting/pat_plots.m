@@ -61,6 +61,8 @@ for i=1:length(params.subjects)
     continue
   end
   
+  timeMS = getStructField(pat.dim.time, 'avg');
+  
   pattern = loadPat(pat, params, 0);
   
   if params.diff & size(pattern,1)==2
@@ -77,10 +79,9 @@ for i=1:length(params.subjects)
     for c=1:size(pattern,2)
       hold on
       for e=1:size(pattern,1)
-	h = plot(getStructField(pat.dim.time, 'avg'), squeeze(pattern(e,c,:)), params.sym{mod(e,length(params.sym))+1});
+	sym = params.sym{mod(e,length(params.sym))+1};
+	h = plot_erp(timeMS, squeeze(pattern(e,c,:)), sym);
       end
-      xlabel('Time (ms)')
-      ylabel('Voltage')
       hold off
       
       if sum(~isnan(get(h, 'YData')))>0
