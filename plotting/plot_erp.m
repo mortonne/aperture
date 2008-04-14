@@ -1,10 +1,15 @@
 function h = plot_erp(timeMS, erp1, erp2, p)
 %
-%PLOT_ERP   Plot one or more ERPs, with or without significance
-%   H = PLOT_ERP(TIMEMS, ERP1) creates a plot of voltage values for
-%   times in vector TIMEMS, and returns handle H to the figure.
+%PLOT_ERP   Plot one or more ERPs, with or without significance.
+%   H = PLOT_ERP(TIMEMS, ERP) creates a plot of voltage values in
+%   ERP for times in vector TIMEMS, and returns handle H to the figure.
 %
-%   H = PLOT_ERP(TIMEMS, ERP1, ERP2
+%   H = PLOT_ERP(TIMEMS, ERP1, ERP2) plots voltage values in ERP1
+%   and ERP2 on the same axis.
+%
+%   H = PLOT_ERP(TIMEMS, ERP1, ERP2, P) plots two ERPs and shades
+%   in regions that are significant.
+%
 
 
 if isempty(timeMS)
@@ -20,13 +25,15 @@ lineWidth = 1.1;
 
 clf
 
-% get logicals for the two significance conditions
-pMoreSig = p < moreSig;
-pLessSig = p < lessSig & ~pMoreSig;
-
-% fill in the significant regions first
-fillSigDiff(timeMS, pMoreSig, erp1, erp2, fillcolMoreSig);
-fillSigDiff(timeMS, pLessSig, erp1, erp2, fillcolLessSig);
+if exist('p', 'var')
+  % get logicals for the two significance conditions
+  pMoreSig = p < moreSig;
+  pLessSig = p < lessSig & ~pMoreSig;
+  
+  % fill in the significant regions first
+  fillSigDiff(timeMS, pMoreSig, erp1, erp2, fillcolMoreSig);
+  fillSigDiff(timeMS, pLessSig, erp1, erp2, fillcolLessSig);
+end
 
 % plot the erps on top
 hold on

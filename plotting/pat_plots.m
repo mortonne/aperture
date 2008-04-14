@@ -77,12 +77,12 @@ for i=1:length(params.subjects)
     fig.params = params;
     
     for c=1:size(pattern,2)
+      clf
       hold on
       for e=1:size(pattern,1)
 	sym = params.sym{mod(e,length(params.sym))+1};
 	h = plot_erp(timeMS, squeeze(pattern(e,c,:)), sym);
       end
-      hold off
       
       if sum(~isnan(get(h, 'YData')))>0
 	fig.file{c} = fullfile(resDir, 'figs', [params.patname '_erp_' id 'e1c' num2str(c) '.eps']);
