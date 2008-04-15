@@ -28,6 +28,9 @@ end
 if ~exist('figname', 'var')
   figname = 'plots';
 end
+if ~exist('title', 'var')
+  title = 'plots';
+end
 
 params = structDefaults(params, 'diff', 0,  'across_subj', 0,  'sym', {'-r', '-b'});
 
@@ -55,15 +58,16 @@ for i=1:length(params.subjects)
     id = exp.subj(s).id;
     pat = getobj(exp.subj(s), 'pat', params.patname);
   end
+
+  timeMS = [pat.dim.time.avg];
   
   % check input files
   if prepFiles(pat.file, {}, params)~=0
     continue
   end
   
-  timeMS = getStructField(pat.dim.time, 'avg');
-  
   pattern = loadPat(pat, params, 0);
+  load(pat.stat.file);
   
   if params.diff & size(pattern,1)==2
     pattern = pattern(2,:,:,:)-pattern(1,:,:,:);
@@ -77,14 +81,9 @@ for i=1:length(params.subjects)
     fig.params = params;
     
     for c=1:size(pattern,2)
-      clf
-      hold on
-      for e=1:size(pattern,1)
-	sym = params.sym{mod(e,length(params.sym))+1};
-	h = plot_erp(timeMS, squeeze(pattern(e,c,:)), sym);
-      end
+      h = plot_erp(timeMS, squeeze(pattern(1,c,:))', squeeze(pattern(2,c,:))', squeeze(p(1,c,:))');
       
-      if sum(~isnan(get(h, 'YData')))>0
+      if 1%sum(~isnan(get(h, 'YData')))>0
 	fig.file{c} = fullfile(resDir, 'figs', [params.patname '_erp_' id 'e1c' num2str(c) '.eps']);
 	print(gcf, '-depsc', fig.file{c});
       end
