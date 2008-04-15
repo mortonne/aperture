@@ -6,9 +6,14 @@ end
 if ~exist('statname', 'var')
   statname = 'anovan';
 end
+if isstr(params.fields)
+  params.fields = {params.fields};
+end
+
+params = structDefaults(params, 'masks', {},  'eventFilter', '',  'chanFilter', '',  'lock', 1,  'overwrite', 0);
 
 for s=1:length(exp.subj)
-  pat = getobj(exp.subj, 'pat', params.patname);
+  pat = getobj(exp.subj(s), 'pat', params.patname);
 
   % set where the stats will be saved
   statfile = fullfile(resDir, 'stats', [params.patname '_anovan_' exp.subj(s).id '.mat']);
@@ -18,27 +23,37 @@ for s=1:length(exp.subj)
     continue
   end
 
+  fprintf('\nStarting ANOVAN for %s...\n', exp.subj(s).id);
+  
   % initialize the stat object
   stat.name = statname;
   stat.file = statfile;
   
   % load pattern and events
-  [pattern, events] = loadPat(pat.file, params, 1);
+  [pattern, events] = loadPat(pat, params, 1);
   
   % make the regressors
   group = cell(1, length(params.fields));
   for i=1:length(params.fields)
     group{i} = [group{i}; getStructField(events, params.fields{i})'];
+    stat.factor(i).name = params.fields{i};
+    stat.factor(i).vals = unique(group{i});
   end
   
+  pat = setobj(pat, 'stat', stat);
+  
+  p = NaN(length(params.fields), size(pattern,2), size(pattern,3), size(pattern,4));
   % do the anova
+  fprintf('Channel: ');
   for c=1:size(pattern,2)
+    fprintf('%s ', pat.dim.chan(c).label);
     for t=1:size(pattern,3)
       for f=1:size(pattern,4)
-	p(:,c,t,f) = anovan(squeeze(pattern(:,c,t,f)), group);
+	p(:,c,t,f) = anovan(squeeze(pattern(:,c,t,f)), group, 'display', 'off');
       end
     end
   end
+  fprintf('\n');
   
   save(stat.file, 'p');
   

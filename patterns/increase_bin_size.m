@@ -59,6 +59,10 @@ for s=1:length(exp.subj)
   pat.file = patfile;
   
   if pat.dim.ev.len<pat1.dim.ev.len 
+    if ~exist(fullfile(resDir, 'events'), 'dir')
+      mkdir(fullfile(resDir, 'events'));
+    end
+    
     % we need to save a new events struct
     pat.dim.ev.file = fullfile(resDir, 'events', [exp.subj(s).id '_' patname '_events.mat']);
     save(pat.dim.ev.file, 'events');
