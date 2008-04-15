@@ -94,8 +94,8 @@ for i = 1:length(exp.subj)
 	  list_ev(these_study(sind)).subclust = 0;
 	end
 	
-      end 
-      	
+      end
+      
     end % k list
     
     % save modified events to disk
