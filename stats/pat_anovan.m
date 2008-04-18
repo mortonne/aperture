@@ -26,8 +26,7 @@ for s=1:length(exp.subj)
   fprintf('\nStarting ANOVAN for %s...\n', exp.subj(s).id);
   
   % initialize the stat object
-  stat.name = statname;
-  stat.file = statfile;
+  stat = init_stat(statname, file, params);
   
   % load pattern and events
   [pattern, events] = loadPat(pat, params, 1);
@@ -40,8 +39,6 @@ for s=1:length(exp.subj)
     stat.factor(i).vals = unique(group{i});
   end
   
-  pat = setobj(pat, 'stat', stat);
-  
   p = NaN(length(params.fields), size(pattern,2), size(pattern,3), size(pattern,4));
   % do the anova
   fprintf('Channel: ');
@@ -49,7 +46,7 @@ for s=1:length(exp.subj)
     fprintf('%s ', pat.dim.chan(c).label);
     for t=1:size(pattern,3)
       for f=1:size(pattern,4)
-	p(:,c,t,f) = anovan(squeeze(pattern(:,c,t,f)), group, 'display', 'off');
+	p(:,c,t,f) = anovan(squeeze(pattern(:,c,t,f)), group, 'display', 'off', 'model', 'interaction');
       end
     end
   end
@@ -58,5 +55,5 @@ for s=1:length(exp.subj)
   save(stat.file, 'p');
   
   % update the exp struct
-  exp = update_exp(exp, 'subj', exp.subj(s).id, 'pat', pat);
+  exp = update_exp(exp, 'subj', exp.subj(s).id, 'pat', pat.name, 'stat', stat);
 end
