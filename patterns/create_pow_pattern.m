@@ -21,7 +21,7 @@ params = structDefaults(params,  'evname', 'events',  'eventFilter', '',  'chanF
 
 % get time bin information
 stepSize = fix(1000/params.downsample);
-MSvals = [params.offsetMS:stepSize:(params.offsetMS+params.durationMS-1)];
+MSvals = [params.offsetMS+stepSize/2:stepSize:(params.offsetMS+params.durationMS-stepSize/2)];
 time = init_time(MSvals);
 
 % initialize the frequency dimension

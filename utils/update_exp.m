@@ -6,7 +6,7 @@ fprintf('In update_exp: ');
 if ~lockFile(exp.file, 1);
   error('Locking timed out.')
 end
-fprintf('Locked, ready to load.\n');
+fprintf('Locked, ready to load...');
 
 % get the latest version of exp
 load(exp.file);
@@ -27,3 +27,4 @@ end
 
 save(exp.file, 'exp');
 releaseFile(exp.file);
+fprintf('Updated and saved.\n');

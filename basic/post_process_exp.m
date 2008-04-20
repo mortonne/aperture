@@ -10,8 +10,8 @@ function exp = post_process_exp(exp, eventsFcnHandle, params, varargin)
 %               4) adds artifactMS field using addArtifacts 
 %               5) Average Rerefrences eeg data
 %
-% FUNCTION:  
-%   post_process_catFR(subj, resDir)
+% FUNCTION:
+%   exp = post_process_exp(exp, eventsFcnHandle, params, varargin)
 %
 
 if ~exist('params', 'var')
