@@ -1,13 +1,13 @@
-function eeg = classify_pat(eeg, params, resDir, ananame)
+function exp = classify_pat(exp, params, resDir, ananame)
 %
 %CLASSIFY_PAT - for a given field in the events struct, train and
 %test a pattern classifier using a leave-one-out method
 %
-% FUNCTION: eeg = classify_pat(eeg, params, resDir, ananame)
+% FUNCTION: exp = classify_pat(exp, params, resDir, ananame)
 %
-% INPUT: eeg - struct created by init_iEEG or init_scalp
+% INPUT: exp - struct created by init_iEEG or init_scalp
 %        params - required fields: patname (specifies the name of
-%                 which pattern in the eeg struct to train on),
+%                 which pattern in the exp struct to train on),
 %                 regressor (name of field in events struct to use in
 %                 training the classifier), selector (name of field
 %                 to use as a selector)
@@ -16,9 +16,9 @@ function eeg = classify_pat(eeg, params, resDir, ananame)
 %                 events to use), masks (cell array containing
 %                 names of masks to apply to pattern)
 %        resDir - 'pclass' files are saved in resDir/data
-%        ananame - analysis name to save under in the eeg struct
+%        ananame - analysis name to save under in the exp struct
 %
-% OUTPUT: new eeg struct with ana object added, which contains file
+% OUTPUT: new exp struct with ana object added, which contains file
 % info and parameters of the analysis
 %
 
@@ -31,36 +31,26 @@ end
 if ~isfield(params, 'selector')
   error('You must provide the name of a selector field to use for classification')
 end
-if ~isfield(params, 'subjects')
-  params.subjects = getStructField(eeg.subj, 'id');
-end
 
-params = structDefaults(params, 'eventFilter', '',  'masks', {});
-
-% write all file info and update the eeg struct
-for n=1:length(params.subjects)
-  s = find(inStruct(eeg.subj, 'strcmp(id, varargin)', params.subjects{n}));
-  
-  ana.name = ananame;
-  ana.file = fullfile(resDir, 'data', [ananame '_' eeg.subj(s).id '.mat']);
-  ana.pat = getobj(eeg.subj(s), 'pat', params.patname);
-  ana.params = params;
-  
-  eeg.subj(s) = setobj(eeg.subj(s), 'ana', ana);
-end
-save(fullfile(eeg.resDir, 'eeg.mat'), 'eeg');
+params = structDefaults(params, 'eventFilter', '',  'masks', {},  'scramble');
 
 for s=1:length(exp.subj)
-  s = find(inStruct(eeg.subj, 'strcmp(id, varargin)', params.subjects{n}));
-  fprintf('\n%s\n', eeg.subj(s).id);
+  pat = getobj(exp.subj(s), 'pat', params.patname);
   
-  ana = getobj(eeg.subj(s), 'ana', ananame);
+  % set where the results will be saved
+  pcfile = fullfile(resDir, 'patclass', [params.patname '_' exp.subj(s).id '.mat']);
   
-  % if ~lockFile(ana.file) | exist([ana.pat.file '.lock'], 'file') | ~exist(ana.pat.file, 'file')
-%     continue
-%   end
+  % check input files and prepare output files
+  if prepFiles(pat.file, pcfile, params)~=0
+    continue
+  end
   
-  [pattern, events] = loadPat(ana.pat.file, params.masks, ana.pat.eventsFile, params.eventFilter);
+  fprintf('\nStarting pattern classification for %s...\n', exp.subj(s).id);
+
+  % initialize the pc object
+  pc = init_pc(pcname, pcfile, pat, params);
+  
+  [pattern, events] = loadPat(pcname, pcfile, pat, params);
   reg.vec = getStructField(events, params.regressor);
   reg.vals = unique(reg.vec);
   
@@ -72,12 +62,12 @@ for s=1:length(exp.subj)
     continue
   end
   
-  for b=1:size(pattern,3)
-    fprintf('%d to %d ms: ', ana.pat.params.binMS{b}(1), ana.pat.params.binMS{b}(end));
+  for t=1:length(pat.dim.time)
+    fprintf('%s: ', pat.dim.time(t).label);
     
-    for f=1:size(pattern,4)
+    for f=1:length(pat.dim.freq)
       if isfield(params, 'binFreq')
-	fprintf('\n      %.1f to %.1f Hz:\t', ana.pat.params.binFreq{f}(1), ana.pat.params.binFreq{f}(end));
+	fprintf('\n      %s:\t', pat.dim.freq(f).label);
       end
       
       % remove events that were thrown out
@@ -94,25 +84,14 @@ for s=1:length(exp.subj)
       tot_guesses = [];
       
       for j=1:length(sel.vals)
-	train = struct('pat', [],  'targvec', [],  'targmat', []);
-	test = struct('pat', [],  'targvec', [],  'targmat', []);
-	
 	% select which events to test
 	testsel = sel.goodvec==sel.vals(j);
 	
-	train.pat = thispat(~testsel,:);
-	test.pat = thispat(testsel,:);
+	trainpat = thispat(~testsel,:);
+	testpat = thispat(testsel,:);
 	
-	% remove channels that were thrown out for either train and test
-	cboth = intersect(find(max(~isnan(train.pat))), find(max(~isnan(test.pat))));
-	train.pat = train.pat(:, cboth);
-	test.pat = test.pat(:, cboth);
-	
-	% set all other NaN's to the mean for that channel
-	for x=1:length(cboth)
-	  train.pat(isnan(train.pat(:,x)), x) = nanmean(train.pat(:,x));
-	  test.pat(isnan(test.pat(:,x)), x) = nanmean(test.pat(:,x));	  
-	end
+	% deal with NaN's in the patterns
+	[trainpat, testpat] = prep_patclass(trainpat, testpat);
 	
 	train.targvec = reg.goodvec(~testsel)';
 	test.targvec = reg.goodvec(testsel)';
@@ -122,14 +101,13 @@ for s=1:length(exp.subj)
 	end
 	
 	% run classification algorithms
-		
-	  pclassParams.nHidden = 10;
-	  sp1 = train_bp_netlab(train.pat',train.targmat',pclassParams);
-	  [output, sp2] = test_bp_netlab(test.pat',test.targmat',sp1);
-	  [vals, guesses] = max(output);
-	  tot_output = [tot_output; output'];
-	  tot_guesses = [tot_guesses; guesses'];
-
+	pclassParams.nHidden = 10;
+	sp1 = train_bp_netlab(train.pat',train.targmat',pclassParams);
+	[output, sp2] = test_bp_netlab(test.pat',test.targmat',sp1);
+	[vals, guesses] = max(output);
+	tot_output = [tot_output; output'];
+	tot_guesses = [tot_guesses; guesses'];
+	
 	% pclassParams.penalty = .5;
 % 	sp1 = train_logreg(train.pat', train.targmat', pclassParams);
 % 	[output sp2] = test_logreg(test.pat', test.targmat', sp1);

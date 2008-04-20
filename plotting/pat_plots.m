@@ -74,6 +74,9 @@ for i=1:length(params.subjects)
   end
   
   if length(pat.dim.freq)==1 % plotting voltage values
+    
+    fig = init_fig(figname, 'erp', {}, params);
+    
     fig.name = figname;
     fig.title = title;
     fig.type = 'erp';
@@ -94,7 +97,7 @@ for i=1:length(params.subjects)
     
     for e=1:size(pattern,1)
       fig.name = [figname num2str(e)];
-      fig.type = 'erp';
+      fig.type = 'erpow';
       fig.file = {};
       fig.params = params;
       
