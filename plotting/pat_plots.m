@@ -32,7 +32,7 @@ if ~exist('title', 'var')
   title = 'plots';
 end
 
-params = structDefaults(params, 'diff', 0,  'across_subj', 0,  'sym', {'-r', '-b'});
+params = structDefaults(params, 'diff', 0,  'across_subj', 0,  'sym', {'-r', '-b'}, 'plotsig', 1);
 
 if ~isfield(params, 'subjects')
   params.subjects = getStructField(exp.subj, 'id');
@@ -67,24 +67,29 @@ for i=1:length(params.subjects)
   end
   
   pattern = loadPat(pat, params, 0);
-  load(pat.stat.file);
+  
+  if ~isfield(pat, 'stat') || isempty(pat.stat)
+    params.plotsig = 0;
+  end
+  
+  if params.plotsig
+    load(pat.stat.file);
+  end
   
   if params.diff & size(pattern,1)==2
     pattern = pattern(2,:,:,:)-pattern(1,:,:,:);
   end
   
   if length(pat.dim.freq)==1 % plotting voltage values
-    
+
     fig = init_fig(figname, 'erp', {}, params);
     
-    fig.name = figname;
-    fig.title = title;
-    fig.type = 'erp';
-    fig.file = {};
-    fig.params = params;
-    
     for c=1:size(pattern,2)
-      h = plot_erp(timeMS, squeeze(pattern(1,c,:))', squeeze(pattern(2,c,:))', squeeze(p(1,c,:))');
+      if params.plotsig
+	h = plot_erp(timeMS, squeeze(pattern(1,c,:))', squeeze(pattern(2,c,:))', squeeze(p(1,c,:))');
+      else
+	h = plot_erp(timeMS, squeeze(pattern(1,c,:))', squeeze(pattern(2,c,:)));
+      end
       
       if 1%sum(~isnan(get(h, 'YData')))>0
 	fig.file{c} = fullfile(resDir, 'figs', [params.patname '_erp_' id 'e1c' num2str(c) '.eps']);
@@ -92,24 +97,26 @@ for i=1:length(params.subjects)
       end
     end
     
-    pat = setobj(pat, 'fig', fig);
   else % plotting power values
     
+    fig = init_fig(figname, 'power', {}, params);
+    
     for e=1:size(pattern,1)
-      fig.name = [figname num2str(e)];
-      fig.type = 'erpow';
-      fig.file = {};
-      fig.params = params;
-      
-      h = plot_pow(squeeze(pattern(e,c,:,:))', pat.dim);
-      
-      fig.file{c} = fullfile(resDir, 'figs', [params.patname '_erpow_' id '_e' num2str(e) 'c' num2str(c) '.eps']);
+      if params.plotsig
+	h = plot_pow(squeeze(p(e,c,:,:))', pat.dim);
+	fig.file{c} = fullfile(resDir, 'figs', [params.patname '_erpow_sig_' id '_e' num2str(e) 'c' num2str(c) '.eps']);
+      else
+	h = plot_pow(squeeze(pattern(e,c,:,:))', pat.dim);
+	fig.file{c} = fullfile(resDir, 'figs', [params.patname '_erpow_' id '_e' num2str(e) 'c' num2str(c) '.eps']);
+      end
+            
       print(gcf, '-depsc', fig.file{c});
       
-      pat = setobj(pat, 'fig', fig);
     end
   end
 
+  pat = setobj(pat, 'fig', fig);
+  
   % update exp with filenames of the new figures
   if strcmp(id, 'across_subj')
     exp = update_exp(exp, 'pat', pat);
