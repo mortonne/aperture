@@ -9,7 +9,11 @@ for i=1:length(Fnames)
     % run strrep if applicable
     if isstr(F) | iscell(F)
       for r=1:size(repStr,1)
-	F = strrep(F, repStr{r,1}, repStr{r,2});
+	try
+	  F = strrep(F, repStr{r,1}, repStr{r,2});
+	catch
+	  break
+	end
       end
     end
     

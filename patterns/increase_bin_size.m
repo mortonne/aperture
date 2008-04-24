@@ -57,6 +57,7 @@ for s=1:length(exp.subj)
 
   pat.name = patname;
   pat.file = patfile;
+  pat.params = params;
   
   if pat.dim.ev.len<pat1.dim.ev.len 
     if ~exist(fullfile(resDir, 'events'), 'dir')

@@ -18,7 +18,7 @@ if ~exist('params', 'var')
   params = struct();
 end
 
-params = structDefaults(params, 'skipError', 0,  'overwrite', 0,  'lock', 0,  'ignoreLock', 0);
+params = structDefaults(params, 'skipError', 1,  'overwrite', 0,  'lock', 0,  'ignoreLock', 0);
 
 % write all file info first
 for s=1:length(exp.subj)
@@ -37,7 +37,7 @@ for s=1:length(exp.subj)
     sess = exp.subj(s).sess(n);
     
     fprintf('\nCreating event structure for %s, session %d...\n', subj.id, sess.number);
-    
+
     if prepFiles({}, sess.eventsFile, params)==0 % outfile is ok to go
       if ~params.skipError
 	% create events

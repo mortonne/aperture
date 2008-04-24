@@ -1,4 +1,5 @@
 function exp = pat_anovan(exp, params, statname, resDir)
+%exp = pat_anovan(exp, params, statname, resDir)
 
 if ~exist('resDir', 'var')
   resDir = fullfile(exp.resDir, 'eeg', params.patname);
@@ -26,7 +27,7 @@ for s=1:length(exp.subj)
   fprintf('\nStarting ANOVAN for %s...\n', exp.subj(s).id);
   
   % initialize the stat object
-  stat = init_stat(statname, file, params);
+  stat = init_stat(statname, statfile, params);
   
   % load pattern and events
   [pattern, events] = loadPat(pat, params, 1);
@@ -39,14 +40,14 @@ for s=1:length(exp.subj)
     stat.factor(i).vals = unique(group{i});
   end
   
-  p = NaN(length(params.fields), size(pattern,2), size(pattern,3), size(pattern,4));
+  p = NaN(length(params.fields)+1, size(pattern,2), size(pattern,3), size(pattern,4));
   % do the anova
   fprintf('Channel: ');
   for c=1:size(pattern,2)
     fprintf('%s ', pat.dim.chan(c).label);
     for t=1:size(pattern,3)
       for f=1:size(pattern,4)
-	p(:,c,t,f) = anovan(squeeze(pattern(:,c,t,f)), group, 'display', 'off', 'model', 'interaction');
+	p(:,c,t,f) = anovan(squeeze(pattern(:,c,t,f)), group, 'display', 'off', params.anovan_in{:});
       end
     end
   end

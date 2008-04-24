@@ -32,7 +32,7 @@ if ~exist('title', 'var')
   title = 'plots';
 end
 
-params = structDefaults(params, 'diff', 0,  'across_subj', 0,  'sym', {'-r', '-b'}, 'plotsig', 1);
+params = structDefaults(params, 'diff', 0,  'across_subj', 0,  'sym', {'-r', '-b'}, 'plotsig', 1,  'whichStat', {[], []});
 
 if ~isfield(params, 'subjects')
   params.subjects = getStructField(exp.subj, 'id');
@@ -67,13 +67,22 @@ for i=1:length(params.subjects)
   end
   
   pattern = loadPat(pat, params, 0);
-  
+  keyboard
   if ~isfield(pat, 'stat') || isempty(pat.stat)
     params.plotsig = 0;
   end
   
   if params.plotsig
+    if ~isempty(params.whichStat{1})
+      stat = getobj(pat, 'stat', params.whichStat{1});
+    else
+      stat = pat.stat(end);
+    end
     load(pat.stat.file);
+    
+    if ~isempty(params.whichStat{2})
+      p = p(params.whichStat{2});
+    end
   end
   
   if params.diff & size(pattern,1)==2
@@ -92,8 +101,8 @@ for i=1:length(params.subjects)
       end
       
       if 1%sum(~isnan(get(h, 'YData')))>0
-	fig.file{c} = fullfile(resDir, 'figs', [params.patname '_erp_' id 'e1c' num2str(c) '.eps']);
-	print(gcf, '-depsc', fig.file{c});
+	fig.file{1,c} = fullfile(resDir, 'figs', [params.patname '_erp_' id 'e1c' num2str(c) '.eps']);
+	print(gcf, '-depsc', fig.file{1,c});
       end
     end
     
@@ -102,16 +111,18 @@ for i=1:length(params.subjects)
     fig = init_fig(figname, 'power', {}, params);
     
     for e=1:size(pattern,1)
-      if params.plotsig
-	h = plot_pow(squeeze(p(e,c,:,:))', pat.dim);
-	fig.file{c} = fullfile(resDir, 'figs', [params.patname '_erpow_sig_' id '_e' num2str(e) 'c' num2str(c) '.eps']);
-      else
-	h = plot_pow(squeeze(pattern(e,c,:,:))', pat.dim);
-	fig.file{c} = fullfile(resDir, 'figs', [params.patname '_erpow_' id '_e' num2str(e) 'c' num2str(c) '.eps']);
+      for c=1:size(pattern,2)
+	if params.plotsig
+	  h = plot_pow(squeeze(p(e,c,:,:))', pat.dim);
+	  filename = sprintf('%s_erpow_sig_%s_e%dc%d.eps', params.patname, id, e, c);
+	else
+	  h = plot_pow(squeeze(pattern(e,c,:,:))', pat.dim);
+	  filename = sprintf('%s_erpow_%s_e%dc%d.eps', params.patname, id, e, c);
+	end
+	fig.file{e,c} = fullfile(resDir, 'figs', filename);
+	
+	print(gcf, '-depsc', fig.file{e,c});
       end
-            
-      print(gcf, '-depsc', fig.file{c});
-      
     end
   end
 
