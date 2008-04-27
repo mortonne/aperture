@@ -143,7 +143,7 @@ for s=1:length(exp.subj)
 	
 	% make it time X frequency
 	this_pow = shiftdim(squeeze(this_pow),1);
-	
+
 	for f=1:length(params.freqs)
 	  % add kurtosis information to the mask
 	  kMask(e,c,:,f) = kInd;
@@ -155,10 +155,10 @@ for s=1:length(exp.subj)
 	    end
 	    
 	    % z-transform
-	    this_pow = (this_pow - base_mean(f))/base_std(f);
+	    this_pow(:,f) = (this_pow(:,f) - base_mean(f))/base_std(f);
 	  end
 	end
-	
+
 	pattern(e,c,:,:) = this_pow;
 	e = e + 1;
       end % events
