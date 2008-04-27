@@ -76,8 +76,8 @@ fprintf(fid,'\\end{document}');
 fclose(fid);
 
 if compile
-  unix(['latex ' filename '.tex']);
-  unix(['latex ' filename '.tex']);
-  unix(['dvipdf ' filename '.dvi']);
-  unix(['open ' filename '.pdf']);
+  system(['latex ' filename '.tex']);
+  system(['latex ' filename '.tex']);
+  system(['dvipdf ' filename '.dvi']);
+  system(['open ' filename '.pdf']);
 end

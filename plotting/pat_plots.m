@@ -32,7 +32,7 @@ if ~exist('title', 'var')
   title = 'plots';
 end
 
-params = structDefaults(params, 'diff', 0,  'across_subj', 0,  'sym', {'-r', '-b'}, 'plotsig', 1,  'whichStat', {[], []});
+params = structDefaults(params, 'diff', 0,  'across_subj', 0,  'sym', {'-r', '-b'}, 'plotsig', 1,  'whichStat', {[], []}, 'lock', 0, 'overwrite', 1);
 
 if ~isfield(params, 'subjects')
   params.subjects = getStructField(exp.subj, 'id');
@@ -67,7 +67,7 @@ for i=1:length(params.subjects)
   end
   
   pattern = loadPat(pat, params, 0);
-  keyboard
+  
   if ~isfield(pat, 'stat') || isempty(pat.stat)
     params.plotsig = 0;
   end
@@ -78,10 +78,10 @@ for i=1:length(params.subjects)
     else
       stat = pat.stat(end);
     end
-    load(pat.stat.file);
+    load(stat.file);
     
     if ~isempty(params.whichStat{2})
-      p = p(params.whichStat{2});
+      p = p(params.whichStat{2},:,:,:);
     end
   end
   

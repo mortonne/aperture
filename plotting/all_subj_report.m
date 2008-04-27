@@ -1,15 +1,28 @@
-function all_subj_report(exp, patname, figname)
+function all_subj_report(exp, patname, figname, title)
 
-pat = getobj(exp.subj(1), 'pat', patname);
-fig = getobj(pat, 'fig', figname);
-title = fig.title;
+% pat = getobj(exp.subj(1), 'pat', patname);
+% tempfig = getobj(pat, 'fig', figname);
+% try
+%   title = tempfig.title;
+% catch
+%   title = 'plots';
+% end
 
 for s=1:length(exp.subj)
   pat = getobj(exp.subj(s), 'pat', patname);
-  fig(s) = getobj(pat, 'fig', figname);
-  fig(s).title = exp.subj(s).id;
+  fig{s} = getobj(pat, 'fig', figname);
+end
+
+for n=1:length(fig)
+  fig{n}.title = exp.subj(n).id;
+  newfig(n) = fig{n};
 end
 
 chan = pat.dim.chan;
-reportfile = fullfile(fileparts(fileparts(pat.file)), [figname '_report']);
-report_by_channel(chan, fig, reportfile, title);
+resDir = fullfile(fileparts(fileparts(pat.file)), 'reports');
+if ~exist(resDir)
+  mkdir(resDir);
+end
+
+reportfile = fullfile(resDir, [figname '_report']);
+report_by_channel(chan, newfig, reportfile, title);

@@ -38,4 +38,4 @@ for c=1:length(chan)
   end
 end
 
-longtable(filename, title, header, table);
+longtable(filename, title, header, table, 1);

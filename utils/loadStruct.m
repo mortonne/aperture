@@ -17,9 +17,9 @@ if ~exist('lock', 'var')
   lock = 1;
 end
 
-fprintf('In loadStruct: ');
-
 if lock
+  fprintf('In loadStruct: ');
+  
   if ~lockFile(structFile, 1);
     error('Locking timed out.')
   else
