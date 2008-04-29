@@ -80,11 +80,7 @@ for i=1:length(params.subjects)
   end
   
   if params.plotsig
-    if ~isempty(params.whichStat{1})
-      stat = getobj(pat, 'stat', params.whichStat{1});
-    else
-      stat = pat.stat(end);
-    end
+    stat = getobj(pat, 'stat', params.whichStat{1});
     load(stat.file);
     
     if ~isempty(params.whichStat{2})
