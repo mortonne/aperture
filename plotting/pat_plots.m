@@ -3,7 +3,7 @@ function exp = pat_plots(exp, params, figname, title, resDir)
 %PAT_PLOTS - manages event-related potential/power figures, plus
 %topo plots of both voltage and power
 %
-% FUNCTION: exp = pat_plots(exp, params, figname, resDir)
+% FUNCTION: exp = pat_plots(exp, params, figname, title, resDir)
 %
 % INPUT: exp - struct created by init_iEEG or init_scalp
 %        params - required fields: patname (specifies the name of
@@ -32,7 +32,7 @@ if ~exist('title', 'var')
   title = 'plots';
 end
 
-params = structDefaults(params, 'diff', 0,  'across_subj', 0,  'sym', {'-r', '-b'}, 'plotsig', 1,  'whichStat', {[], []}, 'lock', 0, 'overwrite', 1);
+params = structDefaults(params, 'diff', 0,  'across_subj', 0,  'sym', {'-r', '-b'}, 'plotsig', 1,  'whichStat', {[], []},  'powrange', [-.3 .3],  'lock', 0, 'overwrite', 1);
 
 if ~isfield(params, 'subjects')
   params.subjects = getStructField(exp.subj, 'id');
@@ -72,6 +72,13 @@ for i=1:length(params.subjects)
     params.plotsig = 0;
   end
   
+  if params.diff | params.plotsig & size(pattern,1)==2
+    pattern = pattern(2,:,:,:)-pattern(1,:,:,:);
+    if params.plotsig
+      sign = sgn(pattern);
+    end
+  end
+  
   if params.plotsig
     if ~isempty(params.whichStat{1})
       stat = getobj(pat, 'stat', params.whichStat{1});
@@ -83,10 +90,6 @@ for i=1:length(params.subjects)
     if ~isempty(params.whichStat{2})
       p = p(params.whichStat{2},:,:,:);
     end
-  end
-  
-  if params.diff & size(pattern,1)==2
-    pattern = pattern(2,:,:,:)-pattern(1,:,:,:);
   end
   
   if length(pat.dim.freq)==1 % plotting voltage values
@@ -113,11 +116,16 @@ for i=1:length(params.subjects)
     for e=1:size(pattern,1)
       for c=1:size(pattern,2)
 	if params.plotsig
-	  h = plot_pow(squeeze(p(e,c,:,:))', pat.dim);
+	  if exist('sign', 'var')
+	    p = p*sign;
+	  end
+	  
+	  h = plot_pow(squeeze(p(e,c,:,:))', pat.dim, params.powrange);
 	  filename = sprintf('%s_erpow_sig_%s_e%dc%d.eps', params.patname, id, e, c);
 	else
-	  h = plot_pow(squeeze(pattern(e,c,:,:))', pat.dim);
+	  h = plot_pow(squeeze(pattern(e,c,:,:))', pat.dim, params.powrange);
 	  filename = sprintf('%s_erpow_%s_e%dc%d.eps', params.patname, id, e, c);
+	  
 	end
 	fig.file{e,c} = fullfile(resDir, 'figs', filename);
 	

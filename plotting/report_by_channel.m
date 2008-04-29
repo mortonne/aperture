@@ -1,5 +1,5 @@
-function report_by_channel(chan, fig, filename, title)
-%report_by_channel(dim, fig, filename, title)
+function report_by_channel(chan, fig, filename, title, compile)
+%report_by_channel(dim, fig, filename, title, compile)
 
 if ~exist('title', 'var')
   title = 'Channel Report';
@@ -9,8 +9,10 @@ end
 header = {'Channel', 'Region'};
 h = length(header) + 1;
 for i=1:length(fig)
-  header{h} = fig(i).title;
-  h = h + 1;
+  for e=1:size(fig(i).file,1)
+    header{h} = fig(i).title;
+    h = h + 1;
+  end
 end
 
 figsize = 1/(length(fig)+2);
@@ -33,9 +35,11 @@ for c=1:length(chan)
   n = n + 1;
   
   for i=1:length(fig)
-    table{c,n} = sprintf('\\includegraphics[width=%f\\textwidth]{%s}', figsize, fig(i).file{c});
-    n = n + 1;
+    for e=1:size(fig(i).file,1)
+      table{c,n} = sprintf('\\includegraphics[width=%f\\textwidth]{%s}', figsize, fig(i).file{e,c});
+      n = n + 1;
+    end
   end
 end
 
-longtable(filename, title, header, table, 1);
+longtable(filename, title, header, table, compile);

@@ -76,6 +76,8 @@ fprintf(fid,'\\end{document}');
 fclose(fid);
 
 if compile
+  pause(5)
+  
   system(['latex ' filename '.tex']);
   system(['latex ' filename '.tex']);
   system(['dvipdf ' filename '.dvi']);
