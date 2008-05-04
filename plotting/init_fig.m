@@ -1,5 +1,5 @@
-function fig = init_fig(name, type, file, params)
-%fig = init_fig(name, type, file, params)
+function fig = init_fig(name, figtype, file, params)
+%fig = init_fig(name, figtype, file, params)
 
 if ~exist('name', 'var')
   name = '';
@@ -18,4 +18,4 @@ if iscell(file) & isempty(file)
   file = {''};
 end
 
-fig = struct('name', name,  'type', type, 'file', file,  'params', params);
+fig = struct('name', name,  'type', figtype, 'file', file,  'params', params);

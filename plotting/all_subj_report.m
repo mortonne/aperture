@@ -1,5 +1,9 @@
 function all_subj_report(exp, patname, figname, title, compile, whichEv)
+%all_subj_report(exp, patname, figname, title, compile, whichEv)
 
+if ~exist('compile', 'var')
+	compile = 0;
+end
 if ~exist('whichEv', 'var')
   whichEv = 1;
 end

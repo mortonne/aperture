@@ -1,8 +1,12 @@
-function custom_report(exp, reportname, title, whichPats, whichFigs)
-%custom_report(exp, whichFigs)
+function custom_report(exp, reportname, title, whichPats, whichFigs, figtitles, compile)
+%custom_report(exp, reportname, title, whichPats, whichFigs, figtitles, compile)
+
+if ~exist('compile', 'var')
+	compile = 0;
+end
 
 pat = getobj(exp.subj(1), 'pat', whichPats{1});
-resDir = fullfile(fileparts(fileparts(fileparts(pat.file))), 'reports');
+resDir = fullfile(fileparts(fileparts(fileparts(pat.file))), 'reports', reportname);
 if ~exist(resDir, 'dir')
   mkdir(resDir);
 end
@@ -25,12 +29,21 @@ for s=1:length(exp.subj)
   
   chan = pat.dim.chan;
   file = fullfile(resDir, [reportname '_' exp.subj(s).id]);
-  
+
   for n=1:length(fig)
-    
-    fig{n}.title = 'ERPs';
+    try
+			fig{n}.title = figtitles{n};
+			catch
+			fig{n}.title = 'figure';
+		end
     newfig(n) = fig{n};
   end
   
-  report_by_channel(chan, newfig, file, title);
+	if ~isempty(strfind(title, '%s'))
+		subjtitle = sprintf(title, exp.subj(s).id);
+		else
+		subjtitle = title;
+	end
+
+  report_by_channel(chan, newfig, file, subjtitle, compile);
 end

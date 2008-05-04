@@ -4,6 +4,9 @@ function report_by_channel(chan, fig, filename, title, compile)
 if ~exist('title', 'var')
   title = 'Channel Report';
 end
+if ~exist('compile', 'var')
+	compile = 0;
+end
 
 % set up table header
 header = {'Channel', 'Region'};
