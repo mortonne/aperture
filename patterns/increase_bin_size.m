@@ -16,7 +16,7 @@ function exp = increase_bin_size(exp, params, patname, resDir)
 %        resDir - 'pattern' files are saved in resDir/data
 %        patname - name of new pattern to save under in the exp struct
 %
-% OUTPUT: new exp struct with ana object added, which contains file
+% OUTPUT: exp struct with a new pat object added, which contains file
 % info and parameters of the analysis
 %
 % params.chanbins = {{'Fp1', 'LFp'}, {'Fp2', 'RFp'}, {'F3', 'F7', ...

@@ -28,9 +28,9 @@ if ~isempty(params.field)
   
   % bin events using a field from the events struct
   if exist('events1', 'var')
-    [pat2.dim.ev, bine, events2] = eventBins(pat1.dim.ev, params, events1);
+    [pat2.dim.ev, events2, bine] = eventBins(pat1.dim.ev, params, events1);
   else
-    [pat2.dim.ev, bine, events2] = eventBins(pat1.dim.ev, params);
+    [pat2.dim.ev, events2, bine] = eventBins(pat1.dim.ev, params);
   end
   
   oldSize = pad_vec(size(pattern2),4);

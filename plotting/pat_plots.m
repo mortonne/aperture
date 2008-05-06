@@ -1,5 +1,5 @@
 function exp = pat_plots(exp, params, figname, title, resDir)
-        %
+  %
 	%PAT_PLOTS - manages event-related potential/power figures, plus
 	%topo plots of both voltage and power
 	%
@@ -69,7 +69,7 @@ function exp = pat_plots(exp, params, figname, title, resDir)
 		if ~isfield(pat, 'stat') || isempty(pat.stat)
 			params.plotsig = 0;
 		end
-
+%{
 		if ~params.plotsig | pat.dim.ev.len==2
 			pattern = loadPat(pat, params, 0);
 
@@ -78,7 +78,7 @@ function exp = pat_plots(exp, params, figname, title, resDir)
 				sign = sgn(diff);
 			end
 		end
-
+%}
 		if params.diff
 			pattern = diff;
 		end
@@ -95,9 +95,9 @@ function exp = pat_plots(exp, params, figname, title, resDir)
 				p = p(params.whichStat{2},:,:,:);
 			end
 			
-			pattern = p;
+			%pattern = p;
 		end
-
+		pattern = loadPat(pat, params, 0);
 		if length(pat.dim.freq)==1 % plotting voltage values
 
 			fig = init_fig(figname, 'erp', {}, params);

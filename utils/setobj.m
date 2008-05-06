@@ -1,83 +1,83 @@
 function s = setobj(s,f,obj)
-%s = setobj(s,f,obj)
-%
-%SETOBJ - adds an object to the field named f in struct s.  If the
-%field does not exist, it is created; if an object with the same
-%'name' field already exists, it is replaced; otherwise, the new
-%object is appended to the existing objects.
+	%s = setobj(s,f,obj)
+	%
+	%SETOBJ - adds an object to the field named f in struct s.  If the
+	%field does not exist, it is created; if an object with the same
+	%'name' field already exists, it is replaced; otherwise, the new
+	%object is appended to the existing objects.
 
-if nargin==3
-  if ~isfield(s,f) || isempty(getfield(s,f))
-    s = setfield(s,f,obj);
-    return
-  end
-  
-  objs = getfield(s,f);
-else
-  objs = s;
-  obj = f;
-end
+	if nargin==3
+		if ~isfield(s,f) || isempty(getfield(s,f))
+			s = setfield(s,f,obj);
+			return
+		end
 
-if ~isstruct(objs)
-  error('Field is not a struct.');
-end
+		objs = getfield(s,f);
+		else
+		objs = s;
+		obj = f;
+	end
 
-% check if object with this name already exists
-if isfield(obj, 'name') & isfield(objs, 'name')
-  i = find(inStruct(objs, 'strcmp(name, varargin{1})', obj.name));
-elseif isfield(obj, 'id') & isfield(objs, 'id')
-  i = find(inStruct(objs, 'strcmp(id, varargin{1})', obj.id));
-else
-  i = [];
-end
+	if ~isstruct(objs)
+		error('Field is not a struct.');
+	end
 
-if isempty(i)
-  i = length(objs) + 1;
-end
+	% check if object with this name already exists
+	if isfield(obj, 'name') & isfield(objs, 'name')
+		i = find(inStruct(objs, 'strcmp(name, varargin{1})', obj.name));
+		elseif isfield(obj, 'id') & isfield(objs, 'id')
+		i = find(inStruct(objs, 'strcmp(id, varargin{1})', obj.id));
+		else
+		i = [];
+	end
 
-% get the fieldnames of the new object and the old objects
-fields = fieldnames(obj);
-old_fields = fieldnames(objs);
+	if isempty(i)
+		i = length(objs) + 1;
+	end
 
-% see which fields are missing from one
-[c, newInd, oldInd] = setxor(fields, old_fields);
+	% get the fieldnames of the new object and the old objects
+	fields = fieldnames(obj);
+	old_fields = fieldnames(objs);
 
-if ~isempty(c)
-  % add fields in obj but not objs
-  to_add = setdiff(fields, old_fields);
+	% see which fields are missing from one
+	[c, newInd, oldInd] = setxor(fields, old_fields);
 
-  if ~isempty(to_add)
-    for j=1:length(objs)
-      newobj = objs(j);
-      for k=1:length(to_add)
-	newobj = setfield(newobj, to_add{k}, []);
-      end
-      newobjs(j) = newobj;
-    end
-    objs = newobjs;
-  end
-  
-  % add fields in objs but not obj
-  to_add = setdiff(old_fields, fields);
-  if ~isempty(to_add)
-    for k=1:length(to_add)
-      obj = setfield(obj, to_add{k}, []);
-    end
-  end
-end
+	if ~isempty(c)
+		% add fields in obj but not objs
+		to_add = setdiff(fields, old_fields);
 
-% make sure the fields are in the same order
-if length(objs)>0
-  obj = orderfields(obj, objs);
-end
+		if ~isempty(to_add)
+			for j=1:length(objs)
+				newobj = objs(j);
+				for k=1:length(to_add)
+					newobj = setfield(newobj, to_add{k}, []);
+				end
+				newobjs(j) = newobj;
+			end
+			objs = newobjs;
+		end
 
-% put obj in correct place
-objs(i) = obj;
+		% add fields in objs but not obj
+		to_add = setdiff(old_fields, fields);
+		if ~isempty(to_add)
+			for k=1:length(to_add)
+				obj = setfield(obj, to_add{k}, []);
+			end
+		end
+	end
 
-if nargin==3
-  % change the struct field
-  s = setfield(s,f,objs);
-else
-  s = objs;
-end
+	% make sure the fields are in the same order
+	if length(objs)>0
+		obj = orderfields(obj, objs);
+	end
+
+	% put obj in correct place
+	objs(i) = obj;
+
+	if nargin==3
+		% change the struct field
+		s = setfield(s,f,objs);
+		else
+		s = objs;
+	end
 

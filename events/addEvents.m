@@ -1,5 +1,5 @@
 function exp = addEvents(exp, eventsFile, resDir, evname)
-%exp = addEvents(exp, eventsFile)
+%exp = addEvents(exp, eventsFile, resDir, evname)
 
 if ~exist('evname', 'var')
   evname = 'events';

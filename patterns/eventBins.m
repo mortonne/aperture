@@ -1,48 +1,54 @@
-function [ev2, bine, events2] = eventBins(ev1, params, events1)
+function [ev2, events2, bine] = eventBins(ev1, params, events1)
+	%
+	%EVENTBINS   Apply bins to an events dimension.
+	%   [EV2,EVENTS2] = EVENTBINS(EV1,PARAMS) bins the events
+	%   dimension whose information is stored in EV1 using options in
+	%   PARAMS, and outputs EV2, a new dimension struct, and EVENTS2,
+	%   a struct with one field, "type."
+	%
+	%   [EV2,EVENTS2,BINE] = EVENTBINS(EV1,PARAMS) also outputs BINE,
+	%   a cell array of indices of the original events struct for
+	%   each unique value of EVENTS2.
+	%
 
-if ~exist('params', 'var')
-  params = struct();
-end
+	if ~exist('params', 'var')
+		params = struct();
+	end
 
-params = structDefaults(params, 'field', '',  'eventbinlabels', '');
+	params = structDefaults(params, 'field', '',  'eventbinlabels', '');
 
-if ~exist('events1', 'var')
-  load(ev1.file);
-  events1 = events;
-end
+	if ~exist('events1', 'var')
+		load(ev1.file);
+		events1 = events;
+	end
 
-ev2 = ev1;
-if strcmp(params.field, 'overall')
-  vec = ones(1, length(events1));
-elseif isfield(events1, params.field)
-  vec = getStructField(events1, params.field);
-else
-  for e=1:length(events1)
-    bine{e} = e;
-  end
-  events2 = events1;
-  return
-end
+	ev2 = ev1;
 
-% find the events corresponding to each condition
-vals = unique(vec);
-ev2.len = length(vals);
-for j=1:length(vals)
-  if iscell(vals)
-    events2(j).value = vals{j};
-    if ~isempty(params.eventbinlabels)
-      events2(j).type = params.eventbinlabels{j};
-    else
-      events2(j).type = [params.field ' ' vals{j}];
-    end
-    bine{j} = strcmp(vec, vals{j});
-  else
-    events2(j).value = vals(j);
-    if ~isempty(params.eventbinlabels)
-      events2(j).type = params.eventbinlabels{j};
-    else
-      events2(j).type = [params.field ' ' num2str(vals(j))];
-    end
-    bine{j} = vec==vals(j);
-  end
-end
+	% generate a new events field, one value per bin
+	vec = binEventsField(events1, params.field);
+
+	% find the events corresponding to each condition
+	vals = unique(vec);
+	ev2.len = length(vals);
+	for j=1:length(vals)
+
+		if iscell(vals)
+			% assume all values are strings
+			if ~isempty(params.eventbinlabels)
+				events2(j).type = params.eventbinlabels{j};
+			else
+				events2(j).type = vals{j};
+			end
+			bine{j} = find(strcmp(vec, vals{j}));
+
+		else
+			% values are numeric
+			if ~isempty(params.eventbinlabels)
+				events2(j).type = params.eventbinlabels{j};
+			else
+				events2(j).type = vals(j);
+			end
+			bine{j} = find(vec==vals(j));
+		end
+
+	end % unique event types

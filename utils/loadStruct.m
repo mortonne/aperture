@@ -23,7 +23,7 @@ if lock
   if ~lockFile(structFile, 1);
     error('Locking timed out.')
   else
-    fprintf('Locked, ready to load.\n');
+    fprintf('Locked...\n');
   end
 end
 
@@ -39,6 +39,8 @@ end
 if isfield(s, 'file')
   save(s.file, 's');
 end
+
+
 if lock
   releaseFile(structFile);
 end

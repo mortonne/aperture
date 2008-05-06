@@ -5,6 +5,13 @@ function run_classifier(trainpat,trainreg,testpat,testreg,classifier,params)
 % regressors should be vectors the same length as events
 %
 
+if ~exist('classifier', 'var')
+	classifier = 'bp_netlab';
+end
+if ~exist('params', 'var')
+	params = struct;
+end
+
 switch classifier
  case 'bp_netlab'
   params = structDefaults(params, 'nHidden', 10);
