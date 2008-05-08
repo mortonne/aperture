@@ -27,6 +27,7 @@ function exp = create_pow_pattern(exp, params, patname, resDir)
 	% initialize the frequency dimension
 	freq = init_freq(params.freqs);
 
+	fprintf('\nStarting create_pow_pattern. Parameters are:\n\n')
 	disp(params);
 
 	for s=1:length(exp.subj)
@@ -58,9 +59,6 @@ function exp = create_pow_pattern(exp, params, patname, resDir)
 		% create a pat object to keep track of this pattern
 		pat = init_pat(patname, patfile, params, ev, chan, time, freq);
 
-		% update exp with the new pat object
-		exp = update_exp(exp, 'subj', exp.subj(s).id, 'pat', pat);
-
 		% initialize this subject's pattern
 		patSize = [ev.len, length(chan), length(time), length(freq)];
 		pattern = NaN(patSize);
@@ -87,7 +85,7 @@ function exp = create_pow_pattern(exp, params, patname, resDir)
 		% get the patterns for each frequency and time bin
 		start_e = 1;
 		for n=1:length(exp.subj(s).sess)
-			fprintf('\nProcessing %s session_%d:\n', exp.subj(s).id, sessions(n));
+			fprintf('\nProcessing %s session %d:\n', exp.subj(s).id, sessions(n));
 			sess_events = filterStruct(events, 'session==varargin{1}', sessions(n));
 			sess_base_events = filterStruct(base_events, 'session==varargin{1}', sessions(n));
 
@@ -180,7 +178,10 @@ function exp = create_pow_pattern(exp, params, patname, resDir)
 
 		% save the pattern and corresponding events struct and masks
 		save(pat.file, 'pattern', 'mask');
-		releaseFile(pat.file);
+		closeFile(pat.file);
 		save(pat.dim.ev.file, 'events');
-		releaseFile(pat.dim.ev.file);
+		closeFile(pat.dim.ev.file);
+		
+		% update exp with the new pat object
+		exp = update_exp(exp, 'subj', exp.subj(s).id, 'pat', pat);
 	end % subj

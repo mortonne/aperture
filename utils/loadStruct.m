@@ -17,13 +17,12 @@ if ~exist('lock', 'var')
   lock = 1;
 end
 
+fprintf('In loadStruct: ')
 if lock
-  fprintf('In loadStruct: ');
-  
   if ~lockFile(structFile, 1);
     error('Locking timed out.')
   else
-    fprintf('Locked...\n');
+    fprintf('Locked...')
   end
 end
 
@@ -40,7 +39,7 @@ if isfield(s, 'file')
   save(s.file, 's');
 end
 
-
 if lock
   releaseFile(structFile);
 end
+fprintf('Loaded.\n')

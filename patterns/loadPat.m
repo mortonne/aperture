@@ -23,6 +23,11 @@ function [pattern, events] = loadPat(pat, params, loadEv)
 % pattern if loadEv=1
 %
 
+if isstr(pat)
+	% just the pat file has been input
+	newpat.file = pat;
+	pat = newpat;
+end
 if ~exist('loadEv', 'var')
   loadEv = 0;
 end

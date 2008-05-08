@@ -1,7 +1,12 @@
 function h = plot_pow_sig(values, dim, p_range)
 %h = plot_pow_sig(values, p_range)
-
+v = values;
 x = getStructField(dim.time, 'avg');
+if size(values,2)==1
+	xlim = [dim.time(1).MSvals(1) dim.time(end).MSvals(end)];
+	x = [mean([xlim(1) x]) mean([xlim(2) x])];
+	values = repmat(values,1,2);
+end
 y = log10(getStructField(dim.freq, 'avg'));
 
 totLen = 128;
@@ -53,7 +58,6 @@ elseif signed
 	vals(5,2) = -p_range(1);
 	vals(6,1) = -p_range(1);
 	vals(6,2) = -1;
-	keyboard
 else
 
   colors{1,1} = [0.0 0.0 1.0];
@@ -95,7 +99,7 @@ set(gca, 'LineWidth', 2)
 
 colormap(map)
 c = colorbar;
-set(c, 'YTick', [norminv(p_range(2)) norminv(p_range(1))])
-set(c, 'YTickLabel', [.005 .05])
+set(c, 'YTick', [norminv(p_range(2)) norminv(p_range(1)) -norminv(p_range(1)) -norminv(p_range(2))])
+set(c, 'YTickLabel', [.005 .05 .05 .005])
 set(c, 'LineWidth', 2)
-%publishFig
+publishFig

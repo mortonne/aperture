@@ -20,7 +20,7 @@ pattern2 = pattern1;
 events2 = events1;
 
 % start the averaging
-fprintf('Binning pattern "%s"...', pat1.name); 
+fprintf('Binning pattern "%s"...', pat1.name)
 
 % bin events if necessary
 if ~isempty(params.field)
@@ -81,12 +81,11 @@ if ~isempty(params.freqbins)
   oldSize = pad_vec(size(pattern2),4);
   temp = NaN(oldSize(1), oldSize(2), oldSize(3), length(binf));
   for f=1:length(binf)
-    temp(:,:,f,:) = nanmean(pattern2(:,:,binf{f},:),3);
+    temp(:,:,:,f) = nanmean(pattern2(:,:,:,binf{f}),4);
   end
   pattern2 = temp;
 end
-
-fprintf('\n');
+fprintf('\n')
 
 function vec2 = pad_vec(vec1, len)
 

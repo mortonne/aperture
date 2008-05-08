@@ -1,5 +1,5 @@
 function exp = pat_plots(exp, params, figname, title, resDir)
-  %
+	%
 	%PAT_PLOTS - manages event-related potential/power figures, plus
 	%topo plots of both voltage and power
 	%
@@ -32,13 +32,13 @@ function exp = pat_plots(exp, params, figname, title, resDir)
 		title = 'plots';
 	end
 
-	params = structDefaults(params, 'diff', 0,  'across_subj', 0,  'sym', {'-r', '-b'}, 'plotsig', 1,  'whichStat', {[], []},  'powrange', [-.3 .3],  'lock', 0, 'overwrite', 1);
+	params = structDefaults(params, 'diff', 0,  'across_subj', 0,  'plotsig', 1,  'whichStat', {[], []},  'powrange', [-.3 .3],  'lock', 0, 'overwrite', 1);
 
 	if ~isfield(params, 'subjects')
 		params.subjects = getStructField(exp.subj, 'id');
 	end
 	if params.across_subj
-		params.subjects = [params.subjects 'across_subj'];
+		params.subjects = {'across_subj'};
 	end
 
 	if ~exist(fullfile(resDir, 'figs'), 'dir')
@@ -59,47 +59,57 @@ function exp = pat_plots(exp, params, figname, title, resDir)
 			pat = getobj(exp.subj(s), 'pat', params.patname);
 		end
 
-		timeMS = [pat.dim.time.avg];
-
 		% check input files
 		if prepFiles(pat.file, {}, params)~=0
 			continue
 		end
 
-		if ~isfield(pat, 'stat') || isempty(pat.stat)
-			params.plotsig = 0;
-		end
-%{
-		if ~params.plotsig | pat.dim.ev.len==2
-			pattern = loadPat(pat, params, 0);
+		% get dimension info
+		timeMS = [pat.dim.time.avg];
 
-			diff = pattern(2,:,:,:)-pattern(1,:,:,:);
-			if params.plotsig
-				sign = sgn(diff);
-			end
+		% power or voltage?
+		if length(pat.dim.freq)>1
+			power = 1;
 		end
-%}
+
+		if params.diff | ~params.plotsig
+			% we need the pattern
+			pattern = loadPat(pat, params, 0);
+		end
+
 		if params.diff
-			pattern = diff;
+			% get the difference between two event types
+			if size(pattern,1)~=2
+				error('Can only take difference if there are two event types');
+			end
+			pattern = pattern(2,:,:,:)-pattern(1,:,:,:);
 		end
 
 		if params.plotsig
-			if ~isempty(params.whichStat{1})
-				stat = getobj(pat, 'stat', params.whichStat{1});
-				else
-				stat = pat.stat(end);
-			end
+			% we need to load p-vals from the stat struct
+			stat = getobj(pat, 'stat', params.whichStat{1});
 			load(stat.file);
 
+			if ~exist('p', 'var')
+				error('Stat file must contain a variable named "p"');
+			end
+
+			% if the statistic has multiple p-vals, choose which one to plot
 			if ~isempty(params.whichStat{2})
 				p = p(params.whichStat{2},:,:,:);
 			end
-			
-			%pattern = p;
-		end
-		pattern = loadPat(pat, params, 0);
-		if length(pat.dim.freq)==1 % plotting voltage values
 
+			if power
+				% we can only show one pattern at a time, so combine p and pattern
+				if params.diff
+					p = p.*sgn(pattern);
+				end
+				pattern = p;
+			end
+		end
+
+		if ~power
+			% ERP PLOTS
 			fig = init_fig(figname, 'erp', {}, params);
 
 			for c=1:size(pattern,2)
@@ -110,26 +120,23 @@ function exp = pat_plots(exp, params, figname, title, resDir)
 				end
 
 				if 1%sum(~isnan(get(h, 'YData')))>0
-					fig.file{1,c} = fullfile(resDir, 'figs', [params.patname '_erp_' id 'e1c' num2str(c) '.eps']);
+					fig.file{1,c} = fullfile(resDir, 'figs', sprintf('%s_erp_%s_e%dc%d', params.patname, id,e,c));
 					print(gcf, '-depsc', fig.file{1,c});
 				end
 			end
 
-			else % plotting power values
-
+			elseif power
+			% SPECTROGRAMS
 			fig = init_fig(figname, 'power', {}, params);
 
 			for e=1:size(pattern,1)
 				for c=1:size(pattern,2)
 					if params.plotsig
-						if exist('sign', 'var')
-							pattern = pattern.*sign;
-						end
 
-						h = plot_pow_sig(squeeze(pattern(e,c,:,:))', pat.dim, params.powrange);
+						h = plot_pow_sig(shiftdim(pattern(e,c,:,:),2)', pat.dim, params.powrange);
 						filename = sprintf('%s_erpow_sig_%s_e%dc%d.eps', params.patname, id, e, c);
 						else
-						h = plot_pow(squeeze(pattern(e,c,:,:))', pat.dim, params.powrange);
+						h = plot_pow(shiftdim(pattern(e,c,:,:),2)', pat.dim, params.powrange);
 						filename = sprintf('%s_erpow_%s_e%dc%d.eps', params.patname, id, e, c);
 
 					end

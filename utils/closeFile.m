@@ -1,4 +1,4 @@
-function closeFile(filename, varargin)
+function closeFile(filename)
 %
 %CLOSEFILE - saves the specified variables in filename, and
 %releases filename.lock if it exists
@@ -7,13 +7,4 @@ function closeFile(filename, varargin)
 % if the file was locked, remove the lockfile
 if exist([filename '.lock'], 'file')
   releaseFile(filename);
-end
-
-if length(varargin)>0
-  % save all variables specified
-  saveStr = ['save ' filename];
-  for i=1:length(varargin)
-    saveStr = [saveStr ' ' varargin{i}];
-  end
-  eval(saveStr);
 end

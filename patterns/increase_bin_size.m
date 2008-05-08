@@ -39,7 +39,7 @@ end
 
 % create the new pattern for each subject
 for s=1:length(exp.subj)
-  fprintf('%s\n', exp.subj(s).id);
+  fprintf('\n%s\n', exp.subj(s).id);
   
   % set where the pattern will be saved
   patfile = fullfile(resDir, 'patterns', [exp.subj(s).id '_' patname '.mat']);
@@ -55,9 +55,10 @@ for s=1:length(exp.subj)
   % do the binning
   [pat, pattern, events] = patBins(pat1, params);
 
-  pat.name = patname;
+	pat.name = patname;
   pat.file = patfile;
   pat.params = params;
+  fprintf('Pattern "%s" Created.\n', pat.name)
   
   if pat.dim.ev.len<pat1.dim.ev.len 
     if ~exist(fullfile(resDir, 'events'), 'dir')
@@ -74,5 +75,5 @@ for s=1:length(exp.subj)
   
   % save the new pattern
   save(pat.file, 'pattern');
-  releaseFile(pat.file);
+  closeFile(pat.file);
 end % subj

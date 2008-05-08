@@ -1,4 +1,8 @@
 function exp = addLagFields(exp, param, evname)
+	%
+	%ADDLAGFIELDS   Adds subsequent-clustering related fields to events.
+	%   EXP = ADDLAGFIELDS(EXP,PARAM,EVNAME)
+	
 	% [all_ev] = addLagFields(exp,param)
 	%
 	% Loads all of the events tied to an exp structure and does some
@@ -16,7 +20,7 @@ function exp = addLagFields(exp, param, evname)
 		param = struct();
 	end
 
-	param = structDefaults(param, 'itemstr', 'WORD',  'clust_thresh', 3,  'evname', 'events',  'overwrite', 1,    'lock', 0);
+	param = structDefaults(param, 'itemstr', 'WORD',  'trialfield', 'trial',  'clust_thresh', 3,  'evname', 'events',  'overwrite', 1,    'lock', 0);
 
 	% step over subjects
 	for i = 1:length(exp.subj)
@@ -54,13 +58,20 @@ function exp = addLagFields(exp, param, evname)
 			sess_ev = filterStruct(events, sprintf('session==%d', sessions(j)));
 			
 			% step over lists
-			lists = unique(getStructField(sess_ev, 'trial'));
+			lists = unique(getStructField(sess_ev, param.trialfield));
+			lists = lists(lists>=0 & lists<100);
 			for k = 1:length(lists)
 
 				% get indices of the list events we need within the larger events struct
-				listfilt = sprintf('session==%d & trial==%d', sessions(j), lists(k));
+				listfilt = sprintf('session==%d & %s==%d', sessions(j), param.trialfield, lists(k));
 				study_ind = find(inStruct(events, sprintf('%s & strcmp(type,''%s'') & recalled==1', listfilt, param.itemstr)));
 				rec_ind = find(inStruct(events, sprintf('%s & strcmp(type, ''REC_WORD'') & intrusion==0', listfilt)));
+
+				if length(study_ind)==0
+					error(sprintf('No study items found for list %d.', lists(k)));
+					elseif	length(rec_ind)==0
+					error(sprintf('No recall items found for list %d.', lists(k)));
+				end
 
 				% get the events
 				study_ev = events(study_ind);

@@ -28,7 +28,7 @@ if ~isempty(params.MSbins)
     end
   end
   
-  for t=1:length(params.MSbins)
+  for t=1:size(params.MSbins, 1)
     % define this bin
     bint{t} = find(avgtime>=params.MSbins(t,1) & avgtime<params.MSbins(t,2));
     

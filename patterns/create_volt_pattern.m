@@ -40,7 +40,6 @@ function exp = create_volt_pattern(exp, params, patname, resDir)
 	%         exp.subj(s).pat.file.  Dimensions are events X channels X time.
 	%
 	
-	fprintf('In create_volt_pattern');
 	if ~exist('params', 'var')
 		params = struct();
 	end
@@ -59,6 +58,7 @@ function exp = create_volt_pattern(exp, params, patname, resDir)
 	MSvals = [params.offsetMS:stepSize:(params.offsetMS+params.durationMS-1)];
 	time = init_time(MSvals);
 
+	fprintf('\nStarting create_volt_pattern. Parameters are:\n\n')
 	disp(params);
 
 	for s=1:length(exp.subj)
@@ -84,18 +84,11 @@ function exp = create_volt_pattern(exp, params, patname, resDir)
 		ev.file = evfile;
 		ev.len = length(events);
 
-		% save the events corresponding to this pattern
-		save(ev.file, 'events');
-		releaseFile(ev.file);
-
 		% get chan, filter if desired
 		chan = filterStruct(exp.subj(s).chan, params.chanFilter);
 
 		% create a pat object to keep track of this pattern
 		pat = init_pat(patname, patfile, params, ev, chan, time);
-
-		% update exp with the new pat object
-		exp = update_exp(exp, 'subj', exp.subj(s).id, 'pat', pat);
 
 		% initialize this subject's pattern
 		patSize = [pat.dim.ev.len, length(pat.dim.chan), length(pat.dim.time)];
@@ -121,7 +114,7 @@ function exp = create_volt_pattern(exp, params, patname, resDir)
 		% make the pattern for this subject
 		start_e = 1;
 		for n=1:length(sessions)
-			fprintf('\nProcessing %s session_%d:\n', exp.subj(s).id, sessions(n));
+			fprintf('\nProcessing %s session %d:\n', exp.subj(s).id, sessions(n));
 			sess_events = filterStruct(events, 'session==varargin{1}', sessions(n));
 			sess_base_events = filterStruct(base_events, 'session==varargin{1}', sessions(n));
 
@@ -138,7 +131,8 @@ function exp = create_volt_pattern(exp, params, patname, resDir)
 					params.relativeMS);
 
 					if ~isempty(params.kthresh)
-						base_eeg = run_kurtosis(base_eeg, params.kthresh);
+						k = kurtosis(base_eeg,1,2);
+						base_eeg = base_eeg(k<=params.kthresh,:);
 					end
 
 					% if multiple samples given, use the first
@@ -186,6 +180,11 @@ function exp = create_volt_pattern(exp, params, patname, resDir)
 		end
 
 		% save the pattern and corresponding events struct and masks
+		save(ev.file, 'events');
+		closeFile(ev.file);
 		save(pat.file, 'pattern', 'mask');
-		releaseFile(pat.file);
+		closeFile(pat.file);
+		
+		% update exp with the new pat object
+		exp = update_exp(exp, 'subj', exp.subj(s).id, 'pat', pat);
 	end % subj
