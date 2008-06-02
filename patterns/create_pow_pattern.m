@@ -32,8 +32,8 @@ function exp = create_pow_pattern(exp, params, patname, resDir)
 
 	for s=1:length(exp.subj)
 		% set where the pattern will be saved
-		patfile = fullfile(resDir, 'data', [patname '_' exp.subj(s).id '.mat']);
-		evfile = fullfile(resDir, 'events', [patname '_' exp.subj(s).id '.mat']);
+		patfile = fullfile(resDir, 'patterns', sprintf('pattern_%s_%s.mat', patname, exp.subj(s).id));
+		evfile = fullfile(resDir, 'events', sprintf('events_%s_%s.mat', patname, exp.subj(s).id));
 
 		% check input files and prepare output files
 		if prepFiles({}, {patfile, evfile}, params)~=0

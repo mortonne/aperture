@@ -1,4 +1,4 @@
-function exp = post_process_exp(exp, eventsFcnHandle, params, varargin)
+function exp = post_process_exp(exp, eventsFcnHandle, params, eventsfile, varargin)
 	%
 	%POST_PROCESS - processes free recall experimental data 
 	%
@@ -14,16 +14,19 @@ function exp = post_process_exp(exp, eventsFcnHandle, params, varargin)
 	%   exp = post_process_exp(exp, eventsFcnHandle, params, varargin)
 	%
 
-	if ~exist('params', 'var')
+	if ~exist('eventsfile','var')
+		eventsfile = 'events.mat';
+	end
+	if ~exist('params','var')
 		params = struct();
 	end
 
-	params = structDefaults(params, 'skipError', 1,  'overwrite', 0,  'lock', 0,  'ignoreLock', 0);
+	params = structDefaults(params, 'skipError', 1,  'alignOnly', 0,  'overwrite', 0,  'lock', 0,  'ignoreLock', 0);
 
 	% write all file info first
 	for s=1:length(exp.subj)
 		for n=1:length(exp.subj(s).sess)
-			exp.subj(s).sess(n).eventsFile = fullfile(exp.subj(s).sess(n).dir, 'events.mat');
+			exp.subj(s).sess(n).eventsFile = fullfile(exp.subj(s).sess(n).dir, eventsfile);
 		end  
 	end
 	save(exp.file, 'exp');
@@ -39,20 +42,19 @@ function exp = post_process_exp(exp, eventsFcnHandle, params, varargin)
 			fprintf('\nCreating event structure for %s, session %d...\n', subj.id, sess.number);
 
 			if prepFiles({}, sess.eventsFile, params)==0 % outfile is ok to go
-				if ~params.skipError
+
+				try
 					% create events
 					events = eventsFcnHandle(sess.dir, subj.id, sess.number, varargin{:});
 					save(sess.eventsFile, 'events');
-					else
-					try
-						% create events
-						events = eventsFcnHandle(sess.dir, subj.id, sess.number, varargin{:});
-						save(sess.eventsFile, 'events');
-						catch
+					catch
+					if params.skipError
 						% if problem with events, note and continue to next session
 						err = [subj.id ' session_' num2str(sess.number) '\n'];
 						event_errs = [event_errs err];
 						continue
+						else
+						rethrow(lasterror);
 					end
 				end
 
@@ -66,21 +68,25 @@ function exp = post_process_exp(exp, eventsFcnHandle, params, varargin)
 				end
 
 				cd(sess.dir);
-				if ~params.skipError
-					% split, sync, rereference, detect blink artifacts
-					prep_egi_data(subj.id, sess.dir, {'events.mat'}, badchans, 'mstime');
-					else
-					try
+				try
+					if params.alignOnly
+						alignOnly(sess);
+						else
 						% split, sync, rereference, detect blink artifacts
 						prep_egi_data(subj.id, sess.dir, {'events.mat'}, badchans, 'mstime');
-						catch
+					end
+					catch
+					if params.skipError
 						% if there was an error, remove the events so this session
 						% will be processed again next time
 						system(['rm ' sess.eventsFile]);
 						err = [subj.id ' session_' num2str(sess.number) '\n'];
 						errs = [errs err];
+						else
+						rethrow(lasterror);
 					end
 				end
+
 			end
 
 			% if the eventsfile was locked, release it
@@ -93,3 +99,26 @@ function exp = post_process_exp(exp, eventsFcnHandle, params, varargin)
 	if ~isempty(errs)
 		fprintf(['\nWarning: problems processing:\n' errs]);
 	end
+
+
+	function alignOnly(sess)
+		% get the filenames we need
+		rerefdir = fullfile(sess.dir, 'eeg', 'eeg.reref');
+		norerefdir = fullfile(sess.dir, 'eeg', 'eeg.noreref');
+		d = dir(fullfile(rerefdir, '*.001'));
+		basename = d.name(1:end-4);
+
+		% behavioral sync pulses, eeg sync pulses, basename
+		pulse_beh = {fullfile(sess.dir, 'eeg.eeglog.up')};
+		pulse_eeg = {fullfile(norerefdir, [basename '.DIN1'])};
+		chan_file = {fullfile(rerefdir, d.name)};
+
+		% get the samplerate
+		[samplerate,nBytes,dataformat,gain] = GetRateAndFormat(norerefdir);
+
+		% run the alignment
+		runAlign(samplerate,pulse_beh,pulse_eeg,chan_file,{sess.eventsFile},'mstime',0,1)
+
+		% add artifact info
+		[eog, perif] = getcapinfo();
+		addArtifacts(sess.eventsFile, eog, 100);
