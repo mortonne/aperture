@@ -35,7 +35,7 @@ function exp = classify_pat(exp, params, pcname, resDir)
 		error('You must provide the name of a selector field to use for classification')
 	end
 
-	params = structDefaults(params, 'patname', [], 'masks', {},  'eventFilter', '',  'chanFilter', '',  'scramble', 0,  'lock', 1,  'overwrite', 0);
+	params = structDefaults(params, 'patname', [], 'masks', {},  'eventFilter', '',  'chanFilter', '',  'classifier', 'classify',  'scramble', 0,  'lock', 1,  'overwrite', 0);
 
 	for s=1:length(exp.subj)
 		pat = getobj(exp.subj(s), 'pat', params.patname);
@@ -55,14 +55,14 @@ function exp = classify_pat(exp, params, pcname, resDir)
 		pc = init_pc(pcname, pcfile, pat, params);
 
 		[pattern, events] = loadPat(pcname, pcfile, pat, params);
-		reg.vec = getStructField(events, params.regressor);
+		reg.vec = binEventsField(events, params.regressor);
 		reg.vals = unique(reg.vec);
 
-		sel.vec = getStructField(events, params.selector);
+		sel.vec = binEventsField(events, params.selector);
 		sel.vals = unique(sel.vec);
 
 		% if this entire subject was thrown out, skip
-		if length(find(isnan(pattern)))==length(find(pattern))
+		if length(find(isnan(pattern)))==numel(pattern)
 			continue
 		end
 
@@ -74,18 +74,15 @@ function exp = classify_pat(exp, params, pcname, resDir)
 					fprintf('\n      %s:\t', pat.dim.freq(f).label);
 				end
 
-				% remove events that were thrown out
+				
 				thispat = squeeze(pattern(:,:,b,f));
+
+				% remove events that were thrown out
 				good = max(~isnan(thispat),[],2);
 
 				thispat = thispat(good,:);
 				reg.goodvec = reg.vec(good);
 				sel.goodvec = sel.vec(good);
-
-				tot_test_targmat = [];
-				tot_test_targvec = [];
-				tot_output = [];
-				tot_guesses = [];
 
 				for j=1:length(sel.vals)
 					% select which events to test
@@ -99,63 +96,17 @@ function exp = classify_pat(exp, params, pcname, resDir)
 
 					train.targvec = reg.goodvec(~testsel)';
 					test.targvec = reg.goodvec(testsel)';
-					for k=1:length(reg.vals)
-						train.targmat(:,k) = train.targvec==reg.vals(k);
-						test.targmat(:,k) = test.targvec==reg.vals(k);
-					end
 
 					% run classification algorithms
-					pclassParams.nHidden = 10;
-					sp1 = train_bp_netlab(train.pat',train.targmat',pclassParams);
-					[output, sp2] = test_bp_netlab(test.pat',test.targmat',sp1);
-					[vals, guesses] = max(output);
-					tot_output = [tot_output; output'];
-					tot_guesses = [tot_guesses; guesses'];
-
-					% pclassParams.penalty = .5;
-					% 	sp1 = train_logreg(train.pat', train.targmat', pclassParams);
-					% 	[output sp2] = test_logreg(test.pat', test.targmat', sp1);
-					% 	[vals, guesses] = max(output);
-					% 	tot_output{i} = [tot_output{i}; output'];
-					% 	tot_guesses{i} = [tot_guesses{i}; guesses'-1];
-					% 	i = i + 1;
-
-					% pclass(2).guesses = pclassify(test.pat, train.pat, train_targvec, 'mahalanobis');
-					% 	pclass(3).guesses = pclassify(test.pat, train.pat, train_targvec, 'linear');
-					% 	pclass(4).guesses = pclassify(test.pat, train.pat, train_targvec, 'quadratic');	
-					% 	pclass(5).guesses = pclassify(test.pat, train.pat, train_targvec, 'diagLinear');		
-					% 	pclass(6).guesses = pclassify(test.pat, train.pat, train_targvec, 'diagQuadratic');
-
-					%guesses = SVM(train_patterns, train_targets,
-					%test_patterns, pclassParams);
-
-					tot_test_targmat = [tot_test_targmat; test.targmat];
-					tot_test_targvec = [tot_test_targvec; test.targvec];
+					[class,err,posterior] = run_classifier(trainpat,trainreg,testpat,testreg,params.classifier,params);
 
 				end % selector
-
-				% stats
-				for i=1%:2
-					right = tot_output(logical(tot_test_targmat));
-					wrong = tot_output(~logical(tot_test_targmat));
-					%[h, pclass(i).rw_p(b,f)] = ttest(right', wrong', .05, 'right');
-					pclass(i).rmean(b,f) = nanmean(right);
-					pclass(i).wmean(b,f) = nanmean(wrong);
-
-					[pclass(i).rho(b,f) pclass(i).rhosig(b,f)] = corr(tot_output(:,1), tot_test_targmat(:,1));
-
-					pclass(i).pcorr(b,f) = sum(tot_guesses==tot_test_targvec)/length(tot_guesses);
-
-					fprintf('%.4f ', pclass(i).pcorr(b,f));
-				end
-
 				fprintf('\n');
 
 			end % freq
-
 		end % bin
 
-		save(ana.file, 'pclass');
-		%releaseFile(ana.file);
+		save(pc.file, 'pclass');
+		closeFile(pc.file);
 
 	end % subj
