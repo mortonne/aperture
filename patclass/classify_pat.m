@@ -1,4 +1,4 @@
-function exp = classify_pat(exp, params, resDir, ananame)
+function exp = classify_pat(exp, params, pcname, resDir)
 	%
 	%CLASSIFY_PAT - for a given field in the events struct, train and
 	%test a pattern classifier using a leave-one-out method
@@ -22,8 +22,11 @@ function exp = classify_pat(exp, params, resDir, ananame)
 	% info and parameters of the analysis
 	%
 
-	if ~isfield(params, 'patname')
-		error('You must provide names of the a pattern to classify')
+	if ~exist('resDir', 'var')
+		resDir = fullfile(exp.resDir, 'eeg', params.patname);
+	end
+	if ~isfield(params, 'pcname')
+		pcname = 'patclass';
 	end
 	if ~isfield(params, 'regressor')
 		error('You must provide the name of a regressor field to use for classification')
@@ -32,13 +35,14 @@ function exp = classify_pat(exp, params, resDir, ananame)
 		error('You must provide the name of a selector field to use for classification')
 	end
 
-	params = structDefaults(params, 'eventFilter', '',  'masks', {},  'scramble');
+	params = structDefaults(params, 'patname', [], 'masks', {},  'eventFilter', '',  'chanFilter', '',  'scramble', 0,  'lock', 1,  'overwrite', 0);
 
 	for s=1:length(exp.subj)
 		pat = getobj(exp.subj(s), 'pat', params.patname);
 
 		% set where the results will be saved
-		pcfile = fullfile(resDir, 'patclass', [params.patname '_' exp.subj(s).id '.mat']);
+		filename = sprintf('%s_%s_%s.mat', params.patname, pcname, exp.subj(s).id);
+		pcfile = fullfile(resDir, 'patclass', filename);
 
 		% check input files and prepare output files
 		if prepFiles(pat.file, pcfile, params)~=0
@@ -66,7 +70,7 @@ function exp = classify_pat(exp, params, resDir, ananame)
 			fprintf('%s: ', pat.dim.time(t).label);
 
 			for f=1:length(pat.dim.freq)
-				if isfield(params, 'binFreq')
+				if length(pat.dim.freq)>1
 					fprintf('\n      %s:\t', pat.dim.freq(f).label);
 				end
 

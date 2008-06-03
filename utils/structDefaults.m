@@ -9,7 +9,7 @@ function s = structDefaults(s, varargin)
 	if length(varargin)>0
 		for i=1:2:length(varargin)
 			if isempty(s)
-				s = struct();
+				s = struct;
 			end
 			if ~isfield(s, varargin{i})
 				s = setfield(s, varargin{i}, varargin{i+1});
