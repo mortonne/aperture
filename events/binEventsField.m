@@ -9,6 +9,9 @@ function field = binEventsField(events, bins)
 	%   argument for FILTERSTRUCT.  FIELD will contain one unique
 	%   value for each cell.
 	%
+	%   If BINS is an integer N, events will be randomly divided up 
+	%   into N bins of equal length.
+	%
 
 	if iscell(bins)
 		% assume each cell contains an eventfilter
@@ -18,13 +21,19 @@ function field = binEventsField(events, bins)
 			field(thisfield) = i;
 		end
 
+		elseif isfield(events, bins)
+		% each unique value of the field will be used
+		field = getStructField(events, bins);
+
 		elseif strcmp(bins, 'overall')
 		% lump all events together
 		field = ones(1, length(events));
 
-		elseif isfield(events, bins)
-		% each unique value of the field will be used
-		field = getStructField(events, bins);
+		elseif isnumeric(bins)
+		% randomly divide up the events
+		eventsPerBin = fix(length(events)/bins);
+		inds = repmat(1:bins,1,eventsPerBin);
+		field = inds(randperm(length(inds)));
 
 		else
 		% no binning will take place

@@ -37,6 +37,8 @@ loadStruct.m to load the exp struct.  It will run strrep recursively
 on every string in the struct or any of its sub-structs, and so can 
 be used to change filenames systematically.
 
+Since there is only one exp struct, scripts in the toolbox take care to make sure that no two nodes try to access it at the same time.  Also, each time the exp struct is modified using update_exp.m, a backup is saved in a .mat file whose filename contains the current data and time.  If you encounter any problems with information in the exp struct being overwritten or deleted, load the latest backup, check it, and if it looks ok make it the current exp struct with a save(exp.file, 'exp') command.
+
 -- ev objects --
 In order to use events structs with this toolbox, you must import them
 into the exp struct.  Since events structs can be large, the struct
@@ -77,20 +79,18 @@ patterns folder, a number of scripts can manipulate them.
 - increase_bin_size.m can be used to 
 average over adjacent timebins or
 frequencies to create lower-resolution patterns, or average over 
-adjacent channels for ROI analyses.  
-
-- pat_means.m can be used to average over subsets of events.  The
-  events dimension of the new pattern that is created is collapsed to
-  be the same length as the number of conditions.  For example, you
-  might filter to look at only word presentation events, then average over
-  recalled item events and average over not recalled item events 
-  to get an events dimension of length 2.
+adjacent channels for ROI analyses.  It can also be used to average over subsets of events.  The
+events dimension of the new pattern that is created is collapsed to
+be the same length as the number of conditions.  For example, you
+might filter to look at only word presentation events, then average over
+recalled item events and average over not recalled item events 
+to get an events dimension of length 2.
 
 -- fig objects --
 These objects are sub-structs of pat objects, and are designed to keep
 track of the filenames of figures created from a given pattern.  They
 can hold erps, spectrograms, topoplots, and whatever other figures you
-can think of.  Each fig object has a "name" field so it can be
+come up with.  Each fig object has a "name" field so it can be
 accessed later when creating pdf reports.  pat_plots.m and
 pat_topoplots.m can be used to create basic figures.
 

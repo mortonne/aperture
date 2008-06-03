@@ -84,7 +84,7 @@ function exp = create_pow_pattern(exp, params, patname, resDir)
 
 		% get the patterns for each frequency and time bin
 		start_e = 1;
-		for n=1:length(exp.subj(s).sess)
+		for n=1:length(sessions)
 			fprintf('\nProcessing %s session %d:\n', exp.subj(s).id, sessions(n));
 			sess_events = filterStruct(events, 'session==varargin{1}', sessions(n));
 			sess_base_events = filterStruct(base_events, 'session==varargin{1}', sessions(n));

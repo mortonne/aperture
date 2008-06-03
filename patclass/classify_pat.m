@@ -25,7 +25,7 @@ function exp = classify_pat(exp, params, pcname, resDir)
 	if ~exist('resDir', 'var')
 		resDir = fullfile(exp.resDir, 'eeg', params.patname);
 	end
-	if ~isfield(params, 'pcname')
+	if ~exist('pcname', 'var')
 		pcname = 'patclass';
 	end
 	if ~isfield(params, 'regressor')
@@ -35,7 +35,8 @@ function exp = classify_pat(exp, params, pcname, resDir)
 		error('You must provide the name of a selector field to use for classification')
 	end
 
-	params = structDefaults(params, 'patname', [], 'masks', {},  'eventFilter', '',  'chanFilter', '',  'classifier', 'classify',  'scramble', 0,  'lock', 1,  'overwrite', 0);
+	params = structDefaults(params, 'patname', [], 'masks', {},  'eventFilter', '',  'chanFilter', '',  'classifier', 'classify',  'nComp', 50,  'scramble', 0,  'nComp', [], 'lock', 1,  'overwrite', 0,  'loadSingles', 1);
+	disp(params)
 
 	for s=1:length(exp.subj)
 		pat = getobj(exp.subj(s), 'pat', params.patname);
@@ -52,61 +53,71 @@ function exp = classify_pat(exp, params, pcname, resDir)
 		fprintf('\nStarting pattern classification for %s...\n', exp.subj(s).id);
 
 		% initialize the pc object
-		pc = init_pc(pcname, pcfile, pat, params);
+		pc = init_pc(pcname, pcfile, params);
 
-		[pattern, events] = loadPat(pcname, pcfile, pat, params);
+		% load the pattern and corresponding events
+		[pattern, events] = loadPat(pat, params, 1);
+
+		% get the regressor to use for classification
 		reg.vec = binEventsField(events, params.regressor);
+
+		% optional scramble to use as a sanity check
+		if params.scramble
+			fprintf('scrambling regressors...')
+			reg.vec = reg.vec(randperm(length(reg.vec)));
+		end
+
 		reg.vals = unique(reg.vec);
 
+		% get the selector
 		sel.vec = binEventsField(events, params.selector);
 		sel.vals = unique(sel.vec);
 
-		% if this entire subject was thrown out, skip
-		if length(find(isnan(pattern)))==numel(pattern)
-			continue
+		% flatten all dimensions after events into one vector
+		patsize = size(pattern);
+		pattern = reshape(pattern, [patsize(1) prod(patsize(2:end))]);
+
+		% deal with any nans in the pattern (variables may be thrown out)
+		pattern = remove_nans(pattern);
+
+		if ~isempty(params.nComp)
+			fprintf('getting first %d principal components...\n', params.nComp)
+			% get principal components
+			[coeff,pattern] = princomp(pattern,'econ');
+			clear coeff
+			pattern = pattern(:,1:params.nComp);
 		end
 
-		for t=1:length(pat.dim.time)
-			fprintf('%s: ', pat.dim.time(t).label);
+		pcorr = NaN(1,length(sel.vals));
+		fprintf('Percent Correct: ')
+		for j=1:length(sel.vals)
+			% select which events to test
+			testsel = sel.vec==sel.vals(j);
 
-			for f=1:length(pat.dim.freq)
-				if length(pat.dim.freq)>1
-					fprintf('\n      %s:\t', pat.dim.freq(f).label);
-				end
+			% get the training and testing patterns
+			trainpat = pattern(~testsel,:);
+			testpat = pattern(testsel,:);
 
-				
-				thispat = squeeze(pattern(:,:,b,f));
+			% get the corresponding regressors for train and test
+			trainreg = reg.vec(~testsel);
+			testreg = reg.vec(testsel);
 
-				% remove events that were thrown out
-				good = max(~isnan(thispat),[],2);
+			% run classification algorithms
+			[class,err,posterior] = run_classifier(trainpat,trainreg,testpat,testreg,params.classifier,params);
 
-				thispat = thispat(good,:);
-				reg.goodvec = reg.vec(good);
-				sel.goodvec = sel.vec(good);
+			% check the performance
+			pcorr(j) = sum(testreg(:)==class(:))/length(testreg);
+			fprintf('%.4f ', pcorr(j))
+		end % selector
+		fprintf('\n');
 
-				for j=1:length(sel.vals)
-					% select which events to test
-					testsel = sel.goodvec==sel.vals(j);
+		meanpcorr = mean(pcorr);
 
-					trainpat = thispat(~testsel,:);
-					testpat = thispat(testsel,:);
-
-					% deal with NaN's in the patterns
-					[trainpat, testpat] = prep_patclass(trainpat, testpat);
-
-					train.targvec = reg.goodvec(~testsel)';
-					test.targvec = reg.goodvec(testsel)';
-
-					% run classification algorithms
-					[class,err,posterior] = run_classifier(trainpat,trainreg,testpat,testreg,params.classifier,params);
-
-				end % selector
-				fprintf('\n');
-
-			end % freq
-		end % bin
-
-		save(pc.file, 'pclass');
+		save(pc.file, 'pcorr', 'meanpcorr');
 		closeFile(pc.file);
+
+		% update exp
+		pat = setobj(pat,'pc',pc);
+		exp = update_exp(exp,'subj',exp.subj(s).id,'pat',pat);
 
 	end % subj

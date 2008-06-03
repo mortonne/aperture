@@ -35,7 +35,7 @@ if ~exist('params', 'var')
   params = [];
 end
 
-params = structDefaults(params, 'masks', {},  'eventFilter', '',  'chanFilter', '',  'whichPat', [],  'catDim', []);
+params = structDefaults(params, 'masks', {},  'eventFilter', '',  'chanFilter', '',  'loadSingles', 0,  'whichPat', [],  'catDim', []);
 
 % if there are multiple patterns for this pat object, choose one
 if iscell(pat.file) & ~isempty(params.whichPat)
@@ -59,6 +59,11 @@ if iscell(pat.file) & ~isempty(params.catDim)
   
 else
   load(pat.file);
+end
+
+% change to lower precision if desired
+if params.loadSingles
+	pattern = single(pattern);
 end
 
 % apply masks

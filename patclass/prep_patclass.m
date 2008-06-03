@@ -15,5 +15,5 @@ for c=1:size(trainpat,2)
   trainpat(badevents,c) = nanmean(trainpat(:,c));
   
   badevents = isnan(testpat(:,c));
-  testpat(isnan(testpat(:,c)), c) = nanmean(testpat(:,c));	  
+  testpat(badevents,c) = nanmean(testpat(:,c));	  
 end
