@@ -35,7 +35,7 @@ function exp = classify_pat(exp, params, pcname, resDir)
 		error('You must provide the name of a selector field to use for classification')
 	end
 
-	params = structDefaults(params, 'patname', [], 'masks', {},  'eventFilter', '',  'chanFilter', '',  'classifier', 'classify',  'nComp', 50,  'scramble', 0,  'nComp', [], 'lock', 1,  'overwrite', 0,  'loadSingles', 1);
+	params = structDefaults(params, 'patname', [], 'masks', {},  'eventFilter', '',  'chanFilter', '',  'classifier', 'classify',  'nComp', 150,  'scramble', 0,  'lock', 1,  'overwrite', 0,  'loadSingles', 1);
 	disp(params)
 
 	for s=1:length(exp.subj)
@@ -55,8 +55,15 @@ function exp = classify_pat(exp, params, pcname, resDir)
 		% initialize the pc object
 		pc = init_pc(pcname, pcfile, params);
 
+		% update exp
+		pat = setobj(pat,'pc',pc);
+		exp = update_exp(exp,'subj',exp.subj(s).id,'pat',pat);
+
 		% load the pattern and corresponding events
 		[pattern, events] = loadPat(pat, params, 1);
+		
+		% HACK - cut out the baseline
+		pattern = pattern(:,:,11:90,:);
 
 		% get the regressor to use for classification
 		reg.vec = binEventsField(events, params.regressor);
@@ -81,15 +88,19 @@ function exp = classify_pat(exp, params, pcname, resDir)
 		pattern = remove_nans(pattern);
 
 		if ~isempty(params.nComp)
-			fprintf('getting first %d principal components...\n', params.nComp)
+			fprintf('getting first %d principal components...', params.nComp)
 			% get principal components
 			[coeff,pattern] = princomp(pattern,'econ');
 			clear coeff
 			pattern = pattern(:,1:params.nComp);
 		end
 
+		nTestEv = length(events)/length(sel.vals);
+
+		fprintf('running classifier...')
 		pcorr = NaN(1,length(sel.vals));
-		fprintf('Percent Correct: ')
+		posterior = NaN(length(sel.vals),nTestEv,length(reg.vals));
+		fprintf('\nPercent Correct: ')
 		for j=1:length(sel.vals)
 			% select which events to test
 			testsel = sel.vec==sel.vals(j);
@@ -103,7 +114,7 @@ function exp = classify_pat(exp, params, pcname, resDir)
 			testreg = reg.vec(testsel);
 
 			% run classification algorithms
-			[class,err,posterior] = run_classifier(trainpat,trainreg,testpat,testreg,params.classifier,params);
+			[class,err,posterior(j,:,:)] = run_classifier(trainpat,trainreg,testpat,testreg,params.classifier,params);
 
 			% check the performance
 			pcorr(j) = sum(testreg(:)==class(:))/length(testreg);
@@ -113,11 +124,7 @@ function exp = classify_pat(exp, params, pcname, resDir)
 
 		meanpcorr = mean(pcorr);
 
-		save(pc.file, 'pcorr', 'meanpcorr');
+		save(pc.file, 'pcorr', 'meanpcorr', 'posterior');
 		closeFile(pc.file);
-
-		% update exp
-		pat = setobj(pat,'pc',pc);
-		exp = update_exp(exp,'subj',exp.subj(s).id,'pat',pat);
 
 	end % subj

@@ -25,6 +25,8 @@ function exp = update_exp(exp, varargin)
 	bk_file = fullfile(bk_dir, ['exp_' timestamp '.mat']);
 	save(bk_file, 'exp');
 
+	exp.lastUpdate = timestamp;
+
 	if length(varargin)>0
 		% add the object in place specified
 		exp = recursive_setobj(exp, varargin);

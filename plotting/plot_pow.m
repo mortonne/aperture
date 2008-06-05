@@ -9,13 +9,12 @@ clf reset
 
 x = getStructField(dim.time, 'avg');
 if size(values,2)==1
-	xlim = [dim.time(1).MSvals(1) dim.time(end).MSvals(end)];
-	x = [mean([xlim(1) x]) mean([xlim(2) x])];
+	xlimit = [dim.time(1).MSvals(1) dim.time(end).MSvals(end)];
+	x = [mean([xlimit(1) x]) mean([xlimit(2) x])];
 	values = repmat(values,1,2);
+	set(gca, 'XLim', xlimit)
 end
 y = log10(getStructField(dim.freq, 'avg'));
-
-set(gca, 'XLim', xlim)
 
 if ~isempty(limits)
   h = imagesc(x, y, values, limits);

@@ -17,7 +17,7 @@ function exp = create_pow_pattern(exp, params, patname, resDir)
 	end
 
 	% set the defaults for params
-	params = structDefaults(params,  'evname', 'events',  'eventFilter', '',  'chanFilter', '',  'resampledRate', 500,  'downsample', 500,  'freqs', 2.^(1:(1/8):6),  'offsetMS', -200,  'durationMS', 1800,  'baseEventFilter', '',  'baseOffsetMS', -200,  'baseDurationMS', 100,  'filttype', 'stop',  'filtfreq', [58 62],  'filtorder', 4,  'bufferMS', 1000,  'width', 6,  'kthresh', 5,  'ztransform', 1,  'logtransform', 0,  'replace_eegFile', {},  'lock', 1,  'overwrite', 0,  'doBinning', 0);
+	params = structDefaults(params,  'evname', 'events',  'eventFilter', '',  'chanFilter', '',  'resampledRate', 500,  'downsample', 500,  'freqs', 2.^(1:(1/8):6),  'offsetMS', -200,  'durationMS', 1800,  'baseEventFilter', '',  'baseOffsetMS', -200,  'baseDurationMS', 100,  'filttype', 'stop',  'filtfreq', [58 62],  'filtorder', 4,  'bufferMS', 1000,  'width', 6,  'kthresh', 5,  'ztransform', 1,  'logtransform', 0,  'replace_eegFile', {},  'lock', 1,  'overwrite', 0,  'doBinning', 0,  'updateOnly', 0);
 
 	% get time bin information
 	stepSize = fix(1000/params.downsample);
@@ -58,6 +58,13 @@ function exp = create_pow_pattern(exp, params, patname, resDir)
 
 		% create a pat object to keep track of this pattern
 		pat = init_pat(patname, patfile, params, ev, chan, time, freq);
+		
+		% update exp with the new pat object
+		exp = update_exp(exp, 'subj', exp.subj(s).id, 'pat', pat);
+
+		if params.updateOnly
+			continue
+		end
 
 		% initialize this subject's pattern
 		patSize = [ev.len, length(chan), length(time), length(freq)];
@@ -182,6 +189,4 @@ function exp = create_pow_pattern(exp, params, patname, resDir)
 		save(pat.dim.ev.file, 'events');
 		closeFile(pat.dim.ev.file);
 		
-		% update exp with the new pat object
-		exp = update_exp(exp, 'subj', exp.subj(s).id, 'pat', pat);
 	end % subj
