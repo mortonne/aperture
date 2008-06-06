@@ -14,11 +14,24 @@ function field = binEventsField(events, bins)
 	%
 
 	if iscell(bins)
-		% assume each cell contains an eventfilter
-		field = zeros(1, length(events));
-		for i=1:length(bins)
-			thisfield = inStruct(events, bins{i});
-			field(thisfield) = i;
+		fnames = fieldnames(events);
+		
+		% first check if each string in the cell array is a field
+		if sum(~ismember(bins,fnames))==0
+			% make the new field a conjunction of multiple fields
+			f1 = getStructField(events, bins{1});
+			f2 = getStructField(events, bins{2});
+			for i=1:length(events)
+				field(i) = str2num(sprintf('%d.%d', f1(i), f2(i)));
+			end
+
+			else
+			% assume each cell contains an eventfilter
+			field = zeros(1, length(events));
+			for i=1:length(bins)
+				thisfield = inStruct(events, bins{i});
+				field(thisfield) = i;
+			end
 		end
 
 		elseif isfield(events, bins)
