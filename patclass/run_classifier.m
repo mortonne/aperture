@@ -15,6 +15,10 @@ function [class,err,posterior] = run_classifier(trainpat,trainreg,testpat,testre
 		params = struct;
 	end
 
+	class = [];
+	err = [];
+	posterior = [];
+
 	switch classifier
 		case 'bp_netlab'
 		params = structDefaults(params, 'nHidden', 10);
@@ -28,12 +32,20 @@ function [class,err,posterior] = run_classifier(trainpat,trainreg,testpat,testre
 		case 'logreg'
 		params = structDefaults(params, 'penalty', .5);
 
+		% adapt the inputs
 		trainreg = vec2mat(trainreg);
 		testreg = vec2mat(testreg);
 
+		% run the classifier
 		sp1 = train_logreg(trainpat', trainreg', params);
-		[output, sp2] = test_logreg(testpat', testreg', sp1);
-
+		[posterior,sp2] = test_logreg(testpat', testreg', sp1);
+		
+		% standardize the outputs
+		err = sp2.logreg.trainError;
+		[m,i] = max(posterior);
+		class = i';
+		posterior = posterior';
+		
 		case 'classify'
 		params = structDefaults(params, 'type', 'linear');
 

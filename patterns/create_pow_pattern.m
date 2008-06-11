@@ -33,32 +33,37 @@ function exp = create_pow_pattern(exp, params, patname, resDir)
 	for s=1:length(exp.subj)
 		% set where the pattern will be saved
 		patfile = fullfile(resDir, 'patterns', sprintf('pattern_%s_%s.mat', patname, exp.subj(s).id));
-		evfile = fullfile(resDir, 'events', sprintf('events_%s_%s.mat', patname, exp.subj(s).id));
 
 		% check input files and prepare output files
-		if prepFiles({}, {patfile, evfile}, params)~=0
+		if prepFiles({}, patfile, params)~=0
 			continue
 		end
 
 		% get the ev object to be used for this pattern
-		ev = getobj(exp.subj(s), 'ev', params.evname);
+		ev1 = getobj(exp.subj(s), 'ev', params.evname);
 
 		% get all events for this subject, w/filter that will be used to get voltage
-		events = loadEvents(ev.file, params.replace_eegfile);
+		events = loadEvents(ev1.file, params.replace_eegfile);
 		events = filterStruct(events, '~strcmp(eegfile, '''')');
 		base_events = filterStruct(events(:), params.baseEventFilter);
 		events = filterStruct(events(:), params.eventFilter);
-		
-		% change the ev object
-		ev.file = evfile;
-		ev.len = length(events);
+
+		if length(events)<ev1.len
+			% change the ev object, save a new events struct
+			ev.file = fullfile(resDir, 'events', sprintf('events_%s_%s.mat', patname, exp.subj(s).id));
+			ev.len = length(events);
+			save(ev.file, 'events');
+			else
+			% use the original
+			ev = ev1;
+		end
 
 		% get chan, filter if desired
 		chan = filterStruct(exp.subj(s).chan, params.chanFilter);
 
 		% create a pat object to keep track of this pattern
 		pat = init_pat(patname, patfile, params, ev, chan, time, freq);
-		
+
 		% update exp with the new pat object
 		exp = update_exp(exp, 'subj', exp.subj(s).id, 'pat', pat);
 
@@ -186,7 +191,4 @@ function exp = create_pow_pattern(exp, params, patname, resDir)
 		% save the pattern and corresponding events struct and masks
 		save(pat.file, 'pattern', 'mask');
 		closeFile(pat.file);
-		save(pat.dim.ev.file, 'events');
-		closeFile(pat.dim.ev.file);
-		
 	end % subj

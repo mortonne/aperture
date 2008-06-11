@@ -5,7 +5,7 @@ params = structDefaults(params,  'masks', {},  'field', '',  'eventBinLabels', '
 
 if ~exist('pattern1', 'var')
   % load the pattern from disk
-  [pattern1, events1] = loadPat(pat1, params,1);
+  [pattern2, events2] = loadPat(pat1, params,1);
 else
   % must apply masks manually
   for m=1:length(params.masks)
@@ -16,8 +16,6 @@ end
 
 % initialize
 pat2 = pat1;
-pattern2 = pattern1;
-events2 = events1;
 
 % start the averaging
 fprintf('Binning pattern "%s"...', pat1.name)

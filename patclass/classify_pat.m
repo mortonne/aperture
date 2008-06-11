@@ -1,4 +1,4 @@
-function exp = classify_pat(exp, params, pcname, resDir)
+function [exp,pcorrall] = classify_pat(exp, params, pcname, resDir)
 	%
 	%CLASSIFY_PAT - for a given field in the events struct, train and
 	%test a pattern classifier using a leave-one-out method
@@ -38,6 +38,7 @@ function exp = classify_pat(exp, params, pcname, resDir)
 	params = structDefaults(params, 'patname', [], 'masks', {},  'eventFilter', '',  'chanFilter', '',  'classifier', 'classify',  'nComp', 150,  'scramble', 0,  'lock', 1,  'overwrite', 0,  'loadSingles', 1);
 	disp(params)
 
+	pcorrall = cell(length(exp.subj));
 	for s=1:length(exp.subj)
 		pat = getobj(exp.subj(s), 'pat', params.patname);
 
@@ -62,9 +63,6 @@ function exp = classify_pat(exp, params, pcname, resDir)
 		% load the pattern and corresponding events
 		[pattern, events] = loadPat(pat, params, 1);
 		
-		% HACK - cut out the baseline
-		pattern = pattern(:,:,11:90,:);
-
 		% get the regressor to use for classification
 		reg.vec = binEventsField(events, params.regressor);
 
@@ -82,7 +80,9 @@ function exp = classify_pat(exp, params, pcname, resDir)
 
 		% flatten all dimensions after events into one vector
 		patsize = size(pattern);
-		pattern = reshape(pattern, [patsize(1) prod(patsize(2:end))]);
+		if length(patsize)>2
+			pattern = reshape(pattern, [patsize(1) prod(patsize(2:end))]);
+		end
 
 		% deal with any nans in the pattern (variables may be thrown out)
 		pattern = remove_nans(pattern);
@@ -99,6 +99,7 @@ function exp = classify_pat(exp, params, pcname, resDir)
 
 		fprintf('running classifier...')
 		pcorr = NaN(1,length(sel.vals));
+		class = NaN(length(sel.vals),nTestEv);
 		posterior = NaN(length(sel.vals),nTestEv,length(reg.vals));
 		fprintf('\nPercent Correct: ')
 		for j=1:length(sel.vals)
@@ -114,17 +115,18 @@ function exp = classify_pat(exp, params, pcname, resDir)
 			testreg = reg.vec(testsel);
 
 			% run classification algorithms
-			[class,err,posterior(j,:,:)] = run_classifier(trainpat,trainreg,testpat,testreg,params.classifier,params);
+			[class(j,:),err,posterior(j,:,:)] = run_classifier(trainpat,trainreg,testpat,testreg,params.classifier,params);
 
 			% check the performance
-			pcorr(j) = sum(testreg(:)==class(:))/length(testreg);
+			pcorr(j) = sum(testreg==class(j,:))/length(testreg);
 			fprintf('%.4f ', pcorr(j))
 		end % selector
 		fprintf('\n');
 
 		meanpcorr = mean(pcorr);
 
-		save(pc.file, 'pcorr', 'meanpcorr', 'posterior');
+		save(pc.file, 'class', 'pcorr', 'meanpcorr', 'posterior');
 		closeFile(pc.file);
 
+		pcorrall{s} = pcorr;
 	end % subj

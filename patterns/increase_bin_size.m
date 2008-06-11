@@ -31,7 +31,7 @@ if ~exist('resDir', 'var')
   resDir = fullfile(exp.resDir, 'eeg', patname);
 end
 
-params = structDefaults(params, 'patname', '',  'eventFilter', '',  'masks', {});
+params = structDefaults(params, 'patname', '',  'eventFilter', '',  'masks', {},  'nComp', []);
 
 if ~exist('patname', 'var')
   patname = [params.patname '_mod'];
@@ -55,10 +55,15 @@ for s=1:length(exp.subj)
   % do the binning
   [pat, pattern, events] = patBins(pat1, params);
 
+	if ~isempty(params.nComp)
+		% run PCA on the pattern
+		[pat, pattern, coeff] = patPCA(pat, params, pattern);
+	end
+
 	pat.name = patname;
   pat.file = patfile;
   pat.params = params;
-  fprintf('Pattern "%s" Created.\n', pat.name)
+  fprintf('Pattern "%s" created.\n', pat.name)
   
   if pat.dim.ev.len<pat1.dim.ev.len 
     if ~exist(fullfile(resDir, 'events'), 'dir')
@@ -74,6 +79,10 @@ for s=1:length(exp.subj)
   exp = update_exp(exp, 'subj', exp.subj(s).id, 'pat', pat);
   
   % save the new pattern
-  save(pat.file, 'pattern');
+	if exist('coeff','var')
+		save(pat.file, 'pattern', 'coeff');
+		else
+  	save(pat.file, 'pattern');
+	end
   closeFile(pat.file);
 end % subj

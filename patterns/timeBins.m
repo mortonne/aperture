@@ -17,15 +17,8 @@ if ~isempty(params.MSbins)
   avgtime = [time1.avg];
   
   if length(params.MSbins)==1
-    stepSize = params.MSbins;
-    nSteps = fix((avgtime(end)-avgtime(1))/stepSize);
-    startMS = avgtime(1);
-    for i=1:nSteps
-      params.MSbins(i,1) = startMS;
-      endMS = startMS + stepSize;
-      params.MSbins(i,2) = endMS;
-      startMS = endMS;
-    end
+		stepSize = params.MSbins;
+    params.MSbins = makeBins(stepSize,avgtime(1),avgtime(end))
   end
   
   for t=1:size(params.MSbins, 1)

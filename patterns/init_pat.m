@@ -23,6 +23,12 @@ if ~exist('freq', 'var')
   freq = init_freq();
 end
 
-dim = struct('ev', ev,  'chan', chan,  'time', time,  'freq', freq);
+if isfield(ev, 'ev')
+	% assume a dim struct was passed in
+	dim = ev;
+	else
+	% create one from the standard dimensions
+	dim = struct('ev', ev,  'chan', chan,  'time', time,  'freq', freq);
+end
 
 pat = struct('name', patname,  'file', file,  'params', params,  'dim', dim);
