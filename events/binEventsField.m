@@ -1,54 +1,59 @@
 function field = binEventsField(events, bins)
-	%BINEVENTSFIELD   Bin an existing events field to make a new one.
-	%   FIELD = BINEVENTSFIELD(EVENTS,BINS) where BINS is the name of
-	%   one of the fields in EVENTS, is the same as FIELD =      
-	%   GETSTRUCTFIELD(EVENTS,FIELDNAME).  If BINS is 'overall,' the
-	%   field will have one value for all events.
-	%
-	%   If BINS is a cell array, each cell is assumed to contain an
-	%   argument for FILTERSTRUCT.  FIELD will contain one unique
-	%   value for each cell.
-	%
-	%   If BINS is an integer N, events will be randomly divided up 
-	%   into N bins of equal length.
-	%
+%
+%BINEVENTSFIELD   Bin an existing events field to make a new one.
+%   FIELD = BINEVENTSFIELD(EVENTS,BINS) where BINS is the name of
+%   one of the fields in EVENTS, is the same as FIELD =      
+%   GETSTRUCTFIELD(EVENTS,FIELDNAME).
+%
+%   If BINS is 'overall,' the
+%   field will have one value for all events.
+%
+%   If BINS is a cell array, and each cell contains a field in EVENTS, 
+%   the new field will have a unique value for each combination of the 
+%   fields.  Otherwise, each cell is assumed to contain an
+%   argument for FILTERSTRUCT.  FIELD will contain one unique
+%   value for each cell.
+%
+%   If BINS is an integer N, events will be randomly divided up 
+%   into N bins of equal length.
+%
 
-	if iscell(bins)
-		fnames = fieldnames(events);
-		
-		% first check if each string in the cell array is a field
-		if sum(~ismember(bins,fnames))==0
-			% make the new field a conjunction of multiple fields
-			f1 = getStructField(events, bins{1});
-			f2 = getStructField(events, bins{2});
-			for i=1:length(events)
-				field(i) = str2num(sprintf('%d.%d', f1(i), f2(i)));
-			end
+if iscell(bins)
+	fnames = fieldnames(events);
 
-			else
-			% assume each cell contains an eventfilter
-			field = zeros(1, length(events));
-			for i=1:length(bins)
-				thisfield = inStruct(events, bins{i});
-				field(thisfield) = i;
-			end
+	% first check if each string in the cell array is a field
+	if sum(~ismember(bins,fnames))==0
+		% make the new field a conjunction of multiple fields
+		f1 = getStructField(events, bins{1});
+		f2 = getStructField(events, bins{2});
+		for i=1:length(events)
+			field(i) = str2num(sprintf('%d.%d', f1(i), f2(i)));
 		end
 
-		elseif isfield(events, bins)
-		% each unique value of the field will be used
-		field = getStructField(events, bins);
-
-		elseif strcmp(bins, 'overall')
-		% lump all events together
-		field = ones(1, length(events));
-
-		elseif isnumeric(bins)
-		% randomly divide up the events
-		eventsPerBin = fix(length(events)/bins);
-		inds = repmat(1:bins,1,eventsPerBin);
-		field = inds(randperm(length(inds)));
-
 		else
-		% no binning will take place
-		field = 1:length(events);
+		% assume each cell contains an eventfilter
+		field = zeros(1, length(events));
+		for i=1:length(bins)
+			thisfield = inStruct(events, bins{i});
+			field(thisfield) = i;
+		end
 	end
+
+	elseif isfield(events, bins)
+	% each unique value of the field will be used
+	field = getStructField(events, bins);
+
+	elseif strcmp(bins, 'overall')
+	% lump all events together
+	field = ones(1, length(events));
+
+	elseif isnumeric(bins)
+	% randomly divide up the events
+	eventsPerBin = fix(length(events)/bins);
+	inds = repmat(1:bins,1,eventsPerBin);
+	field = inds(randperm(length(inds)));
+
+	else
+	% no binning will take place
+	field = 1:length(events);
+end
