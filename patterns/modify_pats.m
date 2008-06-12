@@ -1,30 +1,14 @@
-function exp = increase_bin_size(exp, params, patname, resDir)
+function exp = modify_pats(exp, params, patname, resDir)
 %
-%INCREASE_BIN_SIZE - average over adjacent time or frequency bins
-%to decrease the size of patterns, or average over channels for ROI
-%analyses; new patterns will be saved in a new directory
+%MODIFY_PATS   Modify existing patterns.
+%   EXP = MODIFY_PATS(EXP,PARAMS,PATNAME,RESDIR) modifies the patterns
+%   named PATNAME corresponding to each subject in EXP, using options
+%   in the PARAMS struct.  New patterns are saved in RESDIR/patterns.
 %
-% FUNCTION: exp = increase_bin_size(exp, params, patname, resDir)
+%   See EVENTBINS, CHANBINS, TIMEBINS, and FREQBINS for options for 
+%   binning each dimension.
 %
-% INPUT: exp - struct created by init_iEEG or init_scalp
-%        params - required fields: patname (specifies the name of
-%                 which pattern in the exp struct to use)
-%
-%                 optional fields: eventFilter (specify subset of
-%                 events to use), masks (cell array containing
-%                 names of masks to apply to pattern)
-%        resDir - 'pattern' files are saved in resDir/data
-%        patname - name of new pattern to save under in the exp struct
-%
-% OUTPUT: exp struct with a new pat object added, which contains file
-% info and parameters of the analysis
-%
-% params.chanbins = {{'Fp1', 'LFp'}, {'Fp2', 'RFp'}, {'F3', 'F7', ...
-% 'LF'}, {'F4', 'F7', 'RF'}, 'LFT', 'RFT', {'T3', 'T5', 'LT'}, ...
-% {'T4', 'T6', 'RT'}, {'P3', 'LP'}, {'P4', 'RP'}, {'O1', 'LO'}, ...
-% {'O2', 'RO'}};
-% params.chanbinlabels = {'LFp', 'RFp', 'LF', 'RF', 'LFT', 'RFT', ...
-% 'LT', 'RT', 'LP', 'RP', 'LO', 'RO'};
+%   See PATPCA for options for getting principal components of patterns.
 %
 
 if ~exist('resDir', 'var')
@@ -52,8 +36,14 @@ for s=1:length(exp.subj)
     continue
   end
   
-  % do the binning
-  [pat, pattern, events] = patBins(pat1, params);
+  % create the new bins
+  [pat, patbins, events] = patBins(pat1, params);
+	
+	% load the pattern
+	pattern = loadPat(pat, params, 0);
+	
+	% apply binning to the pattern
+	pattern = patMeans(pattern, patbins);
 
 	if ~isempty(params.nComp)
 		% run PCA on the pattern
@@ -65,7 +55,7 @@ for s=1:length(exp.subj)
   pat.params = params;
   fprintf('Pattern "%s" created.\n', pat.name)
   
-  if pat.dim.ev.len<pat1.dim.ev.len 
+  if ~isempty(events)
     if ~exist(fullfile(resDir, 'events'), 'dir')
       mkdir(fullfile(resDir, 'events'));
     end

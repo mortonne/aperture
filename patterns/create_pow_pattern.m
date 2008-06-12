@@ -52,6 +52,9 @@ function exp = create_pow_pattern(exp, params, patname, resDir)
 			% change the ev object, save a new events struct
 			ev.file = fullfile(resDir, 'events', sprintf('events_%s_%s.mat', patname, exp.subj(s).id));
 			ev.len = length(events);
+			if ~exist(fileparts(ev.file), 'dir')
+				mkdir(fileparts(ev.file));
+			end
 			save(ev.file, 'events');
 			else
 			% use the original

@@ -74,26 +74,31 @@ function exp = create_volt_pattern(exp, params, patname, resDir)
 		ev1 = getobj(exp.subj(s), 'ev', params.evname);
 
 		% get all events for this subject, w/filter that will be used to get voltage
-		events = loadEvents(ev1.file, params.replace_eegfile);
-		events = filterStruct(events, '~strcmp(eegfile, '''')');
+		[ev, events] = loadEv(ev, params, 1);
 		base_events = filterStruct(events(:), params.baseEventFilter);
 		events = filterStruct(events(:), params.eventFilter);
 
 		if length(events)<ev1.len
-			% change the ev object, save a new events struct
+			% change the ev object
 			ev.file = fullfile(resDir, 'events', sprintf('events_%s_%s.mat', patname, exp.subj(s).id));
 			ev.len = length(events);
+			
+			% save a new events struct
+			if ~exist(fileparts(ev.file), 'dir')
+				mkdir(fileparts(ev.file));
+			end
 			save(ev.file, 'events');
+			
 			else
 			% use the original
 			ev = ev1;
 		end
 
-		% get chan, filter if desired
-		chan = filterStruct(exp.subj(s).chan, params.chanFilter);
-
 		% create a pat object to keep track of this pattern
 		pat = init_pat(patname, patfile, params, ev, chan, time);
+
+		% apply binning
+		[pat, patbins, events] = patBins(pat, params, events);
 
 		% update exp with the new pat object
 		exp = update_exp(exp, 'subj', exp.subj(s).id, 'pat', pat);
@@ -106,18 +111,10 @@ function exp = create_volt_pattern(exp, params, patname, resDir)
 		patSize = [pat.dim.ev.len, length(pat.dim.chan), length(pat.dim.time)];
 		pattern = NaN(patSize);
 
-		% initialize a boolean matrix to keep track of kurtosis
-		kMask = false(patSize);
-
 		% create a boolean matrix to keep track of artifacts
-		mask = struct();
 		if isfield(params, 'artWindow') && ~isempty(params.artWindow)
-			artMask = false(patSize);
-			timeArtMask = rmArtifacts(events, pat.dim.time, params.artWindow);
-			for c=1:size(artMask,2)
-				artMask(:,c,:) = timeArtMask;
-			end
-			mask = setobj(mask, struct('name', 'artifacts', 'mat', artMask));
+			doArt = 1;
+			artMask = rmArtifacts(events, pat.dim.time, params.artWindow);
 		end
 
 		% get a list of sessions in the filtered event struct
@@ -136,11 +133,9 @@ function exp = create_volt_pattern(exp, params, patname, resDir)
 				% get baseline stats for this channel, sess
 				if params.ztransform
 					base_eeg = gete_ms(chan(c).number, sess_base_events, ...
-					params.baseDurationMS, ...
-					params.baseOffsetMS, params.bufferMS, ... 
-					params.filtfreq, params.filttype, ...
-					params.filtorder, params.resampledRate, ...
-					params.relativeMS);
+					params.baseDurationMS, params.baseOffsetMS, params.bufferMS, ... 
+					params.filtfreq, params.filttype, params.filtorder, ...
+					params.resampledRate, params.relativeMS);
 
 					if ~isempty(params.kthresh)
 						k = kurtosis(base_eeg,1,2);
@@ -157,22 +152,30 @@ function exp = create_volt_pattern(exp, params, patname, resDir)
 				e = start_e;
 				for sess_e=1:length(sess_events)
 					this_eeg = squeeze(gete_ms(chan(c).number, sess_events(sess_e), ...
-					params.durationMS, params.offsetMS, ...
-					params.bufferMS, params.filtfreq, ...
-					params.filttype, params.filtorder, ...
+					params.durationMS, params.offsetMS, params.bufferMS, ...
+					params.filtfreq, params.filttype, params.filtorder, ...
 					params.resampledRate, params.relativeMS));
 
 					% check kurtosis for this event, add info to boolean mask for later
 					if ~isempty(params.kthresh)
-						kMask(e,c,:) = kurtosis(this_eeg)>params.kthresh;
+						k = kurtosis(this_eeg)
+						this_eeg(k>params.kthresh) = NaN;
 					end
 
 					% normalize across sessions
 					if params.ztransform
 						this_eeg = (this_eeg - base_mean)/base_std;
 					end
-
-					pattern(e,c,:) = this_eeg;
+					
+					% clip artifacts
+					if doArt
+						this_eeg(artMask(e,c,:)) = NaN;
+					end
+					
+					% add this event/channel to the pattern
+					for t=1:length(patbins{3})
+						pattern(e,c,t) = nanmean(this_eeg(patbins{3}{t});
+					end
 					e = e + 1;
 				end % events
 
@@ -182,16 +185,7 @@ function exp = create_volt_pattern(exp, params, patname, resDir)
 		end % session
 		fprintf('\n');
 
-		% put the masks in one struct
-		mask = setobj(mask, struct('name', 'kurtosis', 'mat', kMask));
-
-		if params.doBinning
-			% do binning if desired
-			[pat, pattern, events] = patBins(pat, pattern, events, mask);
-			mask = struct();
-		end
-
 		% save the pattern and corresponding events struct and masks
-		save(pat.file, 'pattern', 'mask');
+		save(pat.file, 'pattern');
 		closeFile(pat.file);
 	end % subj

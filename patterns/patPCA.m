@@ -1,17 +1,21 @@
-function [pat2, pattern, coeff] = patPCA(pat1, params, pattern, mask)
-%function [pat2, pattern2, events2] = patBins(pat1, params, pattern1, events1, mask1)
+function [pat2, pattern, coeff] = patPCA(pat1, params, pattern)
+%
+%PATPCA   Get principal components of a pattern.
+%   [PAT2,PATTERN,COEFF] = PATPCA(PAT1,PARAMS,PATTERN) does PCA on PATTERN
+%   according to options specified in the PARAMS struct.  The modified PAT2
+%   gives meta-data on the new pattern.  COEFF contains the coefficients of
+%   each principle component used.
+%
 
-params = structDefaults(params,  'masks', {}, 'loadSingles', 1);
+if ~exist('params','var')
+	params = struct;
+end
+
+params = structDefaults(params,  'nComp', 150,  'loadSingles', 1);
 
 if ~exist('pattern', 'var')
   % load the pattern from disk
   pattern = loadPat(pat1, params);
-else
-  % must apply masks manually
-  for m=1:length(params.masks)
-    thisMask = filterStruct(mask,'strcmp(name, varargin{1})', params.masks{m});
-    pattern(thisMask.mat) = NaN;
-  end
 end
 
 % flatten all dimensions after events into one vector

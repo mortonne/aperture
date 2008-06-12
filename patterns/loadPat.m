@@ -1,9 +1,9 @@
-function [pattern, events] = loadPat(pat, params, loadEv)
+function [pattern, events] = loadPat(pat, params)
 %
 %LOADPAT - loads one subject's pattern, and applies any specified
 %masks and event filters
 %
-% FUNCTION: [pattern, events] = loadPat(pat, params, loadEv)
+% FUNCTION: [pattern, events] = loadPat(pat, params)
 %
 % INPUT: pat - struct holding information about a pattern
 %        params - required fields: none
@@ -16,20 +16,15 @@ function [pattern, events] = loadPat(pat, params, loadEv)
 %                 (necessary if the pattern is split on one
 %                 dimension into multiple files - specifies which
 %                 dimension to concatenate on)
-%        loadEv - set to 1 to load the events associated with
-%                     the pattern (default: 0)
 %
 % OUTPUT: loaded pattern, plus the events associated with the
-% pattern if loadEv=1
+% pattern
 %
 
 if isstr(pat)
 	% just the pat file has been input
 	newpat.file = pat;
 	pat = newpat;
-end
-if ~exist('loadEv', 'var')
-  loadEv = 0;
 end
 if ~exist('params', 'var')
   params = [];
@@ -76,7 +71,7 @@ if exist('mask', 'var')
 end
 
 % load events
-if loadEv | ~isempty(params.eventFilter)
+if nargout==2 | ~isempty(params.eventFilter)
   events = loadEvents(pat.dim.ev.file);
 else
   events = [];
