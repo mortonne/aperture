@@ -1,12 +1,34 @@
 function exp = update_exp(exp, varargin)
-	%exp = update_exp(exp, 'subj', exp.subj(s).id, 'pat', pat);
+%
+%UPDATE_EXP   Apply changes to the exp struct.
+%   EXP = UPDATE_EXP(EXP) is the same as save(exp.file,'exp').
+%
+%   EXP = UPDATE_EXP(EXP,VARARGIN) loads the most recently
+%   saved version of EXP (locking first if exp.useLock is true),
+%   makes a backup of that version in exp.resDir/exp_bk,
+%   runs RECURSIVE_SETOBJ to add an object to EXP, then saves
+%   the modified version in exp.file.
+%   
+%   The last two arguments of VARARGIN should be an object type,
+%   i.e. 'pat', and the object to be added.  If there are other
+%   arguments of VARARGIN, they should be object type, object name
+%   pairs that climb the exp heirarchy.
+%
+%   EXAMPLE:
+%      exp = update_exp(exp,'subj','LTP001','pat',pat)
+%      gets the subject named LTP001, then adds pat to that subject's
+%      list of patterns.
+%
 
+fprintf('In update_exp: ');
+
+if length(varargin)>0
+	% need to first add an object to exp
 	if ~isfield(exp, 'useLock')
 		exp.useLock = 1;
 	end
-
-	fprintf('In update_exp: ');
 	
+	% if running on the cluster, take possession of exp first
 	if exp.useLock
 		if ~lockFile(exp.file, 1);
 			error('Locking timed out.')
@@ -18,26 +40,15 @@ function exp = update_exp(exp, varargin)
 	load(exp.file);
 	fprintf('Loaded...')
 
-	% make a backup of exp with a timestamp
-	bk_dir = fullfile(exp.resDir, 'exp_bk');
-	if ~exist(bk_dir)
-		mkdir(bk_dir);
-	end
-	timestamp = datestr(now, 'ddmmmyy_HHMM');
-	bk_file = fullfile(bk_dir, ['exp_' timestamp '.mat']);
-	save(bk_file, 'exp');
+	% make a backup before making changes
+	exp = backup_exp(exp);
 
-	exp.lastUpdate = timestamp;
+	% add the object in place specified
+	exp = recursive_setobj(exp, varargin);
+end
 
-	if length(varargin)>0
-		% add the object in place specified
-		exp = recursive_setobj(exp, varargin);
-	end
+% commit the new version of exp
+save(exp.file, 'exp');
+closeFile(exp.file);
 
-	save(exp.file, 'exp');
-
-	if exp.useLock
-		releaseFile(exp.file);
-	end
-	
-	fprintf('Updated and saved.\n');
+fprintf('Updated and saved.\n');

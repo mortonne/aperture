@@ -1,6 +1,6 @@
 function status = prepFiles(filesToRead, filesToWrite, params)
 %
-%PREPFILES Prepare files for use in analysis on the cluster.
+%PREPFILES   Prepare files for use in analysis on the cluster.
 %   status = prepFiles(filesToRead, filesToWrite, params) checks if
 %   each file in filesToRead exists, and prepares each file in
 %   filesToWrite according to options specified in the params
