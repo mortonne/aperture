@@ -35,15 +35,17 @@ for s=1:length(exp.subj)
   if prepFiles(pat1.file, patfile, params)~=0
     continue
   end
-  
-  % create the new bins
-  [pat, patbins, events] = patBins(pat1, params);
-	
+
 	% load the pattern
-	pattern = loadPat(pat, params, 0);
+	pattern = loadPat(pat1, params);
+	
+	% apply filters
+	[pat,inds,events,evmod(1)] = patFilt(pat1,params);
+	pattern = pattern(inds{:});
 	
 	% apply binning to the pattern
-	pattern = patMeans(pattern, patbins);
+	[pat,bins,events,evmod(2)] = patBins(pat,params,events);
+	pattern = patMeans(pattern, bins);
 
 	if ~isempty(params.nComp)
 		% run PCA on the pattern
@@ -55,7 +57,7 @@ for s=1:length(exp.subj)
   pat.params = params;
   fprintf('Pattern "%s" created.\n', pat.name)
   
-  if ~isempty(events)
+  if any(evmod)
     if ~exist(fullfile(resDir, 'events'), 'dir')
       mkdir(fullfile(resDir, 'events'));
     end

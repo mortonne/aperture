@@ -1,4 +1,4 @@
-function [pat2, bins, events] = patBins(pat1, params, events)
+function [pat2,bins,events,evmod] = patBins(pat1,params,events)
 %
 %PATBINS   Apply bins to dimensions of a pat object.
 %   [PAT2,BINS] = PATBINS(PAT1,PARAMS) alters the dimensions information
@@ -19,6 +19,7 @@ params = structDefaults(params,  'masks', {},  'field', '',  'eventBinLabels', '
 % initialize
 pat2 = pat1;
 bins = cell(1,4);
+evmod = 0;
 
 % start the averaging
 fprintf('Binning pattern "%s"...', pat1.name)
@@ -27,12 +28,18 @@ fprintf('Binning pattern "%s"...', pat1.name)
 if ~isempty(params.field)
   fprintf('events...');
 
+	if ~exist('events','var') || isempty(events)
+		load(pat.dim.ev.file);
+	end
+
   % bin events using a field from the events struct
   if exist('events', 'var')
     [pat2.dim.ev, events, bins{1}] = eventBins(pat1.dim.ev, params, events);
   else
     [pat2.dim.ev, events, bins{1}] = eventBins(pat1.dim.ev, params);
   end
+
+	evmod = 1;
 end
 
 % CHANNELS

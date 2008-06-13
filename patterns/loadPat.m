@@ -30,7 +30,7 @@ if ~exist('params', 'var')
   params = [];
 end
 
-params = structDefaults(params, 'masks', {},  'eventFilter', '',  'chanFilter', '',  'loadSingles', 0,  'whichPat', [],  'catDim', []);
+params = structDefaults(params, 'masks', {},  'nComp', [],  'loadSingles', 0,  'whichPat', [],  'catDim', []);
 
 % if there are multiple patterns for this pat object, choose one
 if iscell(pat.file) & ~isempty(params.whichPat)
@@ -74,18 +74,18 @@ end
 if nargout==2 | ~isempty(params.eventFilter)
   events = loadEvents(pat.dim.ev.file);
 else
-  events = [];
+  events = struct;
 end
 
-% filter events and pattern
-if ~isempty(params.eventFilter)
-  inds = inStruct(events, params.eventFilter);  
-  pattern = pattern(inds,:,:,:);
-  events = events(inds);
-end
+% apply filters
+[pat,inds,events] = patFilt(pat,params,events)
+pattern = pattern(inds{:});
 
-% filter channels
-if ~isempty(params.chanFilter)
-  inds = inStruct(pat.dim.chan, params.chanFilter);
-  pattern = pattern(:,inds,:,:);
+% do binning
+[pat, patbins, events] = patBins(pat, params, events);
+pattern = patMeans(pattern, patbins);
+
+if ~isempty(params.nComp)
+	% run PCA on the pattern
+	[pat, pattern, coeff] = patPCA(pat, params, pattern);
 end

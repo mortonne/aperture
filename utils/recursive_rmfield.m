@@ -10,6 +10,7 @@ if length(vars)==2
 		return
 	end
 
+	%{
 	if isfield(obj2rm, 'file')
 		files = obj2rm.file;
 		if ~iscell(files)
@@ -58,6 +59,7 @@ if length(vars)==2
 		promptStr = sprintf('Removing object "%s" from field "%s". Continue? >> ', vars{2}, vars{1});
 		in = input(promptStr, 's');
 	end
+	%}
 
 	% remove the object
 	S.(vars{1})(ind) = [];
