@@ -1,4 +1,4 @@
-function exp = create_volt_pattern(exp, params, patname, resDir)
+function exp = create_pattern(exp, params, patname, resDir)
 %
 %CREATE_VOLT_PATTERN Gets voltage values for a set of events for
 %   each subject included in the exp struct.
@@ -61,7 +61,7 @@ time = init_time(MSvals);
 % get frequency information
 freq = init_freq(params.freqs);
 
-fprintf('\nStarting create_volt_pattern. Parameters are:\n\n')
+fprintf('\nStarting create_pattern. Parameters are:\n\n')
 disp(params);
 
 for s=1:length(exp.subj)
