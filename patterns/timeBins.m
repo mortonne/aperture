@@ -18,16 +18,16 @@ if ~isempty(params.MSbins)
   
   if length(params.MSbins)==1
 		stepSize = params.MSbins;
-    params.MSbins = makeBins(stepSize,avgtime(1),avgtime(end))
+    params.MSbins = makeBins(stepSize,avgtime(1),avgtime(end));
   end
   
   for t=1:size(params.MSbins, 1)
     % define this bin
     bint{t} = find(avgtime>=params.MSbins(t,1) & avgtime<params.MSbins(t,2));
-    
+
     % get ms value for each sample in the new time bin
     time2(t).MSvals = avgtime(bint{t});
-    time2(t).avg = mean(time2(t).MSvals);
+    time2(t).avg = mean(params.MSbins(t,:));
     
     % update the time bin label
     if ~isempty(params.MSbinlabels)
@@ -36,7 +36,7 @@ if ~isempty(params.MSbins)
       time2(t).label = sprintf('%d to %d ms', time2(t).MSvals(1), time2(t).MSvals(end));
     end
   end
-
+	
 elseif ~isempty(time1) % just copy info from time1
 
   % copy the existing struct

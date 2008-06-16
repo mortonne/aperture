@@ -1,6 +1,6 @@
 function bins = makeBins(stepSize,start,final)
 	
-	nbins = fix((final-start)/stepSize);
+	nbins = fix((final+stepSize-start)/stepSize);
 	bins = NaN(nbins,2);
 	s = start;
 	for i=1:nbins

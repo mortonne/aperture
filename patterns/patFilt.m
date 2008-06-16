@@ -21,7 +21,7 @@ inds = cell(1,4);
 evmod = 0;
 
 % start the averaging
-fprintf('Binning pattern "%s"...', pat1.name)
+%fprintf('Binning pattern "%s"...', pat.name)
 
 % EVENTS
 if ~isempty(params.eventFilter)
@@ -54,6 +54,12 @@ if ~isempty(params.freqFilter)
 	pat.dim.freq = pat.dim.freq(inds{4});
 end
 fprintf('\n')
+
+% check the dimensions
+psize = patsize(pat.dim);
+if any(~psize)
+	error('A dimension of pattern %s was filtered into oblivion.', pat.name);
+end
 
 if ~exist('events','var')
 	events = struct;

@@ -22,14 +22,14 @@ bins = cell(1,4);
 evmod = 0;
 
 % start the averaging
-fprintf('Binning pattern "%s"...', pat1.name)
+%fprintf('Binning pattern "%s"...', pat1.name)
 
 % EVENTS
 if ~isempty(params.field)
-  fprintf('events...');
+  %fprintf('events...');
 
 	if ~exist('events','var') || isempty(events)
-		load(pat.dim.ev.file);
+		load(pat1.dim.ev.file);
 	end
 
   % bin events using a field from the events struct
@@ -44,7 +44,7 @@ end
 
 % CHANNELS
 if ~isempty(params.chanbins)
-  fprintf('channels...');
+  %fprintf('channels...');
   
   % bin channels by number or region
   [pat2.dim.chan, bins{2}] = chanBins(pat1.dim.chan, params);
@@ -52,7 +52,7 @@ end
 
 % TIME
 if ~isempty(params.MSbins)
-  fprintf('time...');
+  %fprintf('time...');
   
   % bin time using MS windows
   [pat2.dim.time, bins{3}] = timeBins(pat1.dim.time, params);
@@ -60,12 +60,18 @@ end
 
 % FREQUENCY
 if ~isempty(params.freqbins)
-  fprintf('frequency...');
+  %fprintf('frequency...');
   
   % bin frequency using freq windows
   [pat2.dim.freq, bins{4}] = freqBins(pat1.dim.freq, params);
 end
-fprintf('\n')
+%fprintf('\n')
+
+% check the dimensions
+psize = patsize(pat2.dim);
+if any(~psize)
+	error('A dimension of pattern %s was binned into oblivion.', pat.name);
+end
 
 if ~exist('events','var')
 	events = struct;

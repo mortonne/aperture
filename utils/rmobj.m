@@ -6,7 +6,7 @@ load(exp.file);
 % make a backup
 exp = backup_exp(exp);
 
-% delete the object and any files attached to it
+% delete the object
 exp = recursive_rmfield(exp, query, varargin);
 
 % update exp

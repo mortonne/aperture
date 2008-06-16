@@ -1,6 +1,6 @@
 function freq = init_freq(freqs, labels)
 
-if ~exist('freqs', 'var')
+if ~exist('freqs', 'var') || isempty(freqs)
   freq = struct('vals', [],  'avg', [],  'label', '');
   return
 end

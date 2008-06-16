@@ -27,6 +27,10 @@ for i=1:length(bins)
 
 	temp = NaN(oldSize{:});
 	for j=1:length(bins{i})
+		if isempty(bins{i}{j})
+			fprintf('Warning: Empty Bin in Dimension %d.\n', i);
+		end
+		
 		% get reference for the new bin
 		ind = allcell;
 		ind{i} = j;
@@ -36,7 +40,7 @@ for i=1:length(bins)
 		binInd{i} = bins{i}{j};
 
 		% do the average
-		temp{ind{:}} = nanmean(pattern(binInd{:}));
+		temp(ind{:}) = nanmean(pattern(binInd{:}),i);
 	end
 	pattern = temp;
 

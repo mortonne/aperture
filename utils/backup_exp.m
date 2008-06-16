@@ -12,13 +12,13 @@ function exp = backup_exp(exp,bkdir)
 if ~exist('bkdir','var')
 	bkdir = fullfile(exp.resDir, 'exp_bk');
 end
-if ~exist(bk_dir)
-	mkdir(bk_dir);
+if ~exist(bkdir,'dir')
+	mkdir(bkdir);
 end
 
 % write the filename
 timestamp = datestr(now, 'ddmmmyy_HHMM');
-bk_file = fullfile(bk_dir, ['exp_' timestamp '.mat']);
+bk_file = fullfile(bkdir, ['exp_' timestamp '.mat']);
 
 % save
 save(bk_file, 'exp');

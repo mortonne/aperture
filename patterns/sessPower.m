@@ -1,11 +1,17 @@
-function pattern = sessPower(pat, events, base_events)
+function pattern = sessPower(pat,bins,events,base_events)
 
-for c=1:length(pat.dim.chan)
-	fprintf('%d.', pat.dim.chan(c).number);
+% set defaults for pattern creation
+params = structDefaults(pat.params, 'baseOffsetMS', -200,  'baseDurationMS', 100,  'filttype', 'stop',  'filtfreq', [58 62],  'filtorder', 4,  'bufferMS', 1000,  'width', 6,  'kthresh', 5,  'ztransform', 1,  'logtransform', 0);
+
+% initialize the pattern for this session
+pattern = NaN(length(events), length(params.channels), length(pat.dim.time), length(pat.dim.freq));
+
+for c=1:length(params.channels)
+	fprintf('%d.', params.channels(c));
 
 	% if z-transforming, get baseline stats for this sess, channel
 	if params.ztransform
-		base_pow = getphasepow(pat.dim.chan(c).number, base_events, ...
+		base_pow = getphasepow(params.channels(c), base_events, ...
 		params.baseDurationMS, ...
 		params.baseOffsetMS, params.bufferMS, ... 
 		'freqs', params.freqs, ... 
@@ -36,7 +42,7 @@ for c=1:length(pat.dim.chan)
 	% get power, z-transform, average each time bin
 	for e=1:length(events)
 
-		[this_pow] = getphasepow(chan(c).number, events(e), ...
+		[this_pow] = getphasepow(params.channels(c), events(e), ...
 		params.durationMS, ...
 		params.offsetMS, params.bufferMS, ... 
 		'freqs', params.freqs, ... 
@@ -47,7 +53,11 @@ for c=1:length(pat.dim.chan)
 		'width', params.width, ...
 		'resampledRate', params.resampledRate, ...
 		'downsample', params.downsample, ...
-		'powonly');   
+		'powonly');
+
+		if isempty(this_pow)
+			continue
+		end
 
 		% make it time X frequency
 		this_pow = shiftdim(squeeze(this_pow),1);
@@ -65,6 +75,12 @@ for c=1:length(pat.dim.chan)
 			end
 		end
 
-		pattern(e,c,:,:) = this_pow;
-	end
-end
+		% add the power of this eventXchannel
+		pattern(e,c,:,:) = patMeans(this_pow, bins(3:4));
+	end % events
+	
+end % channels
+
+% bin channels
+bins([1 3:4]) = {[]};
+pattern = patMeans(pattern, bins);
