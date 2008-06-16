@@ -37,27 +37,19 @@ for s=1:length(exp.subj)
   end
 
 	% load the pattern
-	pattern = loadPat(pat1, params);
+	[pattern, events, evmod] = loadPat(pat1, params);
 	
-	% apply filters
-	[pat,inds,events,evmod(1)] = patFilt(pat1,params);
-	pattern = pattern(inds{:});
-	
-	% apply binning to the pattern
-	[pat,bins,events,evmod(2)] = patBins(pat,params,events);
-	pattern = patMeans(pattern, bins);
-
 	if ~isempty(params.nComp)
 		% run PCA on the pattern
 		[pat, pattern, coeff] = patPCA(pat, params, pattern);
 	end
-
+	
 	pat.name = patname;
   pat.file = patfile;
   pat.params = params;
   fprintf('Pattern "%s" created.\n', pat.name)
   
-  if any(evmod)
+  if evmod
     if ~exist(fullfile(resDir, 'events'), 'dir')
       mkdir(fullfile(resDir, 'events'));
     end

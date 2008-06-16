@@ -1,4 +1,4 @@
-function pattern = sessVoltage(pat,events,base_events,artifacts)
+function pattern = sessVoltage(pat,events,base_events)
 
 for c=1:length(chan)
 	fprintf('%s.', chan(c).label);
@@ -37,11 +37,6 @@ for c=1:length(chan)
 		% normalize across sessions
 		if params.ztransform
 			this_eeg = (this_eeg - base_mean)/base_std;
-		end
-
-		% clip artifacts
-		if exist('artifacts','var')
-			this_eeg(squeeze(artifacts(e,:))) = NaN;
 		end
 
 		% add this event/channel to the pattern

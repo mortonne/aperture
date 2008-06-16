@@ -1,4 +1,4 @@
-function [pattern, events] = loadPat(pat, params)
+function [pattern, events, evmod] = loadPat(pat, params)
 %
 %LOADPAT - loads one subject's pattern, and applies any specified
 %masks and event filters
@@ -61,31 +61,19 @@ if params.loadSingles
 	pattern = single(pattern);
 end
 
-% apply masks
-if exist('mask', 'var')
-  for m=1:length(mask)
-    if ~isempty(mask(m).name) && ismember(mask(m).name, params.masks)
-      pattern(mask(m).mat) = NaN;
-    end
-  end
-end
-
 % load events
-if nargout==2 | ~isempty(params.eventFilter)
+if nargout==2
   events = loadEvents(pat.dim.ev.file);
 else
   events = struct;
 end
 
 % apply filters
-[pat,inds,events] = patFilt(pat,params,events)
+[pat,inds,events,evmod(1)] = patFilt(pat,params,events)
 pattern = pattern(inds{:});
 
 % do binning
-[pat, patbins, events] = patBins(pat, params, events);
+[pat, patbins, events,evmod(2)] = patBins(pat, params, events);
 pattern = patMeans(pattern, patbins);
 
-if ~isempty(params.nComp)
-	% run PCA on the pattern
-	[pat, pattern, coeff] = patPCA(pat, params, pattern);
-end
+evmod = any(evmod);
