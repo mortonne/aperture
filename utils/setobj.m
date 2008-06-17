@@ -1,10 +1,12 @@
 function s = setobj(s,f,obj)
-%s = setobj(s,f,obj)
 %
-%SETOBJ - adds an object to the field named f in struct s.  If the
-%field does not exist, it is created; if an object with the same
-%'name' field already exists, it is replaced; otherwise, the new
-%object is appended to the existing objects.
+%SETOBJ   Add an object to a list of objects.
+%   S = SETOBJ(S,F,OBJ) adds an object OBJ to the field named 
+%   F in struct S.  If the field does not exist, it is created; 
+%   if an object with the same "name" or "id" field already 
+%   exists, it is replaced; otherwise, the new object is appended 
+%   to the existing objects.
+%
 
 if nargin==3
 	if ~isfield(s,f) || isempty(getfield(s,f))

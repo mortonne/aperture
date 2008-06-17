@@ -1,5 +1,17 @@
 function [obj,ind] = getobj(s,f,objname)
-%obj = getobj(s,f,objname)
+%
+%GETOBJ   Retrieve an object from a list of objects.
+%
+%   OBJ = GETOBJ(S,F,OBJNAME) looks in the field named F in
+%   struct S for an object with an "id" or "name" field
+%   that matches OBJNAME.  
+%
+%   OBJ = GETOBJ(S,F) returns the last object added to the
+%   list in field F.   
+%
+%   [OBJ,IND] = GETOBJ(S,F,...) also returns the index
+%   where the object was found in F.
+%
 
 if ~exist('objname', 'var')
   objname = '';

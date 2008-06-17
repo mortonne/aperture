@@ -76,7 +76,7 @@ and the "file" field gives the filename of the pattern itself.
 Once patterns are created with one of the creation scripts in the
 patterns folder, a number of scripts can manipulate them.
 
-- increase_bin_size.m can be used to 
+- modify_pat.m can be used to 
 average over adjacent timebins or
 frequencies to create lower-resolution patterns, or average over 
 adjacent channels for ROI analyses.  It can also be used to average over subsets of events.  The
