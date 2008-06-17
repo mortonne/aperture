@@ -1,5 +1,8 @@
 function S = recursive_strrep(S, repStr)
-%S = recursive_strrep(S, repStr)
+%
+%RECURSIVE_STRREP   Run strrep on all strings in a structure.
+%   S = RECURSIVE_STRREP(S,REPSTR)
+%
 
 Fnames = fieldnames(S);
 for i=1:length(Fnames)

@@ -1,16 +1,22 @@
 function s = loadStruct(structFile, repStr, lock)
 %
-%LOADSTRUCT - load a structure from file, and recursively 
-%replace a string found anywhere in the struct 
-%with a new string.  Useful for bringing a struct with file
-%references from a remote machine to a local machine.
+%LOADSTRUCT   Load a structure and recursively run strrep on all strings. 
+%   S = LOADSTRUCT(STRUCTFILE,REPSTR,LOCK) loads a structure
+%   stored in STRUCTFILE, and runs STRREP on all strings, even
+%   arbitrarily nested ones. REPSTR is a cell array, with one row
+%   per strrep command, where REPSTR{row,1} and REPSTR{row,2} are the
+%   string to be replaced, and the replacement, respectively.
 %
-% FUNCTION: s = loadStruct(structFile, repStr)
+%   LOCK indicates whether the STRUCTFILE should be locked during
+%   processing (default: 1).
 %
-% Examples:
-% structFile = '/Volumes/mortonne/EXPERIMENTS/catFR/pow_pattern3/eeg.mat';
-% repStr = {'/data1' '/Volumes/hippo/data1'; '~/' '/Volumes/mortonne/'};
-% eeg = loadStruct(structFile,repStr);
+%   loadStruct is useful for bringing a struct with file references
+%   from a remote machine to a local machine (and vice-versa).
+%
+%   Example:
+%      structfile = '/home1/mortonne/EXPERIMENTS/catFR_ltp/exp.mat';
+%      repstr = {'/Volumes', '/home1'};
+%      exp = loadStruct(structfile,repstr,1);
 %
 
 if ~exist('lock', 'var')
@@ -19,6 +25,7 @@ end
 
 fprintf('In loadStruct: ')
 if lock
+	% we must sucessfully lock, so the file doesn't become corrupted
   if ~lockFile(structFile, 1);
     error('Locking timed out.')
   else
@@ -26,9 +33,10 @@ if lock
   end
 end
 
-struct = load(structFile);
-struct_name = fieldnames(struct);
-s = getfield(struct, struct_name{1});
+% load the struct
+temp = load(structFile);
+fnames = fieldnames(temp);
+s = temp.(fnames{1});
 
 % do a strrep on any string in the struct
 if exist('repStr', 'var') && ~isempty(repStr)
