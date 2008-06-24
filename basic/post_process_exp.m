@@ -58,6 +58,11 @@ for s=1:length(exp.subj)
 				end
 			end
 
+			if params.eventsOnly
+				closeFile(sess.eventsFile);
+				continue
+			end
+
 			try
 				% read the bad channels file if there is one
 				badchans = textread(fullfile(sess.dir, 'eeg', 'bad_channels.txt'));
