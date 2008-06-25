@@ -21,7 +21,7 @@ if ~exist('params','var')
 	params = struct();
 end
 
-params = structDefaults(params, 'skipError', 1,  'alignOnly', 0,  'overwrite', 0,  'lock', 0,  'ignoreLock', 0);
+params = structDefaults(params, 'skipError', 1,  'eventsOnly', 0,  'alignOnly', 0,  'overwrite', 0,  'lock', 0,  'ignoreLock', 0);
 
 % write all file info first
 for s=1:length(exp.subj)
@@ -117,6 +117,10 @@ function alignOnly(sess)
 	pulse_beh = {fullfile(sess.dir, 'eeg.eeglog.up')};
 	pulse_eeg = {fullfile(norerefdir, [basename '.DIN1'])};
 	chan_file = {fullfile(rerefdir, d.name)};
+
+  if prepFiles({sess.eventsFile, pulse_beh{1}, pulse_eeg{1}, chan_file{1}})~=0
+    error('Input files are missing.')
+  end
 
 	% get the samplerate
 	[samplerate,nBytes,dataformat,gain] = GetRateAndFormat(norerefdir);
