@@ -28,7 +28,7 @@ if ~exist('eventsfile','var')
 	eventsfile = 'events.mat';
 end
 
-params = struct(varargin);
+params = struct(varargin{:});
 
 params = structDefaults(params, 'skipError', 1,  'eventsOnly', 0,  'alignOnly', 0,  'overwrite', 0,  'lock', 0,  'ignoreLock', 0);
 
@@ -54,7 +54,7 @@ for s=1:length(exp.subj)
 
 			try
 				% create events
-				events = eventsFcnHandle(sess.dir, subj.id, sess.number, varargin{:});
+				events = eventsFcnHandle(sess.dir, subj.id, sess.number, fcnInput{:});
 				save(sess.eventsFile, 'events');
 				catch
 				if params.skipError

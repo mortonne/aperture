@@ -24,7 +24,6 @@ for s=1:length(exp.subj)
   for n=1:length(exp.subj(s).sess)
     load(fullfile(exp.subj(s).sess(n).dir, eventsFile));
     if ~isfield(events, 'eegfile')
-      keyboard
       [events(:).eegfile] = deal('');
       [events(:).eegoffset] = deal([]);
       [events(:).artifactMS] = deal([]);
