@@ -1,25 +1,34 @@
-function exp = post_process_exp(exp, eventsFcnHandle, params, eventsfile, varargin)
+function exp = post_process_exp(exp,eventsFcnHandle,fcnInput,eventsfile,varargin)
 %
-%POST_PROCESS - processes free recall experimental data 
+%POST_PROCESS_EXP   Update the post-processing for each session in exp.
+%   EXP = POST_PROCESS_EXP(EXP,EVENTSFCNHANDLE,FCNINPUT,EVENTSFILE) creates 
+%   an events struct for each session in EXP using the function specified
+%   by EVENTSFCNHANDLE.  The events creation function should take
+%   session directory, subject id, session number in that order.
+%   Additional arguments can be passed into the function using the
+%   optional cell array FCNINPUT.  Events for each session will be saved
+%   in sess.dir/EVENTSFILE (default: 'events.mat').
 %
-% Function does several post processing steps: 
-%               1) extracts channel info from .raw file created using Netstation
-%               2) creates free recall and recognition events structures
-%                  (with word frequency fields)
-%               3) aligns eeg with beh data and adds eeg subfields to events structs   
-%               4) adds artifactMS field using addArtifacts 
-%               5) Average Rerefrences eeg data
+%   Unless overwrite is set to true, sessions that already have an
+%   events struct will not be processed.
 %
-% FUNCTION:
-%   exp = post_process_exp(exp, eventsFcnHandle, params, varargin)
+%   Options for post-processing can be set using property-value pairs.
+%   Options:
+%      eventsOnly (0) - create events, without doing post-processing
+%      alignOnly (0) - create events and align w/o post-processing
+%      skipError (1) - ignore errors, then report them at the end
+%      overwrite (0) - overwrite existing files
+%      
+%   Example:
+%     exp = post_process_exp(exp,@FRevents,'eventsOnly',1);
+%     makes events for each session in exp using FRevents.m.
 %
 
 if ~exist('eventsfile','var')
 	eventsfile = 'events.mat';
 end
-if ~exist('params','var')
-	params = struct();
-end
+
+params = struct(varargin);
 
 params = structDefaults(params, 'skipError', 1,  'eventsOnly', 0,  'alignOnly', 0,  'overwrite', 0,  'lock', 0,  'ignoreLock', 0);
 

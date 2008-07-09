@@ -1,13 +1,14 @@
 function exp = update_exp(exp, varargin)
 %
 %UPDATE_EXP   Apply changes to the exp struct.
-%   EXP = UPDATE_EXP(EXP) is the same as save(exp.file,'exp').
+%   EXP = UPDATE_EXP(EXP) loads the most recently saved version of
+%   EXP (locking first if exp.useLock is true), makes a backup of 
+%   that version in exp.resDir/exp_bk, then saves the current version
+%   in exp.file.
 %
-%   EXP = UPDATE_EXP(EXP,VARARGIN) loads the most recently
-%   saved version of EXP (locking first if exp.useLock is true),
-%   makes a backup of that version in exp.resDir/exp_bk,
-%   runs RECURSIVE_SETOBJ to add an object to EXP, then saves
-%   the modified version in exp.file.
+%   EXP = UPDATE_EXP(EXP,VARARGIN) makes a backup, runs 
+%   RECURSIVE_SETOBJ to add an object to the most recently saved 
+%   version of exp, then saves the new exp.
 %   
 %   The last two arguments of VARARGIN should be an object type,
 %   i.e. 'pat', and the object to be added.  If there are other

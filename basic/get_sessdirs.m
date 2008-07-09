@@ -24,6 +24,7 @@ end
 d = dir(fullfile(dataroot, subjstr));
 subjects = {d.name};
 
+subj = struct;
 for s=1:length(subjects)
 
   % initialize this subject
