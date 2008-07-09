@@ -25,19 +25,18 @@ d = dir(fullfile(dataroot, subjstr));
 subjects = {d.name};
 
 for s=1:length(subjects)
-  % get the subject path
-  subjdir = fullfile(dataroot, subjects{s});
 
   % initialize this subject
   subj(s).id = subjects{s};
+  subj(s).dir = fullfile(dataroot, subjects{s});
   
   % get all session directories
-  d = dir(fullfile(subjdir, 'session_*'));
+  d = dir(fullfile(subj(s).dir, 'session_*'));
   sessions = {d.name};
   
   for n=1:length(sessions)
     % get the session path
-    sessdir = fullfile(subjdir, sessions{n});
+    sessdir = fullfile(subj(s).dir, sessions{n});
     
     if isempty(file2check) || exist(fullfile(sessdir, file2check), 'file')
       % if there is a logfile, add a sess struct

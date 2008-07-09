@@ -1,53 +1,42 @@
-function exp = init_iEEG(dataroot, resDir, sessions, experiment)
+function exp = init_iEEG(subj,resDir,experiment)
 %
-%INIT_IEEG - after post-processing of all subjects, running this
-%script prepares an intracranial EEG experiment for analysis
+%INIT_IEEG   Prepare an intracranial EEG experiment for analysis.
+%   EXP = INIT_IEEG(SUBJ,RESDIR,EXPERIMENT) creates an EXP struct
+%   containing the information in the subject structure SUBJ, and
+%   saves EXP in RESDIR/exp.mat.  The optional EXPERIMENT string specifies
+%   what experiment the data are from.
 %
-% FUNCTION: exp = init_iEEG(dataroot, resDir, sessions, experiment)
+%   In EXP, a "chan" struct is added to each subj to keep track
+%   of the electrodes for that subject.  The chan struct contains
+%   the following fields for each channel:
+%      number - the number assigned to each channel
+%      region - the region label used in the subject's jacksheet
+%      label - a unique string for each channel; initialized as
+%              num2str(number).
 %
-% INPUT: dataroot - directory containing subject folders
-%        resDir - directory in which to save eeg results
-%        sessions - filename of m-file that outputs a 'subj'
-%                   struct, or the subj struct itself (see README).
-%        experiment - name of the experiment (optional)
-%
-% OUTPUT: exp, a struct containing all basic info for this experiment;
-% gets passed into all other eeg analysis scripts
-%
-% EXAMPLE:
-% dataroot = '/data/eeg';
-% resDir = '/users/morton/EXPERIMENTS/iCatFR/results';
-% sessions = 'iCatFR_sessions.m';
-%            or subj.id = UP011; subj.sess(1).eventsFile = '/data/eeg/UP011/behavioral/catFR/session_0/events.mat'
-% experiment = 'iCatFR';
+%    To each sess struct, a goodChans field is added that lists
+%    which channels were "good" for that subject.  This is based
+%    on each subject's good_leads.txt file.
 %
 
 if ~exist('experiment', 'var')
-  expriment = 'unknown';
-end
-
-if ~exist(resDir)
-  mkdir(resDir);
+  expriment = '';
 end
 
 % create the exp struct
-exp = struct('experiment', experiment, 'recordingType', 'iEEG', 'dataroot', dataroot, 'resDir', resDir, 'file', fullfile(resDir, 'exp.mat'));
-
-% add eventsFile info for each subj, session
-if isa(sessions, 'function_handle')
-  exp.subj = sessions(dataroot);  
-elseif isstruct(sessions)
-  exp.subj = sessions;
-end
+exp = init_exp(subj, resDir, experiment, 'iEEG');
 
 for s=1:length(exp.subj)
-  
-  % find out which ones were good, find out what brain region each was in
-  good_chans_file = fullfile(dataroot, exp.subj(s).id, 'tal', 'good_leads.txt');
-  good_chans = textread(good_chans_file, '%n');
-  jacksheet = fullfile(dataroot, exp.subj(s).id, 'docs', 'jacksheet.txt');
+
+  % find out what brain region each channel was in
+  jacksheet = fullfile(exp.subj(s).dir, 'docs', 'jacksheet.txt');
   [channels, regions] = textread(jacksheet, '%d%s');
   
+  % find out which channels were good
+  good_chans_file = fullfile(exp.subj(s).dir, 'tal', 'good_leads.txt');
+  good_chans = textread(good_chans_file, '%n');
+
+  % create the chan struct for this subject
   [channels, gidx, cidx] = intersect(good_chans, channels);
   for c=1:length(channels)
     exp.subj(s).chan(c).number = channels(c);
@@ -55,12 +44,12 @@ for s=1:length(exp.subj)
     exp.subj(s).chan(c).label = num2str(channels(c));
   end
   
+  % write out the list of which channels were good for this session
   for n=1:length(exp.subj(s).sess)
     exp.subj(s).sess(n).goodChans = good_chans;
   end
   
 end
 
-% save the struct, which holds filenames of all saved data
-save(fullfile(resDir, 'exp.mat'), 'exp');
-
+% save the exp struct updated with channel info
+exp = update_exp(exp);

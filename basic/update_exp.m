@@ -22,29 +22,36 @@ function exp = update_exp(exp, varargin)
 
 fprintf('In update_exp: ');
 
+% if running on the cluster, take possession of exp first
+if ~isfield(exp, 'useLock')
+  exp.useLock = 1;
+end
+
+if exp.useLock
+  if ~lockFile(exp.file, 1);
+    error('Locking timed out.')
+  end
+  fprintf('Locked...');
+end
+
+% store the version of exp that was passed in
+current = exp;
+
+% get the last version of exp
+load(exp.file);
+fprintf('Loaded...')
+
+% make a backup of the old version before making changes
+exp = backup_exp(exp);
+
 if length(varargin)>0
-	% need to first add an object to exp
-	if ~isfield(exp, 'useLock')
-		exp.useLock = 1;
-	end
-	
-	% if running on the cluster, take possession of exp first
-	if exp.useLock
-		if ~lockFile(exp.file, 1);
-			error('Locking timed out.')
-		end
-		fprintf('Locked...');
-	end
-
-	% get the latest version of exp
-	load(exp.file);
-	fprintf('Loaded...')
-
-	% make a backup before making changes
-	exp = backup_exp(exp);
-
 	% add the object in place specified
 	exp = recursive_setobj(exp, varargin);
+
+  else
+  % just save out the exp that was passed in
+  current.lastUpdate = exp.lastUpdate;
+  exp = current;
 end
 
 % commit the new version of exp

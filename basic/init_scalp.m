@@ -1,53 +1,44 @@
-function exp = init_scalp(dataroot, resDir, sessions, experiment, elecLocsFile)
+function exp = init_scalp(subj, resDir, experiment, elecLocsFile)
 %
-%INIT_SCALP - after post-processing of all subjects, running this
-%script prepares a scalp EEG experiment for analysis
+%INIT_SCALP   Prepare a scalp EEG experiment for analysis.
+%   EXP = INIT_SCALP(SUBJ,RESDIR,EXPERIMENT,ELECLOCSFILE) creates an 
+%   EXP struct containing the information in the subject structure 
+%   SUBJ, and saves EXP in RESDIR/exp.mat.  The optional EXPERIMENT 
+%   string specifies what experiment the data are from.  If an
+%   ELECLOCSFILE is specified, information about each channel and
+%   what region each corresponds to is added to the "chan" struct
+%   for each subject.
 %
-% FUNCTION: exp = init_scalp(dataroot, resDir, sessions, experiment, elecLocsFile)
-% INPUT: dataroot - directory containing subject folders
-%        resDir - directory in which to save eeg results
-%        sessions - filename of m-file that outputs a 'subj'
-%                   struct, or the subj struct itself (see README).
-%        experiment - name of the experiment (optional)
-%        elecLocsFile - text file containing a list of electrode numbers
-%        and their corresponding regions (optional)
+%   Each chan struct contains the following fields for each channel:
+%      number - the number assigned to each channel
+%      region - the region label (empty if there is no ELECLOCSFILE)
+%      label - a unique string for each channel; initialized as
+%              num2str(number).
 %
-% OUTPUT: exp, a struct containing all basic info for this experiment;
-% gets passed into all other eeg analysis scripts
+%    To each sess struct, a goodChans field is added that lists
+%    which channels were "good" for that session.  This is based
+%    on each session's *.bad_chan file.
 %
-% EXAMPLE:
-% dataroot = '/data/eeg/scalp/catFR';
-% resDir = '/users/morton/EXPERIMENTS/catFR/results';
-% sessions = 'iCatFR_sessions.m';
-%            or a subj struct: subj(1).id = subj_00; subj.sess(1).eventsFile = '/data/eeg/scalp/catFR/subj_00/session_0/events.mat'
-% experiment = 'catFR';
-% elecLocsFile = '~/eeg/GSN200-128chanlocs.txt';
+%    Example:
+%      subj = get_sessdirs('/data/eeg/scalp/ltp/catFR', 'LTP*');
+%      resDir = '/home1/mortonne/EXPERIMENTS/catFR';
+%      experiment = 'catFR';
+%      elecLocsFile = '/home1/mortonne/eeg/GSN200-128chanlocs.txt';
+%      exp = init_scalp(subj,resDir,experiment,elecLocsFile);
 %
 
-% set minimum defaults
 if ~exist('elecLocsFile', 'var')
   elecLocsFile = '';
 end
 if ~exist('experiment', 'var')
-  expriment = 'unknown';
+  expriment = '';
 end
-
-if ~exist(resDir)
-  mkdir(resDir);
-end  
 
 % create the exp struct
-exp = struct('experiment', experiment, 'recordingType', 'scalp', 'dataroot', dataroot, 'resDir', resDir, 'file', fullfile(resDir, 'exp.mat'));
+exp = init_exp(subj, resDir, experiment, 'scalp');
 
-% add eventsFile info for each subj, session
-if isa(sessions, 'function_handle')
-  exp.subj = sessions(dataroot);
-elseif isstruct(sessions)
-  exp.subj = sessions;
-end
-
-% if an electrode locations file is available, read it
 if ~isempty(elecLocsFile)
+  % if an electrode locations file is available, read it
   [channels regions] = textread(elecLocsFile, '%d%s'); 
   
   for c=1:length(channels)
@@ -56,6 +47,7 @@ if ~isempty(elecLocsFile)
     chan(c).label = num2str(channels(c));
   end
 else
+  % otherwise, just use channel numbers without regions
   channels = 1:129;
   
   for c=1:length(channels)
@@ -66,14 +58,12 @@ else
 end
 
 for s=1:length(exp.subj)
-  % each subject gets the same channel info
+  % each subject gets the same channel info (assuming same cap types)
   exp.subj(s).chan = chan;
   
-  exp.subj(s).ev = [];
-  exp.subj(s).pat = [];
-  
-  % for each session, find out which channels were good
   for n=1:length(exp.subj(s).sess)
+    
+    % attempt to get bad channel information
     bad_chan_dir = fullfile(exp.subj(s).sess(n).dir, 'eeg');
     temp = dir(fullfile(bad_chan_dir, '*.bad_chan'));
     if ~isempty(temp)
@@ -81,10 +71,11 @@ for s=1:length(exp.subj)
     else
       bad_chans = [];
     end
+    
+    % mark which channels were ok for each session
     exp.subj(s).sess(n).goodChans = setdiff(channels, bad_chans);
   end
 end
 
-save(fullfile(exp.resDir, 'exp.mat'), 'exp');
-
-
+% save the exp struct updated with channel info
+exp = update_exp(exp);
