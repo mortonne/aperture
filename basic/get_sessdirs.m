@@ -45,6 +45,7 @@ for s=1:length(subjects)
   d = dir(fullfile(subj(s).dir, 'session_*'));
   sessions = {d.name};
   
+  subj(s).sess = [];
   for n=1:length(sessions)
     % get the session path
     sessdir = fullfile(subj(s).dir, sessions{n});
@@ -56,8 +57,9 @@ for s=1:length(subjects)
     
     if isempty(file2check) || all(fileExists)
       % if the file(s) exist, add a sess struct
-      subj(s).sess(n).number = str2num(sessions{n}(end));
-      subj(s).sess(n).dir = sessdir;
+      sess.number = str2num(sessions{n}(end));
+      sess.dir = sessdir;
+      subj(s).sess = [subj(s).sess sess];
     end
   end
 end
