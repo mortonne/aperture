@@ -23,21 +23,21 @@ end
 param = structDefaults(param, 'itemstr', 'WORD',  'trialfield', 'trial',  'clust_thresh', 3,  'evname', 'events',  'overwrite', 1,    'lock', 0);
 
 % step over subjects
-for i = 1:length(exp.subj)
-	fprintf('\nProcessing %s...', exp.subj(i).id)
+for subj=exp.subj
+	fprintf('\nProcessing %s...', subj.id)
 
 	% load the events
-	ev1 = getobj(exp.subj(i), 'ev', param.evname);
+	ev1 = getobj(subj, 'ev', param.evname);
 	load(ev1.file);
 
 	ev2 = ev1;
 	if exist('evname', 'var')
 		% save the results in a new ev object
 		ev2.name = evname;
-		ev2.file = fullfile(fileparts(ev1.file), sprintf('%s_%s.mat', evname, exp.subj(i).id));
+		ev2.file = fullfile(fileparts(ev1.file), sprintf('%s_%s.mat', evname, subj.id));
 
 		% update exp
-		exp = update_exp(exp, 'subj', exp.subj(i).id, 'ev', ev2);
+		exp = update_exp(exp, 'subj', subj.id, 'ev', ev2);
 	end
 
 	% prepare the events file

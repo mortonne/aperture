@@ -41,15 +41,13 @@ end
 if iscell(pat.file) & ~isempty(params.catDim)
   
   pattern = NaN(pat.dim.ev.len, length(pat.dim.chan), length(pat.dim.time), length(pat.dim.freq));
+  allDim = {':',':',':',':'};
   for i=1:length(pat.file)
     s = load(pat.file{i});
-    if params.catDim==2
-      pattern(:,i,:,:) = s.pattern;
-    elseif params.catDim==3
-      pattern(:,:,i,:) = s.pattern;
-    elseif params.catDim==4
-      pattern(:,:,:,i) = s.pattern;
-    end
+    ind = allDim;
+    ind{params.catDim} = i;
+    
+    pattern(ind{:}) = s.pattern;
   end
   
 else

@@ -43,11 +43,8 @@ save(exp.file, 'exp');
 event_errs = '';
 errs = '';
 % do any necessary post-processing, save events file for each subj
-for s=1:length(exp.subj)
-	subj = exp.subj(s);
-	for n=1:length(exp.subj(s).sess)
-		sess = exp.subj(s).sess(n);
-
+for subj=exp.subj
+	for sess=subj.sess
 		fprintf('\nCreating event structure for %s, session %d...\n', subj.id, sess.number);
 
 		if prepFiles({}, sess.eventsFile, params)==0 % outfile is ok to go

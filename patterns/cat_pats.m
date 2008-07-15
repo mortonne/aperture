@@ -18,15 +18,15 @@ if ~exist('patname', 'var')
 end
 
 % create the new pattern for each subject
-for s=1:length(exp.subj)
-	fprintf('\n%s\n', exp.subj(s).id);
+for subj=exp.subj
+	fprintf('\n%s\n', subj.id);
 
 	% set where the pattern will be saved
-	patfile = fullfile(resDir, 'patterns', [exp.subj(s).id '_' patname '.mat']);
+	patfile = fullfile(resDir, 'patterns', [subj.id '_' patname '.mat']);
 
 	for i=1:length(params.patnames)
 		% get the pat object for the original pattern
-		pat1(i) = getobj(exp.subj(s), 'pat', params.patnames{i});
+		pat1(i) = getobj(subj, 'pat', params.patnames{i});
 	end
 
 	% initialize a new pat object
@@ -71,5 +71,5 @@ for s=1:length(exp.subj)
 	closeFile(pat.file);
 
 	% update exp with the new pat object
-	exp = update_exp(exp, 'subj', exp.subj(s).id, 'pat', pat);
+	exp = update_exp(exp, 'subj', subj.id, 'pat', pat);
 end

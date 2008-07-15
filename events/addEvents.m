@@ -1,5 +1,19 @@
 function exp = addEvents(exp, eventsFile, resDir, evname)
-%exp = addEvents(exp, eventsFile, resDir, evname)
+%
+%ADDEVENTS   Import events into an exp struct.
+%   EXP = ADDEVENTS(EXP) loads the events saved in each session
+%   directory in a file named 'events.mat', and concatenates
+%   them to create one events struct for each subject.  Each
+%   subject in EXP has a new ev object added named 'events'.
+%
+%   ADDEVENTS prepares each subject's events for analysis in
+%   other scripts.
+%
+%   EXP = ADDEVENTS(EXP,EVENTSFILE,RESDIR,EVNAME) loads the
+%   events in each session directory using the relative path
+%   EVENTSFILE, saves in RESDIR/events, and names the new ev
+%   object EVNAME.
+%
 
 if ~exist('evname', 'var')
   evname = 'events';
@@ -14,15 +28,15 @@ if ~exist('eventsFile', 'var')
   eventsFile = 'events.mat';
 end
 
-for s=1:length(exp.subj)
-  fprintf('Concatenating events for %s...\n', exp.subj(s).id);
+for subj=exp.subj
+  fprintf('Concatenating events for %s...\n', subj.id);
   
   ev.name = evname;
-  ev.file = fullfile(resDir, 'events', [evname '_' exp.subj(s).id '.mat']);
+  ev.file = fullfile(resDir, 'events', [evname '_' subj.id '.mat']);
   
   subj_events = [];
-  for n=1:length(exp.subj(s).sess)
-    load(fullfile(exp.subj(s).sess(n).dir, eventsFile));
+  for sess=subj.sess
+    load(fullfile(sess.dir, eventsFile));
     if ~isfield(events, 'eegfile')
       [events(:).eegfile] = deal('');
       [events(:).eegoffset] = deal([]);
@@ -40,10 +54,6 @@ for s=1:length(exp.subj)
   events = subj_events;
   ev.len = length(events);
   save(ev.file, 'events');
-  
-  if ~isfield(exp.subj(s), 'ev')
-    exp.subj(s).ev = [];
-  end
 
-  exp = update_exp(exp, 'subj', exp.subj(s).id, 'ev', ev);
+  exp = update_exp(exp, 'subj', subj.id, 'ev', ev);
 end

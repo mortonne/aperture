@@ -16,7 +16,8 @@ function exp = create_pattern(exp, fcnhandle, params, patname, resDir)
 %      offsetMS - time in milliseconds from the start of each event
 %      durationMS - time window of the pattern will be
 %         offsetMS:offsetMS+durationMS
-%      baseEventFilter - filter to use for baseline events, if ztransform = =1
+%      baseEventFilter - filter to use for baseline events, if
+%                        ztransform=1
 %      baseOffsetMS
 %      baseDurationMS
 %      filttype
@@ -68,9 +69,9 @@ freq = init_freq(params.freqs);
 fprintf('\nStarting create_pattern. Parameters are:\n\n')
 disp(params);
 
-for s=1:length(exp.subj)
+for subj=exp.subj
 	% set where the pattern will be saved
-	patfile = fullfile(resDir, 'patterns', sprintf('pattern_%s_%s.mat', patname, exp.subj(s).id));
+	patfile = fullfile(resDir, 'patterns', sprintf('pattern_%s_%s.mat', patname, subj.id));
 
 	% check input files and prepare output files
 	if prepFiles({}, patfile, params)~=0
@@ -78,27 +79,27 @@ for s=1:length(exp.subj)
 	end
 
 	% get this subject's events
-	ev = getobj(exp.subj(s), 'ev', params.evname);
+	ev = getobj(subj, 'ev', params.evname);
 	src_events = loadEvents(ev.file, params.replace_eegfile);
 	base_events = filterStruct(src_events(:), params.baseEventFilter);
 
 	% create a pat object to keep track of this pattern
-	pat = init_pat(patname, patfile, params, ev, exp.subj(s).chan, time, freq);
+	pat = init_pat(patname, patfile, params, ev, subj.chan, time, freq);
 
 	% do filtering/binning
 	try
 		[pat,inds,src_events,evmod(1)] = patFilt(pat,params,src_events);
-		pat.params.channels = getStructField(pat.dim.chan, 'number');
+		pat.params.channels = [pat.dim.chan.number];
 		[pat,bins,events,evmod(2)] = patBins(pat,params,src_events);
 		catch
-		warning('Filtering/binning problem with %s.', exp.subj(s).id);
+		warning('Filtering/binning problem with %s.', subj.id);
 		continue
 	end
 	
 	if any(evmod)
 		% change the events name and file
 		pat.dim.ev.name = sprintf('%s_mod', pat.dim.ev.name);
-		pat.dim.ev.file = fullfile(resDir, 'events', sprintf('events_%s_%s.mat', patname, exp.subj(s).id));
+		pat.dim.ev.file = fullfile(resDir, 'events', sprintf('events_%s_%s.mat', patname, subj.id));
 		
 		% save the modified event struct to a new file
 		if ~exist(fileparts(pat.dim.ev.file), 'dir')
@@ -108,7 +109,7 @@ for s=1:length(exp.subj)
 	end
 
 	% update exp with the new pat object
-	exp = update_exp(exp, 'subj', exp.subj(s).id, 'pat', pat);
+	exp = update_exp(exp, 'subj', subj.id, 'pat', pat);
 
 	if params.updateOnly
 		continue
@@ -122,13 +123,13 @@ for s=1:length(exp.subj)
 
 	% CREATE THE PATTERN
 	for n=1:length(sessions)
-		fprintf('\nProcessing %s session %d:\n', exp.subj(s).id, sessions(n));
+		fprintf('\nProcessing %s session %d:\n', subj.id, sessions(n));
 		sessInd = inStruct(src_events, 'session==varargin{1}', sessions(n));
 		sess_events = src_events(sessInd);
 		sess_base_events = filterStruct(base_events, 'session==varargin{1}', sessions(n));
 
 		% make the pattern for this session
-		pattern(sessInd,:,:,:) = feval(fcnhandle, pat, bins, sess_events, sess_base_events);
+		pattern(sessInd,:,:,:) = fcnhandle(pat, bins, sess_events, sess_base_events);
 
 	end % session
 	fprintf('\n');

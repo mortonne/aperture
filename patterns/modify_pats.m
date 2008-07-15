@@ -22,14 +22,14 @@ if ~exist('patname', 'var')
 end
 
 % create the new pattern for each subject
-for s=1:length(exp.subj)
-  fprintf('\n%s\n', exp.subj(s).id);
+for subj=exp.subj
+  fprintf('\n%s\n', subj.id);
   
   % set where the pattern will be saved
-  patfile = fullfile(resDir, 'patterns', [exp.subj(s).id '_' patname '.mat']);
+  patfile = fullfile(resDir, 'patterns', [subj.id '_' patname '.mat']);
   
   % get the pat obj for the original pattern
-  pat1 = getobj(exp.subj(s), 'pat', params.patname);  
+  pat1 = getobj(subj, 'pat', params.patname);  
   
   % check input files and prepare output files
   if prepFiles(pat1.file, patfile, params)~=0
@@ -55,12 +55,12 @@ for s=1:length(exp.subj)
     end
     
     % we need to save a new events struct
-    pat.dim.ev.file = fullfile(resDir, 'events', [exp.subj(s).id '_' patname '_events.mat']);
+    pat.dim.ev.file = fullfile(resDir, 'events', [subj.id '_' patname '_events.mat']);
     save(pat.dim.ev.file, 'events');
   end
 
   % update exp with the new pat object
-  exp = update_exp(exp, 'subj', exp.subj(s).id, 'pat', pat);
+  exp = update_exp(exp, 'subj', subj.id, 'pat', pat);
   
   % save the new pattern
 	if exist('coeff','var')

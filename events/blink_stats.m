@@ -21,11 +21,11 @@ end
 
 params = structDefaults(params, 'evname', 'events',  'eventFilter', '',  'windowEnd', 2000);
 
-for s=1:length(exp.subj)
-  fprintf('%s:\n', exp.subj(s).id);
+for subj=exp.subj
+  fprintf('%s:\n', subj.id);
   
   % load this subject's events
-  ev = getobj(exp.subj(s), 'ev', params.evname);
+  ev = getobj(subj, 'ev', params.evname);
   load(ev.file);
   
   % run filter if specified
@@ -49,14 +49,14 @@ for s=1:length(exp.subj)
     percent_art = art_ev/length(sess_events);
     
     % print percentage
-    fprintf('%s-%d\t%f\n', exp.subj(s).id, sessions(n), percent_art);
+    fprintf('%s-%d\t%f\n', subj.id, sessions(n), percent_art);
     
     % add to the ev object
     ev.blinks(n) = percent_art;
   end
   
   % update exp
-  exp = update_exp(exp, 'subj', exp.subj(s).id, 'ev', ev);
+  exp = update_exp(exp, 'subj', subj.id, 'ev', ev);
   
   fprintf('\n');
 end

@@ -9,12 +9,12 @@ function s = setobj(s,f,obj)
 %
 
 if nargin==3
-	if ~isfield(s,f) || isempty(getfield(s,f))
-		s = setfield(s,f,obj);
+	if ~isfield(s,f) || isempty(s.(f))
+		s.(f) = obj;
 		return
 	end
 
-	objs = getfield(s,f);
+	objs = s.(f);
 else
 	objs = s;
 	obj = f;
@@ -52,7 +52,7 @@ if ~isempty(c)
 		for j=1:length(objs)
 			newobj = objs(j);
 			for k=1:length(to_add)
-				newobj = setfield(newobj, to_add{k}, []);
+				newobj.(to_add{k}) = [];
 			end
 			newobjs(j) = newobj;
 		end
@@ -63,7 +63,7 @@ if ~isempty(c)
 	to_add = setdiff(old_fields, fields);
 	if ~isempty(to_add)
 		for k=1:length(to_add)
-			obj = setfield(obj, to_add{k}, []);
+			obj.(to_add{k}) = [];
 		end
 	end
 end
@@ -78,8 +78,7 @@ objs(i) = obj;
 
 if nargin==3
 	% change the struct field
-	s = setfield(s,f,objs);
+	s.(f) = objs;
 else
 	s = objs;
 end
-
