@@ -1,5 +1,6 @@
-function mask = rmArtifacts(events, time, artWindow)
-%mask = rmArtifacts(events, time, artWindow)
+function mask = markArtifacts(events, time, artWindow)
+%
+%MARKARTIFACTS   
 
 mask = false(length(events), length(time));
 
