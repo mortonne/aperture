@@ -62,4 +62,8 @@ for s=1:length(subjects)
       subj(s).sess = [subj(s).sess sess];
     end
   end
+  
+  if isempty(subj(s).sess)
+    subj(s) = [];
+  end
 end
