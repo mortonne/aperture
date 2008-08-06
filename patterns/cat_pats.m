@@ -56,7 +56,7 @@ for subj=exp.subj
 
 		start = 1;
 		for i=1:length(pat1)
-			pattern(:,start:start+length(pat1(i).dim.chan)-1,:,:) = loadPat(pat1(i),params,0);
+			pattern(:,start:start+length(pat1(i).dim.chan)-1,:,:) = loadPat(pat1(i),params);
 			start = start + length(pat1(i).dim.chan);
 		end
 

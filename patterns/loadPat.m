@@ -1,4 +1,4 @@
-function [pattern, events, evmod] = loadPat(pat, params)
+function [pattern, events] = loadPat(pat, params)
 %
 %LOADPAT - loads one subject's pattern, and applies any specified
 %masks and event filters
@@ -65,13 +65,3 @@ if nargout==2
 else
   events = struct;
 end
-
-% apply filters
-[pat,inds,events,evmod(1)] = patFilt(pat,params,events)
-pattern = pattern(inds{:});
-
-% do binning
-[pat, patbins, events,evmod(2)] = patBins(pat, params, events);
-pattern = patMeans(pattern, patbins);
-
-evmod = any(evmod);

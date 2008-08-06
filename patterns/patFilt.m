@@ -17,7 +17,9 @@ function [pat,inds,events,evmod] = patFilt(pat,params,events)
 params = structDefaults(params,  'eventFilter', '',  'chanFilter', '',  'timeFilter', '',  'freqFilter', '');
 
 % initialize
-inds = cell(1,4);
+for i=1:4
+  inds{i} = ':';
+end
 evmod = 0;
 
 % start the averaging
@@ -53,7 +55,7 @@ if ~isempty(params.freqFilter)
   inds{4} = inStruct(pat.dim.freq, params.freqFilter);
 	pat.dim.freq = pat.dim.freq(inds{4});
 end
-fprintf('\n')
+%fprintf('\n')
 
 % check the dimensions
 psize = patsize(pat.dim);

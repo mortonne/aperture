@@ -40,7 +40,7 @@ function exp = create_pattern(exp, fcnhandle, params, patname, resDir)
 %      pattern - one for each subject s is saved in
 %         exp.subj(s).pat.file.  Dimensions are events X channels X time.
 %
-	
+
 if ~exist('params', 'var')
 	params = struct();
 end

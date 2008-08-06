@@ -6,6 +6,9 @@ function [pat2, pattern, coeff] = patPCA(pat1, params, pattern)
 %   gives meta-data on the new pattern.  COEFF contains the coefficients of
 %   each principle component used.
 %
+%   OPTIONAL PARAMS:
+%      nComp - number of principal components to return
+%
 
 if ~exist('params','var')
 	params = struct;
