@@ -24,10 +24,12 @@ if iscell(bins)
 	% first check if each string in the cell array is a field
 	if sum(~ismember(bins,fnames))==0
 		% make the new field a conjunction of multiple fields
-		f1 = getStructField(events, bins{1});
-		f2 = getStructField(events, bins{2});
 		for i=1:length(events)
-			field(i) = str2num(sprintf('%d.%d', f1(i), f2(i)));
+		  val = '';
+		  for j=1:length(bins)
+		    val = [val num2str(events(i).(bins{j})) '.'];
+		  end
+		  field{i} = val;
 		end
 
 		else

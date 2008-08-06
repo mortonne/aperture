@@ -71,7 +71,7 @@ for subj=exp.subj
 
 			try
 				% read the bad channels file if there is one
-				badchans = textread(fullfile(sess.dir, 'eeg', 'bad_chan.txt'));
+				badchans = textread(fullfile(sess.dir, 'eeg', 'bad_chan.txt'))';
 				catch
 				% continue without excluding bad channels from rereferencing
 				fprintf('Warning: error reading bad channel file for %s, session_%d.\n', subj.id, sess.number);

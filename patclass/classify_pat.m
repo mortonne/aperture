@@ -35,10 +35,10 @@ if ~isfield(params, 'selector')
 	error('You must provide the name of a selector field to use for classification')
 end
 
-params = structDefaults(params, 'patname', [], 'masks', {},  'eventFilter', '',  'chanFilter', '',  'classifier', 'classify',  'nComp', 150,  'scramble', 0,  'lock', 1,  'overwrite', 0,  'loadSingles', 1);
+params = structDefaults(params, 'patname', [], 'masks', {},  'eventFilter', '',  'chanFilter', '',  'classifier', 'classify',  'nComp', [],  'scramble', 0,  'lock', 0,  'overwrite', 1,  'loadSingles', 1,  'select_test', 1);
 disp(params)
 
-pcorrall = cell(length(exp.subj));
+pcorrall = cell(length(exp.subj),1);
 for s=1:length(exp.subj)
 	pat = getobj(exp.subj(s), 'pat', params.patname);
 
@@ -61,7 +61,7 @@ for s=1:length(exp.subj)
 	exp = update_exp(exp,'subj',exp.subj(s).id,'pat',pat);
 
 	% load the pattern and corresponding events
-	[pattern, events] = loadPat(pat, params, 1);
+	[pattern, events] = loadPat(pat, params);
 
 	% get the regressor to use for classification
 	reg.vec = binEventsField(events, params.regressor);
@@ -95,23 +95,37 @@ for s=1:length(exp.subj)
 		pattern = pattern(:,1:params.nComp);
 	end
 
-	nTestEv = length(events)/length(sel.vals);
+  if params.select_test
+	  nTestEv = length(events)/length(sel.vals);
+	  else
+	  nTestEv = length(events);
+  end
 
-	fprintf('running classifier...')
+  fprintf('running %s classifier...', params.classifier)
 	pcorr = NaN(1,length(sel.vals));
 	class = NaN(length(sel.vals),nTestEv);
 	posterior = NaN(length(sel.vals),nTestEv,length(reg.vals));
-	fprintf('\nPercent Correct: ')
+	fprintf('\nPercent Correct:\n')
 	for j=1:length(sel.vals)
-		% select which events to test
-		testsel = sel.vec==sel.vals(j);
+	  fprintf('%d:\t', sel.vals(j))
+	  
+	  if params.select_test
+      % select which events to test
+      testsel = sel.vec==sel.vals(j);
+      trainsel = ~testsel;
+      
+      else
+      % train on this value, test on everything
+      trainsel = sel.vec==sel.vals(j);
+      testsel = true(size(sel.vec));
+    end
 
 		% get the training and testing patterns
-		trainpat = pattern(~testsel,:);
+		trainpat = pattern(trainsel,:);
 		testpat = pattern(testsel,:);
 
 		% get the corresponding regressors for train and test
-		trainreg = reg.vec(~testsel);
+		trainreg = reg.vec(trainsel);
 		testreg = reg.vec(testsel);
 
 		% run classification algorithms
@@ -119,9 +133,8 @@ for s=1:length(exp.subj)
 
 		% check the performance
 		pcorr(j) = sum(testreg==class(j,:))/length(testreg);
-		fprintf('%.4f ', pcorr(j))
+		fprintf('%.4f\n', pcorr(j))
 	end % selector
-	fprintf('\n');
 
 	meanpcorr = mean(pcorr);
 

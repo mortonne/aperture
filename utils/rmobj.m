@@ -7,9 +7,6 @@ function exp = rmobj(exp, varargin)
 %   in exp.resDir/exp_bk with a timestamped filename.
 %
 
-% get the latest copy of exp
-load(exp.file);
-
 % make a backup
 exp = backup_exp(exp);
 

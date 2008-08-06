@@ -19,6 +19,6 @@ if length(vars)==2
 elseif length(vars)>2
 	% keep going deeper
 	obj = getobj(S, vars{1}, vars{2});
-	obj = recursive_rmfield(obj, query, vars(3:end));
+	obj = recursive_rmfield(obj, vars(3:end));
 	S = setobj(S, vars{1}, obj);
 end

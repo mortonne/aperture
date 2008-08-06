@@ -1,6 +1,6 @@
 function s = structDefaults(s, varargin)
 %
-%STRUCTDEFAULTS Set default values for a structure.
+%STRUCTDEFAULTS   Set default values for a structure.
 %   STRUCT = STRUCTDEFAULTS(STRUCT,
 %   'field1',VALUES1,'field2',VALUES2,...) checks to see if each
 %   field already exists, and if not, replaces it with the
@@ -13,7 +13,7 @@ if length(varargin)>0
 			s = struct;
 		end
 		if ~isfield(s, varargin{i})
-			s = setfield(s, varargin{i}, varargin{i+1});
+		  s.(varargin{i}) = varargin{i+1};
 		end
 	end
 end

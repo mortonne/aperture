@@ -12,10 +12,13 @@ end
 
 s = s1;
 
+f1 = fieldnames(s1);
 f2 = fieldnames(s2);
+
+[c,i1,i2] = setxor(f1,f2);
+
 c2 = struct2cell(s2);
-for i=1:length(f2)
-  if ~isfield(s1, f2{i})
-		s.(f2{i}) = c2{i};
-  end
+
+for i=i2(:)'
+  [s.(f2{i})] = c2{i,:};
 end
