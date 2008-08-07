@@ -1,4 +1,4 @@
-function exp = blink_stats(exp, params)
+function ev = blink_stats(ev, params)
 %
 %BLINK_STATS - get info from events structs about blink artifacts
 %
@@ -21,42 +21,31 @@ end
 
 params = structDefaults(params, 'evname', 'events',  'eventFilter', '',  'windowEnd', 2000);
 
-for subj=exp.subj
-  fprintf('%s:\n', subj.id);
-  
-  % load this subject's events
-  ev = getobj(subj, 'ev', params.evname);
-  load(ev.file);
-  
-  % run filter if specified
-  events = filterStruct(events, params.eventFilter);
-  
-  sessions = unique(getStructField(events, 'session'));
-  ev.blinks = NaN(length(sessions),1);
-  for n=1:length(sessions)
-    sess_events = filterStruct(events, 'session==varargin{1}', sessions(n));
-    
-    art = getStructField(sess_events, 'artifactMS');
-    
-    if isstr(params.windowEnd)
-      % use a dynamic window (reaction time, for example)
-      windEnd = getStructField(sess_events, params.windowEnd);
-      art_ev = sum(art>0 & art<windEnd);
+load(ev.file);
+
+% run filter if specified
+events = filterStruct(events, params.eventFilter);
+
+sessions = unique(getStructField(events, 'session'));
+ev.blinks = NaN(length(sessions),1);
+for n=1:length(sessions)
+  sess_events = filterStruct(events, 'session==varargin{1}', sessions(n));
+
+  art = getStructField(sess_events, 'artifactMS');
+
+  if isstr(params.windowEnd)
+    % use a dynamic window (reaction time, for example)
+    windEnd = getStructField(sess_events, params.windowEnd);
+    art_ev = sum(art>0 & art<windEnd);
     else
-      % get number of events with artifacts from 1ms to (windowEnd)ms
-      art_ev = sum(art>0 & art<params.windowEnd);
-    end
-    percent_art = art_ev/length(sess_events);
-    
-    % print percentage
-    fprintf('%s-%d\t%f\n', subj.id, sessions(n), percent_art);
-    
-    % add to the ev object
-    ev.blinks(n) = percent_art;
+    % get number of events with artifacts from 1ms to (windowEnd)ms
+    art_ev = sum(art>0 & art<params.windowEnd);
   end
-  
-  % update exp
-  exp = update_exp(exp, 'subj', subj.id, 'ev', ev);
-  
-  fprintf('\n');
+  percent_art = art_ev/length(sess_events);
+
+  % print percentage
+  fprintf('%s-%d\t%f\n', subj.id, sessions(n), percent_art);
+
+  % add to the ev object
+  ev.blinks(n) = percent_art;
 end
