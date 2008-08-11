@@ -1,7 +1,7 @@
 function pat = modify_pats(pat, params, patname, resDir)
 %
 %MODIFY_PATS   Modify existing patterns.
-%   EXP = MODIFY_PATS(EXP,PARAMS,PATNAME,RESDIR) modifies the patterns
+%   PAT = MODIFY_PATS(PAT,PARAMS,PATNAME,RESDIR) modifies the patterns
 %   named PATNAME corresponding to each subject in EXP, using options
 %   in the PARAMS struct.  New patterns are saved in RESDIR/patterns.
 %
@@ -11,47 +11,52 @@ function pat = modify_pats(pat, params, patname, resDir)
 %   See patPCA for options for getting principal components of patterns.
 %
 
-[dir,filename] = fileparts(pat.file);
-
 if ~exist('resDir','var')
+  [dir,filename] = fileparts(pat.file);
   resDir = fullfile(fileparts(fileparts(dir)), patname);
 end
 if ~exist('patname','var')
   patname = [pat.name '_mod'];
 end
-
-params = structDefaults(params, 'eventFilter', '',  'nComp', []);
-
-oldpatfile = pat.file;
-
-if ~strcmp(pat.name, patname)
-  % if the patname is different, save the pattern to a new file
-  pat.name = patname;
-  pat.file = fullfile(resDir, 'patterns', sprintf('%s_%s.mat', pat.source, patname));
+if ~exist('params','var')
+  params = struct;
 end
-pat.params = combineStructs(params, pat.params);
+
+params = structDefaults(params, 'nComp',[]);
+
+oldpat = pat;
+
+% initialize the new pat object
+if ~strcmp(oldpat.name, patname)
+  % if the patname is different, save the pattern to a new file
+  patfile = fullfile(resDir, 'patterns', sprintf('%s_%s.mat', pat.source, patname));
+  else
+  patfile = oldpat.file;
+end
+
+pat = init_pat(patname,patfile,oldpat.source,combineStructs(params,oldpat.params),oldpat.dim);
 
 % check input files and prepare output files
-if prepFiles(oldpatfile, pat.file, params)~=0
+if prepFiles(oldpat.file, pat.file, params)~=0
   pat = [];
   return
 end
 
 % load the pattern
-[pattern, events] = loadPat(pat, params);
+[pattern, events] = loadPat(oldpat, params);
 
 % apply filters
 [pat,inds,events,evmod(1)] = patFilt(pat,params,events);
 pattern = pattern(inds{:});
 
 % do binning
-[pat, patbins, events,evmod(2)] = patBins(pat, params, events);
+[pat,patbins,events,evmod(2)] = patBins(pat,params,events);
 pattern = patMeans(pattern, patbins);
 
 if ~isempty(params.nComp)
   % run PCA on the pattern
-  [pat, pattern, coeff] = patPCA(pat1, params, pattern);
-  coeffFile = fullfile(resDir, 'patterns', [subj.id '_' patname '_coeff.mat']);
+  [pat, pattern, coeff] = patPCA(pat, params, pattern);
+  coeffFile = fullfile(resDir, 'patterns', sprintf('%s_%s_coeff.mat', pat.source, patname));
   pat.dim.coeff = coeffFile;
   save(pat.dim.coeff, 'coeff');
 end
@@ -64,23 +69,10 @@ if any(evmod)
   end
 
   % we need to save a new events struct
-  pat.dim.ev.file = fullfile(resDir, 'events', [subj.id '_' patname '_events.mat']);
+  pat.dim.ev.file = fullfile(resDir, 'events', sprintf('%s_%s_events.mat', pat.source, patname));
   save(pat.dim.ev.file, 'events');
 end
 
 % save the new pattern
 save(pat.file, 'pattern');
 closeFile(pat.file);
-
-%{
-% remove artifacts
-if ~isempty(params.artWindow)
-  mask = markArtifacts(events, pat1.dim.time, params.artWindow);
-
-  for c=1:size(pattern,2)
-    for f=1:size(pattern,4)
-      pattern(:,c,:,f) = mask;
-    end
-  end
-end
-%}

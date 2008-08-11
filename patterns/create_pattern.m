@@ -84,17 +84,17 @@ for subj=exp.subj
 	base_events = filterStruct(src_events(:), params.baseEventFilter);
 
 	% create a pat object to keep track of this pattern
-	pat = init_pat(patname, patfile, params, ev, subj.chan, time, freq);
+	pat = init_pat(patname, patfile, subj.id, params, ev, subj.chan, time, freq);
 
 	% do filtering/binning
-	try
+	%try
 		[pat,inds,src_events,evmod(1)] = patFilt(pat,params,src_events);
 		pat.params.channels = [pat.dim.chan.number];
 		[pat,bins,events,evmod(2)] = patBins(pat,params,src_events);
-		catch
-		warning('Filtering/binning problem with %s.', subj.id);
-		continue
-	end
+		%catch
+		%warning('Filtering/binning problem with %s.', subj.id);
+		%continue
+	%end
 	
 	if any(evmod)
 		% change the events name and file
@@ -112,6 +112,7 @@ for subj=exp.subj
 	exp = update_exp(exp, 'subj', subj.id, 'pat', pat);
 
 	if params.updateOnly
+	  closeFile(pat.file);
 		continue
 	end
 

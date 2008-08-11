@@ -30,7 +30,7 @@ if ~exist('params', 'var')
   params = [];
 end
 
-params = structDefaults(params, 'masks', {},  'nComp', [],  'loadSingles', 0,  'whichPat', [],  'catDim', []);
+params = structDefaults(params, 'loadSingles', 0,  'whichPat', [],  'catDim', []);
 
 % if there are multiple patterns for this pat object, choose one
 if iscell(pat.file) & ~isempty(params.whichPat)
@@ -39,7 +39,6 @@ end
 
 % reconstitute pattern if necessary
 if iscell(pat.file) & ~isempty(params.catDim)
-  
   pattern = NaN(pat.dim.ev.len, length(pat.dim.chan), length(pat.dim.time), length(pat.dim.freq));
   allDim = {':',':',':',':'};
   for i=1:length(pat.file)
@@ -49,7 +48,6 @@ if iscell(pat.file) & ~isempty(params.catDim)
     
     pattern(ind{:}) = s.pattern;
   end
-  
 else
   load(pat.file);
 end

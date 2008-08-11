@@ -44,7 +44,7 @@ for n=1:length(sessions)
   percent_art = art_ev/length(sess_events);
 
   % print percentage
-  fprintf('%s-%d\t%f\n', subj.id, sessions(n), percent_art);
+  fprintf('%d\t%f\n', sessions(n), percent_art);
 
   % add to the ev object
   ev.blinks(n) = percent_art;

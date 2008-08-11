@@ -5,15 +5,23 @@ function mask = markArtifacts(events, timebins, artWindow)
 mask = false(length(events), size(timebins,1));
 
 for e=1:length(events)
-  wind = [events(e).artifactMS events(e).artifactMS+artWindow];
-  isArt = 0;
+  % get the time in ms of the first artifact after this event
+  thisart = events(e).artifactMS;
+  if thisart<0
+    % no artifacts in this event
+    continue
+  end
+  
+  % set the window to mark as artifacty
+  wind = [thisart thisart+artWindow];
+  
   for t=1:size(timebins,1)
-    if wind(1)>timebins(t,1) & wind(1)<timebins(t,2)
-      isArt = 1;
-    end
-    mask(e,t) = isArt;
-    if isArt & wind(2)<timebins(t,1)
-      isArt = 0;
+    startT = timebins(t,1);
+    endT = timebins(t,2);
+    
+    % if this time window overlaps the artifact window at all, mark it
+    if (startT>=wind(1) && startT<=wind(2)) || (endT>=wind(1) && endT<=wind(2))
+      mask(e,t) = 1;
     end
   end
 end

@@ -1,4 +1,4 @@
-function pat = init_pat(patname, file, params, ev, chan, time, freq)
+function pat = init_pat(patname, file, source, params, ev, chan, time, freq)
 %pat = init_pat(patname, file, params, ev, chan, time, freq)
 
 if ~exist('patname', 'var')
@@ -6,6 +6,9 @@ if ~exist('patname', 'var')
 end
 if ~exist('file', 'var')
   file = '';
+end
+if ~exist('source','var')
+  source = '';
 end
 if ~exist('params', 'var')
   params = struct();
@@ -31,4 +34,4 @@ if isfield(ev, 'ev')
 	dim = struct('ev', ev,  'chan', chan,  'time', time,  'freq', freq);
 end
 
-pat = struct('name', patname,  'file', file,  'params', params,  'dim', dim);
+pat = struct('name',patname, 'file',file, 'source',source, 'params',params, 'dim',dim);

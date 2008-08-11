@@ -107,16 +107,22 @@ for s=1:length(exp.subj)
 	posterior = NaN(length(sel.vals),nTestEv,length(reg.vals));
 	fprintf('\nPercent Correct:\n')
 	for j=1:length(sel.vals)
-	  fprintf('%d:\t', sel.vals(j))
+	  if iscell(sel.vals)
+	    fprintf('%s:\t', sel.vals{j})
+	    match = strcmp(sel.vec,sel.vals{j});
+	    else
+	    fprintf('%d:\t', sel.vals(j))
+	    match = sel.vec==sel.vals(j);
+    end
 	  
 	  if params.select_test
       % select which events to test
-      testsel = sel.vec==sel.vals(j);
+      testsel = match;
       trainsel = ~testsel;
       
       else
       % train on this value, test on everything
-      trainsel = sel.vec==sel.vals(j);
+      trainsel = match;
       testsel = true(size(sel.vec));
     end
 

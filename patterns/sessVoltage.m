@@ -3,11 +3,14 @@ function pattern = sessVoltage(pat,bins,events,base_events)
 % set defaults for pattern creation
 params = structDefaults(pat.params, 'relativeMS', [],  'baseOffsetMS', -200,  'baseDurationMS', 100,  'filttype', 'stop',  'filtfreq', [58 62],  'filtorder', 4,  'bufferMS', 1000,  'kthresh', 5,  'ztransform', 1);
 
+timebins = makeBins(1000/params.resampledRate,params.offsetMS,params.offsetMS+params.durationMS);
+
 % initialize the pattern for this session
 pattern = NaN(length(events), length(params.channels), length(pat.dim.time));
 
+fprintf('Channels: ')
 for c=1:length(params.channels)
-	fprintf('%d.', params.channels(c));
+	fprintf('%d ', params.channels(c));
 
 	% get baseline stats for this channel, sess
 	if params.ztransform
@@ -44,6 +47,11 @@ for c=1:length(params.channels)
 		if params.ztransform
 			this_eeg = (this_eeg - base_mean)/base_std;
 		end
+		
+		if ~isempty(params.artWindow)
+		  art = markArtifacts(events(e), timebins, params.artWindow);
+		  this_eeg(art) = NaN;
+	  end
 		
 		% add this event/channel to the pattern
 		pattern(e,c,:) = patMeans(this_eeg(:), bins(3));

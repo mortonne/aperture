@@ -3,11 +3,14 @@ function pattern = sessPower(pat,bins,events,base_events)
 % set defaults for pattern creation
 params = structDefaults(pat.params, 'baseOffsetMS', -200,  'baseDurationMS', 100,  'filttype', 'stop',  'filtfreq', [58 62],  'filtorder', 4,  'bufferMS', 1000,  'width', 6,  'kthresh', 5,  'ztransform', 1,  'logtransform', 0);
 
+timebins = makeBins(1000/params.resampledRate,params.offsetMS,params.offsetMS+params.durationMS);
+
 % initialize the pattern for this session
 pattern = NaN(length(events), length(params.channels), length(pat.dim.time), length(pat.dim.freq));
 
+fprintf('Channels: ')
 for c=1:length(params.channels)
-	fprintf('%d.', params.channels(c));
+	fprintf('%d ', params.channels(c));
 
 	% if z-transforming, get baseline stats for this sess, channel
 	if params.ztransform
@@ -74,6 +77,11 @@ for c=1:length(params.channels)
 				this_pow(:,f) = (this_pow(:,f) - base_mean(f))/base_std(f);
 			end
 		end
+
+    if ~isempty(params.artWindow)
+		  art = markArtifacts(events(e), timebins, params.artWindow);
+		  this_pow(find(art),:) = NaN;
+	  end
 
 		% add the power of this eventXchannel
 		pattern(e,c,:,:) = patMeans(this_pow, bins(3:4));

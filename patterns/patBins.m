@@ -132,7 +132,6 @@ for j=1:length(vals)
 end % unique event types
 
 
-
 function [chan2, binc] = chanBins(chan1, params)
 %CHANBINS   Apply binning to a channel dimension.
 %   [CHAN2] = CHANBINS(CHAN1,PARAMS) bins the channels dimension

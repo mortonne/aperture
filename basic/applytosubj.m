@@ -1,11 +1,17 @@
 function exp = applytosubj(exp,objtype,objname,varargin)
-% MOD_SUBJ_PAT   Short description
-%   [EXP] = MOD_SUBJ_PAT(EXP,PATNAME,VARARGIN)
+%APPLYTOSUBJ   Apply a function to all subjects.
+%   EXP = APPLYTOSUBJ(EXP,OBJTYPE,OBJNAME,VARARGIN) gets the object
+%   of type OBJTYPE and name OBJNAME from each subject, and passes
+%   it into one or more functions.  Functions are specified by
+%   function handle, input argument cell array pairs.  The first input
+%   into each function will be the object.
 %
-% Long description
-% 
-% Created by Neal Morton on 2008-08-04.
+%   Example
+%     To apply myfunction to each subject's voltage pattern:
+%     exp = applytosubj(exp,'pat','voltage',@myfunction,{arg1,arg2,arg3})
 %
+
+%Created by Neal Morton on 2008-08-04.
 
 for subj=exp.subj
   fprintf('\n%s\n', subj.id)
@@ -13,6 +19,10 @@ for subj=exp.subj
   
   % get the pat to modify
   obj = getobj(subj, objtype, objname);
+  if isempty(obj)
+    error('%s object %s not found.', objtype, objname)
+  end
+  
   obj.source = subj.id;
   
   for i=1:2:length(varargin)
@@ -30,7 +40,7 @@ for subj=exp.subj
       inputs = {};
     end
     
-    fprintf('Running %s...\n', func2str(objmodfcn))
+    fprintf('Running %s...', func2str(objmodfcn))
     
     % eval the function, using the object and the cell array of inputs
     obj = objmodfcn(obj, inputs{:});

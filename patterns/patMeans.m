@@ -43,5 +43,4 @@ for i=1:length(bins)
 		temp(ind{:}) = nanmean(pattern(binInd{:}),i);
 	end
 	pattern = temp;
-
 end

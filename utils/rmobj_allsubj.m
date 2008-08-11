@@ -7,12 +7,13 @@ function exp = rmobj_allsubj(exp, varargin)
 %   is relative to each subj struct.
 %
 
-for subj=exp.subj
-	fprintf('%s: ', subj.id);
+for s=1:length(exp.subj)
+	fprintf('%s\n', exp.subj(s).id);
 	
 	% delete the object
-	exp = recursive_rmfield(exp, 'subj', subj.id, varargin{:});
+	exp.subj(s) = recursive_rmfield(exp.subj(s), varargin);
 end
+fprintf('\n')
 
 % update exp
 exp = update_exp(exp);

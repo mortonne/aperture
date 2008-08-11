@@ -38,6 +38,7 @@ end
 
 % update the pat object
 pat2 = pat1;
+pat2.dim.chan = struct;
 for c=1:size(pattern,2)
 	pat2.dim.chan(c).number = c;
 	pat2.dim.chan(c).region = '';
