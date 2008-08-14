@@ -68,7 +68,7 @@ def.keepk = 0;
 def.kthresh = [];
 
 % process the inputs
-[freqs,width,filtfreq,filttype,filtorder,resampledRate,dsample,powonly,usesingles,keepk,kthresh] = getargs(fieldnames(def),struct2cell(def),varargin{:});
+[eid,emsg,freqs,width,filtfreq,filttype,filtorder,resampledRate,dsample,powonly,usesingles,keepk,kthresh] = getargs(fieldnames(def),struct2cell(def),varargin{:});
 
 % get some parameters
 [samplerate,nBytes,dataformat,gain] = GetRateAndFormat(events(1));
