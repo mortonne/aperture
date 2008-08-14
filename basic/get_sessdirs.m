@@ -35,6 +35,7 @@ d = dir(fullfile(dataroot, subjstr));
 subjects = {d.name};
 
 subj = struct;
+todelete = [];
 for s=1:length(subjects)
 
   % initialize this subject
@@ -64,6 +65,8 @@ for s=1:length(subjects)
   end
   
   if isempty(subj(s).sess)
-    subj(s) = [];
+    todelete(end+1) = s;
   end
 end
+
+subj(todelete) = [];
