@@ -22,8 +22,9 @@ function pat = pat_plots(pat, params, figname, title, resDir)
 % saved in pat.figs
 %
 
-if ~exist('resDir', 'var')
-  resDir = fullfile(exp.resDir, 'eeg', params.patname);
+if ~exist('resDir','var')
+  [dir,filename] = fileparts(pat.file);
+  resDir = fullfile(fileparts(fileparts(dir)), pat.name);
 end
 if ~exist('figname', 'var')
   figname = 'plots';
@@ -31,11 +32,14 @@ end
 if ~exist('title', 'var')
   title = 'plots';
 end
+if ~exist('params','var')
+  params = struct;
+end
 
-params = structDefaults(params, 'diff', 0,  'plotsig', 1,  'whichStat', {[], []},  'powrange', [-.3 .3],  'lock', 0, 'overwrite', 1);
+params = structDefaults(params, 'diff', 0,  'plotsig', 1,  'whichStat', {[], []},  'powrange', [-.3 .3],  'p_range', [0.05 0.005], 'lock', 0, 'overwrite', 1);
 
 if ~exist(fullfile(resDir, 'figs'), 'dir')
-  mkdir(fullfile(resDir, 'figs'));
+  %mkdir(fullfile(resDir, 'figs'));
 end
 
 clf reset
@@ -56,7 +60,7 @@ end
 
 if params.diff | ~params.plotsig
   % we need the pattern
-  pattern = loadPat(pat, params, 0);
+  pattern = loadPat(pat, params);
 end
 
 if params.diff
@@ -115,15 +119,15 @@ elseif power
     for c=1:size(pattern,2)
       if params.plotsig
 
-        h = plot_pow_sig(shiftdim(pattern(e,c,:,:),2)', pat.dim, params.powrange);
-        filename = sprintf('%s_erpow_sig_%s_e%dc%d.eps', params.patname, id, e, c);
+        h = plot_pow_sig(shiftdim(pattern(e,c,:,:),2)', pat.dim, params.p_range);
+        filename = sprintf('%s_erpow_sig_%s_e%dc%d.eps', pat.name, pat.source, e, c);
       else
         h = plot_pow(shiftdim(pattern(e,c,:,:),2)', pat.dim, params.powrange);
-        filename = sprintf('%s_erpow_%s_e%dc%d.eps', params.patname, id, e, c);
+        filename = sprintf('%s_erpow_%s_e%dc%d.eps', pat.name, pat.source, e, c);
 
       end
       fig.file{e,c} = fullfile(resDir, 'figs', filename);
-
+keyboard
       print(gcf, '-depsc', fig.file{e,c});
     end
   end

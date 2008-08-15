@@ -10,8 +10,8 @@ end
 y = log10(getStructField(dim.freq, 'avg'));
 
 totLen = 128;
-two_way = 1;
-signed = 1;
+two_way = 0;
+signed = 0;
 
 if two_way
 	p_range = p_range/2;
