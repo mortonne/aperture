@@ -1,5 +1,4 @@
 function exp = post_process_exp(exp,eventsFcnHandle,fcnInput,eventsfile,varargin)
-%
 %POST_PROCESS_EXP   Update the post-processing for each session in exp.
 %   EXP = POST_PROCESS_EXP(EXP,EVENTSFCNHANDLE,FCNINPUT,EVENTSFILE) creates 
 %   an events struct for each session in EXP using the function specified

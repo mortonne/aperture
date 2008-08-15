@@ -1,5 +1,4 @@
 function waitforfiles(files, timeLimit)
-%
 %WAITFORFILES   Wait for a set of files to be created/unlocked.
 %   WAITFORFILES(FILES,TIMELIMIT) waits for file(s) in the string
 %   or cell array of strings FILES to all both be created and

@@ -1,5 +1,4 @@
 function exp = init_iEEG(subj,resDir,experiment)
-%
 %INIT_IEEG   Prepare an intracranial EEG experiment for analysis.
 %   EXP = INIT_IEEG(SUBJ,RESDIR,EXPERIMENT) creates an EXP struct
 %   containing the information in the subject structure SUBJ, and
@@ -14,9 +13,11 @@ function exp = init_iEEG(subj,resDir,experiment)
 %      label - a unique string for each channel; initialized as
 %              num2str(number).
 %
-%    To each sess struct, a goodChans field is added that lists
-%    which channels were "good" for that subject.  This is based
-%    on each subject's good_leads.txt file.
+%   To each sess struct, a goodChans field is added that lists
+%   which channels were "good" for that subject.  This is based
+%   on each subject's good_leads.txt file.
+%
+%   See also init_exp, init_scalp.
 %
 
 if ~exist('experiment', 'var')

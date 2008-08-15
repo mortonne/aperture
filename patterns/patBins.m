@@ -1,19 +1,40 @@
 function [pat2,bins,events,evmod] = patBins(pat1,params,events)
 %PATBINS   Apply bins to dimensions of a pat object.
-%   [PAT2,BINS] = PATBINS(PAT1,PARAMS) alters the dimensions information
-%   contained in PAT1, in preparation for binning a pattern.  Options for
-%   what dimensions to bin and how are contained in the PARAMS struct.
+%   [PAT2,BINS,EVENTS,EVMOD] = PATBINS(PAT1,PARAMS,EVENTS) alters the 
+%   dimensions information contained in PAT1, in preparation for binning 
+%   a pattern.  Options for what dimensions to bin and how are contained 
+%   in the PARAMS struct.  EVENTS can optionally be input to avoid having
+%   to reload it.
 %
 %   PAT2 is the altered pat object. BINS contains information
 %   that can be passed into PATMEANS to carry out binning of a pattern.
 %   EVENTS, an altered events struct, will also be output if the events
-%   dimension has been changed.
+%   dimension has been altered or it was part of the input.  EVMOD
+%   is true if the events dimension was altered, otherwise false.
 %
-%   See EVENTBINS, CHANBINS, TIMEBINS, and FREQBINS for options for each
-%   dimension.
+%   Params:
+%     'field'           Specifies event bins. Each cell is input to
+%                       binEventsField
+%     'eventbinlabels'  Cell array of labels corresponding to each event bin
+%     'chanbins'        Specifies channel bins. Each cell can be a vector
+%                       of channel numbers, a cell array of regions, or a
+%                       string to be passed into filterStruct
+%     'chanbinlabels'   Cell array of labels corresponding to each channel
+%                       group
+%     'MSbins'          Specifies time bins. Should be a nbinsX2 matrix,
+%                       with MSbins(i,:) giving the range of MS values for 
+%                       bin i
+%     'MSbinlabels'     Cell array of labels corresponding to each time bin
+%     'freqbins'        Specifies frequency bins. Should be a nbinsX2 matrix,
+%                       with freqbins(i,:) giving the range of frequencies
+%                       for bin i
+%     'freqbinlabels'   Cell array of labels corresponding to each frequency
+%                       bin
+%
+%   See also patMeans, modify_pats, patFilt.
 %
 
-params = structDefaults(params,  'masks', {},  'field', '',  'eventBinLabels', '',  'chanbins', [],  'chanbinlabels', {},  'MSbins', [],  'MSbinlabels', {},  'freqbins', [],  'freqbinlabels', {});
+params = structDefaults(params,  'field', '',  'eventbinlabels', '',  'chanbins', [],  'chanbinlabels', {},  'MSbins', [],  'MSbinlabels', {},  'freqbins', [],  'freqbinlabels', {});
 
 % initialize
 pat2 = pat1;

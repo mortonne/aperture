@@ -1,5 +1,4 @@
 function mask = markArtifacts(events, timebins, artWindow)
-%
 %MARKARTIFACTS   
 
 mask = false(length(events), size(timebins,1));

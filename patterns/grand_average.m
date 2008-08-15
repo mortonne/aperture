@@ -1,5 +1,4 @@
 function exp = grand_average(exp, patname, resDir)
-%
 %GRAND AVERAGE   Calculate an average across patterns from multiple subjects.
 %   EXP = GRAND_AVERAGE(EXP,PATNAME,RESDIR)
 %

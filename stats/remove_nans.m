@@ -1,6 +1,9 @@
 function [mat,goodind] = remove_nans(mat)
+%REMOVE_NANS
+%   [MAT,GOODIND] = REMOVE_NANS(MAT)
 % matrix must be observations X vars
 % returns changed matrix and indices of variables that had at least one data point
+%
 
 goodind = find(sum(~isnan(mat)));
 

@@ -1,5 +1,4 @@
 function exp = init_exp(subj, resDir, experiment, recordingType, useLock)
-%
 %INIT_EXP   Initialize an exp struct.
 %   EXP = INIT_EXP(SUBJ,RESDIR,EXPERIMENT,RECORDINGTYPE,USELOCK) creates an
 %   exp struct EXP containing subjects in the SUBJ struct and saves it in
@@ -10,6 +9,8 @@ function exp = init_exp(subj, resDir, experiment, recordingType, useLock)
 %     RECORDINGTYPE - if brain data was collected, which type was it 
 %     USELOCK - specifies whether the exp struct needs to be locked before
 %               updates (default 0)
+%
+%   See also init_iEEG, init_scalp.
 %
 
 if ~exist('experiment','var')

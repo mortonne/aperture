@@ -1,5 +1,4 @@
 function s = combineStructs(s1, s2)
-%
 %COMBINESTRUCTS   Combine the fields of two structures.
 %   S = COMBINESTRUCTS(S1,S2) combines structs S1 and S2.  If a
 %   field exists for both S1 and S2, the value in S1 takes

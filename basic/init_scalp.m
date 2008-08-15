@@ -1,5 +1,4 @@
 function exp = init_scalp(subj, resDir, experiment, elecLocsFile)
-%
 %INIT_SCALP   Prepare a scalp EEG experiment for analysis.
 %   EXP = INIT_SCALP(SUBJ,RESDIR,EXPERIMENT,ELECLOCSFILE) creates an 
 %   EXP struct containing the information in the subject structure 
@@ -25,6 +24,8 @@ function exp = init_scalp(subj, resDir, experiment, elecLocsFile)
 %      experiment = 'catFR';
 %      elecLocsFile = '/home1/mortonne/eeg/GSN200-128chanlocs.txt';
 %      exp = init_scalp(subj,resDir,experiment,elecLocsFile);
+%
+%   See also init_exp, init_iEEG.
 %
 
 if ~exist('elecLocsFile', 'var')

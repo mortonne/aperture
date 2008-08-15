@@ -1,4 +1,20 @@
 function pattern = sessVoltage(pat,bins,events,base_events)
+%SESSVOLTAGE   Create a voltage pattern for one session.
+%   PATTERN = SESSVOLTAGE(PAT,BINS,EVENTS,BASE_EVENTS)
+%
+%   Params:
+%     'relativeMS'
+%     'baseOffsetMS'
+%     'baseDurationMS'
+%     'filttype'
+%     'filtfreq'
+%     'filtorder'
+%     'bufferMS'
+%     'kthresh'
+%     'ztransform'
+%
+%   See also create_pattern, sessPower.
+%
 
 % set defaults for pattern creation
 params = structDefaults(pat.params, 'relativeMS', [],  'baseOffsetMS', -200,  'baseDurationMS', 100,  'filttype', 'stop',  'filtfreq', [58 62],  'filtorder', 4,  'bufferMS', 1000,  'kthresh', 5,  'ztransform', 1);

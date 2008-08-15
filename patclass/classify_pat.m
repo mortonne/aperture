@@ -1,5 +1,4 @@
 function [exp,pcorrall] = classify_pat(exp, params, pcname, resDir)
-%
 %CLASSIFY_PAT - for a given field in the events struct, train and
 %test a pattern classifier using a leave-one-out method
 %

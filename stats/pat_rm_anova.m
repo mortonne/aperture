@@ -1,5 +1,4 @@
 function exp = pat_rm_anova(exp, params, patname, resDir)
-%
 %PAT_RM_ANOVA - calculates a 2-way ANOVA across subjects, using two
 %fields from the events struct as regressors
 %

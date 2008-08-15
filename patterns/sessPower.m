@@ -1,4 +1,21 @@
 function pattern = sessPower(pat,bins,events,base_events)
+%SESSPOWER   Create a power pattern for one session.
+%   PATTERN = SESSPOWER(PAT,BINS,EVENTS,BASE_EVENTS)
+%
+%   Params:
+%     'baseOffsetMS'
+%     'baseDurationMS'
+%     'filttype'
+%     'filtfreq'
+%     'filtorder'
+%     'bufferMS'
+%     'width'
+%     'kthresh'
+%     'ztransform'
+%     'logtransform'
+%
+%   See also create_pattern, sessVoltage.
+%
 
 % set defaults for pattern creation
 params = structDefaults(pat.params, 'baseOffsetMS', -200,  'baseDurationMS', 100,  'filttype', 'stop',  'filtfreq', [58 62],  'filtorder', 4,  'bufferMS', 1000,  'width', 6,  'kthresh', 5,  'ztransform', 1,  'logtransform', 0);
@@ -44,7 +61,6 @@ for c=1:length(params.channels)
 
 	% get power, z-transform, average each time bin
 	for e=1:length(events)
-    keyboard
 		[this_pow] = getphasepow(params.channels(c), events(e), ...
 		params.durationMS, ...
 		params.offsetMS, params.bufferMS, ... 

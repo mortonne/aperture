@@ -1,19 +1,18 @@
 function pat = modify_pats(pat, params, patname, resDir)
-%
 %MODIFY_PATS   Modify existing patterns.
-%   PAT = MODIFY_PATS(PAT,PARAMS,PATNAME,RESDIR) modifies the patterns
-%   named PATNAME corresponding to each subject in EXP, using options
-%   in the PARAMS struct.  New patterns are saved in RESDIR/patterns.
+%   PAT = MODIFY_PATS(PAT,PARAMS,PATNAME,RESDIR) modifies PAT using 
+%   options in the PARAMS struct.  New patterns are saved in RESDIR/patterns.
 %
-%   See eventBins, chanBins, timeBins, and freqBins for options for 
-%   binning each dimension.
+%   See patFilt for options for filtering each dimension, and see patBins 
+%   for binning each dimension.
 %
 %   See patPCA for options for getting principal components of patterns.
 %
+%   Also see applytosubj.
+%
 
 if ~exist('resDir','var')
-  [dir,filename] = fileparts(pat.file);
-  resDir = fullfile(fileparts(fileparts(dir)), patname);
+  resDir = fileparts(fileparts(pat.file));
 end
 if ~exist('patname','var')
   patname = [pat.name '_mod'];

@@ -1,5 +1,4 @@
 function S = recursive_setobj(S, vars)
-%
 %RECURSIVE_SETOBJ   Add an arbitrarily nested object to a structure.
 %   S = RECURSIVE_SETOBJ(S,VARS)
 %

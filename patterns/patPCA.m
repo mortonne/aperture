@@ -6,8 +6,12 @@ function [pat2, pattern, coeff] = patPCA(pat1, params, pattern)
 %   gives meta-data on the new pattern.  COEFF contains the coefficients of
 %   each principle component used.
 %
-%   OPTIONAL PARAMS:
-%      nComp - number of principal components to return
+%   PARAMS:
+%     'nComp'       Number of principal components to return
+%     'loadSingles' If true (default), the pattern will be loaded as a
+%                   singles array
+%
+%   See also modify_pats.
 %
 
 if ~exist('params','var')

@@ -1,5 +1,4 @@
 function ev = blink_stats(ev, params)
-%
 %BLINK_STATS - get info from events structs about blink artifacts
 %
 % FUNCTION: blink_stats(exp, params)

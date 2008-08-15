@@ -1,5 +1,4 @@
 function subj = get_sessdirs(dataroot,subjstr,file2check)
-%
 %GET_SESSDIRS   Generate a subj struct for a given experiment directory.
 %   SUBJ = GET_SESSDIRS(DATAROOT,SUBJSTR) looks for directories in
 %   DATAROOT that match SUBJSTR (which may contain wildcards; default is
@@ -18,6 +17,8 @@ function subj = get_sessdirs(dataroot,subjstr,file2check)
 %     subj = get_sessdirs(dataroot,'LTP*',{'session.log', 'eeg/*.raw'})
 %     gets all subjects in dataroot whose id starts with LTP, and all of
 %     their sessions that have both a session log file and an eeg file.
+%
+%   See also init_exp, init_scalp, init_iEEG.
 %
 
 if ~exist('file2check','var')

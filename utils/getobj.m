@@ -1,5 +1,4 @@
 function [obj,ind] = getobj(s,f,objname)
-%
 %GETOBJ   Retrieve an object from a list of objects.
 %
 %   OBJ = GETOBJ(S,F,OBJNAME) looks in the field named F in
@@ -11,6 +10,8 @@ function [obj,ind] = getobj(s,f,objname)
 %
 %   [OBJ,IND] = GETOBJ(S,F,...) also returns the index
 %   where the object was found in F.
+%
+%   See also setobj, rmobj.
 %
 
 if ~exist('objname', 'var')

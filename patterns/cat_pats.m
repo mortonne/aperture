@@ -1,5 +1,4 @@
 function exp = cat_pats(exp, params, patname, resDir)
-%
 %CAT_PATS   Concatenate patterns.
 %   EXP = CAT_PATS(EXP,PARAMS,PATNAME,RESDIR)
 %

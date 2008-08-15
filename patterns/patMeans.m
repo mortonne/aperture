@@ -1,12 +1,20 @@
 function pattern = patMeans(pattern, bins)
-%
 %PATMEANS   Bin one or more dimensions of a pattern.
 %   PATTERN = PATMEANS(PATTERN,BINS) applies binning to PATTERN
-%   according to the cell array BINS, a cell array with NDIM(PATTERN)
+%   according to the cell array BINS, a cell array with ndim(PATTERN)
 %   cells, each of which contains a cell array where each cell holds
 %   the indices corresponding to one bin.
 %
-%   BINS can be created using PATBINS.
+%   BINS can be created using patBins.
+%
+%   Example:
+%    params = struct('fields','recalled', ...
+%                    'eventbinlabels', {'recalled','not recalled'});
+%    [pat,bins] = patBins(pat,params);
+%    pattern = loadPat(pat);
+%    pattern = patMeans(pattern,bins);
+%
+%   See also modify_pats, patBins, patFilt.
 %
 
 allcell = {':',':',':',':'};

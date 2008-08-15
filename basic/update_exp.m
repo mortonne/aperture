@@ -1,5 +1,4 @@
 function exp = update_exp(exp, varargin)
-%
 %UPDATE_EXP   Apply changes to the exp struct.
 %   EXP = UPDATE_EXP(EXP) loads the most recently saved version of
 %   EXP (locking first if exp.useLock is true), makes a backup of 

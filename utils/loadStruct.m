@@ -1,5 +1,4 @@
 function s = loadStruct(structFile, repStr, lock)
-%
 %LOADSTRUCT   Load a structure and recursively run strrep on all strings. 
 %   S = LOADSTRUCT(STRUCTFILE,REPSTR,LOCK) loads a structure
 %   stored in STRUCTFILE, and runs STRREP on all strings, even
@@ -41,10 +40,6 @@ s = temp.(fnames{1});
 % do a strrep on any string in the struct
 if exist('repStr', 'var') && ~isempty(repStr)
   s = recursive_strrep(s, repStr);
-	if isfield(s, 'file')
-	  save(s.file, 's');
-	end
-
 end
 
 if lock

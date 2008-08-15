@@ -1,5 +1,4 @@
 function exp = rmobj(exp, varargin)
-%
 %RMOBJ   Remove an object from the exp struct.
 %   EXP = RMOBJ(EXP,VARARGIN)
 %

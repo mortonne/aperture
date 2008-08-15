@@ -1,5 +1,4 @@
 function exp = rmobj_allsubj(exp, varargin)
-%
 %RMOBJ_ALLSUBJ   Remove a similarly-placed object from all subjects.
 %   EXP = RMOBJ_ALLSUBJ(EXP,VARARGIN)
 %   

@@ -1,5 +1,4 @@
 function propval = struct2propval(s)
-%
 %STRUCT2PROPVAL   Convert a structure into a cell array of property-value pairs.
 %   PROPVAL = STRUCT2PROPVAL(S)
 %

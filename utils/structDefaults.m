@@ -1,5 +1,4 @@
 function s = structDefaults(s, varargin)
-%
 %STRUCTDEFAULTS   Set default values for a structure.
 %   STRUCT = STRUCTDEFAULTS(STRUCT,
 %   'field1',VALUES1,'field2',VALUES2,...) checks to see if each

@@ -1,44 +1,59 @@
 function exp = create_pattern(exp, fcnhandle, params, patname, resDir)
+%CREATE_PATTERN   Create a pattern for each subject in an exp struct.
+%   EXP = CREATE_PATTERN(EXP,FCNHANDLE,PARAMS,PATNAME,RESDIR) creates
+%   a pattern for each subject in EXP.  FCNHANDLE creates the pattern
+%   for each session; it should take pat, bins, events for a session, 
+%   baseline events for the session, and output a pattern with
+%   dimensions eventsXchannelsXtime(Xfrequency).
 %
-%CREATE_VOLT_PATTERN Gets voltage values for a set of events for
-%   each subject included in the exp struct.
-%   exp                                                                   = create_volt_pattern(exp, params, patname, resDir) creates
-%   a voltage pattern for each subject in exp using options listed
-%   in the params struct, saves filenames and details about the
-%   pattern in a "pat" substruct of exp.subj named patname, and saves the
-%   pattern in resDir.
+%   PARAMS is a structure that specifies options about how the pattern
+%   should be created.  The pattern will be named PATNAME, and saved in
+%   RESDIR (default is exp.resDir/eeg/patname).
 %
-%   optional params fields:
-%      evname - string specifying name of the ev object to use
-%         (default "events")
-%      eventFilter - string to be passed into filterStruct;
-%         specifies the events to be included in the pattern
-%      offsetMS - time in milliseconds from the start of each event
-%      durationMS - time window of the pattern will be
-%         offsetMS:offsetMS+durationMS
-%      baseEventFilter - filter to use for baseline events, if
-%                        ztransform=1
-%      baseOffsetMS
-%      baseDurationMS
-%      filttype
-%      filtfreq
-%      filtorder
-%      bufferMS
-%      resampledRate
-%      kthresh
-%      ztransform
-%      replace_eegfile - used in loadEvents to run strrep on the
-%         eegfile field of the events struct
-%      
-%   output:
-%      exp - updated with pat objects added to exp.subj.pat;
-%         pat.name - string identifier of the pat object
-%         pat.file - filename of the saved pattern
-%         pat.params - stores the params used to create the pattern
-%         pat.dim - contains information about each dimension of the pattern
+%   Params:
+%     'evname'          Name of the ev object to use (default: 'events')
+%     'replace_eegfile' Cell array containing two strings to be passed
+%                       in to strrep, to change the eegfile in events
+%                       before it is loaded (default {})
+%     'eventFilter'     Input to filterStruct that designates which
+%                       events to use in creating the pattern
+%     'baseEventFilter' Designates which events to use as baseline
+%     'chanFilter'      Filters which channels are used to create the
+%                       pattern
+%     'resampledRate'   Rate to resample to (default 500)
+%     'downsample'      Rate to downsample to (applies to power patterns)
+%     'offsetMS'        Time in milliseconds to begin pattern relative
+%                       to the start of each event
+%     'durationMS'      Duration in milliseconds
+%     'timeFilter'      Filters which times to include
+%     'freqs'           Frequencies to include (applies to power patterns)
+%     'freqFilter'      Filter for frequencies (applies to power patterns)
+%     'lock'            If true (default), the pattern output file will be 
+%                       locked during processing
+%     'overwrite'       If false (default) and the pattern output file
+%                       already exists for a subject, that subject will be
+%                       skipped
+%     'updateOnly'      If true (default is false), patterns will not be
+%                       created, but exp will be updated with pat objects
 %
-%      pattern - one for each subject s is saved in
-%         exp.subj(s).pat.file.  Dimensions are events X channels X time.
+%     Params also holds options specific to the particular pattern-
+%     creation function that is used.
+%   
+%   To each subject a "pat" object will be added, which keeps track
+%   of the metadata for each pattern.  Fields are:
+%      name         String identifier of the pattern
+%      file         Path to the .mat file holding the pattern
+%      source       The identifier of the subject
+%      params       A copy of the params struct used to create the pattern
+%      dim          A struct that holds information about each dimension of 
+%                   the pattern
+%
+%   Example:
+%     params = struct('evname','events', 'offsetMS',-200, 'durationMS',1200);
+%     exp = create_pattern(exp,@sessVoltage,params,'volt_pattern');
+%     pat = getobj(exp.subj(1),'pat','volt_pattern');
+%
+%   See also sessVoltage, sessPower.
 %
 
 if ~exist('params', 'var')

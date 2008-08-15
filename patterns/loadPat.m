@@ -1,24 +1,19 @@
 function [pattern, events] = loadPat(pat, params)
+%LOADPAT   Load a pattern from a pat object.
+%   PATTERN = LOADPAT(PAT,PARAMS) loads PAT.file using options
+%   specified in the PARAMS struct.
 %
-%LOADPAT - loads one subject's pattern, and applies any specified
-%masks and event filters
+%   [PATTERN,EVENTS] = LOADPAT(PAT,PARAMS) also returns the
+%   corresponding EVENTS.
 %
-% FUNCTION: [pattern, events] = loadPat(pat, params)
-%
-% INPUT: pat - struct holding information about a pattern
-%        params - required fields: none
-%
-%                 optional fields: eventFilter (specify subset of
-%                 events to use), masks (cell array containing
-%                 names of masks to apply to pattern), whichPat
-%                 (necessary if pat.file is a cell array with
-%                 filenames of multiple patterns), catDim
-%                 (necessary if the pattern is split on one
-%                 dimension into multiple files - specifies which
-%                 dimension to concatenate on)
-%
-% OUTPUT: loaded pattern, plus the events associated with the
-% pattern
+%   Params:
+%     'loadSingles' If true (default is false), the pattern will
+%                   be loaded as an array of singles
+%     'whichPat'    If pat.file is a cell array, specifies which
+%                   file to load
+%     'catDim'      If the pattern is saved in multiple files,
+%                   this specifies which dimension to concatenate
+%                   over when reconstituting the pattern
 %
 
 if isstr(pat)

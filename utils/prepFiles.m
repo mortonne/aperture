@@ -1,5 +1,4 @@
 function status = prepFiles(filesToRead, filesToWrite, params)
-%
 %PREPFILES   Prepare files for use in analysis on the cluster.
 %   status = prepFiles(filesToRead, filesToWrite, params) checks if
 %   each file in filesToRead exists, and prepares each file in
@@ -7,14 +6,16 @@ function status = prepFiles(filesToRead, filesToWrite, params)
 %   struct.  filesToRead and filesToWrite can be either strings (if
 %   only one file) or cell arrays of strings (if multiple files).
 %
-%   optional params fields:
-%      mkdirs - for filesToWrite, make the containing dir if it
-%               doesn't already exist
-%      overwrite - 0 if overwriting is not allowed
-%      lock - 1 to attempt to lock each file in filesToWrite
-%      ignoreLock - 1 to first remove any existing lockfiles
+%   Params:
+%     'mkdirs'     If true (default), make the containing dir if it
+%                  doesn't already exist
+%     'overwrite'  If false (default true), overwriting is not allowed
+%     'lock'       If true, (default false), attempt to lock each 
+%                  file in filesToWrite
+%     'ignoreLock' If true, (default false), first remove any 
+%                  existing lockfiles
 %
-%   output:
+%   Output:
 %      status - 0 if successful
 %               1 if problem with one of the filesToRead
 %               2 if problem with one of the filesToWrite

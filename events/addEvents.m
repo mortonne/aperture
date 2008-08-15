@@ -1,5 +1,4 @@
 function exp = addEvents(exp, eventsFile, evname, resDir)
-%
 %ADDEVENTS   Import events into an exp struct.
 %   EXP = ADDEVENTS(EXP) loads the events saved in each session
 %   directory in a file named 'events.mat', and concatenates

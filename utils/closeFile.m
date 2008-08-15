@@ -1,6 +1,5 @@
 function closeFile(filename)
-%
-%CLOSEFILE   Closes a file after processing is done.
+%CLOSEFILE   Close a file after processing is done.
 %   CLOSEFILE(FILENAME) checks if FILENAME.lock exists, and runs
 %   releaseFile on it if it does.
 %

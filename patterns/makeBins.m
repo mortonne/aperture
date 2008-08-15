@@ -1,4 +1,7 @@
 function bins = makeBins(stepSize,start,final)
+%MAKEBINS   Define the boundaries of a series of bins.
+%   BINS = MAKEBINS(STEPSIZE,START,FINAL)
+%
 	
 nbins = ceil((final-start)/stepSize);
 bins = NaN(nbins,2);

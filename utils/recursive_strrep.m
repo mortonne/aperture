@@ -1,5 +1,4 @@
 function S = recursive_strrep(S, repStr)
-%
 %RECURSIVE_STRREP   Run strrep on all strings in a structure.
 %   S = RECURSIVE_STRREP(S,REPSTR)
 %

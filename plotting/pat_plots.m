@@ -1,4 +1,4 @@
-function pat = pat_plots(pat, params, figname, title, resDir)
+function [pat,status] = pat_plots(pat, params, figname, title, resDir)
 %
 %PAT_PLOTS - manages event-related potential/power figures, plus
 %topo plots of both voltage and power
@@ -36,10 +36,15 @@ if ~exist('params','var')
   params = struct;
 end
 
+status = 1;
+
+% relative filenames make compiling reports much easier!
+cd(resDir)
+
 params = structDefaults(params, 'diff', 0,  'plotsig', 1,  'whichStat', {[], []},  'powrange', [-.3 .3],  'p_range', [0.05 0.005], 'lock', 0, 'overwrite', 1);
 
 if ~exist(fullfile(resDir, 'figs'), 'dir')
-  %mkdir(fullfile(resDir, 'figs'));
+  mkdir(fullfile(resDir, 'figs'));
 end
 
 clf reset
@@ -106,7 +111,7 @@ if ~power
     end
 
     if 1%sum(~isnan(get(h, 'YData')))>0
-      fig.file{1,c} = fullfile(resDir, 'figs', sprintf('%s_erp_%s_e%dc%d', params.patname, id,e,c));
+      fig.file{1,c} = fullfile('figs', sprintf('%s_erp_%s_e%dc%d', params.patname, id,e,c));
       print(gcf, '-depsc', fig.file{1,c});
     end
   end
@@ -126,8 +131,8 @@ elseif power
         filename = sprintf('%s_erpow_%s_e%dc%d.eps', pat.name, pat.source, e, c);
 
       end
-      fig.file{e,c} = fullfile(resDir, 'figs', filename);
-keyboard
+      fig.file{e,c} = fullfile('figs', filename);
+
       print(gcf, '-depsc', fig.file{e,c});
     end
   end

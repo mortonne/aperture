@@ -1,5 +1,4 @@
 function events = data2events(data)
-%
 %DATA2EVENTS
 %
 

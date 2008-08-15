@@ -1,17 +1,25 @@
 function [pat,inds,events,evmod] = patFilt(pat,params,events)
+%PATFILT   Filter the dimensions of a pat object.
+%   [PAT,INDS,EVENTS,EVMOD] = PATFILT(PAT,PARAMS,EVENTS) alters the
+%   the dimensions information contained in PAT, in preparation for
+%   filtering a pattern.  Options for what dimensions to filter and
+%   how are contained in the PARAMS struct.  EVENTS can optionally 
+%   be input to avoid having to reload it.
 %
-%PATBINS   Filter the dimensions of a pat object.
-%   [PAT2,INDS] = PATBINS(PAT,PARAMS) alters the dimensions information
-%   contained in PAT1, in preparation for binning a pattern.  Options for
-%   what dimensions to bin and how are contained in the PARAMS struct.
-%
-%   PAT2 is the altered pat object. inds contains information
-%   that can be passed into PATMEANS to carry out binning of a pattern.
+%   INDS gives a cell array of the indices required to reference 
+%   the pattern and carry out the filtering.
+%   
 %   EVENTS, an altered events struct, will also be output if the events
-%   dimension has been changed.
+%   dimension has been altered or it was part of the input.  EVMOD
+%   is true if the events dimension was altered, otherwise false.
 %
-%   See EVENTBINS, CHANBINS, TIMEBINS, and FREQBINS for options for each
-%   dimension.
+%   Example:
+%    params = struct('eventFilter','strcmp(type,''WORD'')');
+%    [pat,inds] = patFilt(pat,params);
+%    pattern = loadPat(pat);
+%    pattern = pattern(inds{:});
+%
+%   See also modify_pats, patBins, patMeans.
 %
 
 params = structDefaults(params,  'eventFilter', '',  'chanFilter', '',  'timeFilter', '',  'freqFilter', '');

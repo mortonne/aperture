@@ -1,5 +1,4 @@
 function S = recursive_rmfield(S, vars)
-%
 %RECURSIVE_RMFIELD   Remove a field from a nested structure.
 %   S = RECURSIVE_RMFIELD(S,VARS)
 %

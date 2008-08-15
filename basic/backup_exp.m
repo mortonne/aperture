@@ -1,5 +1,4 @@
 function exp = backup_exp(exp,bkdir)
-%
 %BACKUP_EXP   Make a timestamped backup of the exp struct.
 %   EXP = BACKUP_EXP(EXP) saves a copy of exp in 
 %   exp.resDir/exp_bk/exp_TIMESTAMP.mat.  The returned EXP has

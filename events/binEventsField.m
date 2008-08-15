@@ -1,5 +1,4 @@
 function field = binEventsField(events, bins)
-%
 %BINEVENTSFIELD   Bin an existing events field to make a new one.
 %   FIELD = BINEVENTSFIELD(EVENTS,BINS) where BINS is the name of
 %   one of the fields in EVENTS, is the same as FIELD =      

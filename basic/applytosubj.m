@@ -11,8 +11,6 @@ function exp = applytosubj(exp,objtype,objname,varargin)
 %     exp = applytosubj(exp,'pat','voltage',@myfunction,{arg1,arg2,arg3})
 %
 
-%Created by Neal Morton on 2008-08-04.
-
 for subj=exp.subj
   fprintf('\n%s\n', subj.id)
   running = 1;
@@ -43,17 +41,16 @@ for subj=exp.subj
     fprintf('Running %s...', func2str(objmodfcn))
     
     % eval the function, using the object and the cell array of inputs
-    obj = objmodfcn(obj, inputs{:});
+    [obj,err] = objmodfcn(obj, inputs{:});
     
-    if isempty(obj)
+    if err>1
       % this subject failed; may be locked
-      fprintf('Skipping %s...\n', subj.id)
-      running = 0;
+      fprintf('skipping %s...\n', subj.id)
       break
     end
   end
   
-  if ~running
+  if err>1
     continue
   end
   
