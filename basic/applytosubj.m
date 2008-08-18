@@ -11,14 +11,16 @@ function exp = applytosubj(exp,objtype,objname,varargin)
 %     exp = applytosubj(exp,'pat','voltage',@myfunction,{arg1,arg2,arg3})
 %
 
-for subj=exp.subj
+for s=1:length(exp.subj)
+  subj = exp.subj(s);
   fprintf('\n%s\n', subj.id)
   running = 1;
   
   % get the pat to modify
   obj = getobj(subj, objtype, objname);
   if isempty(obj)
-    error('%s object %s not found.', objtype, objname)
+    warning('%s object %s not found.', objtype, objname)
+    continue
   end
   
   obj.source = subj.id;
@@ -54,6 +56,7 @@ for subj=exp.subj
     continue
   end
   
-  % update the exp struct with the new pat object
-  exp = update_exp(exp, 'subj', subj.id, objtype, obj);
+  exp.subj(s) = setobj(exp.subj(s),objtype,obj);
 end
+
+exp = update_exp(exp);
