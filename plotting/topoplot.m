@@ -1,24 +1,24 @@
-function h = topoplot(values, plotParams)
-%h = topoplot(values, plotParams)
+function h = topoplot(values, params)
+%h = topoplot(values, params)
 %
 %TOPOPLOT - makes headplots from a vector, with views specified in
-%plotParams.  Output is a vector of figure handles corresponding to
+%params.  Output is a vector of figure handles corresponding to
 %each view.
 
 
 if nargin<2
-  plotParams = [];
+  params = [];
 end
 
-plotParams = structDefaults(plotParams,  'pRange', [],  'splinefile', '~/eeg/GSN129_splines',  'views', {[280 35],[80 35]},  'elecLabel', 0,  'skipelec', []);
+params = structDefaults(params,  'pRange', [],  'splinefile', '~/eeg/GSN129_splines',  'views', {[280 35],[80 35]},  'elecLabel', 0,  'skipelec', []);
 
-if ~exist(plotParams.splinefile,'file')
+if ~exist(params.splinefile,'file')
   error('Spline file does not exist')
 end
 
-if ~isempty(plotParams.pRange)
+if ~isempty(params.pRange)
   sigVals = 1;
-  p_range = plotParams.pRange;
+  p_range = params.pRange;
 else
   sigVals = 0;
 end
@@ -81,11 +81,11 @@ end
 values(chans_to_remove) = mean(maplimits);
 
 fig = 1;
-for v=1:length(plotParams.views)
+for v=1:length(params.views)
   figure(fig)
   clf reset
   
-  headplot_mod(values, plotParams.splinefile, 'maplimits', maplimits, 'view', plotParams.views{v}, 'elec_noplot', chans_to_remove, 'colormap', map, 'labels', plotParams.elecLabel);
+  headplot_mod(values, params.splinefile, 'maplimits', maplimits, 'view', params.views{v}, 'elec_noplot', chans_to_remove, 'colormap', map, 'labels', params.elecLabel);
   h(v) = gcf;
   
   fig = fig + 1;

@@ -1,4 +1,4 @@
-function ev = modify_events(ev,params,evname,resDir)
+function [ev,status] = modify_events(ev,params,evname,resDir)
 %MODIFY_EVENTS
 %
 
@@ -13,6 +13,7 @@ if ~exist('evname','var') || isempty(evname)
   evname = [ev.name '_mod'];
 end
 
+status = 0;
 oldev = ev;
 
 % initialize the new ev object
@@ -23,7 +24,7 @@ end
 
 % check the input and output
 if prepFiles(oldev.file, ev.file, params)~=0
-  ev = [];
+  status = 1;
   return
 end
 

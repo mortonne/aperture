@@ -1,16 +1,16 @@
 function fig = init_fig(name, figtype, file, params)
 %fig = init_fig(name, figtype, file, params)
 
-if ~exist('name', 'var')
+if ~exist('name','var')
   name = '';
 end
-if ~exist('type', 'var')
+if ~exist('type','var')
   type = '';
 end
-if ~exist('file', 'var')
+if ~exist('file','var')
   file = '';
 end
-if ~exist('params', 'var')
+if ~exist('params','var')
   params = struct();
 end
 

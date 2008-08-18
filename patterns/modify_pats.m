@@ -34,6 +34,7 @@ if ~strcmp(oldpat.name, patname)
 end
 
 pat = init_pat(patname,patfile,oldpat.source,combineStructs(params,oldpat.params),oldpat.dim);
+pat.stat = oldpat.stat;
 
 % check input files and prepare output files
 if prepFiles(oldpat.file, pat.file, params)~=0

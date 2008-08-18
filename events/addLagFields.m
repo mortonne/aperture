@@ -1,5 +1,4 @@
 function ev = addLagFields(ev, param, evname)
-%
 %ADDLAGFIELDS   Adds subsequent-clustering related fields to events.
 %   EXP = ADDLAGFIELDS(EXP,PARAM,EVNAME)
 

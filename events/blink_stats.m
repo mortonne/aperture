@@ -1,24 +1,28 @@
-function ev = blink_stats(ev, params)
-%BLINK_STATS - get info from events structs about blink artifacts
+function [ev,status] = blink_stats(ev, params)
+%BLINK_STATS   Get information from an events struct about artifacts.
+%   EV = BLINK_STATS(EV,PARAMS) loads the events from EV and calculates
+%   statistics having to do with artifacts.  The returned EV has a new
+%   field, "blinks," that gives the percentage of events with artifacts.
 %
-% FUNCTION: blink_stats(exp, params)
+%   Params:
+%     'eventFilter' Filter to apply to the events before calculating
+%                   blink percentage
+%     'windowEnd'   Can either be a scalar denoting a time in milliseconds
+%                   after each event to look for artifacts, or a string
+%                   containing the name of a field that has a millisecond
+%                   value for each event
 %
-% INPUT: exp - struct created by init_iEEG or init_scalp
-%        params - optional fields: evname (specify which ev object
-%                 to use; default is 'events'), eventFilter (specify subset of
-%                 events to use), windowEnd (ms time to end window
-%                 in which to look for artifacts, or string
-%                 specifying a field containing an ms time to use
-%                 as the end window)
+%   Example:
+%    To only count blinks that happened before the partcipant reacted:
+%    ev = blink_stats(ev,struct('windowEnd','rt'));
 %
-% OUTPUT: printed blink stats for each subject
-% 
 
 if ~exist('params', 'var')
   params = [];
 end
 
-params = structDefaults(params, 'evname', 'events',  'eventFilter', '',  'windowEnd', 2000);
+params = structDefaults(params, 'eventFilter', '',  'windowEnd', 2000);
+status = 0;
 
 load(ev.file);
 

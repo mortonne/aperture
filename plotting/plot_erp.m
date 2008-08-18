@@ -1,5 +1,4 @@
 function h = plot_erp(timeMS, erp1, erp2, p)
-%
 %PLOT_ERP   Plot one or more ERPs, with or without significance.
 %   H = PLOT_ERP(TIMEMS, ERP) creates a plot of voltage values in
 %   ERP for times in vector TIMEMS, and returns handle H to the figure.
@@ -10,7 +9,6 @@ function h = plot_erp(timeMS, erp1, erp2, p)
 %   H = PLOT_ERP(TIMEMS, ERP1, ERP2, P) plots two ERPs and shades
 %   in regions for which there is a significant difference.
 %
-
 
 if isempty(timeMS)
   timeMS = 1:length(erp1);

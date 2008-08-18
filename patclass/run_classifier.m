@@ -1,7 +1,6 @@
 function [class,err,posterior] = run_classifier(trainpat,trainreg,testpat,testreg,classifier,params)
-%
 %RUN_CLASSIFIER   Train and test a classifier using standard data formats.
-%   
+% 
 %run_classifier(trainpat, trainreg, testpat, testreg)
 %
 % patterns should be observations X variables.
@@ -53,7 +52,6 @@ switch classifier
 
 	otherwise
 	error('Error:unknown classifier.')
-
 end
 
 
