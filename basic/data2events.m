@@ -1,6 +1,6 @@
 function events = data2events(data)
 %DATA2EVENTS
-%
+%   EVENTS = DATA2EVENTS(DATA)
 
 fnames = fieldnames(data);
 for i=1:length(fnames)

@@ -1,4 +1,4 @@
-function pat = modify_pats(pat, params, patname, resDir)
+function [pat,eid] = modify_pats(pat, params, patname, resDir)
 %MODIFY_PATS   Modify existing patterns.
 %   PAT = MODIFY_PATS(PAT,PARAMS,PATNAME,RESDIR) modifies PAT using 
 %   options in the PARAMS struct.  New patterns are saved in RESDIR/patterns.
@@ -34,11 +34,13 @@ if ~strcmp(oldpat.name, patname)
 end
 
 pat = init_pat(patname,patfile,oldpat.source,combineStructs(params,oldpat.params),oldpat.dim);
-pat.stat = oldpat.stat;
+if isfield(oldpat,'stat')
+  pat.stat = oldpat.stat;
+end
 
 % check input files and prepare output files
-if prepFiles(oldpat.file, pat.file, params)~=0
-  pat = [];
+eid = prepFiles(oldpat.file, pat.file, params);
+if eid
   return
 end
 

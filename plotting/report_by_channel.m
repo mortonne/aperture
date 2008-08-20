@@ -1,21 +1,28 @@
-function report_by_channel(chan,fig,filename,header,title,compile,resDir)
+function report_by_channel(chan,fig,file,header,title,compile)
 %REPORT_BY_CHANNEL   Create a PDF report with one row per channel.
-%   REPORT_BY_CHANNEL(CHAN,FIG,FILENAME,HEADER,TITLE,COMPILE,RESDIR)
+%   REPORT_BY_CHANNEL(CHAN,FIG,FILE,HEADER,TITLE,COMPILE)
 %   gets channel information from the CHAN struct, and figure filenames
 %   from the FIG struct, and creates a PDF report.  FIG can be a vector
 %   structure; each fig makes one column in the report.
 %
-%   FILENAME sets the name of the PDF file.  HEADER is a cell array that
+%   FILE indicates where to save the PDF file.  HEADER is a cell array that
 %   determines the text above each column, while TITLE is a string giving
 %   the title of the report.  If COMPILE is true (default is false), 
-%   the program will attempt to compile the .tex file.  RESDIR determines
-%   the directory the file will be saved in; default is the parent directory
-%   of the first fig.
+%   the program will attempt to compile the .tex file.
+%
+%   If figure filenames are relative (i.e. do not begin with '~' or '/'),
+%   '../' is prepended to each figure filename so the report's LaTeX code 
+%   knows to exit the "reports" directory.
 %
 
-% default filename
-if ~exist('filename','var') || isempty(filename)
-  filename = 'channel_report';
+% check the output file
+if ~exist('file','var') || isempty(file)
+  error('report_by_channel: you must specify a file to save the report in.')
+end
+% if this is an absolute path, make sure the parent directory exists
+[parentdir,fname] = fileparts(file);
+if ~isempty(parentdir) & ~exist(parentdir,'dir')
+  mkdir(parentdir);
 end
 
 % default header is empty
@@ -24,8 +31,7 @@ if ~exist('header','var') || isempty(header)
   for i=1:length(header)
     header{i} = '';
   end
-end
-if ~iscell(header)
+elseif ~iscell(header)
   header = {header};
 end
 if ~exist('title', 'var')
@@ -33,15 +39,6 @@ if ~exist('title', 'var')
 end
 if ~exist('compile', 'var')
 	compile = 0;
-end
-% default results directory is the main dir for the first fig
-if ~exist('resDir','var')
-  [resDir,f] = fileparts(fileparts(fig.file{1}));
-end
-
-% set up the reports directory
-if ~exist(fullfile(resDir,'reports'),'dir')
-  mkdir(fullfile(resDir,'reports'));
 end
 
 % set up table header
@@ -69,20 +66,21 @@ for c=1:length(chan)
   end
   
   % channel region
-  table{c,n} = sprintf('\\raisebox{%f\\textwidth}{%s}', raise, chan(c).region);
+  table{c,n} = sprintf('\\raisebox{%f\\textwidth}{%s}', raise, chan(c).label);
   n = n + 1;
   
   % input the figures
   for i=1:length(fig)
     for e=1:size(fig(i).file,1)
-      table{c,n} = sprintf('\\includegraphics[width=%f\\textwidth]{%s}', figsize, ['../' fig(i).file{e,c}]);
+      file = fig(i).file{e,c};
+      if ~ismember(file(1), {'/', '~'}) % must be relative filename
+        file = ['../' file];
+      end
+      table{c,n} = sprintf('\\includegraphics[width=%f\\textwidth]{%s}', figsize, file);
       n = n + 1;
     end
   end
 end
 
-% set the filename of the report
-reportfile = fullfile(resDir,'reports',filename);
-
-% create a latex file for the report
-longtable(table, fullheader, reportfile, title, compile);
+% create a latex file for the report, attempt to compile
+longtable(table, fullheader, file, title, compile);

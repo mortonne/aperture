@@ -32,6 +32,10 @@ load(oldev.file);
 
 events = filterStruct(events, params.eventFilter);
 
+if isfield(params,'evmodfcn')
+  events = params.evmodfcn(events,params.evmodinput{:});
+end
+
 %{
 for i=1:2:length(varargin)
   % get the function to evaluate

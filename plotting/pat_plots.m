@@ -1,9 +1,9 @@
-function [pat,status] = pat_plots(pat, params, figname, title, resDir)
+function [pat,status] = pat_plots(pat, params, figname, resDir)
 %
 %PAT_PLOTS - manages event-related potential/power figures, plus
 %topo plots of both voltage and power
 %
-% FUNCTION: exp = pat_plots(exp, params, figname, title, resDir)
+% FUNCTION: exp = pat_plots(exp, params, figname, resDir)
 %
 % INPUT: exp - struct created by init_iEEG or init_scalp
 %        params - required fields: patname (specifies the name of
@@ -29,9 +29,6 @@ end
 if ~exist('figname', 'var')
   figname = 'plots';
 end
-if ~exist('title', 'var')
-  title = 'plots';
-end
 if ~exist('params','var')
   params = struct;
 end
@@ -41,7 +38,7 @@ status = 1;
 % relative filenames make compiling reports much easier!
 cd(resDir)
 
-params = structDefaults(params, 'diff', 0,  'plotsig', 1,  'whichStat', {[], []},  'powrange', [-.3 .3],  'p_range', [0.05 0.005], 'lock', 0, 'overwrite', 1);
+params = structDefaults(params, 'diff', 0,  'plotsig', 1,  'whichStat', {[], []},  'powrange', [-.3 .3],  'p_range', [0.05 0.005], 'printinput', '-depsc', 'lock', 0, 'overwrite', 1);
 
 if ~exist(fullfile(resDir, 'figs'), 'dir')
   mkdir(fullfile(resDir, 'figs'));
@@ -112,7 +109,7 @@ if ~power
 
     if 1%sum(~isnan(get(h, 'YData')))>0
       fig.file{1,c} = fullfile('figs', sprintf('%s_erp_%s_e%dc%d', params.patname, id,e,c));
-      print(gcf, '-depsc', fig.file{1,c});
+      print(gcf, params.printinput, fig.file{1,c});
     end
   end
 
@@ -125,15 +122,15 @@ elseif power
       if params.plotsig
 
         h = plot_pow_sig(shiftdim(pattern(e,c,:,:),2)', pat.dim, params.p_range);
-        filename = sprintf('%s_erpow_sig_%s_e%dc%d.eps', pat.name, pat.source, e, c);
+        filename = sprintf('%s_erpow_sig_%s_e%dc%d', pat.name, pat.source, e, c);
       else
         h = plot_pow(shiftdim(pattern(e,c,:,:),2)', pat.dim, params.powrange);
-        filename = sprintf('%s_erpow_%s_e%dc%d.eps', pat.name, pat.source, e, c);
+        filename = sprintf('%s_erpow_%s_e%dc%d', pat.name, pat.source, e, c);
 
       end
       fig.file{e,c} = fullfile('figs', filename);
 
-      print(gcf, '-depsc', fig.file{e,c});
+      print(gcf, params.printinput, fig.file{e,c});
     end
   end
 end

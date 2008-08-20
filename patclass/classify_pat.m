@@ -41,7 +41,7 @@ if ~isfield(params, 'selector')
 end
 
 params = structDefaults(params, 'classifier','classify', 'nComp',[], 'scramble',0, 'lock',0, 'overwrite',1, 'loadSingles',1, 'select_test',1);
-disp(params)
+
 status = 0;
 
 % set where the results will be saved

@@ -25,18 +25,7 @@ function eeg = pat_topoplots(eeg, params, resDir, figname)
 % saved in pat.figs
 %
 
-if ~isfield(params, 'patname')
-  error('You must specify which pattern to use')
-end
-
-params = structDefaults(params, 'diff', 0,  'across_subj', 0);
-
-if ~isfield(params, 'subjects')
-  params.subjects = getStructField(eeg.subj, 'id');
-end
-if params.across_subj
-  params.subjects = [params.subjects 'across_subj'];
-end
+params = structDefaults(params, 'diff', 0);
 
 if ~exist(fullfile(resDir, 'figs'), 'dir')
   mkdir(fullfile(resDir, 'figs'))
@@ -44,49 +33,29 @@ end
 
 clf reset
 
-for i=1:length(params.subjects)
+pattern = loadPat(pat, params);
 
-  % get the pat object, load pattern
-  if strcmp(params.subjects{i}, 'across_subj')
-    id = 'across_subj';
-    pat = getobj(eeg, 'pat', params.patname);
-  else
-    s = find(inStruct(eeg.subj, 'strcmp(id, varargin{1})', params.subjects{i}));
-    id = eeg.subj(s).id;
-    pat = getobj(eeg.subj(s), 'pat', params.patname);
-  end
-  pattern = loadPat(pat, params, 0);
-  
-  fig.name = figname;
-  fig.type = 'topo';
-  fig.file = {};
-  fig.params = params;
-  
-  if params.diff & size(pattern,1)==2
-    pattern = pattern(2,:,:,:)-pattern(1,:,:,:);
-  end
+fig.name = figname;
+fig.type = 'topo';
+fig.file = {};
+fig.params = params;
 
-  for e=1:size(pattern,1)
-    for t=1:size(pattern,3)
-      for f=1:size(pattern,4)
-	
-	h = topoplot(squeeze(pattern(e,:,t,f)), params);
-	for v=1:length(h)
-	  fig.file{e,v,t,f} = fullfile(resDir, 'figs', [params.patname '_topo_' id 'e' num2str(e) 'v' num2str(v) 't' num2str(t) 'f' num2str(f) '.eps']);
-	  print(h(v), '-depsc', '-r100', fig.file{e,v,t,f});
-	end
+if params.diff & size(pattern,1)==2
+  pattern = pattern(2,:,:,:)-pattern(1,:,:,:);
+end
+
+for e=1:size(pattern,1)
+  for t=1:size(pattern,3)
+    for f=1:size(pattern,4)
+
+      h = topoplot(squeeze(pattern(e,:,t,f)), params);
+      for v=1:length(h)
+        fig.file{e,v,t,f} = fullfile(resDir, 'figs', [params.patname '_topo_' id 'e' num2str(e) 'v' num2str(v) 't' num2str(t) 'f' num2str(f) '.eps']);
+        print(h(v), '-depsc', '-r100', fig.file{e,v,t,f});
       end
     end
-    
-  end
-  
-  pat = setobj(pat, 'fig', fig);
-  
-  % update exp with filenames of the new figures
-  if strcmp(id, 'across_subj')
-    exp = update_exp(exp, 'pat', pat);
-  else
-    exp = update_exp(exp, 'subj', exp.subj(s).id, 'pat', pat);
   end
 
 end
+
+pat = setobj(pat, 'fig', fig);

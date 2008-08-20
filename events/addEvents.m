@@ -26,8 +26,12 @@ end
 if ~exist('eventsFile', 'var')
   eventsFile = 'events.mat';
 end
+if ~isfield(exp.subj, 'ev')
+  [exp.subj.ev] = deal([]);
+end
 
-for subj=exp.subj
+for s=1:length(exp.subj)
+  subj = exp.subj(s);
   fprintf('Concatenating events for %s...\n', subj.id);
   
   % init the ev object
@@ -64,5 +68,8 @@ for subj=exp.subj
   ev.len = length(events);
 
   % add the ev object to the exp struct
-  exp = update_exp(exp, 'subj', subj.id, 'ev', ev);
+  exp.subj(s) = setobj(exp.subj(s),'ev',ev);
 end
+
+% update exp
+exp = update_exp(exp);
