@@ -1,0 +1,29 @@
+Stats:
+pat_rm_anova: only does 2-way
+develop run_classifier-type script that can run various statistics, which can be called by one pat_stats function
+should we make run_anovan a serious script?
+
+Plotting:
+pat_plots: is there a simpler way?
+plot_pow_sig: pick one format for p-values and stick with it, or come with system to deal with different types
+also double-check significance color maps
+spline files for the new caps!
+consider beefing up plot_events.  it's pretty sick and very unique
+it'd be nice if the plotting scripts worked.
+
+Patclass
+write new classify_pat2pat!
+more classifiers, general section to give access to all MVPA functions, Sean's correlation-based classifier
+
+Patterns:
+cat_pats can only do the channel dimension
+saving as and processing patterns as slices
+is expandDim general enough to be included?
+
+Events:
+do we need catallevents?
+
+General:
+check feasibility of cross-experiment analyses (running Per's SME-serial position interaction analysis on all LTP FR experiments)
+user-friendly script to generate basic ERPs for a subject, create PDF report
+check reporting scripts for generality

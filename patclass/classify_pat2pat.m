@@ -142,15 +142,20 @@ for s=1:length(exp.subj)
     trainpat(:,toRemove) = [];
     testpat(:,toRemove) = [];
 
-    % run classification algorithms
-    [class(t,:),err,posterior(t,:,:)] = run_classifier(trainpat,trainreg.vec,testpat,testreg.vec,params.classifier,params);
+    try
+      % run classification algorithms
+      [class(t,:),err,posterior(t,:,:)] = run_classifier(trainpat,trainreg.vec,testpat,testreg.vec,params.classifier,params);
+      catch
+      warning('Error in run_classifier.')
+      continue
+    end
 
     % check the performance
     pcorr(t) = sum(testreg.vec==class(t,:))/length(testreg.vec);
     fprintf('%.4f\n', pcorr(t))
   end
 
-  meanpcorr = mean(pcorr);
+  meanpcorr = nanmean(pcorr);
   allsubjpcorr(s,:) = pcorr;
   [h,p] = ttest(pcorr,1/nCats,alpha,'right');
   fprintf('Mean: %.4f\n', meanpcorr)
@@ -168,7 +173,7 @@ if ~exist('allsubjpcorr','var')
   return
 end
 
-gapcorr = mean(allsubjpcorr,1);
+gapcorr = nanmean(allsubjpcorr,1);
 [h,p] = ttest(allsubjpcorr,1/nCats,alpha,'right');
 fprintf('\nOverall:\n')
 for t=1:length(pat2.dim.time)
