@@ -50,6 +50,10 @@ switch classifier
 
 	[class,err,posterior] = classify(testpat, trainpat, trainreg, params.type);
 
+        case 'correlation'
+	[class,posterior] = corr_class(testpat,trainpat,trainreg); 
+  
+	
 	otherwise
 	error('Error:unknown classifier.')
 end
