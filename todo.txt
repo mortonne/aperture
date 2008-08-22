@@ -9,11 +9,10 @@ plot_pow_sig: pick one format for p-values and stick with it, or come with syste
 also double-check significance color maps
 spline files for the new caps!
 consider beefing up plot_events.  it's pretty sick and very unique
-it'd be nice if the plotting scripts worked.
 
-Patclass
-write new classify_pat2pat!
+Patclass:
 more classifiers, general section to give access to all MVPA functions, Sean's correlation-based classifier
+support for classifying each time-frequency bin separately
 
 Patterns:
 cat_pats can only do the channel dimension
