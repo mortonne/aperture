@@ -12,7 +12,7 @@ function [pat,eid] = modify_pats(pat, params, patname, resDir)
 %
 
 if ~exist('resDir','var')
-  resDir = fileparts(fileparts(pat.file));
+  resDir = fullfile(fileparts(fileparts(fileparts(pat.file))),patname);
 end
 if ~exist('patname','var')
   patname = [pat.name '_mod'];
@@ -21,14 +21,14 @@ if ~exist('params','var')
   params = struct;
 end
 
-params = structDefaults(params, 'nComp',[]);
+params = structDefaults(params, 'nComp',[], 'overwrite',0, 'lock',0);
 
 oldpat = pat;
 
 % initialize the new pat object
 if ~strcmp(oldpat.name, patname)
   % if the patname is different, save the pattern to a new file
-  patfile = fullfile(resDir, 'patterns', sprintf('%s_%s.mat', pat.source, patname));
+  patfile = fullfile(resDir, 'patterns', objfilename('pattern', patname, pat.source));
   else
   patfile = oldpat.file;
 end
@@ -58,7 +58,7 @@ pattern = patMeans(pattern, patbins);
 if ~isempty(params.nComp)
   % run PCA on the pattern
   [pat, pattern, coeff] = patPCA(pat, params, pattern);
-  coeffFile = fullfile(resDir, 'patterns', sprintf('%s_%s_coeff.mat', pat.source, patname));
+  coeffFile = fullfile(resDir, 'patterns', objfilename('coeff', patname, pat.source));
   pat.dim.coeff = coeffFile;
   save(pat.dim.coeff, 'coeff');
 end
@@ -71,7 +71,7 @@ if any(evmod)
   end
 
   % we need to save a new events struct
-  pat.dim.ev.file = fullfile(resDir, 'events', sprintf('%s_%s_events.mat', pat.source, patname));
+  pat.dim.ev.file = fullfile(resDir, 'events', objfilename('events', patname, pat.source));  
   save(pat.dim.ev.file, 'events');
 end
 

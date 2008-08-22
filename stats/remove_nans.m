@@ -5,10 +5,10 @@ function [mat,goodind] = remove_nans(mat)
 % returns changed matrix and indices of variables that had at least one data point
 %
 
-goodind = find(sum(~isnan(mat)));
+%goodind = find(sum(~isnan(mat)));
 
 % remove vars that are all nans
-mat = mat(:,goodind);
+%mat = mat(:,goodind);
 
 % replace remaining nans with the mean for that var across observations
 varmeans = nanmean(mat);

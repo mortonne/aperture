@@ -47,7 +47,7 @@ events = combineStructs(dim{1}(ind(:,1)), dim{2}(ind(:,2)));
 
 % abandoning generality
 pat.dim.time = init_time();
-pat.dim.ev.file = fullfile(resDir, 'events', sprintf('%s_%s_events.mat', pat.source, patname));
+pat.dim.ev.file = fullfile(resDir, 'events', objfilename('events', patname, pat.source));
 pat.dim.ev.len = length(events);
 
 prepFiles({},pat.dim.ev.file);
@@ -65,7 +65,7 @@ end
 if ~strcmp(pat.name, patname)
   % if the patname is different, save the pattern to a new file
   pat.name = patname;
-  pat.file = fullfile(resDir, 'patterns', sprintf('%s_%s.mat', pat.source, patname));
+  pat.file = fullfile(resDir, 'patterns', objfilename('pattern', patname, pat.source));
 end
 
 prepFiles({},pat.file);

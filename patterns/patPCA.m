@@ -36,7 +36,7 @@ if ~isempty(params.nComp)
 	fprintf('getting first %d principal components...\n', params.nComp)
 	% get principal components
 	[coeff,pattern] = princomp(pattern,'econ');
-	coeff = coeff(1:params.nComp,1:params.nComp);
+	%coeff = coeff(1:params.nComp,1:params.nComp);
 	pattern = pattern(:,1:params.nComp);
 end
 

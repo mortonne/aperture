@@ -1,9 +1,23 @@
-function [ev,status] = modify_events(ev,params,evname,resDir)
-%MODIFY_EVENTS
+function [ev,err] = modify_events(ev,params,evname,resDir)
+%MODIFY_EVENTS   Make changes to an ev object and the corresponding events.
+%   EV = MODIFY_EVENTS(EV,PARAMS,EVNAME,RESDIR) modifies EV according to
+%   options in the PARAMS struct. If EVNAME is different than EV.name,
+%   modified events will be saved in a new file. RESDIR specifies where
+%   the new events will be saved.
+%
+%    Params:
+%     'eventFilter' String to be passed into filterEvents to filter the
+%                   events struct
+%     'evmodfcn'    Handle to a function that modifies events. The first
+%                   input argument and first output argument should be
+%                   events. This will be run after the eventFilter has
+%                   been applied
+%     'evmodinput'  Cell array of optional additional inputs to 
+%                   params.evmodfcn
 %
 
 if isstruct(params)
-  params = structDefaults(params, 'eventFilter','', 'overwrite',0);
+  params = structDefaults(params, 'eventFilter','', 'evmodfcn',[], 'evmodinput',[], 'overwrite',0);
 end
 
 if ~exist('resDir','var')
@@ -13,7 +27,6 @@ if ~exist('evname','var') || isempty(evname)
   evname = [ev.name '_mod'];
 end
 
-status = 0;
 oldev = ev;
 
 % initialize the new ev object
@@ -23,8 +36,8 @@ if ~strcmp(oldev.name,evname)
 end
 
 % check the input and output
-if prepFiles(oldev.file, ev.file, params)~=0
-  status = 1;
+err = prepFiles(oldev.file, ev.file, params);
+if err
   return
 end
 
@@ -36,34 +49,8 @@ if isfield(params,'evmodfcn')
   events = params.evmodfcn(events,params.evmodinput{:});
 end
 
-%{
-for i=1:2:length(varargin)
-  % get the function to evaluate
-  evmodfcn = varargin{i};
-  
-  % get other inputs, if there are any
-  if i<length(varargin)
-    inputs = varargin{i+1};
-    if ~iscell(inputs)
-      inputs = {inputs};
-    end
-    else
-    inputs = {};
-  end
-  
-  fprintf('Running %s...', func2str(evmodfcn))
-  
-  % eval the function, using the object and the cell array of inputs
-  events = evmodfcn(events, inputs{:});
-  
-  if isempty(events)
-    % this subject failed; may be locked
-    error('Function %s returned empty events.', func2str(evmodfcn))
-  end
-end
-%}
-
 % update the number of events
 ev.len = length(events);
+
 % save
 save(ev.file, 'events');

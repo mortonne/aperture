@@ -266,7 +266,7 @@ if ~isempty(params.MSbins)
     if ~isempty(params.MSbinlabels)
       time2(t).label = params.MSbinlabels{t};
     else
-      time2(t).label = sprintf('%d to %d ms', time2(t).MSvals(1), time2(t).MSvals(end));
+      time2(t).label = sprintf('%d to %d ms', fix(time2(t).MSvals(1)), fix(time2(t).MSvals(end)));
     end
   end
 	

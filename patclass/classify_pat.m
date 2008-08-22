@@ -6,11 +6,11 @@ function [pat,eid] = classify_pat(pat, params, pcname, resDir)
 %   named PCNAME, and saved in RESDIR/patclass.
 %
 %   Params:
-%     'regressor'   Specifies what to use as a regressor. Is input
-%                   to binEventsField to make the regressor
-%     'selector'    Also input to binEventsField; specifies the
-%                   scale with which the leave-one-out scheme is
-%                   applied
+%     'regressor'   REQUIRED - Specifies what to use as a regressor. 
+%                   Is input to binEventsField to make the regressor
+%     'selector'    REQUIRED - Also input to binEventsField; 
+%                   specifies the scale with which the leave-one-out 
+%                   scheme is applied
 %     'classifier'  Indicates the classifier to use
 %                   (default: 'classify'). See run_classifier for
 %                   available classifiers and options

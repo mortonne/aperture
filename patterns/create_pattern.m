@@ -4,7 +4,7 @@ function exp = create_pattern(exp, fcnhandle, params, patname, resDir)
 %   a pattern for each subject in EXP.  FCNHANDLE creates the pattern
 %   for each session; it should take pat, bins, events for a session, 
 %   baseline events for the session, and output a pattern with
-%   dimensions eventsXchannelsXtime(Xfrequency).
+%   dimensions events X channels X time (X frequency).
 %
 %   PARAMS is a structure that specifies options about how the pattern
 %   should be created.  The pattern will be named PATNAME, and saved in
@@ -34,7 +34,10 @@ function exp = create_pattern(exp, fcnhandle, params, patname, resDir)
 %                       already exists for a subject, that subject will be
 %                       skipped
 %     'updateOnly'      If true (default is false), patterns will not be
-%                       created, but exp will be updated with pat objects
+%                       created, but exp will be updated with pat objects.
+%                       This is useful if there were problems running
+%                       subjects in parallel, and patterns were created
+%                       but exp was not updated with metadata
 %
 %     Params also holds options specific to the particular pattern-
 %     creation function that is used.
@@ -102,14 +105,9 @@ for subj=exp.subj
 	pat = init_pat(patname, patfile, subj.id, params, ev, subj.chan, time, freq);
 
 	% do filtering/binning
-	%try
-		[pat,inds,src_events,evmod(1)] = patFilt(pat,params,src_events);
-		pat.params.channels = [pat.dim.chan.number];
-		[pat,bins,events,evmod(2)] = patBins(pat,params,src_events);
-		%catch
-		%warning('Filtering/binning problem with %s.', subj.id);
-		%continue
-	%end
+  [pat,inds,src_events,evmod(1)] = patFilt(pat,params,src_events);
+  pat.params.channels = [pat.dim.chan.number];
+  [pat,bins,events,evmod(2)] = patBins(pat,params,src_events);
 	
 	if any(evmod)
 		% change the events name and file
@@ -146,7 +144,7 @@ for subj=exp.subj
 
 		% make the pattern for this session
 		pattern(sessInd,:,:,:) = fcnhandle(pat, bins, sess_events, sess_base_events);
-
+		
 	end % session
 	fprintf('\n');
 

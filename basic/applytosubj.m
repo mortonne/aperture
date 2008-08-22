@@ -4,7 +4,8 @@ function exp = applytosubj(exp,objtype,objname,varargin)
 %   of type OBJTYPE and name OBJNAME from each subject, and passes
 %   it into one or more functions.  Functions are specified by
 %   function handle, input argument cell array pairs.  The first input
-%   into each function will be the object.
+%   into each function will be the object.  After each function has
+%   been run, setobj is used to add the object onto subj.
 %
 %   Example
 %     To apply myfunction to each subject's voltage pattern:
@@ -58,5 +59,6 @@ for s=1:length(exp.subj)
   
   exp.subj(s) = setobj(exp.subj(s),objtype,obj);
 end
+fprintf('\n')
 
 exp = update_exp(exp);
