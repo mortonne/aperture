@@ -16,7 +16,7 @@ for s=1:length(exp.subj)
   ev = getobj(exp.subj(s), 'ev', evname);
   load(ev.file);
   
-  subj_data = dataFcnHandle(events);
+  subj_data = dataFcnHandle(events,s);
   
   data = concatData(data, subj_data);
 end

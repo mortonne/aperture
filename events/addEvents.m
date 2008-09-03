@@ -30,9 +30,9 @@ if ~isfield(exp.subj, 'ev')
   [exp.subj.ev] = deal([]);
 end
 
-for s=1:length(exp.subj)
-  subj = exp.subj(s);
-  fprintf('Concatenating events for %s...\n', subj.id);
+fprintf('Concatenating session events...\n')
+for subj=exp.subj
+  fprintf('%s:\t', subj.id);
   
   % init the ev object
   ev.name = evname;
@@ -41,6 +41,7 @@ for s=1:length(exp.subj)
   % concatenate all sessions
   subj_events = [];
   for sess=subj.sess
+    fprintf('%d\t', sess.number)
     % load the events struct for this session
     load(fullfile(sess.dir, eventsFile));
     
@@ -53,7 +54,7 @@ for s=1:length(exp.subj)
     
     subj_events = [subj_events(:); events(:)]';
   end
-  
+
   % if no sessions had eeg fields, assume this is a behavioral experiment
   if isempty(unique(getStructField(events, 'eegfile')))
     events = rmfield(events, 'eegfile');
@@ -66,10 +67,16 @@ for s=1:length(exp.subj)
   save(ev.file, 'events');
 
   ev.len = length(events);
-
-  % add the ev object to the exp struct
-  exp.subj(s) = setobj(exp.subj(s),'ev',ev);
+  
+  s = find(inStruct(exp.subj, 'strcmp(id,varargin{1})', subj.id));
+  if ~isfield(exp.subj(s),'ev')
+    exp.subj(s).ev = [];
+  end
+  exp.subj(s) = setobj(subj,'ev',ev);
+  
+  fprintf('\n')
 end
 
-% update exp
+fprintf('\n')
+
 exp = update_exp(exp);

@@ -20,7 +20,8 @@ trialStart = find(diff([trials(1)+1 trials trials(end)+1]));
 nTrial = length(trialStart)-1;
 
 % get the length of each trial so we can initialize
-maxlen = max(diff(trialStart));
+data.LL = diff(trialStart)';
+maxlen = max(data.LL);
 
 for i=1:length(fnames)
   field = fnames{i};
@@ -42,3 +43,15 @@ for i=1:length(fnames)
     data.(field)(j,1:length(trialInd)) = fieldvec(trialInd);
   end
 end
+
+% vectorize fields that don't require a matrix
+data = vectorize(data,{'subject','session','list','trial'});
+
+function data = vectorize(data,fields)
+  
+  for i=1:length(fields)
+    if isfield(data,fields{i})
+      f = data.(fields{i});
+      data.(fields{i}) = f(:,1);
+    end
+  end

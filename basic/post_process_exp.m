@@ -47,21 +47,9 @@ for subj=exp.subj
 		fprintf('\nCreating event structure for %s, session %d...\n', subj.id, sess.number);
 
 		if prepFiles({}, sess.eventsFile, params)==0 % outfile is ok to go
-
-			try
-				% create events
-				events = eventsFcnHandle(sess.dir, subj.id, sess.number, fcnInput{:});
-				save(sess.eventsFile, 'events');
-				catch
-				if params.skipError
-					% if problem with events, note and continue to next session
-					err = [subj.id ' session_' num2str(sess.number) '\n'];
-					event_errs = [event_errs err];
-					continue
-					else
-					rethrow(lasterror);
-				end
-			end
+      % create events
+      events = eventsFcnHandle(sess.dir, subj.id, sess.number, fcnInput{:});
+      save(sess.eventsFile, 'events');
 
 			if params.eventsOnly
 				closeFile(sess.eventsFile);
@@ -78,25 +66,15 @@ for subj=exp.subj
 			end
 
 			cd(sess.dir);
-			try
-				if params.alignOnly
-					alignOnly(sess);
-					else
-					% split, sync, rereference, detect blink artifacts
-					prep_egi_data(subj.id, sess.dir, {'events.mat'}, badchans, 'mstime');
-				end
-				catch
-				if params.skipError
-					% if there was an error, remove the events so this session
-					% will be processed again next time
-					system(['rm ' sess.eventsFile]);
-					err = [subj.id ' session_' num2str(sess.number) '\n'];
-					errs = [errs err];
-					else
-					rethrow(lasterror);
-				end
+			if params.alignOnly
+				alignOnly(sess);
+				else
+				% split, sync, rereference, detect blink artifacts
+				prep_egi_data(subj.id, sess.dir, {'events.mat'}, badchans, 'mstime');
 			end
-
+			fprintf('Creating links and moving rereferenced channel files to /data4/scratch/ltp...')
+			unix('mvlnltp.sh');
+			fprintf('done.\n')
 		end
 
 		% if the eventsfile was locked, release it
@@ -116,11 +94,21 @@ function alignOnly(sess)
 	rerefdir = fullfile(sess.dir, 'eeg', 'eeg.reref');
 	norerefdir = fullfile(sess.dir, 'eeg', 'eeg.noreref');
 	d = dir(fullfile(rerefdir, '*.001'));
+	if isempty(d)
+	  error('Channel files not found in %s.', rerefdir)
+  end
 	basename = d.name(1:end-4);
+
+  d2 = dir(fullfile(norerefdir, [basename '.DIN1']));
+  if isempty(d)
+	  error('Pulse files not found in %s.', norerefdir)
+  end
+  for i=1:length(d2)
+    pulse_eeg{i} = fullfile(norerefdir, d2(i).name);
+  end
 
 	% behavioral sync pulses, eeg sync pulses, basename
 	pulse_beh = {fullfile(sess.dir, 'eeg.eeglog.up')};
-	pulse_eeg = {fullfile(norerefdir, [basename '.DIN1'])};
 	chan_file = {fullfile(rerefdir, d.name)};
 
   if prepFiles({sess.eventsFile, pulse_beh{1}, pulse_eeg{1}, chan_file{1}})~=0
