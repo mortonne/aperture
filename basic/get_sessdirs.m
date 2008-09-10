@@ -35,39 +35,64 @@ end
 d = dir(fullfile(dataroot, subjstr));
 subjects = {d.name};
 
-subj = struct;
+subj = [];
 todelete = [];
-for s=1:length(subjects)
-
-  % initialize this subject
-  subj(s).id = subjects{s};
-  subj(s).dir = fullfile(dataroot, subjects{s});
+toskip = {};
+s = 1;
+for i=1:length(subjects)
+  if ismember(subjects{i},toskip)
+    continue
+  end
   
-  % get all session directories
-  d = dir(fullfile(subj(s).dir, 'session_*'));
-  sessions = {d.name};
+  % find all subjects that contain this subject id string
+  match = find(strfound(subjects,subjects{i}));
+  
+  % get cell array of all ids
+  subject = subjects(match);
+  if length(subject)>1
+    % each sub-subject gets counted once
+    toskip = [toskip subject(2:end)];
+  end
+  
+  % use the shortest id
+  subj(s).id = subject{1};
   
   subj(s).sess = [];
-  for n=1:length(sessions)
-    % get the session path
-    sessdir = fullfile(subj(s).dir, sessions{n});
+  for j=1:length(subject)
+    % get the directory for this subset of the subject
+    subj(s).dir{j} = fullfile(dataroot, subject{j});
+    d = dir(fullfile(subj(s).dir{j}, 'session_*'));
     
-    for i=1:length(file2check)
-      % see if the file2check exists for this session
-      fileExists(i) = ~isempty(dir(fullfile(sessdir, file2check{i})));
-    end
-    
-    if isempty(file2check) || all(fileExists)
-      % if the file(s) exist, add a sess struct
-      sess.number = str2num(sessions{n}(end));
-      sess.dir = sessdir;
-      subj(s).sess = [subj(s).sess sess];
+    sessions = {d.name};
+    for n=1:length(sessions)
+      % get the session path
+      sessdir = fullfile(subj(s).dir{j}, sessions{n});
+
+      for f=1:length(file2check)
+        % see if the file2check exists for this session
+        fileExists(f) = ~isempty(dir(fullfile(sessdir, file2check{f})));
+      end
+
+      if isempty(file2check) || all(fileExists)
+        % if the file(s) exist, add a sess struct
+        if j>1 & length(subj(s).sess)>1
+          % multiple sub-subjects; add one to the last session
+          % will not match the session directory in this case
+          sess.number = subj(s).sess(end).number+1;
+          else
+          sess.number = str2num(sessions{n}(end));
+        end
+        sess.dir = sessdir;
+        subj(s).sess = [subj(s).sess sess];
+      end
     end
   end
   
   if isempty(subj(s).sess)
     todelete(end+1) = s;
   end
+  
+  s = s + 1;
 end
 
 subj(todelete) = [];

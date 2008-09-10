@@ -44,10 +44,14 @@ errs = '';
 % do any necessary post-processing, save events file for each subj
 for subj=exp.subj
 	for sess=subj.sess
-		fprintf('\nCreating event structure for %s, session %d...\n', subj.id, sess.number);
+		%fprintf('\nCreating event structure for %s, session %d...\n', subj.id, sess.number);
 
 		if prepFiles({}, sess.eventsFile, params)==0 % outfile is ok to go
+		  fprintf('\n')
+  	  fprintf('%s session %d', subj.id, sess.number)
+		  
       % create events
+      fprintf('\nCreating events...\n')
       events = eventsFcnHandle(sess.dir, subj.id, sess.number, fcnInput{:});
       save(sess.eventsFile, 'events');
 
@@ -67,25 +71,29 @@ for subj=exp.subj
 
 			cd(sess.dir);
 			if params.alignOnly
+			  fprintf('Aligning new events...\n')
 				alignOnly(sess);
 				else
 				% split, sync, rereference, detect blink artifacts
+				fprintf('post-processing...\n')
 				prep_egi_data(subj.id, sess.dir, {'events.mat'}, badchans, 'mstime');
+				fprintf('Creating links and moving rereferenced channel files to /data4/scratch/ltp...')
+  			unix('mvlnltp.sh');
+  			fprintf('done.\n')
 			end
-			fprintf('Creating links and moving rereferenced channel files to /data4/scratch/ltp...')
-			unix('mvlnltp.sh');
-			fprintf('done.\n')
+			
 		end
 
 		% if the eventsfile was locked, release it
 		closeFile(sess.eventsFile);
 	end
 end
+fprintf('\n')
 if ~isempty(event_errs)
-	fprintf(['\nWarning: problems creating events for:\n' event_errs]);
+	fprintf(['Warning: problems creating events for:\n' event_errs]);
 end
 if ~isempty(errs)
-	fprintf(['\nWarning: problems processing:\n' errs]);
+	fprintf(['Warning: problems processing:\n' errs]);
 end
 
 
