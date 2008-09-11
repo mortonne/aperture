@@ -42,9 +42,8 @@ for n=1:length(sessions)
   sess_events = filterStruct(events, 'session==varargin{1}', sessions(n));
 
   art = getStructField(sess_events, 'artifactMS');
-  if iscell(art)
-    warning('session %d events have no artifact info. 
-Skipping...',sessions(n));
+  if all(isnan(art))
+    warning('session %d events have no artifact info. Skipping...',sessions(n));
     continue
   end
 

@@ -48,8 +48,8 @@ for subj=exp.subj
     % fill in eeg fields if they are missing
     if ~isfield(events, 'eegfile')
       [events(:).eegfile] = deal('');
-      [events(:).eegoffset] = deal([]);
-      [events(:).artifactMS] = deal([]);
+      [events(:).eegoffset] = deal(NaN);
+      [events(:).artifactMS] = deal(NaN);
     end
     
     subj_events = [subj_events(:); events(:)]';
