@@ -5,7 +5,7 @@ if ~exist('evname','var')
   evname = 'events';
 end
 
-fprintf('\nConcatenating events for all subjects...\n')
+fprintf('Concatenating events for all subjects...\n')
 allev = [];
 for subj=exp.subj
   fprintf('%s ', subj.id)

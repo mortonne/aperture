@@ -29,12 +29,24 @@ load(ev.file);
 % run filter if specified
 events = filterStruct(events, params.eventFilter);
 
+if isempty(events)
+  error('Events struct is empty after filtering with: ''%s''', params.eventFilter)
+  err = 1;
+  return
+end
+
+fprintf('calculating blink stats...\n')
 sessions = unique(getStructField(events, 'session'));
 ev.blinks = NaN(length(sessions),1);
 for n=1:length(sessions)
   sess_events = filterStruct(events, 'session==varargin{1}', sessions(n));
 
   art = getStructField(sess_events, 'artifactMS');
+  if iscell(art)
+    warning('session %d events have no artifact info. 
+Skipping...',sessions(n));
+    continue
+  end
 
   if isstr(params.windowEnd)
     % use a dynamic window (reaction time, for example)
@@ -47,7 +59,7 @@ for n=1:length(sessions)
   percent_art = art_ev/length(sess_events);
 
   % print percentage
-  fprintf('%d\t%f\n', sessions(n), percent_art);
+  fprintf('Session %d\t%.4f\n', sessions(n), percent_art);
 
   % add to the ev object
   ev.blinks(n) = percent_art;

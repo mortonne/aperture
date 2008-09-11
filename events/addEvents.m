@@ -77,6 +77,6 @@ for subj=exp.subj
   fprintf('\n')
 end
 
-fprintf('\n')
+%fprintf('\n')
 
 exp = update_exp(exp);
