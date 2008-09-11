@@ -1,4 +1,4 @@
-function report_by_channel(chan,fig,file,header,title,compile)
+function report_by_channel(chan,fig,reportfile,header,title,compile)
 %REPORT_BY_CHANNEL   Create a PDF report with one row per channel.
 %   REPORT_BY_CHANNEL(CHAN,FIG,FILE,HEADER,TITLE,COMPILE)
 %   gets channel information from the CHAN struct, and figure filenames
@@ -16,11 +16,11 @@ function report_by_channel(chan,fig,file,header,title,compile)
 %
 
 % check the output file
-if ~exist('file','var') || isempty(file)
+if ~exist('reportfile','var') || isempty(reportfile)
   error('report_by_channel: you must specify a file to save the report in.')
 end
 % if this is an absolute path, make sure the parent directory exists
-[parentdir,fname] = fileparts(file);
+[parentdir,fname] = fileparts(reportfile);
 if ~isempty(parentdir) & ~exist(parentdir,'dir')
   mkdir(parentdir);
 end
@@ -42,7 +42,8 @@ if ~exist('compile', 'var')
 end
 
 % set up table header
-fullheader = {'Channel', 'Region', header{:}};
+%fullheader = {'Channel', 'Region', header{:}};
+fullheader = {'Region', header{:}};
 
 % calculate the optimal figure width
 figsize = 1/(length(fig)+2);
@@ -56,6 +57,7 @@ raise = figsize*.8*.5;
 table = {};
 for c=1:length(chan)
   n = 1;
+  %{
   % channel number
   if length(chan(c).number)==1
     table{c,n} = sprintf('\\raisebox{%f\\textwidth}{%d}', raise, chan(c).number);
@@ -64,6 +66,7 @@ for c=1:length(chan)
     table{c,n} = sprintf('\\raisebox{%f\\textwidth}{Multiple channels}', raise);
     n = n + 1;
   end
+  %}
   
   % channel region
   table{c,n} = sprintf('\\raisebox{%f\\textwidth}{%s}', raise, chan(c).label);
@@ -83,4 +86,4 @@ for c=1:length(chan)
 end
 
 % create a latex file for the report, attempt to compile
-longtable(table, fullheader, file, title, compile);
+longtable(table, fullheader, reportfile, title, compile);

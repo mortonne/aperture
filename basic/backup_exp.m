@@ -9,7 +9,7 @@ function exp = backup_exp(exp,bkdir)
 
 % prepare the backup directory
 if ~exist('bkdir','var')
-	bkdir = fullfile(exp.resDir, 'exp_bk');
+	bkdir = fullfile(exp.resDir, 'exp_bak');
 end
 if ~exist(bkdir,'dir')
 	mkdir(bkdir);

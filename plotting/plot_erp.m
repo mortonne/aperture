@@ -65,8 +65,8 @@ for i=1:nRegions
   region_x = [x(l2r) x(r2l)];
   region_y = [y1(l2r) y2(r2l)];
   
-  hMoreSig = fill(region_x, region_y, fillcolor);
-  set(hMoreSig, 'edgecolor', fillcolor)
+  h = fill(region_x, region_y, fillcolor);
+  set(h, 'edgecolor', fillcolor)
   hold on
 end
 

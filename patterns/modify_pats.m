@@ -11,11 +11,12 @@ function [pat,eid] = modify_pats(pat, params, patname, resDir)
 %   Also see applytosubj.
 %
 
+if ~exist('patname','var')
+  % default to overwriting the existing pattern
+  patname = pat.name;
+end
 if ~exist('resDir','var')
   resDir = fullfile(fileparts(fileparts(fileparts(pat.file))),patname);
-end
-if ~exist('patname','var')
-  patname = [pat.name '_mod'];
 end
 if ~exist('params','var')
   params = struct;

@@ -12,6 +12,7 @@ function exp = applytosubj(exp,objtype,objname,varargin)
 %     exp = applytosubj(exp,'pat','voltage',@myfunction,{arg1,arg2,arg3})
 %
 
+fprintf('Processing %s:',exp.experiment)
 for s=1:length(exp.subj)
   subj = exp.subj(s);
   fprintf('\n%s\n', subj.id)
@@ -29,6 +30,11 @@ for s=1:length(exp.subj)
   for i=1:2:length(varargin)
     % get the function to evaluate
     objmodfcn = varargin{i};
+    fcnstr = func2str(objmodfcn);
+    
+    if exist(fcnstr)~=2
+      error('Unknown function %s.', fcnstr)
+    end
     
     % get other inputs, if there are any
     if i<length(varargin)
@@ -41,7 +47,7 @@ for s=1:length(exp.subj)
       inputs = {};
     end
     
-    fprintf('Running %s...', func2str(objmodfcn))
+    fprintf('Running %s...', fcnstr)
     
     % eval the function, using the object and the cell array of inputs
     [obj,err] = objmodfcn(obj, inputs{:});

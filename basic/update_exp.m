@@ -37,12 +37,19 @@ end
 % store the version of exp that was passed in
 current = exp;
 
-% get the last version of exp
-load(exp.file);
-fprintf('Loaded...')
+if exist(exp.file,'file')
+  % get the last version of exp
+  load(exp.file);
+  fprintf('Loaded...')
 
-% make a backup of the old version before making changes
-exp = backup_exp(exp);
+  % make a backup of the old version before making changes
+  exp = backup_exp(exp);
+  else
+  % exp hasn't been saved in exp.file before
+  if ~exist(exp.resDir,'dir')
+    mkdir(exp.resDir)
+  end
+end
 
 if length(varargin)>0
 	% add the object in place specified

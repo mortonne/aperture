@@ -1,25 +1,28 @@
-function [pat,status] = pat_plots(pat, params, figname, resDir)
+function [pat,err] = pat_plots(pat, params, figname, resDir)
+%PAT_PLOTS   Make figures from a pattern.
+%   PAT = PAT_PLOTS(PAT,PARAMS,FIGNAME,RESDIR) creates figures
+%   using data stored in PAT and options in the PARAMS struct.
+%   A modified PAT with fig object named FIGNAME is returned;
+%   PAT.fig includes a cell array of the filenames of all figures.
 %
-%PAT_PLOTS - manages event-related potential/power figures, plus
-%topo plots of both voltage and power
-%
-% FUNCTION: exp = pat_plots(exp, params, figname, resDir)
-%
-% INPUT: exp - struct created by init_iEEG or init_scalp
-%        params - required fields: patname (specifies the name of
-%                 which pattern in the exp struct to use)
-%
-%                 optional fields: eventFilter (specify subset of
-%                 events to use), masks (cell array containing
-%                 names of masks to apply to pattern), subjects
-%                 (cell array of ids of subjects to include) diff
-%                 (set to 1 to plot difference of eventypes)
-%                 across_subj (set to 1 to plot patterns saved in exp.pat)
-%
-%        resDir - plots saved in resDir/figs
-%
-% OUTPUT: new exp struct with filenames of all figures created
-% saved in pat.figs
+%   Params:
+%     'diff'        If true (default is false), and the events
+%                   dimension of the pattern has length 2, the
+%                   difference will be taken before plotting
+%     'plotsig'     If true (default), significance will be
+%                   loaded from pat.stat.file (which must contain
+%                   a variable named 'p') and used in the plot
+%     'whichStat'   Specifies which p-values to use. whichStat{1}
+%                   gives the name of the stat object to use,
+%                   and whichStat{2} (optional) indicates which
+%                   event of 'p' to use
+%     'powrange'    If the pattern has a frequency dimension,
+%                   indicates the c-range for the colorbar
+%     'p_range'     If plotting significance, indicates what
+%                   p-values to plot as significant and more
+%                   significant. Ex: [0.005, 0.05]
+%     'printinput'  Specifies how each figure is printed. See
+%                   PRINT for options (default '-depsc')
 %
 
 if ~exist('resDir','var')
@@ -33,12 +36,10 @@ if ~exist('params','var')
   params = struct;
 end
 
-status = 1;
-
 % relative filenames make compiling reports much easier!
 cd(resDir)
 
-params = structDefaults(params, 'diff', 0,  'plotsig', 1,  'whichStat', {[], []},  'powrange', [-.3 .3],  'p_range', [0.05 0.005], 'printinput', '-depsc', 'lock', 0, 'overwrite', 1);
+params = structDefaults(params, 'diff', 0,  'plotsig', 1,  'whichStat', {[], []},  'powrange', [-.3 .3],  'p_range', [0.05 0.005], 'printinput', '-depsc');
 
 if ~exist(fullfile(resDir, 'figs'), 'dir')
   mkdir(fullfile(resDir, 'figs'));
@@ -47,8 +48,8 @@ end
 clf reset
 
 % check input files
-if prepFiles(pat.file, {}, params)~=0
-  pat = [];
+err = prepFiles(pat.file, {}, params);
+if err
   return
 end
 
@@ -58,9 +59,11 @@ timeMS = [pat.dim.time.avg];
 % power or voltage?
 if length(pat.dim.freq)>1
   power = 1;
+  else
+  power = 0;
 end
 
-if params.diff | ~params.plotsig
+if params.diff | ~params.plotsig | ~power
   % we need the pattern
   pattern = loadPat(pat, params);
 end
@@ -107,10 +110,10 @@ if ~power
       h = plot_erp(timeMS, squeeze(pattern(1,c,:))', squeeze(pattern(2,c,:)));
     end
 
-    if 1%sum(~isnan(get(h, 'YData')))>0
-      fig.file{1,c} = fullfile('figs', sprintf('%s_erp_%s_e%dc%d', params.patname, id,e,c));
+    %if sum(~isnan(get(h, 'YData')))>0
+      fig.file{1,c} = fullfile('figs', sprintf('%s_erp_%s_%s', pat.name, pat.source,pat.dim.chan(c).label));
       print(gcf, params.printinput, fig.file{1,c});
-    end
+    %end
   end
 
 elseif power

@@ -33,11 +33,12 @@ if ~exist('whichEv','var')
 end
 
 % report saved in pattern_dir/../reports
+pat = getobj(exp.subj(1),'pat',patname);
 resDir = fileparts(fileparts(pat.file));
-if ~exist(resDir)
-  mkdir(resDir);
-end
+
 reportfile = fullfile(resDir, 'reports', [figname '_report']);
+
+err = prepFiles({},reportfile);
 
 % get one fig object for each subject
 for s=1:length(exp.subj)

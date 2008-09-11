@@ -1,7 +1,9 @@
 Stats:
 pat_rm_anova: only does 2-way
 develop run_classifier-type script that can run various statistics, which can be called by one pat_stats function
-should we make run_anovan a serious script?
+should we make run_anovan a serious script? 
+	ANOVA/event-related mean/plotting/report script: sme_erp.m
+	needs to be formalized
 
 Plotting:
 pat_plots: is there a simpler way?
@@ -11,7 +13,7 @@ spline files for the new caps!
 consider beefing up plot_events.  it's pretty sick and very unique
 
 Patclass:
-more classifiers, general section to give access to all MVPA functions, Sean's correlation-based classifier
+more classifiers, general section to give access to all MVPA functions
 support for classifying each time-frequency bin separately
 
 Patterns:

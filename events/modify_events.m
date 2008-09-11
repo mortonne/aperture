@@ -17,7 +17,7 @@ function [ev,err] = modify_events(ev,params,evname,resDir)
 %
 
 if isstruct(params)
-  params = structDefaults(params, 'eventFilter','', 'evmodfcn',[], 'evmodinput',[], 'overwrite',0);
+  params = structDefaults(params, 'eventFilter','', 'evmodfcn',[], 'evmodinput',{}, 'overwrite',0);
 end
 
 if ~exist('resDir','var')
@@ -45,7 +45,7 @@ load(oldev.file);
 
 events = filterStruct(events, params.eventFilter);
 
-if isfield(params,'evmodfcn')
+if ~isempty(params.evmodfcn)
   events = params.evmodfcn(events,params.evmodinput{:});
 end
 
