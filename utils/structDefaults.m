@@ -6,6 +6,10 @@ function s = structDefaults(s, varargin)
 %   specified value.  The changed structure is returned.
 %
 
+if ~isempty(s) && ~isstruct(s)
+  error('structDefaults: First input must be a structure.')
+end
+
 if length(varargin)>0
 	for i=1:2:length(varargin)
 		if isempty(s)

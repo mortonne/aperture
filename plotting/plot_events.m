@@ -13,14 +13,10 @@ times = [events.mstime];
 
 ytemp = [0 1];
 
-% set height for each sucessive label
-%step = range(ytemp)/(length(field)-1);
-%texty = ytemp(1)+step:step:ytemp(2);
-
 regionCount = 1;
 for i=1:length(opt)
   % fill in missing fields with default values
-  options = structDefaults(opt(i), 'field','type', 'type','line',  'params', {});
+  options = structDefaults(opt(i), 'field','type', 'type','label',  'params', {});
 
   % get the field to plot
   if isstr(options.field)
@@ -41,7 +37,11 @@ for i=1:length(opt)
     regionCount = regionCount + 1;
     
     case 'label'
-    h{i} = labels(times, f, texty(i-1));
+    % set height for each sucessive label
+    step = range(ytemp)/(length(f)-1);
+    texty = ytemp(1)+step:step:ytemp(2);
+    
+    h{i} = labels(times, f, texty(i));
     
     otherwise
     error('Invalid plot type.')

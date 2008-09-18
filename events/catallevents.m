@@ -16,21 +16,8 @@ if ~exist('evname','var')
   evname = 'events';
 end
 
-fprintf('Concatenating %s for all subjects...\n', evname)
-allev = [];
-for subj=exp.subj
-  fprintf('%s ', subj.id)
-
-  % load this subject's events
-  ev = getobj(subj,'ev',evname);
-  load(ev.file);
-  events = events(:)';
-  
-  % concatenate
-  allev = [allev events];
-end
-events = allev;
-fprintf('\n')
+% concatenate events for all subjects
+events = getvarallsubj(exp,{'ev',evname},'events');
 
 % create a new ev object to hold overall events
 evfile = fullfile(resdir,[evname '.mat']);
