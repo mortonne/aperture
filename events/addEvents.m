@@ -1,4 +1,4 @@
-function exp = addEvents(exp, eventsFile, evname, resDir)
+function exp = addEvents(exp, eventsFile, eventFilter, evname, resDir)
 %ADDEVENTS   Import events into an exp struct.
 %   EXP = ADDEVENTS(EXP) loads the events saved in each session
 %   directory in a file named 'events.mat', and concatenates
@@ -6,7 +6,7 @@ function exp = addEvents(exp, eventsFile, evname, resDir)
 %   subject in EXP has a new ev object added named 'events'.
 %
 %   ADDEVENTS prepares each subject's events for analysis in
-%   other scripts.
+%   other scripts in eeg_ana.
 %
 %   EXP = ADDEVENTS(EXP,EVENTSFILE,EVNAME,RESDIR) loads the
 %   events in each session directory using the relative path
@@ -23,20 +23,16 @@ end
 if ~exist(fullfile(resDir, 'events'), 'dir')
   mkdir(fullfile(resDir, 'events'));
 end
+if ~exist('eventFilter','var')
+  eventFilter = '';
+end
 if ~exist('eventsFile', 'var')
   eventsFile = 'events.mat';
-end
-if ~isfield(exp.subj, 'ev')
-  [exp.subj.ev] = deal([]);
 end
 
 fprintf('Concatenating session events...\n')
 for subj=exp.subj
   fprintf('%s:\t', subj.id);
-  
-  % init the ev object
-  ev.name = evname;
-  ev.file = fullfile(resDir, 'events', [evname '_' subj.id '.mat']);
   
   % concatenate all sessions
   subj_events = [];
@@ -44,6 +40,10 @@ for subj=exp.subj
     fprintf('%d\t', sess.number)
     % load the events struct for this session
     load(fullfile(sess.dir, eventsFile));
+    
+    if ~isempty(eventFilter)
+      events = filterStruct(events,eventFilter);
+    end
     
     % fill in eeg fields if they are missing
     if ~isfield(events, 'eegfile')
@@ -61,22 +61,21 @@ for subj=exp.subj
     events = rmfield(events, 'eegoffset');
     events = rmfield(events, 'artifactMS');
   end
-
-  % save the concatenated events
   events = subj_events;
+
+  % create an ev object to hold metadata
+  evfile = fullfile(resDir, 'events', [evname '_' subj.id '.mat']);
+  ev = init_ev(evname,subj.id,evfile,length(events));
+
+  % save the new events
   save(ev.file, 'events');
 
-  ev.len = length(events);
-  
-  s = find(inStruct(exp.subj, 'strcmp(id,varargin{1})', subj.id));
-  if ~isfield(exp.subj(s),'ev')
-    exp.subj(s).ev = [];
-  end
-  exp.subj(s) = setobj(subj,'ev',ev);
+  % add the ev object to subj, put the new subj in exp
+  subj = setobj(subj,'ev',ev);
+  exp = setobj(exp,'subj',subj);
   
   fprintf('\n')
 end
 
-%fprintf('\n')
-
+% update!
 exp = update_exp(exp);

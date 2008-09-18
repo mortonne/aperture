@@ -20,7 +20,7 @@ function exp = update_exp(exp, varargin)
 %      list of patterns.
 %
 
-fprintf('In update_exp: ');
+fprintf('update_exp: ');
 
 % if running on the cluster, take possession of exp first
 if ~isfield(exp, 'useLock')
@@ -29,9 +29,9 @@ end
 
 if exp.useLock
   if ~lockFile(exp.file, 1);
-    error('Locking timed out.')
+    error('locking timed out.')
   end
-  fprintf('Locked...');
+  fprintf('locked...');
 end
 
 % store the version of exp that was passed in
@@ -40,7 +40,7 @@ current = exp;
 if exist(exp.file,'file')
   % get the last version of exp
   load(exp.file);
-  fprintf('Loaded...')
+  fprintf('loaded...')
 
   % make a backup of the old version before making changes
   exp = backup_exp(exp);
@@ -65,4 +65,4 @@ end
 save(exp.file, 'exp');
 closeFile(exp.file);
 
-fprintf('Updated and saved.\n');
+fprintf('updated and saved.\n');

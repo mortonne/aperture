@@ -54,3 +54,4 @@ ev.len = length(events);
 
 % save
 save(ev.file, 'events');
+fprintf('%s created.', evname)
