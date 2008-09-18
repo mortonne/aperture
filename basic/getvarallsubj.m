@@ -1,6 +1,6 @@
 function varargout = getvarallsubj(exp,path,varnames)
 %GETVARALLSUBJ
-%   VARARGOUT = GETVARALLSUBJ(EXP,PATNAME,OBJTYPE,OBJNAME,VARNAMES)
+%   VARARGOUT = GETVARALLSUBJ(EXP,PATH,VARNAMES)
 
 if ~exist('varnames','var')
   varnames = {};

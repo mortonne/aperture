@@ -28,6 +28,10 @@ for s=1:length(exp.subj)
   obj.source = subj.id;
   
   for i=1:2:length(varargin)
+    if i>1
+      fprintf('\n\t')
+    end
+    
     % get the function to evaluate
     objmodfcn = varargin{i};
     fcnstr = func2str(objmodfcn);
