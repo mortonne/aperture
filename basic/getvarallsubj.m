@@ -1,4 +1,4 @@
-function varargout = getvarallsubj(exp,patname,objtype,objname,varnames)
+function varargout = getvarallsubj(exp,path,varnames)
 %GETVARALLSUBJ
 %   VARARGOUT = GETVARALLSUBJ(EXP,PATNAME,OBJTYPE,OBJNAME,VARNAMES)
 
@@ -10,20 +10,19 @@ if ~iscell(varnames)
 end
 
 % load the vars
+fprintf('Exporting from subjects...')
 for s=1:length(exp.subj)
-  if isempty(exp.subj(s).pat)
-    continue
-  end
-  
-  pat = getobj(exp.subj(s),'pat',patname);
-  if isempty(pat)
+  fprintf('%s ', exp.subj(s).id)
+
+  obj = getobj2(exp.subj(s),path);
+  if isempty(obj)
     continue
     %error('pat object %s not found.', patname)
   end
   
-  obj = getobj(pat,objtype,objname);
   if isempty(obj)
-    error('%s object %s not found.', objtype, objname)
+    error('')
+    %error('%s object %s not found.', objtype, objname)
   end
   
   if ~isempty(varnames)
@@ -32,6 +31,7 @@ for s=1:length(exp.subj)
     varstruct(s) = load(obj.file);
   end
 end
+fprintf('\n')
 
 if ~exist('varstruct','var')
   error('Error!')
@@ -48,7 +48,11 @@ for i=1:size(varcell,1)
   varargout{i} = [];
   for j=1:size(varcell,2)
     try
-      varargout{i} = [varargout{i}; varcell{i,j}];
+      if size(varcell{i,j},1)==1
+        varargout{i} = [varargout{i} varcell{i,j}];
+        else
+        varargout{i} = [varargout{i}; varcell{i,j}];
+      end
       catch
       warning('Skipping %s.', exp.subj(j).id)
     end
