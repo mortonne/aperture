@@ -123,14 +123,11 @@ elseif power
   for e=1:size(pattern,1)
     for c=1:size(pattern,2)
       if params.plotsig
-
         h = plot_pow_sig(shiftdim(pattern(e,c,:,:),2)', pat.dim, params.p_range);
-        filename = sprintf('%s_erpow_sig_%s_e%dc%d', pat.name, pat.source, e, c);
       else
         h = plot_pow(shiftdim(pattern(e,c,:,:),2)', pat.dim, params.powrange);
-        filename = sprintf('%s_erpow_%s_e%dc%d', pat.name, pat.source, e, c);
-
       end
+      filename = sprintf('%s_%s_%s_e%dc%d', pat.name, figname, pat.source, e, c);
       fig.file{e,c} = fullfile('figs', filename);
 
       print(gcf, params.printinput, fig.file{e,c});
