@@ -47,10 +47,14 @@ end
 
 clf reset
 
-% check input files
-err = prepFiles(pat.file, {}, params);
-if err
-  return
+if ~params.plotsig
+  % check input files
+  err = prepFiles(pat.file, {}, params);
+  if err
+    return
+  end
+  else
+  err = 0;
 end
 
 % get dimension info

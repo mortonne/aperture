@@ -1,4 +1,4 @@
-function subj = filtersubj(subj,numbers,include)
+function [subj,match] = filtersubj(subj,numbers,include)
 %FILTERSUBJ   Filter a subj structure using numbers instead of strings.
 %   SUBJ = FILTERSUBJ(SUBJ,NUMBERS,INCLUDE) filters the
 %   structure SUBJ. NUMBERS is an array of integers indicating

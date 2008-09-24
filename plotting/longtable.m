@@ -44,50 +44,52 @@ fprintf(fid,'\n');
 fprintf(fid,'\\begin{document}\n');
 fprintf(fid,'\\begin{landscape}\n');
 
-% begin the longtable
-fprintf(fid,'\\begin{center}\n');
-fprintf(fid,'\\begin{longtable}{%s}\n', colPos);
+for page=1:size(table,3)
+  % begin the longtable
+  fprintf(fid,'\\begin{center}\n');
+  fprintf(fid,'\\begin{longtable}{%s}\n', colPos);
 
-% top header
-fprintf(fid,'\\multicolumn{%d}{c}\n', numCols);
-fprintf(fid,'\\textbf{%s} \\\\\n', title);
-fprintf(fid,'\\hline \\multicolumn{1}{|c|}{\\textbf{%s}} ', header{1});
-for col=2:numCols
-  fprintf(fid,'& \\multicolumn{1}{c|}{\\textbf{%s}} ', header{col});
-end
-fprintf(fid,'\\\\ \\hline\n');
-fprintf(fid,'\\endfirsthead\n');
-fprintf(fid,'\n');
-
-% bottom header
-fprintf(fid,'\\multicolumn{%d}{c}\n',numCols);
-fprintf(fid,'\\textbf{%s (continued)} \\\\\n',title);
-fprintf(fid,'\\hline \\multicolumn{1}{|c|}{\\textbf{%s}} ', header{1});
-for col=2:numCols
-  fprintf(fid,'& \\multicolumn{1}{c|}{\\textbf{%s}} ', header{col});
-end
-fprintf(fid,'\\\\ \\hline\n');
-fprintf(fid,'\\endhead\n');
-
-% footer
-fprintf(fid,'\\hline \\multicolumn{%d}{|r|}{Continued on next page...} \\\\\\hline\n',numCols);
-fprintf(fid,'\\endfoot\n');
-fprintf(fid,'\\hline\n');
-fprintf(fid,'\\endlastfoot\n');
-fprintf(fid,'\n');
-
-% write the table
-for row=1:numRows
-  for col=1:numCols-1
-    fprintf(fid,'%s & ', table{row, col});
+  % top header
+  fprintf(fid,'\\multicolumn{%d}{c}\n', numCols);
+  fprintf(fid,'\\textbf{%s} \\\\\n', title);
+  fprintf(fid,'\\hline \\multicolumn{1}{|c|}{\\textbf{%s}} ', header{1});
+  for col=2:numCols
+    fprintf(fid,'& \\multicolumn{1}{c|}{\\textbf{%s}} ', header{col});
   end
-  fprintf(fid,'%s \\\\ \n', table{row, end});
-end
+  fprintf(fid,'\\\\ \\hline\n');
+  fprintf(fid,'\\endfirsthead\n');
+  fprintf(fid,'\n');
 
-% end the longtable
-fprintf(fid,'\\end{longtable}\n');
-fprintf(fid,'\\end{center}\n');
-fprintf(fid,'\n');
+  % bottom header
+  fprintf(fid,'\\multicolumn{%d}{c}\n',numCols);
+  fprintf(fid,'\\textbf{%s (continued)} \\\\\n',title);
+  fprintf(fid,'\\hline \\multicolumn{1}{|c|}{\\textbf{%s}} ', header{1});
+  for col=2:numCols
+    fprintf(fid,'& \\multicolumn{1}{c|}{\\textbf{%s}} ', header{col});
+  end
+  fprintf(fid,'\\\\ \\hline\n');
+  fprintf(fid,'\\endhead\n');
+
+  % footer
+  fprintf(fid,'\\hline \\multicolumn{%d}{|r|}{Continued on next page...} \\\\\\hline\n',numCols);
+  fprintf(fid,'\\endfoot\n');
+  fprintf(fid,'\\hline\n');
+  fprintf(fid,'\\endlastfoot\n');
+  fprintf(fid,'\n');
+
+  % write the table
+  for row=1:numRows
+    for col=1:numCols-1
+      fprintf(fid,'%s & ', table{row,col,page});
+    end
+    fprintf(fid,'%s \\\\ \n', table{row,end,page});
+  end
+
+  % end the longtable
+  fprintf(fid,'\\end{longtable}\n');
+  fprintf(fid,'\\end{center}\n');
+  fprintf(fid,'\n');
+end
 
 % finish the document
 fprintf(fid,'\\end{landscape}\n');

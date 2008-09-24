@@ -16,7 +16,6 @@ fprintf('Processing %s:',exp.experiment)
 for s=1:length(exp.subj)
   subj = exp.subj(s);
   fprintf('\n%s: ', subj.id)
-  running = 1;
   
   % get the pat to modify
   obj = getobj(subj, objtype, objname);

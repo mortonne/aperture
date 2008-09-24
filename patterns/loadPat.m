@@ -25,25 +25,31 @@ if ~exist('params', 'var')
   params = [];
 end
 
-params = structDefaults(params, 'loadSingles', 0,  'whichPat', [],  'catDim', []);
+params = structDefaults(params, 'loadSingles',0, 'patnum', []);
 
-% if there are multiple patterns for this pat object, choose one
-if iscell(pat.file) & ~isempty(params.whichPat)
-  pat.file = pat.file{params.whichPat};
+if ~isempty(params.patnum)
+  pat.file = pat.file{params.patnum};
 end
 
 % reconstitute pattern if necessary
-if iscell(pat.file) & ~isempty(params.catDim)
-  pattern = NaN(pat.dim.ev.len, length(pat.dim.chan), length(pat.dim.time), length(pat.dim.freq));
-  allDim = {':',':',':',':'};
-  for i=1:length(pat.file)
-    s = load(pat.file{i});
-    ind = allDim;
-    ind{params.catDim} = i;
-    
-    pattern(ind{:}) = s.pattern;
+if iscell(pat.file)
+  % pattern is split
+  if isfield(pat.dim,'splitdim') && ~isempty(pat.dim.splitdim)
+    % concatenate along the split dimension to reform the pattern
+    pattern = NaN(patsize(pat.dim));
+    allDim = {':',':',':',':'};
+    for i=1:length(pat.file)
+      s = load(pat.file{i});
+      ind = allDim;
+      ind{pat.dim.splitdim} = i;
+      pattern(ind{:}) = s.pattern;
+    end
+    else
+    error('pat.dim must have a ''splitdim'' field.')
   end
-else
+  
+  else
+  % one file; load it up
   load(pat.file);
 end
 

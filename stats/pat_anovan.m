@@ -39,8 +39,8 @@ filename = sprintf('%s_%s_%s.mat', pat.name, statname, pat.source);
 statfile = fullfile(resDir, 'stats', filename);
 
 % check input files and prepare output files
-if prepFiles(pat.file, statfile, params)~=0
-  status = 1;
+err = prepFiles(pat.file, statfile, params);
+if err
   return
 end
 

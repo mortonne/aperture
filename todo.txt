@@ -1,9 +1,16 @@
-Stats:
-pat_rm_anova: only does 2-way
-develop run_classifier-type script that can run various statistics, which can be called by one pat_stats function
-should we make run_anovan a serious script? 
-	ANOVA/event-related mean/plotting/report script: sme_erp.m
-	needs to be formalized
+Basic:
+expand use of "path" cell array-style exp referencing; may make applytosubj more flexible
+
+Events:
+
+Patclass:
+more classifiers, general section to give access to all MVPA functions
+support for classifying each time-frequency bin separately (could sig scripts be generalized to include this?)
+
+Patterns:
+cat_pats can only do the channel dimension
+saving as and processing patterns as slices (post-creation conversion in split_patfile.m. Support in create_pattern.m would be good.)
+is expandDim general enough to be included?
 
 Plotting:
 pat_plots: is there a simpler way?
@@ -12,19 +19,17 @@ also double-check significance color maps
 spline files for the new caps!
 consider beefing up plot_events.  it's pretty sick and very unique
 
-Patclass:
-more classifiers, general section to give access to all MVPA functions
-support for classifying each time-frequency bin separately
+Stats:
+should we make run_anovan a serious script? 
+	ANOVA/event-related mean/plotting/report script: sme_erp.m
+	needs to be formalized (add in across-subject significance)
 
-Patterns:
-cat_pats can only do the channel dimension
-saving as and processing patterns as slices
-is expandDim general enough to be included?
-
-Events:
-do we need catallevents?
+Utils:
+should objfilename.m be used more?
+better name for getobj2.m
 
 General:
 check feasibility of cross-experiment analyses (running Per's SME-serial position interaction analysis on all LTP FR experiments)
+   possibility: expand merge_exps.m, add 'experiment' field to each subj
 user-friendly script to generate basic ERPs for a subject, create PDF report
 check reporting scripts for generality
