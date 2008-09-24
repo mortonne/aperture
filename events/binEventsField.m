@@ -33,7 +33,7 @@ if iscell(bins)
 
 		else
 		% assume each cell contains an eventfilter
-		field = zeros(1, length(events));
+		field = NaN(1,length(events));
 		for i=1:length(bins)
 			thisfield = inStruct(events, bins{i});
 			field(thisfield) = i;

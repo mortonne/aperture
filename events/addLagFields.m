@@ -1,6 +1,6 @@
-function ev = addLagFields(ev, param, evname)
+function events = addLagFields(events, param)
 %ADDLAGFIELDS   Adds subsequent-clustering related fields to events.
-%   EXP = ADDLAGFIELDS(EXP,PARAM,EVNAME)
+%   EXP = ADDLAGFIELDS(EXP,PARAM)
 
 % [all_ev] = addLagFields(exp,param)
 %
@@ -19,121 +19,81 @@ if ~exist('param', 'var')
 	param = struct();
 end
 
-param = structDefaults(param, 'itemstr', 'WORD',  'trialfield', 'trial',  'clust_thresh', 3,  'overwrite', 1,    'lock', 0);
-
-oldev = ev;
-
-ev.file = fullfile(fileparts(ev.file), sprintf('%s_%s.mat', ev.source, evname));
-
-% prepare the events file
-if prepFiles(oldev.file, ev.file, param)~=0
-  ev = [];
-	return
-end
-
-% load the events
-load(oldev.file);
-
-if exist('evname', 'var')
-  % save the results in a new ev object
-  ev.name = evname;
-
-  % update exp
-  exp = update_exp(exp, 'subj', subj.id, 'ev', ev2);
-end
+param = structDefaults(param, 'itemstr','WORD', 'trialfield','trial');
 
 % initialize the new fields
-for k=1:length(events)
-  events(k).prelag = -999;
-  events(k).minlag = -999;
-  events(k).subclust = -999;
-end
+[events.prelag] = deal(NaN);
+[events.postlag] = deal(NaN);
 
 % step over sessions
-sessions = unique(getStructField(events, 'session'));
-for j = 1:length(sessions)
-  sess_ev = filterStruct(events, sprintf('session==%d', sessions(j)));
+sessions = unique([events.session]);
+for session=sessions
+  sess_ev = filterStruct(events, sprintf('session==%d', session));
 
   % step over lists
-  lists = unique(getStructField(sess_ev, param.trialfield));
+  lists = unique([sess_ev.(param.trialfield)]);
   lists = lists(lists>=0 & lists<100);
-  for k = 1:length(lists)
-
+  for list=lists
     % get indices of the list events we need within the larger events struct
-    listfilt = sprintf('session==%d & %s==%d', sessions(j), param.trialfield, lists(k));
-    study_ind = find(inStruct(events, sprintf('%s & strcmp(type,''%s'') & recalled==1', listfilt, param.itemstr)));
-    rec_ind = find(inStruct(events, sprintf('%s & strcmp(type, ''REC_WORD'') & intrusion==0', listfilt)));
+    listfilt = sprintf('session==%d & %s==%d', session, param.trialfield, list);
+    study_ind = find(inStruct(events, sprintf('%s & strcmp(type,''%s'')', listfilt, param.itemstr)));
+    rec_ind = find(inStruct(events, sprintf('%s & strcmp(type, ''REC_WORD'')', listfilt)));
 
-    if length(study_ind)==0
-      error(sprintf('No study items found for list %d.', lists(k)));
-    elseif	length(rec_ind)==0
-      error(sprintf('No recall items found for list %d.', lists(k)));
+    if isempty(study_ind)
+      error('No study items found for list %d.', list);
+    elseif isempty(rec_ind)
+      error('No recall items found for list %d.', list);
     end
 
     % get the events
     study_ev = events(study_ind);
     rec_ev = events(rec_ind);
 
-    % sort the recall events
-    [times,order] = sort(getStructField(rec_ev, 'rectime'));
+    % make sure recall events are sorted
+    [times,order] = sort([rec_ev.rectime]);
     rec_ev = rec_ev(order);
 
-    % grab all the itemnos
-    [rec_itemnos] = getStructField(rec_ev, 'itemno');
-    % get the study order of the itemnos
-    [study_serpos] = getStructField(study_ev, 'serialpos');
-    [study_itemno] = getStructField(study_ev, 'itemno');
-
-    % step through the recall events
+    % get the presented serial position of each recall event
+    study_itemno = [study_ev.itemno];
     for r = 1:length(rec_ev)
       % grab the original serial position
-      sind = find(study_itemno==rec_itemnos(r));
-      % add it to the recall event
-      rec_ev(r).serialpos = study_serpos(sind);
-      rec_serpos(r) = study_serpos(sind);
+      s = find(study_itemno==rec_ev(r).itemno);
+      
+      if ~isempty(s)
+        % add it to the recall event
+        rec_ev(r).serialpos = study_ev(s).serialpos;
+      else % intrusion
+        rec_ev(r).serialpos = NaN;
+      end
     end
 
-    % calculate lag for each transition
-    lags = diff(rec_serpos);	
-    lag_ind = 1:length(lags);
-    % aside from the terminal items, each item has two
-    % associated lags.
+    % get transition info
+    lags = diff([rec_ev.serialpos]);
+    % no lags of 0
+    lags(lags==0) = NaN;
+    
+    % get prelag and postlag for each recall event
+    postlag = [lags NaN];
+    prelag = [NaN -lags];
+
     for r=1:length(rec_ev)
-
-      % tag each recall event with the lag to the preceding item
-      % in the recall sequence
-      if ismember(r-1,lag_ind)
-        rec_ev(r).prelag = abs(lags(r-1));
-      else
-        rec_ev(r).prelag = -999;
+      s = rec_ev(r).serialpos;
+      if isnan(s) % transitions to and from are undefined
+        continue
       end
 
-      % which lag values correspond to this recall item
-      % accounting for the terminal items
-      lagset = r-1:r;
-      lagset = lagset(ismember(lagset,lag_ind));
-      these_lags = lags(lagset);
-      minlag = min(abs(these_lags));
+      % add lag info to study events
+      study_ev(s).prelag = prelag(r);
+      study_ev(s).postlag = postlag(r);
 
-      % find the corresponding study event
-      sind = find(study_itemno==rec_itemnos(r));
-      % add minlag to the study event
-      study_ev(sind).minlag = minlag;
-      if minlag <= param.clust_thresh
-        study_ev(sind).subclust = 1;
-      else
-        study_ev(sind).subclust = 0;
-      end
-
+      % add lag info to recall events
+      rec_ev(r).prelag = prelag(r);
+      rec_ev(r).postlag = postlag(r);
     end
 
     % put the modified events back into the larger struct
     events(study_ind) = study_ev;
     events(rec_ind) = rec_ev;
 
-  end % k list
-
-end % j session
-
-save(ev2.file, 'events');
-fprintf('New events saved.');
+  end % list
+end % session

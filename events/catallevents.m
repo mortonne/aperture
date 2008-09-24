@@ -20,7 +20,7 @@ end
 events = getvarallsubj(exp,{'ev',evname},'events');
 
 % create a new ev object to hold overall events
-evfile = fullfile(resdir,[evname '.mat']);
+evfile = fullfile(resdir,'events',sprintf('%s_%s.mat', evname,exp.experiment));
 ev = init_ev(evname,{exp.subj.id},evfile,length(events));
 
 % save the new events
