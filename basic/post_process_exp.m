@@ -19,7 +19,7 @@ function exp = post_process_exp(exp,eventsFcnHandle,fcnInput,eventsfile,varargin
 %      overwrite (0) - overwrite existing files
 %      
 %   Example:
-%     exp = post_process_exp(exp,@FRevents,'eventsOnly',1);
+%     exp = post_process_exp(exp,@FRevents,{}, 'events.mat', 'eventsOnly',1);
 %     makes events for each session in exp using FRevents.m.
 %
 
@@ -29,7 +29,10 @@ end
 
 params = struct(varargin{:});
 
-params = structDefaults(params, 'skipError', 1,  'eventsOnly', 0,  'alignOnly', 0,  'overwrite', 0,  'lock', 0,  'ignoreLock', 0, 'captype','HCGSN');
+params = structDefaults(params, 'skipError', 1,  'eventsOnly', 0, ...
+			'alignOnly', 0, 'splitOnly', 0, 'rerefVariations', 0, ...
+			'overwrite', 0, 'lock', 0,  'ignoreLock', 0, ...
+			'captype','HCGSN');
 
 % write all file info first
 for s=1:length(exp.subj)
@@ -45,10 +48,18 @@ errs = '';
 for subj=exp.subj
   for sess=subj.sess
     %fprintf('\nCreating event structure for %s, session %d...\n', subj.id, sess.number);
-
+    if params.splitOnly
+      fprintf('Splitting raw files only...\n')
+      splitOnly(subj, sess);
+      continue
+    elseif params.rerefVariations
+	fprintf('Performing rereferencing variations...\n')
+	rerefVariations(sess, params.captype);      
+    end
     if prepFiles({}, sess.eventsFile, params)==0 % outfile is ok to go
       fprintf('\n')
       fprintf('%s session %d', subj.id, sess.number)
+
 
       % create events
       fprintf('\nCreating events using %s...\n', func2str(eventsFcnHandle))
@@ -132,3 +143,74 @@ function alignOnly(sess)
   % add artifact info
   [eog, perif] = getcapinfo();
   addArtifacts(sess.eventsFile, eog, 100);
+
+function splitOnly(subject, session)
+  % Split the .raw files for a session and exit
+
+  eegdir = fullfile(session.dir, 'eeg')
+  norerefdir = fullfile(eegdir, 'eeg.noreref')
+  rawfiles = dir(fullfile(eegdir,'*.raw'));
+  if length(rawfiles) == 0
+    error('No raw eeg file found.');
+    return
+  end
+
+  for i=1:length(rawfiles)
+    % split this file into channels
+    basename = egi_split(fullfile(session.dir,'eeg',rawfiles(i).name), ...
+			 subject.id, norerefdir);
+    
+  end
+
+function rerefVariations(session, captype)
+  % I am truly sorry that this is such a mess.
+  
+  % get perif (???) for reref
+  [eog,perif] = getcapinfo(captype);
+  
+  % get events struct for this session and read fileroots off of it
+  sess_events = loadEvents(session.eventsFile);
+  file_roots = unique(getStructField(sess_events, 'eegfile', ...
+						  '~strcmp(eegfile,'''')'));
+ 
+  % build a coordinated structure to store the bad channels as read from files
+  bc_types = {'auto', 'spectral', 'manual'};
+  bad_chans = struct('auto',[],'spectral',[],'manual',[]);
+
+
+  % get the bad channels of each type
+  for i=1:length(bc_types)
+    bc_type = bc_types{i};
+    try
+      bc_file = fullfile(session.dir, 'eeg', ['bad_chan.txt.' bc_type]);
+      bad_channels = textread(bc_file, '', 'commentstyle', 'shell')';	
+    catch
+      fprintf('Could not read bad channels in %s\n', bc_file);
+    end
+    % sanity check: bad_channels should be one column!
+    if size(bad_channels, 1) ~= 1
+      fprintf('Bad file read: %s, channels %s', bc_file, bad_channels)
+      error('Multidimensional bad channel data shouldn''t exist!')
+    end
+    bad_chans.(bc_type) = bad_channels;
+  end
+
+  % build a coordinated structure to use to perform the different rerefs
+  eegdir = fullfile(session.dir, 'eeg');
+  norerefdir = fullfile(eegdir, 'eeg.noreref');
+  auto_reref_dir = fullfile(eegdir, 'eeg.reref_auto');
+  autospec_reref_dir = fullfile(eegdir, 'eeg.reref_autospectral');
+  all_reref_dir = fullfile(eegdir, 'eeg.reref_all');
+
+  rerefs.types = {'auto', 'autospectral', 'all'};
+  rerefs.dirs =  {auto_reref_dir, autospec_reref_dir, all_reref_dir};
+  rerefs.bad_channels = {bad_chans.auto, [bad_chans.auto bad_chans.spectral], ...
+		         [bad_chans.auto bad_chans.spectral bad_chans.manual]};
+		         
+  % perform the rereference for each variant
+  for i=1:length(rerefs.types)
+   excluded_channels = unique([rerefs.bad_channels{i}, perif]);
+   all_channels = 1:129;
+   reref(file_roots, all_channels, rerefs.dirs{i}, ...
+	 {all_channels, setdiff(all_channels, excluded_channels)});
+  end

@@ -28,7 +28,13 @@ load(ev.file);
 
 % create the data struct
 fprintf('creating data struct using %s...', func2str(params.datafcn))
-data = params.datafcn(events,params.datafcninput{:});
+try
+  data = params.datafcn(events,params.datafcninput{:});
+  catch
+  fprintf('Warning: problem creating data.')
+  err = 3;
+  return
+end
 
 save(ev.datafile,'data')
 fprintf('saved.')

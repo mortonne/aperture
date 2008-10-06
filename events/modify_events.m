@@ -6,18 +6,26 @@ function [ev,err] = modify_events(ev,params,evname,resDir)
 %   the new events will be saved.
 %
 %    Params:
-%     'eventFilter' String to be passed into filterEvents to filter the
-%                   events struct
-%     'evmodfcn'    Handle to a function that modifies events. The first
-%                   input argument and first output argument should be
-%                   events. This will be run after the eventFilter has
-%                   been applied
-%     'evmodinput'  Cell array of optional additional inputs to 
-%                   params.evmodfcn
+%     'eventFilter'     String to be passed into filterEvents to filter the
+%                       events struct
+%     'replace_eegfile' Cell array of strings, where each row gives a pair
+%                       of strings to be passed into strrep, with
+%                       events(i).eegfile as the first argument
+%     'evmodfcn'        Handle to a function that modifies events. The first
+%                       input argument and first output argument should be
+%                       events. This will be run after the eventFilter has
+%                       been applied
+%     'evmodinput'      Cell array of optional additional inputs to 
+%                       params.evmodfcn
+%
+%   Example:
+%    params.eventFilter = 'strcmp(type,''WORD'')';
+%    params.replace_eegfile = {'olddir', 'newdir'};
+%    ev = modify_events(ev,params,'word_events_neweegfile');
 %
 
 if isstruct(params)
-  params = structDefaults(params, 'eventFilter','', 'evmodfcn',[], 'evmodinput',{}, 'overwrite',0);
+  params = structDefaults(params, 'eventFilter','', 'replace_eegfile',{}, 'evmodfcn',[], 'evmodinput',{}, 'overwrite',0);
 end
 
 if ~exist('resDir','var')
@@ -43,8 +51,19 @@ end
 
 load(oldev.file);
 
+% run strrep on the eegfile of each event
+if ~isempty(params.replace_eegfile)
+  for e=1:length(events)
+    for r=params.replace_eegfile'
+	    events(e).eegfile = strrep(events(e).eegfile,r{1},r{2});
+    end
+  end
+end
+
+% filter the events structure
 events = filterStruct(events, params.eventFilter);
 
+% run a custom script to modify events
 if ~isempty(params.evmodfcn)
   events = params.evmodfcn(events,params.evmodinput{:});
 end
