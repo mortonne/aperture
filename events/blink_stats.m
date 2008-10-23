@@ -21,7 +21,7 @@ if ~exist('params', 'var')
   params = [];
 end
 
-params = structDefaults(params, 'eventFilter', '',  'windowEnd', 2000);
+params = structDefaults(params, 'eventFilter','', 'windowEnd',2000, 'verbose',0);
 status = 0;
 
 load(ev.file);
@@ -35,7 +35,7 @@ if isempty(events)
   return
 end
 
-fprintf('calculating blink stats...\n')
+fprintf('calculating blink stats...')
 sessions = unique(getStructField(events, 'session'));
 ev.blinks = NaN(length(sessions),1);
 for n=1:length(sessions)
@@ -57,8 +57,10 @@ for n=1:length(sessions)
   end
   percent_art = art_ev/length(sess_events);
 
-  % print percentage
-  fprintf('Session %d\t%.4f\n', sessions(n), percent_art);
+  if params.verbose
+    % print percentage
+    fprintf('\nSession %d\t%.4f', sessions(n), percent_art);
+  end
 
   % add to the ev object
   ev.blinks(n) = percent_art;
