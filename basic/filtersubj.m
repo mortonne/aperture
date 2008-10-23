@@ -13,6 +13,10 @@ function [subj,match] = filtersubj(subj,numbers,include)
 %    subj = filtersubj(subj,2:3,0) gets subject LTP001.
 %
 
+if ~exist('include','var')
+  include = 1;
+end
+
 % convert the subject id's to numbers
 subjs = {subj.id};
 usubjs = unique(subjs);
