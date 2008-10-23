@@ -1,35 +1,47 @@
 function [ev,err] = modify_events(ev,params,evname,resDir)
-%MODIFY_EVENTS   Make changes to an ev object and the corresponding events.
-%   EV = MODIFY_EVENTS(EV,PARAMS,EVNAME,RESDIR) modifies EV according to
-%   options in the PARAMS struct. If EVNAME is different than EV.name,
-%   modified events will be saved in a new file. RESDIR specifies where
-%   the new events will be saved.
+%MODIFY_EVENTS   Make changes to events that are stored in an ev object.
+%   EV = MODIFY_EVENTS(EV,PARAMS,EVNAME,RESDIR) modifies the events 
+%   stored in EV. Options for modifying events are specified in the 
+%   PARAMS structure.
 %
-%    Params:
-%     'eventFilter'     String to be passed into filterEvents to filter the
-%                       events struct
+%   EVNAME specifies the name of the output EV object, which contains the
+%   filename and length of the modified events. The default is [EV.name]_mod. 
+%
+%   If EVNAME is different than EV.name, modified events will be saved in a 
+%   new file; otherwise, existing events will be overwritten. Modified events 
+%   are saved in RESDIR/events. If RESDIR is not specified, it defaults to 
+%   the parent directory of EV.file.
+%
+%    Optional params fields:
+%     'eventFilter'     String to be passed into filterStruct to filter the
+%                       events struct. The filter will be applied before 
+%                       params.evmodfcn is run. Default: ''
 %     'replace_eegfile' Cell array of strings, where each row gives a pair
 %                       of strings to be passed into strrep, with
-%                       events(i).eegfile as the first argument
-%     'evmodfcn'        Handle to a function that modifies events. The first
-%                       input argument and first output argument should be
-%                       events. This will be run after the eventFilter has
-%                       been applied
+%                       events(i).eegfile as the first argument. Useful for
+%                       associating events with different EEG data
+%     'evmodfcn'        Handle to a function that modifies an events structure.
+%                       The first input argument and first output argument 
+%                       should be events. This will be run after the 
+%                       eventFilter has been applied
 %     'evmodinput'      Cell array of optional additional inputs to 
 %                       params.evmodfcn
+%
+%   NOTE: The 'eventFilter' and 'replace_eegfile' options are included for
+%   convenience; the same functionality can be achieved using the 'evmodfcn'
+%   and 'evmodinput' fields.
 %
 %   Example:
 %    params.eventFilter = 'strcmp(type,''WORD'')';
 %    params.replace_eegfile = {'olddir', 'newdir'};
 %    ev = modify_events(ev,params,'word_events_neweegfile');
-%
 
-if isstruct(params)
-  params = structDefaults(params, 'eventFilter','', 'replace_eegfile',{}, 'evmodfcn',[], 'evmodinput',{}, 'overwrite',0);
+if ~exist('params','var')
+  params = [];
 end
-
+params = structDefaults(params, 'eventFilter','', 'replace_eegfile',{}, 'evmodfcn',[], 'evmodinput',{}, 'overwrite',0);
 if ~exist('resDir','var')
-  [resDir,filename] = fileparts(ev.file);
+  resDir = fileparts(ev.file);
 end
 if ~exist('evname','var') || isempty(evname)
   evname = [ev.name '_mod'];

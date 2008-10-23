@@ -1,6 +1,9 @@
 function allRetEvents = getRandRecEvents(events,samplerate,bufferMS,check)
 %GETRANDRECEVENTS - Get important events from FR retrieval period
 %
+% Assumptions:
+%   - REC_START and REC_WORD events
+%   - 90 second recall period
 % 
 % FUNCTION:
 %   allRetEvents = getRandRecEvents(events,samplerate,bufferMS,check)
@@ -11,9 +14,6 @@ function allRetEvents = getRandRecEvents(events,samplerate,bufferMS,check)
 %   RAND_WORD - Random epochs when nothing else is happening.
 %   VOC_WORD - Non-recall-related vocalization.
 %   INT_WORD - Recall intrusion.
-%   
-%
-%
 
 if ~exist('check','var')
   check = 0;
@@ -23,6 +23,14 @@ if ~isfield(events,'list')
   listfield = 'trial';
   else
   listfield = 'list';
+end
+
+% sanity checks!
+types = unique({events.type});
+if ~ismember('REC_START',types)
+  error('No recall period start events (type=REC_START) found.')
+elseif ~ismember('REC_WORD',types)
+  error('No word recall events (type=REC_WORD) found.')
 end
 
 % some defaults
@@ -41,6 +49,7 @@ lists = getStructField(recStart_events,listfield);
 sessions = getStructField(recStart_events,'session');
 
 length(lists)
+
 % events to fill
 word_events = struct([]);
 rand_events = struct([]);
