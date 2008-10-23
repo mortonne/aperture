@@ -20,10 +20,14 @@ switch test
   case 'RMAOV1'
    group = fix_regressors(group);
    filename = varargin{1};
+   
+   % write an output file
    export_r(X,group,filename);
    keyboard
+   % delete existing input file
    % run r code
-   % return
+   % wait for input file to be created
+   % read input file
    
    %p = RMAOV1_mod([X group{1} group{2}], 0.05, 0);
    
@@ -45,7 +49,8 @@ function group = fix_regressors(group)
       group{i}(temp{i}==vals(j)) = j;
     end
   end
-  
+%endfunction
+
   
 function export_r(X,group,filename)
   % if the file already exists, delete and start fresh
@@ -66,4 +71,4 @@ function export_r(X,group,filename)
     end
     fprintf(fid,'\n');
   end
-  
+%endfunction
