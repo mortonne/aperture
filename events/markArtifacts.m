@@ -15,7 +15,7 @@ mask = false(length(events), size(timebins,1));
 for e=1:length(events)
   % get the time in ms of the first artifact after this event
   thisart = events(e).artifactMS;
-  if thisart<0
+  if thisart<=0
     % no artifacts in this event
     continue
   end

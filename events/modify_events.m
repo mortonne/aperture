@@ -15,7 +15,7 @@ function [ev,err] = modify_events(ev,params,evname,resDir)
 %    Optional params fields:
 %     'eventFilter'     String to be passed into filterStruct to filter the
 %                       events struct. The filter will be applied before 
-%                       params.evmodfcn is run. Default: ''
+%                       params.evmodfcn is run. Default: '' (no filtering)
 %     'replace_eegfile' Cell array of strings, where each row gives a pair
 %                       of strings to be passed into strrep, with
 %                       events(i).eegfile as the first argument. Useful for
@@ -26,6 +26,8 @@ function [ev,err] = modify_events(ev,params,evname,resDir)
 %                       eventFilter has been applied
 %     'evmodinput'      Cell array of optional additional inputs to 
 %                       params.evmodfcn
+%     'overwrite'       If true, existing events will be overwritten. Default
+%                       is true if EV.name equals EVNAME, false otherwise
 %
 %   NOTE: The 'eventFilter' and 'replace_eegfile' options are included for
 %   convenience; the same functionality can be achieved using the 'evmodfcn'
@@ -52,7 +54,9 @@ oldev = ev;
 % initialize the new ev object
 if ~strcmp(oldev.name,evname)
   ev.name = evname;
-  ev.file = fullfile(resDir, sprintf('%s_%s.mat', evname, ev.source));
+  ev.file = fullfile(resDir,'events',sprintf('%s_%s.mat', evname, ev.source));
+  else
+  params.overwrite = 1;
 end
 
 % check the input and output

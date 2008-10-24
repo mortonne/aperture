@@ -84,7 +84,8 @@ time = init_time(MSvals);
 % get frequency information
 freq = init_freq(params.freqs);
 
-fprintf('\nStarting create_pattern. Parameters are:\n\n')
+fprintf('\nCreating patterns named %s using %s.\n', patname,func2str(fcnhandle))
+fprintf('Parameters are:\n\n')
 disp(params);
 
 for subj=exp.subj
