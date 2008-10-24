@@ -121,8 +121,12 @@ for j=1:length(sel.vals)
   trainreg = reg.vec(trainsel);
   testreg = reg.vec(testsel);
 
-  % run classification algorithms
-  [class(j,:),err,posterior(j,:,:)] = run_classifier(trainpat,trainreg,testpat,testreg,params.classifier,params);
+  try
+    % run classification algorithms
+    [class(j,:),err,posterior(j,:,:)] = run_classifier(trainpat,trainreg,testpat,testreg,params.classifier,params);
+    catch
+    warning('Classifier threw an error.')
+  end
 
   % check the performance
   pcorr(j) = sum(testreg==class(j,:))/length(testreg);

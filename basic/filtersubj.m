@@ -17,12 +17,17 @@ if ~exist('include','var')
   include = 1;
 end
 
-% convert the subject id's to numbers
-subjs = {subj.id};
-usubjs = unique(subjs);
-for s=1:length(usubjs)
-  id = usubjs{s};
-  num(s) = str2num(id(isstrprop(id,'digit')));
+if ~iscell(numbers)
+  % convert the subject id's to numbers
+  subjs = {subj.id};
+  usubjs = unique(subjs);
+  for s=1:length(usubjs)
+    id = usubjs{s};
+    num(s) = str2num(id(isstrprop(id,'digit')));
+  end
+  
+  else
+  num = {subj.id};
 end
 
 % filter subjects

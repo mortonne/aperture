@@ -43,12 +43,15 @@ end
 
 % convert to a varsXsubjects cell array
 varcell = shiftdim(struct2cell(varstruct),1);
+%varcell = struct2cell(varstruct);
+%varcell = shiftdim(struct2cell(varstruct),2);
 
 for i=1:size(varcell,1)
   varargout{i} = [];
   for j=1:size(varcell,2)
+
     try
-      if size(varcell{i,j},1)==1
+      if 0%size(varcell{i,j},1)==1
         varargout{i} = [varargout{i} varcell{i,j}];
         else
         varargout{i} = [varargout{i}; varcell{i,j}];

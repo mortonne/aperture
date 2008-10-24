@@ -130,7 +130,7 @@ for s=1:length(exp.subj)
 
     % check if PCA was done on the training pattern (will bad vars crash this?)
     if isfield(pat1.dim,'coeff') && ~isempty(pat1.dim.coeff)
-      load(pat1.dim.coeff);
+      %load(pat1.dim.coeff);
       % apply the same transformation to the test pattern
 
     end
@@ -157,9 +157,11 @@ for s=1:length(exp.subj)
 
   meanpcorr = nanmean(pcorr);
   allsubjpcorr(s,:) = pcorr;
-  [h,p] = ttest(pcorr,1/nCats,alpha,'right');
-  fprintf('Mean: %.4f\n', meanpcorr)
-  fprintf('ttest: p = %.4f\n', p)
+  if length(pcorr)>1
+    [h,p] = ttest(pcorr,1/nCats,alpha,'right');
+    fprintf('Mean: %.4f\n', meanpcorr)
+    fprintf('ttest: p = %.4f\n', p)
+  end
 
   save(pc.file, 'class', 'pcorr', 'meanpcorr', 'posterior');
   closeFile(pc.file);

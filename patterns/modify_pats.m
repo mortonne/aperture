@@ -42,6 +42,7 @@ end
 % check input files and prepare output files
 eid = prepFiles(oldpat.file, pat.file, params);
 if eid
+  eid = 0;
   return
 end
 
