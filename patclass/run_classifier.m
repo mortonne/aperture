@@ -50,9 +50,23 @@ switch classifier
 
 	[class,err,posterior] = classify(testpat, trainpat, trainreg, params.type);
 
-        case 'correlation'
+  case 'correlation'
 	[class,posterior] = corr_class(testpat,trainpat,trainreg); 
   
+	case 'svm'
+	% function can't handle more than two groups, so iterate over groups,
+	% train on group members versus everything else	
+	uniq_reg_vals = unique(trainreg);
+	for i=1:length(uniq_reg_vals)
+	  % separate into two groups
+	  this_trainreg = trainreg==uniq_reg_vals(i);
+	  
+	  % train the classifier
+	  svm_struct = svmtrain(trainpat,this_trainreg);
+	  
+	  % test
+	  groups = svmclassify(svm_struct,testpat);
+  end
 	
 	otherwise
 	error('Error:unknown classifier.')
@@ -65,3 +79,4 @@ function mat = vec2mat(vec)
 	for i=1:length(vals)
 		mat(:,i) = vec==vals(i);
 	end
+%endfunction
