@@ -54,24 +54,39 @@ switch classifier
 	[class,posterior] = corr_class(testpat,trainpat,trainreg); 
   
 	case 'svm'
+	% LIBSVM VERSION
+	% standardize input
+	trainreg = grp2idx(trainreg);
+	testreg = grp2idx(testreg);
+	
+	% train
+	model = svmtrain(trainreg,trainpat);
+	
+	% test; not sure what range of posterior is. Should we normalize so
+	% it's between 0 and 1?
+	[class,temp,posterior] = svmpredict(testreg,testpat,model);
+	err = 1-(temp(1)/100);
+	
+	%{
+	% MATLAB VERSION
 	% function can't handle more than two groups, so iterate over groups,
 	% train on group members versus everything else	
 	uniq_reg_vals = unique(trainreg);
 	for i=1:length(uniq_reg_vals)
 	  % separate into two groups
-	  this_trainreg = trainreg==uniq_reg_vals(i);
+	  this_trainreg = ismember(trainreg,uniq_reg_vals(i));
 	  
 	  % train the classifier
 	  svm_struct = svmtrain(trainpat,this_trainreg);
 	  
 	  % test
-	  groups = svmclassify(svm_struct,testpat);
+	  groups = svmclassify(svm_struct,testpat);keyboard
   end
+  %}
 	
 	otherwise
 	error('Error:unknown classifier.')
 end
-
 
 function mat = vec2mat(vec)
 
