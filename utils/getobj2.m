@@ -1,4 +1,4 @@
-function obj = getobj2(s,varargin)
+function obj = getobj2(s,path)
 
 obj = getobj(s,path{1},path{2});
 
