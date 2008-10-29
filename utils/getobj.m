@@ -18,7 +18,7 @@ if ~exist('objname', 'var')
   objname = '';
 end
 
-objs = getfield(s,f);
+objs = s.(f);
 if ~isstruct(objs)
   error('Field is not a struct.');
 end
@@ -32,10 +32,10 @@ end
 
 % get the identifier field
 if isfield(objs, 'name')
-  [obj,ind] = filterStruct(objs, 'strcmp(name, varargin{1})', objname);
+  ind = find(strcmp({objs.name},objname));
 elseif isfield(objs, 'id')
-  [obj,ind] = filterStruct(objs, 'strcmp(id, varargin{1})', objname);
+  ind = find(strcmp({objs.id},objname));
 else
   error('Objects do not have identifier field.');
 end
-ind = find(ind);
+obj = objs(ind);

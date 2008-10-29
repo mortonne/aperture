@@ -58,7 +58,7 @@ switch classifier
 	% standardize input
 	trainreg = grp2idx(trainreg);
 	testreg = grp2idx(testreg);
-	
+	keyboard
 	% train
 	model = svmtrain(trainreg,trainpat);
 	
