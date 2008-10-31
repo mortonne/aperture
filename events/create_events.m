@@ -7,12 +7,15 @@ function create_events(exp,eventsfcn,eventsfcninput,varargin)
 %     'files2check'
 %     'agethresh'
 
-def.eventsfcninput = {};
+if ~exist('eventsfcninput','var')
+  eventsfcninput = {};
+end
+
 def.eventsfile = 'events.mat';
 def.files2check = {'session.log', '*.par'};
 def.agethresh = .8;
 
-[eid,emsg,eventsfcninput,eventsfile,files2check,agethresh] = getargs(fieldnames(def),struct2cell(def),varargin{:});
+[eid,emsg,eventsfile,files2check,agethresh] = getargs(fieldnames(def),struct2cell(def),varargin{:});
 
 for subj=exp.subj
   for sess=subj.sess
