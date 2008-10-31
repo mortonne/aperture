@@ -24,7 +24,7 @@ end
 params = structDefaults(params, 'eventFilter','', 'windowEnd',2000, 'verbose',0);
 status = 0;
 
-load(ev.file);
+events = loadEvents(ev.file);
 
 % run filter if specified
 events = filterStruct(events, params.eventFilter);

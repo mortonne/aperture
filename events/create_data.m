@@ -24,7 +24,7 @@ if err
   return
 end
 
-load(ev.file);
+events = loadEvents(ev.file);
 
 % create the data struct
 fprintf('creating data struct using %s...', func2str(params.datafcn))

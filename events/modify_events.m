@@ -65,7 +65,7 @@ if err
   return
 end
 
-load(oldev.file);
+events = loadEvents(oldev.file);
 
 % run strrep on the eegfile of each event
 if ~isempty(params.replace_eegfile)

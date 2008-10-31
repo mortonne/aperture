@@ -39,8 +39,12 @@ for subj=exp.subj
   for sess=subj.sess
     fprintf('%d\t', sess.number)
     % load the events struct for this session
-    load(fullfile(sess.dir, eventsFile));
-    
+    s = load(fullfile(sess.dir, eventsFile));
+    if ~isfield(s,'events')
+      error('Events file %s does not contain a variable named ''events''.', fullfile(sess.dir,eventsFile))
+    end
+    events = s.events;
+
     if ~isempty(eventFilter)
       events = filterStruct(events,eventFilter);
     end
