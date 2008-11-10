@@ -47,7 +47,7 @@ end
 
 alpha = 0.05;
 
-params = structDefaults(params, 'classifier','classify', 'nComp',[], 'scramble',0, 'lock',0, 'overwrite',1, 'loadSingles',1, 'select_test',1);
+params = structDefaults(params, 'classifier','classify', 'nComp',[], 'scramble',0, 'lock',0, 'overwrite',1, 'loadSingles',1, 'select_test',1,'patthresh',[]);
 
 rand('twister',sum(100*clock))
 
@@ -85,6 +85,9 @@ for s=1:length(exp.subj)
   end
 
   % replace bad observations with the mean for that var
+  if ~isempty(params.patthresh)
+    trainpatall(abs(trainpatall)>params.patthresh)=NaN;
+  end
   trainpatall = remove_nans(trainpatall);
   trainbadvar = find(all(isnan(trainpatall)));
 
@@ -124,6 +127,9 @@ for s=1:length(exp.subj)
       % make into obsXvars matrix
       patsize = size(testpat);
       testpat = reshape(testpat, [patsize(1) prod(patsize(2:end))]);
+    end
+    if ~isempty(params.patthresh)
+      testpat(abs(testpat)>params.patthresh)=NaN;
     end
     testpat = remove_nans(testpat);
     testbadvar = find(all(isnan(testpat)));

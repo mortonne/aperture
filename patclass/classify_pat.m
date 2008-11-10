@@ -40,7 +40,7 @@ if ~isfield(params, 'selector')
 	error('You must specify a selector in params.')
 end
 
-params = structDefaults(params, 'classifier','classify', 'nComp',[], 'scramble',0, 'lock',0, 'overwrite',1, 'loadSingles',1, 'select_test',1);
+params = structDefaults(params, 'classifier','classify', 'nComp',[], 'scramble',0, 'lock',0, 'overwrite',1, 'loadSingles',1, 'select_test',1,'patthresh',[]);
 
 status = 0;
 
@@ -81,10 +81,13 @@ if length(patsize)>2
 end
 
 % deal with any nans in the pattern (variables may be thrown out)
+if ~isempty(params.patthresh)
+  pattern(abs(pattern)>params.patthresh)=NaN;
+end
 pattern = remove_nans(pattern);
 
 if params.select_test
-  nTestEv = length(events)/length(sel.vals);
+  nTestEv = length(sel.vec)/length(sel.vals);
 else
   nTestEv = length(events);
 end
@@ -114,12 +117,12 @@ for j=1:length(sel.vals)
   end
 
   % get the training and testing patterns
-  trainpat = pattern(trainsel,:);
-  testpat = pattern(testsel,:);
+  trainpat = pattern(find(trainsel),:);
+  testpat = pattern(find(testsel),:);
 
   % get the corresponding regressors for train and test
-  trainreg = reg.vec(trainsel);
-  testreg = reg.vec(testsel);
+  trainreg = reg.vec(find(trainsel));
+  testreg = reg.vec(find(testsel));
 
   try
     % run classification algorithms
