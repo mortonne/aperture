@@ -168,8 +168,11 @@ for s=1:length(exp.subj)
     fprintf('Mean: %.4f\n', meanpcorr)
     fprintf('ttest: p = %.4f\n', p)
   end
-  keyboard
-  save(pc.file, 'class', 'pcorr', 'meanpcorr', 'posterior');
+  
+  % for cross-fn consistency, saving testreg.vec as testreg
+  testreg = testreg.vec;
+  
+  save(pc.file, 'class', 'pcorr', 'meanpcorr', 'posterior','testreg');
   closeFile(pc.file);
 
   % add pc to pat2 in the exp struct

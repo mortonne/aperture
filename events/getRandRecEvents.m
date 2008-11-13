@@ -1,4 +1,4 @@
-function allRetEvents = getRandRecEvents(events,samplerate,bufferMS,check)
+function allRetEvents = getRandRecEvents(events,params)
 %GETRANDRECEVENTS - Get important events from FR retrieval period
 %
 % Assumptions:
@@ -6,17 +6,37 @@ function allRetEvents = getRandRecEvents(events,samplerate,bufferMS,check)
 %   - 90 second recall period
 % 
 % FUNCTION:
-%   allRetEvents = getRandRecEvents(events,samplerate,bufferMS,check)
+%   allRetEvents = getRandRecEvents(events,params)
+%
+% params.samplerate
+% params.bufferMS
+% params.check
+% params.recTime (default is 90000)
+% params.recWordField (default is REC_WORD, can change to FFR_REC_WORD)
 %
 % Possible event types:
 %   REC_WORD - Correct recall (only first recall per list).
 %   REP_WORD - Correct word repetition.
 %   RAND_WORD - Random epochs when nothing else is happening.
-%   VOC_WORD - Non-recall-related vocalization.
+%   REC_WORD_VV - Non-recall-related vocalization.
 %   INT_WORD - Recall intrusion.
 
-if ~exist('check','var')
+if ~isfield(params,'check')
   check = 0;
+else
+  check = params.check;
+end
+
+if ~isfield(params,'recTime')
+  recTime = 90000;
+else
+  recTime = params.recTime;
+end
+
+if ~isfield(params,'recWordField')
+  recWordField = 'REC_WORD';
+else
+  recWordField = params.recWordField;
 end
 
 if ~isfield(events,'list')
@@ -27,19 +47,19 @@ end
 
 % sanity checks!
 types = unique({events.type});
-if ~ismember('REC_START',types)
+if ~ismember(recWordField,types)
   error('No recall period start events (type=REC_START) found.')
-elseif ~ismember('REC_WORD',types)
+elseif ~ismember(recWordField,types)
   error('No word recall events (type=REC_WORD) found.')
 end
 
 % some defaults
-recTime = 90000;
-recSamples = floor(recTime * samplerate/1000);
-bufferSamp = floor(bufferMS*samplerate/1000);
+% recTime = 90000;
+recSamples = floor(recTime * params.samplerate/1000);
+bufferSamp = floor(params.bufferMS * params.samplerate/1000);
 
 % get all the word events
-allWord_events = filterStruct(events,'strfound(type,''REC_WORD'')');
+allWord_events = filterStruct(events,strcat('strfound(type,''',recWordField,''')'));
 
 % get start of each recall period
 recStart = inStruct(events,'strcmp(type,''REC_START'')');
@@ -147,7 +167,7 @@ for l = 1:length(lists)
     tdiff = eventOffsets(e) - eventOffsets(e-1) - 2*bufferSamp;
     if tdiff < 0
       newKeep(e) = 0;
-      fprintf('Removed recall event: %g ms\n',tdiff*1000/samplerate);
+      fprintf('Removed recall event: %g ms\n',tdiff*1000/params.samplerate);
     end
   end
   newEvents = newEvents(newKeep);
@@ -221,7 +241,7 @@ for e = 1:length(word_events)
     end      
   end
 end
-allRec_events = replicateField(allRec_events,'type','REC_WORD');
+allRec_events = replicateField(allRec_events,'type',recWordField);
 allRep_events = replicateField(allRep_events,'type','REP_WORD');
 
 % random searching events

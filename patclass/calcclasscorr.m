@@ -78,8 +78,8 @@ for s=1:length(res.subj)
   res.corrmat(s,:,:) = res.subj(s).cs_corrmat;
 
   % ondiag - offdiag, actual data
-  res.subj(s).ondiag = mean(res.subj(i).cs_corrmat(indondiag));
-  res.subj(s).offdiag = mean(res.subj(i).cs_corrmat(indoffdiag));
+  res.subj(s).ondiag = mean(res.subj(s).cs_corrmat(indondiag));
+  res.subj(s).offdiag = mean(res.subj(s).cs_corrmat(indoffdiag));
   
   res.subj(s).onoff = res.subj(s).ondiag - res.subj(s).offdiag;
   
@@ -87,8 +87,8 @@ for s=1:length(res.subj)
   for scr = 1:nscram
     
     this_scr = squeeze(res.subj(s).scr_cs_corrmat(scr,:,:));
-    ondiag = mean(res.subj(i).cs_corrmat(indondiag));
-    offdiag = mean(res.subj(i).cs_corrmat(indoffdiag));
+    ondiag = mean(this_scr(indondiag));
+    offdiag = mean(this_scr(indoffdiag));
     scr_onoff(scr) = ondiag - offdiag;
     
   end
