@@ -122,17 +122,17 @@ for j=1:length(sel.vals)
 
   % get the corresponding regressors for train and test
   trainreg = reg.vec(find(trainsel));
-  testreg = reg.vec(find(testsel));
+  testreg(j,:) = reg.vec(find(testsel));
 
   try
     % run classification algorithms
-    [class(j,:),err,posterior(j,:,:)] = run_classifier(trainpat,trainreg,testpat,testreg,params.classifier,params);
+    [class(j,:),err,posterior(j,:,:)] = run_classifier(trainpat,trainreg,testpat,testreg(j,:),params.classifier,params);
     catch
     warning('Classifier threw an error.')
   end
 
   % check the performance
-  pcorr(j) = sum(testreg==class(j,:))/length(testreg);
+  pcorr(j) = sum(testreg(j,:)==class(j,:))/length(testreg(j,:));
   fprintf('%.4f\n', pcorr(j))
 end % selector
 

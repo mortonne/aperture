@@ -168,7 +168,7 @@ for s=1:length(exp.subj)
     fprintf('Mean: %.4f\n', meanpcorr)
     fprintf('ttest: p = %.4f\n', p)
   end
-
+  keyboard
   save(pc.file, 'class', 'pcorr', 'meanpcorr', 'posterior');
   closeFile(pc.file);
 
