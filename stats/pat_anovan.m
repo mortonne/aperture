@@ -75,19 +75,22 @@ if ismember('interaction', params.optinput)
 end
 
 p = NaN(numev, size(pattern,2), size(pattern,3), size(pattern,4));
+tab = cell(numev, size(pattern,2), size(pattern,3), size(pattern,4));
+stats = cell(numev, size(pattern,2), size(pattern,3), size(pattern,4));
+terms = cell(numev, size(pattern,2), size(pattern,3), size(pattern,4));
 % do the anova
 fprintf('Channel: ');
 for c=1:size(pattern,2)
   fprintf('%s ', pat.dim.chan(c).label);
   for t=1:size(pattern,3)
     for f=1:size(pattern,4)
-      p(:,c,t,f) = anovan(squeeze(pattern(:,c,t,f)), group, 'display', 'off', params.optinput{:});
+      [p(:,c,t,f) tab{1,c,t,f} stats{1,c,t,f}] = anovan(squeeze(pattern(:,c,t,f)), group, 'display', 'off', params.optinput{:});
     end
   end
 end
 fprintf('\n');
 
-save(stat.file, 'p');
+save(stat.file, 'p', 'tab', 'stats');
 closeFile(stat.file);
 
 pat = setobj(pat,'stat',stat);
