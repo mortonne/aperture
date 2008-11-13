@@ -138,7 +138,7 @@ end % selector
 
 meanpcorr = mean(pcorr);
 
-save(pc.file, 'class', 'pcorr', 'meanpcorr', 'posterior');
+save(pc.file, 'class', 'pcorr', 'meanpcorr', 'posterior', 'testreg');
 closeFile(pc.file);
 
 % add the pc object to pat

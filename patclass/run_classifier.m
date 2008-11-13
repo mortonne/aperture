@@ -43,6 +43,7 @@ switch classifier
 	err = sp2.logreg.trainError;
 	[m,i] = max(posterior);
 	class = i';
+	class = class-1; % eeg_ana starts with 0 for categories
 	posterior = posterior';
 
 	case 'classify'
