@@ -32,8 +32,18 @@ if ~exist('subjstr','var')
 end
 
 % get all directories matching subjstr
-d = dir(fullfile(dataroot, subjstr));
-subjects = {d.name};
+path_or_wildcard = fullfile(dataroot, subjstr);
+if exist(path_or_wildcard, 'dir')
+  % subjstr contained a complete directory name inside dataroot, and not a
+  % wildcard; therefore, the only subject id is subjstr
+  subjects = {subjstr};
+else
+  % subjstr contained a wildcard (or is an otherwise invalid
+  % directory name), so calling dir will return a
+  % struct array with matching directory names in the 'name' field
+  d = dir(path_or_wildcard);
+  subjects = {d.name};
+end
 
 subj = [];
 todelete = [];
