@@ -17,7 +17,11 @@ function pattern = sessVoltage(pat,bins,events,base_events)
 %
 
 % set defaults for pattern creation
-params = structDefaults(pat.params, 'relativeMS', [],  'baseOffsetMS', -200,  'baseDurationMS', 100,  'filttype', 'stop',  'filtfreq', [58 62],  'filtorder', 4,  'bufferMS', 1000,  'kthresh', 5,  'ztransform', 1, 'artWindow',500);
+params = structDefaults(pat.params, 'relativeMS', [],  'baseOffsetMS', -200,  'baseDurationMS', 100, 'filttype', 'stop',  'filtfreq', [58 62],  'filtorder', 4,  'bufferMS', 1000,  'kthresh', 5,  'ztransform', 1, 'artWindow',500);
+
+if ~isfield(params,'baseRelativeMS')
+  params.baseRelativeMS = params.relativeMS;
+end
 
 timebins = makeBins(1000/params.resampledRate,params.offsetMS,params.offsetMS+params.durationMS);
 

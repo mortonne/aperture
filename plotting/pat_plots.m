@@ -39,8 +39,13 @@ end
 % relative filenames make compiling reports much easier!
 cd(resDir)
 
-params = structDefaults(params, 'diff', 0,  'plotsig', 1,  'whichStat', {[], []},  'powrange', [-.3 .3],  'p_range', [0.05 0.005], 'printinput', '-depsc');
+params = structDefaults(params, 'diff',0, 'whichStat',{[], []}, 'powrange',[-.3 .3],  'p_range',[0.05 0.005], 'printinput','-depsc');
 
+if isfield(pat,'stat')
+  params.plotsig = 1;
+  else
+  params.plotsig = 0;
+end
 if ~exist(fullfile(resDir, 'figs'), 'dir')
   mkdir(fullfile(resDir, 'figs'));
 end
