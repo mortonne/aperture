@@ -1,6 +1,6 @@
 function exp = applytosubj(exp,subjects,objtype,objname,varargin)
 %APPLYTOSUBJ   Apply a function to all subjects.
-%   EXP = APPLYTOSUBJ(EXP,OBJTYPE,OBJNAME,VARARGIN) gets the object
+%   EXP = APPLYTOSUBJ(EXP,SUBJECTS,OBJTYPE,OBJNAME,VARARGIN) gets the object
 %   of type OBJTYPE and name OBJNAME from each subject, and passes
 %   it into one or more functions.  Functions are specified by
 %   function handle, input argument cell array pairs.  The first input
@@ -9,7 +9,7 @@ function exp = applytosubj(exp,subjects,objtype,objname,varargin)
 %
 %   Example
 %     To apply myfunction to each subject's voltage pattern:
-%     exp = applytosubj(exp,'pat','voltage',@myfunction,{arg1,arg2,arg3})
+%     exp = applytosubj(exp,[],'pat','voltage',@myfunction,{arg1,arg2,arg3})
 %
 
 if isempty(subjects)

@@ -90,6 +90,10 @@ if ~isfield(params,'baseEventFilter')
   params.baseEventFilter = params.eventFilter;
 end
 
+if ~isfield(params, 'baseRelativeMS')
+  params.baseRelativeMS = params.relativeMS;
+end
+
 % get time bin information
 if ~isempty(params.downsample)
 	stepSize = fix(1000/params.downsample);
