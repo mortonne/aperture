@@ -60,7 +60,10 @@ for c=1:length(params.channels)
 		% check kurtosis for this event, add info to boolean mask for later
 		if ~isempty(params.kthresh)
 			k = kurtosis(this_eeg);
-			this_eeg(k>params.kthresh) = NaN;
+			if k>params.kthresh
+			  this_eeg(:) = NaN;
+		  end
+			%this_eeg(k>params.kthresh) = NaN;
 		end
 
 		% normalize across sessions

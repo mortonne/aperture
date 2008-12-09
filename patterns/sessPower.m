@@ -78,17 +78,16 @@ for c=1:length(params.channels)
 			continue
 		end
 
+    if params.logtransform
+			this_pow(this_pow<=0) = eps(0);
+			this_pow = log10(this_pow);
+		end
+
 		% make it time X frequency
 		this_pow = shiftdim(squeeze(this_pow),1);
 
 		for f=1:length(params.freqs)
-
 			if params.ztransform
-				if params.logtransform
-					this_pow(this_pow<=0) = eps(0);
-					this_pow = log10(this_pow);
-				end
-
 				% z-transform
 				this_pow(:,f) = (this_pow(:,f) - base_mean(f))/base_std(f);
 			end

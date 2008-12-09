@@ -106,7 +106,9 @@ fprintf('\nCreating patterns named %s using %s.\n', patname,func2str(fcnhandle))
 fprintf('Parameters are:\n\n')
 disp(params);
 
-for subj=exp.subj
+subj_vec = exp.subj;
+for s=1:length(exp.subj)
+  subj = exp.subj(s);
 	% set where the pattern will be saved
 	patfile = fullfile(resDir, 'patterns', sprintf('pattern_%s_%s.mat', patname, subj.id));
 
@@ -137,11 +139,14 @@ for subj=exp.subj
 		if ~exist(fileparts(pat.dim.ev.file), 'dir')
 			mkdir(fileparts(pat.dim.ev.file));
 		end
-		save(pat.dim.ev.file, 'events');
+		saveEvents(events,pat.dim.ev.file);
 	end
 
 	% update exp with the new pat object
-	exp = update_exp(exp, 'subj', subj.id, 'pat', pat);
+	%subj = setobj(subj,'pat',pat);
+	%exp.subj = setobj(exp,'subj',subj);
+	subj_vec(s) = setobj(exp.subj(s),'pat',pat);
+	%exp = update_exp(exp, 'subj', subj.id, 'pat', pat);
 
 	if params.updateOnly
 	  closeFile(pat.file);
@@ -171,6 +176,7 @@ for subj=exp.subj
 	pattern = patMeans(pattern, bins(1));
 
 	% save the pattern
-	save(pat.file, 'pattern');
+	savePattern(pat.file,pattern);
 	closeFile(pat.file);
 end % subj
+exp.subj = subj_vec;

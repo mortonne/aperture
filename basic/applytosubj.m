@@ -36,6 +36,10 @@ for i=1:length(subjects)
     error('Subject %d not found in exp.subj.')
   end
 
+  if ~isfield(subj, objtype) || isempty(subj.(objtype))
+    continue
+  end
+
   fprintf('\n%s: ', subj.id)
   
   % get the pat to modify
@@ -47,13 +51,13 @@ for i=1:length(subjects)
   
   obj.source = subj.id;
   
-  for i=1:2:length(varargin)
-    if i>1
+  for j=1:2:length(varargin)
+    if j>1
       fprintf('\n\t')
     end
     
     % get the function to evaluate
-    objmodfcn = varargin{i};
+    objmodfcn = varargin{j};
     fcnstr = func2str(objmodfcn);
     
     if exist(fcnstr)~=2
@@ -61,8 +65,8 @@ for i=1:length(subjects)
     end
     
     % get other inputs, if there are any
-    if i<length(varargin)
-      inputs = varargin{i+1};
+    if j<length(varargin)
+      inputs = varargin{j+1};
       if ~iscell(inputs)
         inputs = {inputs};
       end

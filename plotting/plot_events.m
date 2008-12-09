@@ -1,4 +1,14 @@
 function h = plot_events(events, opt)
+%PLOT_EVENTS   Visualize information in an events structure.
+%   H = PLOT_EVENTS(EVENTS,OPT) makes a plot of the information contained
+%   in the EVENTS structure, using options specified in the OPT structure.
+%
+%   OPT is a vector structure.  Each element of OPT specifies options
+%   for one set of lines, regions, or labels.
+%     'field'   Name of a field of the events struct
+%     'type'    Type of plot to make
+%     'params'  Additional parameters specific to the plot type
+%
 
 if ~exist('opt','var')
   opt = struct;
@@ -41,8 +51,8 @@ for i=1:length(opt)
     step = range(ytemp)/(length(f)-1);
     texty = ytemp(1)+step:step:ytemp(2);
     
-    h{i} = labels(times, f, texty(i));
-    
+    %h{i} = labels(times, f, texty(i));
+    h{i} = labels(times, f, .5);    
     otherwise
     error('Invalid plot type.')
     
@@ -67,6 +77,7 @@ function h = lines(times, marky, field, fieldname, colors, params)
   end
 
   legend(hl,label{:},'Location','NorthWest')
+%endfunction
 
 function h = regions(starts,ends,marky,fillcolor)
   nRegions = length(starts);
@@ -81,10 +92,11 @@ function h = regions(starts,ends,marky,fillcolor)
     set(h, 'edgecolor', fillcolor)
     hold on
   end
+%endfunction
 
 function h = labels(times, field, texty)
   uf = unique(field);
-  
+
   for i=1:length(uf)
     if iscell(uf)
       val = uf{i};
@@ -100,5 +112,6 @@ function h = labels(times, field, texty)
     x = times(ind);
     y = repmat(texty,1,length(ind));
     h = text(x,y,label,'BackgroundColor','w', 'EdgeColor','k', 'HorizontalAlignment','center','FontSize',10);
+
   end
-  
+%endfunction
