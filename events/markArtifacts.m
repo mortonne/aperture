@@ -1,4 +1,4 @@
-function mask = markArtifacts(events, timebins, artWindow)
+function mask = markArtifacts(events, timebins, pre_art, post_art)
 %MARKARTIFACTS   Mark time periods that contain artifacts.
 %   MASK = MARKARTIFACTS(EVENTS,TIMEBINS,ARTWINDOW) get artifact
 %   information from the artifactMS field in EVENTS, and marks
@@ -21,7 +21,7 @@ for e=1:length(events)
   end
   
   % set the window to mark as artifacty
-  wind = [thisart thisart+artWindow];
+  wind = [thisart-pre_art thisart+post_art];
   
   for t=1:size(timebins,1)
     startT = timebins(t,1);

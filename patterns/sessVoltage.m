@@ -88,3 +88,6 @@ bins([1 3]) = {[]};
 
 % bin channels
 pattern = patMeans(pattern, bins);
+
+
+function 
