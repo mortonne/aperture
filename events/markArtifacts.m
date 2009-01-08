@@ -1,9 +1,12 @@
-function mask = markArtifacts(events, timebins, pre_art, post_art)
+function mask = markArtifacts(events, timebins, art_window)
 %MARKARTIFACTS   Mark time periods that contain artifacts.
-%   MASK = MARKARTIFACTS(EVENTS,TIMEBINS,ARTWINDOW) get artifact
+%   MASK = MARKARTIFACTS(EVENTS,TIMEBINS,ART_WINDOW) get artifact
 %   information from the artifactMS field in EVENTS, and marks
-%   time bins in TIMEBINS that are within ARTWINDOW milliseconds
-%   of an artifact.  TIMEBINS should be a nbinsX2 matrix, where
+%   time bins in TIMEBINS that are ART_WINDOW(1) milliseconds
+%   before or ART_WINDOW(2) milliseconds after the beginning of
+%   the artifact.  
+%
+%   TIMEBINS should be a nbinsX2 matrix, where
 %   each row give the range in milliseconds of one bin.
 %
 %   The output, MASK, is an eventsXtimebins logical array where
@@ -21,7 +24,7 @@ for e=1:length(events)
   end
   
   % set the window to mark as artifacty
-  wind = [thisart-pre_art thisart+post_art];
+  wind = [thisart + art_window(1) thisart + art_window(2)];
   
   for t=1:size(timebins,1)
     startT = timebins(t,1);
