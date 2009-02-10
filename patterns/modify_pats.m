@@ -11,7 +11,7 @@ function [pat,eid] = modify_pats(pat, params, patname, resDir)
 %   Also see applytosubj.
 %
 
-if ~exist('patname','var')
+if ~exist('patname','var') | isempty(patname)
   % default to overwriting the existing pattern
   patname = pat.name;
 end

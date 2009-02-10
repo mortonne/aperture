@@ -1,19 +1,37 @@
-function [mat,goodind] = remove_nans(mat)
-%REMOVE_NANS
-%   [MAT,GOODIND] = REMOVE_NANS(MAT)
-% matrix must be observations X vars
-% returns changed matrix and indices of variables that had at least one data point
+function Y = remove_nans(X)
+%REMOVE_NANS  Deal with missing data points.
 %
+%  Y = remove_nans(X)
+%
+%  INPUTS:
+%       X:  an [observations X variables] matrix.
+%
+%  OUTPUTS:
+%       Y:  X, with NaNs replaced with the mean for that variable across
+%           all available observations. If a given variable has no
+%           observations, that variable will remain all NaNs.
 
-%goodind = find(sum(~isnan(mat)));
+if ~isnumeric(X)
+  error('Input must be a matrix.')
+end
+
+%{
+% NWM: not sure why I took this out.
+goodind = find(sum(~isnan(mat)));
 
 % remove vars that are all nans
-%mat = mat(:,goodind);
+mat = mat(:,goodind);
+%}
 
-% replace remaining nans with the mean for that var across observations
-varmeans = nanmean(mat);
+% get mean for all observations of each variable
+var_means = nanmean(X);
 
-for i=1:size(mat,2)
-  badobs = isnan(mat(:,i));
-  mat(badobs,i) = varmeans(i);
+% fix each variable
+Y = X;
+for i=1:size(X,2)
+  % find missing observations
+  bad_obs = isnan(X(:,i));
+  
+  % set all missing observations to the mean for this variable
+  Y(bad_obs,i) = var_means(i);
 end

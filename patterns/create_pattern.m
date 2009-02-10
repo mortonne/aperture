@@ -1,4 +1,4 @@
-function exp = create_pattern(exp, fcnhandle, params, patname, resDir)
+function subj = create_pattern(subj, fcnhandle, params, patname, resDir)
 %CREATE_PATTERN   Create a pattern for each subject in an exp struct.
 %   EXP = CREATE_PATTERN(EXP,FCNHANDLE,PARAMS,PATNAME,RESDIR) creates
 %   a pattern for each subject in EXP.  FCNHANDLE creates the pattern
@@ -82,6 +82,7 @@ params = structDefaults(params,  ...
                         'timeFilter',       '',         ...
                         'freqs',            [],         ...
                         'freqFilter',       '',         ...
+                        'matlabpool_size',  [],          ...
                         'lock',             0,          ...
                         'overwrite',        0,          ...
                         'updateOnly',       0);
@@ -90,8 +91,13 @@ if ~isfield(params,'baseEventFilter')
   params.baseEventFilter = params.eventFilter;
 end
 
-if ~isfield(params, 'baseRelativeMS')
-  params.baseRelativeMS = params.relativeMS;
+% try to use parfor loops in gete_ms
+if ~isempty(params.matlabpool_size)
+  try
+    matlabpool('open', params.matlabpool_size);
+    catch
+    fprintf('Unable to open matlabpool. gete_ms will be run in serial.');
+  end
 end
 
 % get time bin information
@@ -106,17 +112,20 @@ time = init_time(MSvals);
 % get frequency information
 freq = init_freq(params.freqs);
 
-fprintf('\nCreating patterns named %s using %s.\n', patname,func2str(fcnhandle))
-fprintf('Parameters are:\n\n')
-disp(params);
+if ~params.updateOnly
+  fprintf('\nCreating patterns named %s using %s.\n', patname,func2str(fcnhandle))
+  fprintf('Parameters are:\n\n')
+  disp(params);
+end
 
-for s=1:length(exp.subj)
+%for s=1:length(exp.subj)
 	% set where the pattern will be saved
 	patfile = fullfile(resDir, 'patterns', sprintf('pattern_%s_%s.mat', patname, subj.id));
 
 	% check input files and prepare output files
 	if prepFiles({}, patfile, params)~=0
-		continue
+		%continue
+		return
 	end
 
 	% get this subject's events
@@ -145,13 +154,16 @@ for s=1:length(exp.subj)
 	end
 
 	% update exp with the new pat object
-	exp = update_exp(exp, 'subj', subj.id, 'pat', pat);
+	%exp = update_exp(exp, 'subj', subj.id, 'pat', pat);
+  subj = setobj(subj, 'pat', pat);
 
 	if params.updateOnly
 	  closeFile(pat.file);
-		continue
+		%continue
+		fprintf('Pattern %s added to exp.\n', patname)
+		return
 	end
-
+	
 	% initialize this subject's pattern
 	pattern = NaN(length(src_events), length(pat.dim.chan), length(pat.dim.time), length(pat.dim.freq));
 
@@ -177,4 +189,4 @@ for s=1:length(exp.subj)
 	% save the pattern
 	save(pat.file,'pattern');
 	closeFile(pat.file);
-end % subj
+%end % subj
