@@ -28,6 +28,9 @@ timebins = makeBins(1000/params.resampledRate,params.offsetMS,params.offsetMS+pa
 % initialize the pattern for this session
 pattern = NaN(length(events), length(params.channels), length(pat.dim.time));
 
+% load bad channel info for these events
+[bad_chans, event_ind] = get_bad_chans({events.eegfile});
+
 fprintf('Channels: ')
 for c=1:length(params.channels)
 	fprintf('%d ', params.channels(c));
@@ -72,8 +75,17 @@ for c=1:length(params.channels)
 		end
 		
 		if ~isempty(params.artWindow)
+		  % remove blink artifacts
 		  art = markArtifacts(events(e), timebins, params.artWindow);
 		  this_eeg(art) = NaN;
+	  end
+		
+		if params.excludeBadChans
+		  % remove bad channels
+		  isbad = mark_bad_chans(params.channels(c), bad_chans, event_ind(e));
+		  if isbad
+		    this_eeg(:) = NaN;
+	    end
 	  end
 		
 		% add this event/channel to the pattern

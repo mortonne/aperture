@@ -22,7 +22,7 @@ function [pat,inds,events,evmod] = patFilt(pat,params,events)
 %   See also modify_pats, patBins, patMeans.
 %
 
-params = structDefaults(params,  'eventFilter', '',  'chanFilter', '',  'timeFilter', '',  'freqFilter', '');
+params = structDefaults(params,  'eventFilter', '',  'chanFilter', '',  'chan_filter',[], 'timeFilter', '',  'freqFilter', '');
 
 % initialize
 for i=1:4
@@ -47,6 +47,7 @@ if ~isempty(params.eventFilter)
 end
 
 % CHANNELS
+% old way of filtering
 if ~isempty(params.chanFilter)
   if isstr(params.chanFilter)
 	  inds{2} = inStruct(pat.dim.chan, params.chanFilter);
@@ -54,6 +55,15 @@ if ~isempty(params.chanFilter)
 	  inds{2} = find(ismember(params.chanFilter, [pat.dim.chan.number]));
   end
 	pat.dim.chan = pat.dim.chan(inds{2});
+end
+% experimental new way
+if ~isempty(params.chan_filter)
+  % unpack the parameters
+  filt_fcn = params.chan_filter{1};
+  filt_input = params.chan_filter{2};
+
+  % run the filter function
+  inds{2} = filter_struct(pat.dim.chan, filt_fcn, filt_input);
 end
 
 % TIME

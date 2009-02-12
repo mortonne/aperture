@@ -57,7 +57,6 @@ function subj = create_pattern(subj, fcnhandle, params, patname, resDir)
 %     pat = getobj(exp.subj(1),'pat','volt_pattern');
 %
 %   See also sessVoltage, sessPower.
-%
 
 if ~exist('params', 'var')
 	params = struct();
@@ -118,75 +117,71 @@ if ~params.updateOnly
   disp(params);
 end
 
-%for s=1:length(exp.subj)
-	% set where the pattern will be saved
-	patfile = fullfile(resDir, 'patterns', sprintf('pattern_%s_%s.mat', patname, subj.id));
+% set where the pattern will be saved
+patfile = fullfile(resDir, 'patterns', sprintf('pattern_%s_%s.mat', patname, subj.id));
 
-	% check input files and prepare output files
-	if prepFiles({}, patfile, params)~=0
-		%continue
-		return
-	end
+% check input files and prepare output files
+if prepFiles({}, patfile, params)~=0
+  return
+end
 
-	% get this subject's events
-	ev = getobj(subj, 'ev', params.evname);
-	src_events = loadEvents(ev.file, params.replace_eegfile);
-	base_events = filterStruct(src_events(:), params.baseEventFilter);
+% get this subject's events
+ev = getobj(subj, 'ev', params.evname);
+src_events = loadEvents(ev.file, params.replace_eegfile);
+base_events = filterStruct(src_events(:), params.baseEventFilter);
 
-	% create a pat object to keep track of this pattern
-	pat = init_pat(patname, patfile, subj.id, params, ev, subj.chan, time, freq);
+% create a pat object to keep track of this pattern
+pat = init_pat(patname, patfile, subj.id, params, ev, subj.chan, time, freq);
 
-	% do filtering/binning
-  [pat,inds,src_events,evmod(1)] = patFilt(pat,params,src_events);
-  pat.params.channels = [pat.dim.chan.number];
-  [pat,bins,events,evmod(2)] = patBins(pat,params,src_events);
-	
-	if any(evmod)
-		% change the events name and file
-		pat.dim.ev.name = sprintf('%s_mod', pat.dim.ev.name);
-		pat.dim.ev.file = fullfile(resDir, 'events', sprintf('events_%s_%s.mat', patname, subj.id));
-		
-		% save the modified event struct to a new file
-		if ~exist(fileparts(pat.dim.ev.file), 'dir')
-			mkdir(fileparts(pat.dim.ev.file));
-		end
-		save(pat.dim.ev.file, 'events');
-	end
+% do filtering/binning
+[pat,inds,src_events,evmod(1)] = patFilt(pat,params,src_events);
+pat.params.channels = [pat.dim.chan.number];
+[pat,bins,events,evmod(2)] = patBins(pat,params,src_events);
 
-	% update exp with the new pat object
-	%exp = update_exp(exp, 'subj', subj.id, 'pat', pat);
-  subj = setobj(subj, 'pat', pat);
+if any(evmod)
+  % change the events name and file
+  pat.dim.ev.name = sprintf('%s_mod', pat.dim.ev.name);
+  pat.dim.ev.file = fullfile(resDir, 'events', sprintf('events_%s_%s.mat', patname, subj.id));
 
-	if params.updateOnly
-	  closeFile(pat.file);
-		%continue
-		fprintf('Pattern %s added to exp.\n', patname)
-		return
-	end
-	
-	% initialize this subject's pattern
-	pattern = NaN(length(src_events), length(pat.dim.chan), length(pat.dim.time), length(pat.dim.freq));
+  % save the modified event struct to a new file
+  if ~exist(fileparts(pat.dim.ev.file), 'dir')
+    mkdir(fileparts(pat.dim.ev.file));
+  end
+  save(pat.dim.ev.file, 'events');
+end
 
-	% get a list of sessions in the filtered event struct
-	sessions = unique(getStructField(src_events, 'session'));
+% update subj with the new pat object
+subj = setobj(subj, 'pat', pat);
 
-	% CREATE THE PATTERN
-	for n=1:length(sessions)
-		fprintf('\nProcessing %s session %d:\n', subj.id, sessions(n));
-		sessInd = inStruct(src_events, 'session==varargin{1}', sessions(n));
-		sess_events = src_events(sessInd);
-		sess_base_events = filterStruct(base_events, 'session==varargin{1}', sessions(n));
+if params.updateOnly
+  closeFile(pat.file);
+  fprintf('Pattern %s added to exp.\n', patname)
+  return
+end
 
-		% make the pattern for this session
-		pattern(sessInd,:,:,:) = fcnhandle(pat, bins, sess_events, sess_base_events);
-		
-	end % session
-	fprintf('\n');
+% initialize this subject's pattern
+pattern = NaN(length(src_events), length(pat.dim.chan), length(pat.dim.time), length(pat.dim.freq));
 
-	% bin events
-	pattern = patMeans(pattern, bins(1));
+% get a list of sessions in the filtered event struct
+sessions = unique(getStructField(src_events, 'session'));
 
-	% save the pattern
-	save(pat.file,'pattern');
-	closeFile(pat.file);
-%end % subj
+% CREATE THE PATTERN
+for n=1:length(sessions)
+  fprintf('\nProcessing %s session %d:\n', subj.id, sessions(n));
+  sessInd = inStruct(src_events, 'session==varargin{1}', sessions(n));
+  sess_events = src_events(sessInd);
+  sess_base_events = filterStruct(base_events, 'session==varargin{1}', sessions(n));
+
+  % make the pattern for this session
+  pattern(sessInd,:,:,:) = fcnhandle(pat, bins, sess_events, sess_base_events);
+
+end % session
+fprintf('\n');
+
+% bin events
+pattern = patMeans(pattern, bins(1));
+
+% save the pattern
+save(pat.file,'pattern');
+closeFile(pat.file);
+fprintf('Pattern saved in %s.\n', pat.file)

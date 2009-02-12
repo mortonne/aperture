@@ -22,7 +22,7 @@ if ~exist('params','var')
   params = struct;
 end
 
-params = structDefaults(params, 'nComp',[], 'overwrite',0, 'lock',0);
+params = structDefaults(params, 'nComp',[], 'excludeBadChans',0, 'overwrite',0, 'lock',0);
 
 oldpat = pat;
 
@@ -52,6 +52,24 @@ end
 % apply filters
 [pat,inds,events,evmod(1)] = patFilt(pat,params,events);
 pattern = pattern(inds{:});
+
+if params.excludeBadChans
+  % load bad channel info
+  [bad_chans, event_ind] = get_bad_chans({events.eegfile});
+  
+  % get current channel numbers
+  chan_numbers = [pat.dim.chan.number];
+  
+  % combine channel and event info to make a bad channels logical array
+  isbad = mark_bad_chans(chan_numbers, bad_chans, event_ind);
+
+  % expand isbad to the same dimensions as pattern
+  patsize = size(pattern);
+  isbad = repmat(isbad, [1 1 patsize(3:end)]);
+  
+  % mark bad parts of the pattern
+  pattern(isbad) = NaN;
+end
 
 % do binning
 [pat,patbins,events,evmod(2)] = patBins(pat,params,events);
