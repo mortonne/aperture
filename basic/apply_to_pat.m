@@ -1,7 +1,7 @@
-function subj = apply_to_pat(subj,pat_name,fcn_handle,varargin)
+function subj = apply_to_pat(subj,pat_name,fcn_handle,fcn_inputs)
 %APPLY_TO_PAT   Apply a function to a pat object for all subjects.
 %
-%  subj = apply_to_pat(subj, pat_name, fcn_handle, varargin)
+%  subj = apply_to_pat(subj, pat_name, fcn_handle, fcn_inputs)
 %  
 %  INPUTS:
 %        subj:  a [1 X N subjects] structure representing each subject in an
@@ -13,19 +13,18 @@ function subj = apply_to_pat(subj,pat_name,fcn_handle,varargin)
 %  fcn_handle:  a handle for a function that takes a pat object as first input,
 %               and outputs a pat object.
 %
-%    varargin:  any additional arguments (i.e. varargin) become additional
-%               inputs to fcn_handle.
+%  fcn_inputs:  a cell array of additional inputs (after pat) to fcn_handle.
 %
 %  OUTPUTS:
 %        subj:  a modified subjects vector.
 %
 %  EXAMPLES:
 %   % create a pattern for each subject
-%   subj = applytosubj(subj, @create_pattern, {@sessVoltage, struct, 'volt_pat'});
+%   subj = apply_to_subj(subj, @create_pattern, {@sessVoltage, struct, 'volt_pat'});
 %
 %   % run an ANOVA on each pattern comparing recalled and not recalled events
 %   params.fields = {'recalled'};
-%   subj = apply_to_pat(subj, 'volt_pat', @pat_anovan, params, 'sme');
+%   subj = apply_to_pat(subj, 'volt_pat', @pat_anovan, {params, 'sme'});
 
 % run the function on each subject
-subj = apply_to_subj(subj, @apply_to_obj, {'pat', pat_name, fcn_handle, varargin});
+subj = apply_to_subj(subj, @apply_to_obj, {'pat', pat_name, fcn_handle, fcn_inputs});
