@@ -1,4 +1,4 @@
-function longtable(table, header, filename, title, compile)
+function longtable(table, header, filename, title)
 %LONGTABLE   Create a LaTeX longtable from Matlab data.
 %   LONGTABLE(TABLE,HEADER,FILENAME,TITLE,COMPILE) takes cell array
 %   TABLE containing LaTeX code to be placed in each cell of the table,
@@ -6,9 +6,7 @@ function longtable(table, header, filename, title, compile)
 %   that should have the same number of columns as TABLE.  The optional
 %   TITLE is a string that specifies the title of the table.
 %
-%   The LaTeX code is saved in FILENAME.  If COMPILE is true, the file
-%   will be compiled to create a PDF.
-%
+%   The LaTeX code is saved in FILENAME.
 
 if ~exist('compile', 'var')
   compile = 0;
@@ -95,12 +93,3 @@ end
 fprintf(fid,'\\end{landscape}\n');
 fprintf(fid,'\\end{document}');
 fclose(fid);
-
-if compile
-  pause(5)
-  % compile
-  system(['latex ' filename '.tex']);
-  system(['latex ' filename '.tex']);
-  system(['dvipdf ' filename '.dvi']);
-  system(['open ' filename '.pdf']);
-end
