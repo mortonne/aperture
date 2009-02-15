@@ -17,7 +17,8 @@ function report_by_channel(chan,fig,reportfile,header,title,compile)
 
 % check the output file
 if ~exist('reportfile','var') || isempty(reportfile)
-  error('report_by_channel: you must specify a file to save the report in.')
+  reportfile = fullfile(fileparts(fileparts(fig(1).file{1})), 'reports', 'report');
+  %error('report_by_channel: you must specify a file to save the report in.')
 end
 % if this is an absolute path, make sure the parent directory exists
 [parentdir,fname] = fileparts(reportfile);
