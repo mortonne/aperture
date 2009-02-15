@@ -1,7 +1,7 @@
 function obj = create_fig(obj,fig_name,fcn_handle,fcn_inputs)
 %CREATE_FIG   Create figures from information in an object.
 %
-%  obj = create_fig(obj, fcn_handle, fcn_inputs, fig_name)
+%  obj = create_fig(obj, fig_name, fcn_handle, fcn_inputs)
 %
 %  This function provides a way to make plots from an object and keep
 %  track of the figure files in a "fig" object. fig objects can then
@@ -35,7 +35,7 @@ function obj = create_fig(obj,fig_name,fcn_handle,fcn_inputs)
 %   pat = getobj(subj,'pat','volt');
 %
 %   % plot all events
-%   pat = create_fig(pat, @pat_erp, {}, 'erp');
+%   pat = create_fig(pat, 'erp', @pat_erp, {});
 
 if ~exist('fig_name','var')
   fig_name = 'figure';
