@@ -1,21 +1,29 @@
 function table = create_report(fig_files,row_labels)
 %CREATE_REPORT   Make a LaTeX report with a table of figures.
 %
-%  create_report(fig_files, row_labels)
+%  table = create_report(fig_files, row_labels)
 %
-%  This is a wrapper for longtable. It assumes that the entire table
-%  will be composed of graphics except (at most) a leftmost column 
-%  containing text and a header above each column. If you need more
-%  flexibility, call longtable directly.
+%  This function is designed to streamline the use of longtable. It assumes 
+%  that the entire table will be composed of graphics except (at most) a 
+%  leftmost column containing text and a header above each column.
 %
 %  The size of figures is automatically scaled so they take up the
 %  right amount of space on the page.
 %
 %  INPUTS:
-%  fig_files:
-%  row_labels:
-%  header:
-%  title:
+%   fig_files:  cell array of paths to graphics files to be inserted
+%               in the table. The file formats can be anything recognized
+%               by the LaTeX \includegraphics command.
+%
+%  row_labels:  optional cell array of strings to label each row of
+%               the table. Must be the same length as the number of rows
+%               in fig_files.
+%
+%  OUTPUTS:
+%       table:  cell array of strings containing LaTeX code. To create a
+%               LaTeX document from this, use longtable.
+%
+%  See also longtable.
 
 % process inputs
 if ~exist('row_labels','var')

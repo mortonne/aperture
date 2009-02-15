@@ -1,33 +1,69 @@
 function longtable(table, header, filename, title)
 %LONGTABLE   Create a LaTeX longtable from Matlab data.
-%   LONGTABLE(TABLE,HEADER,FILENAME,TITLE,COMPILE) takes cell array
-%   TABLE containing LaTeX code to be placed in each cell of the table,
-%   and creates LaTeX code for that table.  HEADER is a cell array
-%   that should have the same number of columns as TABLE.  The optional
-%   TITLE is a string that specifies the title of the table.
 %
-%   The LaTeX code is saved in FILENAME.
+%  longtable(table, header, filename, title)
+%
+%  This script is designed to create a multipage table using LaTeX code.
+%  It is particularly useful for making PDF reports of multiple figures.
+%  You must figure out the proper LaTeX code to put in each cell of the
+%  table; this script just handles creating the document and placing
+%  your code in the table.
+%
+%  LaTeX will automatically break the table into as many pages as needed.
+%  On each page, the first row of the table will be a header that you specify.
+%
+%  INPUTS:
+%     table:  cell array with a string of LaTeX code in each cell.
+%
+%    header:  cell array of strings of the same length as the number of
+%             columns in table. The header will be displayed in the first
+%             row of the table on each page.
+%
+%  filename:  path to the file that LaTeX code will be written to.
+%
+%     title:  optional string title for the table.
+%
+%  OUTPUTS:
+%  A LaTeX file saved in filename, which you must compile to make a PDF 
+%  report.
+%
+%  If you are using the \includegraphics command to add .eps figures, use:
+%  latex [filename].tex; latex [filename].tex; dvipdf [filename].dvi
+%
+%  If you don't have .eps files:
+%  pdflatex [filename].tex; pdflatex [filename].tex
+%
+%  See also create_report.
 
-if ~exist('compile', 'var')
-  compile = 0;
+if ~exist('title','var')
+  title = '';
+end
+if ~exist('filename','var')
+  error('You must specify an output file.')
+  elseif ~exist('header','var')
+  error('You must pass a header cell array.')
+  elseif ~exist('table','var')
+  error('You must pass a cell array of LaTeX code for the table.')
 end
 
 % convenience variables
-colPos = [];
-numRows = size(table,1);
-numCols = size(table,2);
-for col=1:numCols
-  colPos = [colPos,'c'];
+n_rows = size(table,1);
+n_cols = size(table,2);
+if length(header)~=n_cols
+  error('header must be the same length as the number of columns in table.')
 end
 
-if length(header)~=numCols
-  error('wrong size header')
+% set the column formatting
+col_pos = '|';
+for col=1:n_cols
+  col_pos = [col_pos 'c'];
 end
+col_pos = [col_pos '|'];
 
 % open the file
 fid = fopen([filename '.tex'] ,'w');
 
-% write the header code
+% preamble
 fprintf(fid,'\\documentclass{report}\n');
 fprintf(fid,'\\usepackage{graphicx,lscape,longtable,color}\n');
 fprintf(fid,'\\setlength{\\oddsidemargin}{-0.5in}\n');
@@ -39,57 +75,67 @@ fprintf(fid,'\\setlength{\\headheight}{0.5in}\n');
 fprintf(fid,'\\setlength{\\headsep}{-0.5in}\n');
 fprintf(fid,'\\pagestyle{headings}\n');
 fprintf(fid,'\n');
+
+% start the document
 fprintf(fid,'\\begin{document}\n');
 fprintf(fid,'\\begin{landscape}\n');
+fprintf(fid,'\n');
 
-for page=1:size(table,3)
-  % begin the longtable
-  fprintf(fid,'\\begin{center}\n');
-  fprintf(fid,'\\begin{longtable}{%s}\n', colPos);
+% begin the longtable
+fprintf(fid,'\\begin{center}\n');
+fprintf(fid,'\\begin{longtable}{%s}\n', col_pos);
+fprintf(fid,'\n');
 
-  % top header
-  fprintf(fid,'\\multicolumn{%d}{c}\n', numCols);
-  fprintf(fid,'\\textbf{%s} \\\\\n', title);
-  fprintf(fid,'\\hline \\multicolumn{1}{|c|}{\\textbf{%s}} ', header{1});
-  for col=2:numCols
-    fprintf(fid,'& \\multicolumn{1}{c|}{\\textbf{%s}} ', header{col});
-  end
-  fprintf(fid,'\\\\ \\hline\n');
-  fprintf(fid,'\\endfirsthead\n');
-  fprintf(fid,'\n');
+% first page title
+fprintf(fid,'\\multicolumn{%d}{c}{\\textbf{%s}} \\\\\n', n_cols, title);
 
-  % bottom header
-  fprintf(fid,'\\multicolumn{%d}{c}\n',numCols);
-  fprintf(fid,'\\textbf{%s (continued)} \\\\\n',title);
-  fprintf(fid,'\\hline \\multicolumn{1}{|c|}{\\textbf{%s}} ', header{1});
-  for col=2:numCols
-    fprintf(fid,'& \\multicolumn{1}{c|}{\\textbf{%s}} ', header{col});
-  end
-  fprintf(fid,'\\\\ \\hline\n');
-  fprintf(fid,'\\endhead\n');
-
-  % footer
-  fprintf(fid,'\\hline \\multicolumn{%d}{|r|}{Continued on next page...} \\\\\\hline\n',numCols);
-  fprintf(fid,'\\endfoot\n');
-  fprintf(fid,'\\hline\n');
-  fprintf(fid,'\\endlastfoot\n');
-  fprintf(fid,'\n');
-
-  % write the table
-  for row=1:numRows
-    for col=1:numCols-1
-      fprintf(fid,'%s & ', table{row,col,page});
-    end
-    fprintf(fid,'%s \\\\ \n', table{row,end,page});
-  end
-
-  % end the longtable
-  fprintf(fid,'\\end{longtable}\n');
-  fprintf(fid,'\\end{center}\n');
-  fprintf(fid,'\n');
+% first page table header
+fprintf(fid,'\\hline \\multicolumn{1}{|c|}{\\textbf{%s}} ', header{1});
+for j=2:n_cols
+  fprintf(fid,'& \\multicolumn{1}{c|}{\\textbf{%s}} ', header{j});
 end
+fprintf(fid,'\\\\ \\hline\n');
+fprintf(fid,'\\endfirsthead\n');
+fprintf(fid,'\n');
+
+% title (continued)
+fprintf(fid,'\\multicolumn{%d}{c}{\\textbf{%s (continued)}} \\\\\n', n_cols, title);
+
+% table header (continued)
+fprintf(fid,'\\hline \\multicolumn{1}{|c|}{\\textbf{%s}} ', header{1});
+for j=2:n_cols
+  fprintf(fid,'& \\multicolumn{1}{c|}{\\textbf{%s}} ', header{j});
+end
+fprintf(fid,'\\\\ \\hline\n');
+fprintf(fid,'\\endhead\n');
+fprintf(fid,'\n');
+
+% table footer
+fprintf(fid,'\\hline \\multicolumn{%d}{|r|}{Continued on next page...} \\\\ \\hline\n',n_cols);
+fprintf(fid,'\\endfoot\n');
+fprintf(fid,'\n');
+
+% last page table footer
+fprintf(fid,'\\hline \\hline\n');
+fprintf(fid,'\\endlastfoot\n');
+fprintf(fid,'\n');
+
+% write the table
+for i=1:n_rows
+  for j=1:n_cols-1
+    fprintf(fid,'%s & ', table{i,j});
+  end
+  fprintf(fid,'%s \\\\ \n', table{i,end});
+end
+fprintf(fid,'\n');
+
+% end the longtable
+fprintf(fid,'\\end{longtable}\n');
+fprintf(fid,'\\end{center}\n');
+fprintf(fid,'\n');
 
 % finish the document
 fprintf(fid,'\\end{landscape}\n');
 fprintf(fid,'\\end{document}');
+fprintf(fid,'\n');
 fclose(fid);
