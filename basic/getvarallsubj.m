@@ -1,7 +1,7 @@
 function varargout = getvarallsubj(subj,path,var_names,dim)
 %GETVARALLSUBJ   Load a variable from an object from multiple subjects.
 %
-%  varargout = getvarallsubj(exp,path,var_names,dim)
+%  varargout = getvarallsubj(subj,path,var_names,dim)
 %
 %  Many objects on an exp structure have a "file" field that gives the
 %  path to a MAT-file that holds data. This function is designed to
