@@ -61,7 +61,7 @@ end
 col_pos = [col_pos '|'];
 
 % open the file
-fid = fopen([filename '.tex'] ,'w');
+fid = fopen(filename,'w');
 
 % preamble
 fprintf(fid,'\\documentclass{report}\n');
