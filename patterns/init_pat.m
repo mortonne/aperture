@@ -1,8 +1,34 @@
-function pat = init_pat(patname, file, source, params, ev, chan, time, freq)
-%pat = init_pat(patname, file, params, ev, chan, time, freq)
+function pat = init_pat(name, file, source, params, ev, chan, time, freq)
+%INIT_PAT   Initialize a structure to hold metadata about a pattern.
+%
+%  pat = init_pat(name, file, source, params, ev, chan, time, freq)
+%
+%  Initializes a "pat" object, which holds metadata about a pattern.
+%
+%  INPUTS:
+%     name:  string identifier.
+%
+%     file:  file where the pattern matrix is stored.
+%
+%   source:  name of the object from which this pattern is derived (usually 
+%            a subj structure).
+%
+%   params:  structure containing the options used to create this pattern.
+%
+%       ev:  structure with information about the events dimension.
+%
+%     chan:  channels dimension.
+%
+%     time:  time dimension.
+%
+%     freq:  frequency dimension.
+%
+%  OUTPUTS:
+%      pat:  a standard "pat" object.
 
-if ~exist('patname', 'var')
-  patname = '';
+% defaults
+if ~exist('name', 'var')
+  name = '';
 end
 if ~exist('file', 'var')
   file = '';
@@ -17,7 +43,7 @@ if ~exist('ev', 'var')
   ev = struct('name', '',  'file', '',  'len', []);
 end
 if ~exist('chan', 'var')
-  chan = struct('number', [],  'region', {},  'label', {});
+  chan = struct('number', [],  'region', '',  'label', '');
 end
 if ~exist('time', 'var')
   time = init_time();
@@ -34,4 +60,5 @@ if isfield(ev, 'ev')
 	dim = struct('ev', ev,  'chan', chan,  'time', time,  'freq', freq);
 end
 
-pat = struct('name',patname, 'file',file, 'source',source, 'params',params, 'dim',dim);
+% make the pat structure
+pat = struct('name',name, 'file',file, 'source',source, 'params',params, 'dim',dim);
