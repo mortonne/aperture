@@ -23,6 +23,24 @@ function table = create_report(fig_files,row_labels)
 %       table:  cell array of strings containing LaTeX code. To create a
 %               LaTeX document from this, use longtable.
 %
+%  EXAMPLE:
+%   To make a document with the following table, where *.eps are saved figures:
+%
+%                             Subject 1         Subject 2
+%    Event Related Potential  (erp_subj1.eps)   (erp_subj2.eps)
+%    Spectrogram              (spec_subj1.eps)  (spec_subj2.eps)
+%
+%   % first make a cell array of LaTeX code
+%   fig_files = {'erp_subj1.eps', 'erp_subj2.eps'
+%                'spec_subj1.eps', 'spec_subj2.eps'};
+%   row_labels = {'Event Related Potential', 'Spectrogram'};
+%   table = create_report(fig_files, row_labels);
+%
+%   % make a document with this table
+%   header = {'', 'Subject 1', 'Subject 2'};
+%   output_file = 'erp_spec.tex';
+%   longtable(table, header, output_file);
+%
 %  See also longtable.
 
 % process inputs
