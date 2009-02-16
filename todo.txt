@@ -38,4 +38,6 @@ spline files for the new caps!
 
 == Utils ==
  * should objfilename.m be used more?
- * better name for getobj2.m
+ * getobj/setobj/rmobj/recursive_setobj a messy setup. Should just give
+   getobj and setobj recursive capabilities.  Also, rmobj is the same as
+   recursive_setobj, you just set the object to [].
