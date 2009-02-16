@@ -1,5 +1,4 @@
 function [pat2, pattern, coeff] = patPCA(pat1, params, pattern)
-%
 %PATPCA   Get principal components of a pattern.
 %   [PAT2,PATTERN,COEFF] = PATPCA(PAT1,PARAMS,PATTERN) does PCA on PATTERN
 %   according to options specified in the PARAMS struct.  The modified PAT2
@@ -12,7 +11,6 @@ function [pat2, pattern, coeff] = patPCA(pat1, params, pattern)
 %                   singles array
 %
 %   See also modify_pats.
-%
 
 if ~exist('params','var')
 	params = struct;
