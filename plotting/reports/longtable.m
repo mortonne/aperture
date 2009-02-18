@@ -1,4 +1,4 @@
-function longtable(table, header, filename, title)
+function longtable(table, header, filename, title, landscape)
 %LONGTABLE   Create a LaTeX longtable from Matlab data.
 %
 %  longtable(table, header, filename, title)
@@ -13,15 +13,18 @@ function longtable(table, header, filename, title)
 %  On each page, the first row of the table will be a header that you specify.
 %
 %  INPUTS:
-%     table:  cell array with a string of LaTeX code in each cell.
+%      table:  cell array with a string of LaTeX code in each cell.
 %
-%    header:  cell array of strings of the same length as the number of
-%             columns in table. The header will be displayed in the first
-%             row of the table on each page.
+%     header:  cell array of strings of the same length as the number of
+%              columns in table. The header will be displayed in the first
+%              row of the table on each page.
 %
-%  filename:  path to the file that LaTeX code will be written to.
+%   filename:  path to the file that LaTeX code will be written to.
 %
-%     title:  optional string title for the table.
+%      title:  optional string title for the table.
+%
+%  landscape:  boolean scalar. If true (default), the page will be in
+%              landscape orientation.
 %
 %  OUTPUTS:
 %  A LaTeX file saved in filename, which you must compile to make a PDF 
@@ -35,6 +38,9 @@ function longtable(table, header, filename, title)
 %
 %  See also create_report.
 
+if ~exist('landscape','var')
+  landscape = true;
+end
 if ~exist('title','var')
   title = '';
 end
@@ -78,7 +84,9 @@ fprintf(fid,'\n');
 
 % start the document
 fprintf(fid,'\\begin{document}\n');
-fprintf(fid,'\\begin{landscape}\n');
+if landscape
+  fprintf(fid,'\\begin{landscape}\n');
+end
 fprintf(fid,'\n');
 
 % begin the longtable
@@ -135,7 +143,9 @@ fprintf(fid,'\\end{center}\n');
 fprintf(fid,'\n');
 
 % finish the document
-fprintf(fid,'\\end{landscape}\n');
+if landscape
+  fprintf(fid,'\\end{landscape}\n');
+end
 fprintf(fid,'\\end{document}');
 fprintf(fid,'\n');
 fclose(fid);
