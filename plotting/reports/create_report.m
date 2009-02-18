@@ -89,6 +89,7 @@ for i=1:n_rows
   
   % write in the figures
   for j=1:n_cols-dj
+    %table{i,j+dj} = sprintf('\\includegraphics[width=%f\\textwidth,viewport=120 60 1100 840]{%s}', fig_size, fig_files{i,j});
     table{i,j+dj} = sprintf('\\includegraphics[width=%f\\textwidth]{%s}', fig_size, fig_files{i,j});
   end
 end
