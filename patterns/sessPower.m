@@ -175,7 +175,7 @@ for c=1:length(params.channels)
 	    this_eeg(find(isbad),:) = NaN;
 	  end
 
-		% add the power of this eventXchannel
+		% bin time and frequency, and add the power of this eventXchannel
 		pattern(e,c,:,:) = patMeans(this_pow, bins(3:4));
 	end % events
 	

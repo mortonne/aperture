@@ -52,7 +52,7 @@ if ~isempty(params.chanFilter)
   if isstr(params.chanFilter)
 	  inds{2} = inStruct(pat.dim.chan, params.chanFilter);
 	  else
-	  inds{2} = find(ismember(params.chanFilter, [pat.dim.chan.number]));
+	  inds{2} = find(ismember([pat.dim.chan.number], params.chanFilter));
   end
 	pat.dim.chan = pat.dim.chan(inds{2});
 end

@@ -86,6 +86,8 @@ if params.absThresh
   
   % mark the bad events
   pattern(bad_events,:,:,:) = NaN;
+  
+  fprintf('Threw out %d events out of %d with abs. val. greater than %d.', sum(bad_events),length(events),params.absThresh)
 end
 
 % BINNING
