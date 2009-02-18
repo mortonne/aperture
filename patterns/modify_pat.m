@@ -1,4 +1,4 @@
-function [pat,eid] = modify_pats(pat, params, patname, resDir)
+function [pat,pattern,events] = modify_pats(pat, params, patname, resDir)
 %MODIFY_PATS   Modify existing patterns.
 %   PAT = MODIFY_PATS(PAT,PARAMS,PATNAME,RESDIR) modifies PAT using 
 %   options in the PARAMS struct.  New patterns are saved in RESDIR/patterns.
@@ -9,7 +9,6 @@ function [pat,eid] = modify_pats(pat, params, patname, resDir)
 %   See patPCA for options for getting principal components of patterns.
 %
 %   Also see applytosubj.
-%
 
 if ~exist('patname','var') | isempty(patname)
   % default to overwriting the existing pattern
@@ -22,7 +21,13 @@ if ~exist('params','var')
   params = struct;
 end
 
-params = structDefaults(params, 'nComp',[], 'excludeBadChans',0, 'overwrite',0, 'lock',0);
+params = structDefaults(params, ...
+                        'nComp',[], ...
+                        'excludeBadChans',0, ...
+                        'absThresh',[], ...
+                        'overwrite',0, ...
+                        'lock',0, ...
+                        'savePat',1);
 
 oldpat = pat;
 
@@ -40,9 +45,8 @@ if isfield(oldpat,'stat')
 end
 
 % check input files and prepare output files
-eid = prepFiles(oldpat.file, pat.file, params);
-if eid
-  eid = 0;
+if prepFiles(oldpat.file, pat.file, params); % non-zero means error
+  %error('modify_pats: i/o problem.')
   return
 end
 
@@ -53,6 +57,7 @@ end
 [pat,inds,events,evmod(1)] = patFilt(pat,params,events);
 pattern = pattern(inds{:});
 
+% ARTIFACT FILTERS
 if params.excludeBadChans
   % load bad channel info
   [bad_chans, event_ind] = get_bad_chans({events.eegfile});
@@ -71,10 +76,23 @@ if params.excludeBadChans
   pattern(isbad) = NaN;
 end
 
-% do binning
+if params.absThresh
+  % find any values that are above our absolute threshold
+  bad_samples = abs(pattern)>params.absThresh;
+  
+  % get a logical indicating events that have at least one bad sample
+  pat_size = size(pattern);  
+  bad_events = any(reshape(bad_samples, pat_size(1), prod(pat_size(2:end))), 2);
+  
+  % mark the bad events
+  pattern(bad_events,:,:,:) = NaN;
+end
+
+% BINNING
 [pat,patbins,events,evmod(2)] = patBins(pat,params,events);
 pattern = patMeans(pattern, patbins);
 
+% PCA
 if ~isempty(params.nComp)
   % run PCA on the pattern
   [pat, pattern, coeff] = patPCA(pat, params, pattern);
@@ -85,16 +103,18 @@ end
 
 fprintf('Pattern "%s" created.\n', pat.name)
 
-if any(evmod)
-  if ~exist(fullfile(resDir, 'events'), 'dir')
-    mkdir(fullfile(resDir, 'events'));
+if params.savePat
+  if any(evmod)
+    if ~exist(fullfile(resDir, 'events'), 'dir')
+      mkdir(fullfile(resDir, 'events'));
+    end
+
+    % we need to save a new events struct
+    pat.dim.ev.file = fullfile(resDir, 'events', objfilename('events', patname, pat.source));  
+    save(pat.dim.ev.file, 'events');
   end
 
-  % we need to save a new events struct
-  pat.dim.ev.file = fullfile(resDir, 'events', objfilename('events', patname, pat.source));  
-  save(pat.dim.ev.file, 'events');
+  % save the new pattern
+  save(pat.file, 'pattern');
+  closeFile(pat.file);
 end
-
-% save the new pattern
-save(pat.file, 'pattern');
-closeFile(pat.file);
