@@ -1,11 +1,21 @@
 function subj_out = apply_to_subj(subj,fcn_handle,fcn_inputs)
 %APPLYTOSUBJ   Apply a function to all subjects using Distributed Computing Toolbox.
-%   SUBJ = APPLY_TO_SUBJ(SUBJ,FUNCTION_HANDLE) runs the function represented by
-%   FUNCTION_HANDLE on each element of the SUBJ vector. Each subject is evaluated
-%   on a different node.
 %
-%   The function can modify each subj in any way, as long as all returned subjs
-%   have the same number and order of fields. The modified subj vector is returned.
+%  subj = apply_to_subj(subj, fcn_handle, fcn_inputs)
+%
+%  Applies a function to each element of a subj vector. The function is
+%  evaluated with all subjects in parallel.
+%
+%  INPUTS:
+%        subj:  vector structure representing one or more subjects.
+%
+%  fcn_handle:  handle to a function that takes one subj as its first input,
+%               add returns subj as its first output.
+%
+%  fcn_inputs:  additional inputs to fcn_handle.
+%
+%  OUTPUTS:
+%        subj:  modified subj structure.
 
 % get the default job manager/scheduler
 sm = findResource();
