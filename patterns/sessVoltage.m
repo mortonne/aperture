@@ -49,20 +49,34 @@ for c=1:length(params.channels)
 
 	% get baseline stats for this channel, sess
 	if params.ztransform
-		base_eeg = gete_ms(params.channels(c), base_events, ...
-		params.baseDurationMS, params.baseOffsetMS, params.bufferMS, ... 
-		params.filtfreq, params.filttype, params.filtorder, ...
-		params.resampledRate, params.baseRelativeMS);
+		base_eeg = gete_ms(params.channels(c), ...
+		                   base_events, ...
+		                   params.baseDurationMS, ...
+		                   params.baseOffsetMS, ...
+		                   params.bufferMS, ... 
+		                   params.filtfreq, ...
+		                   params.filttype, ...
+		                   params.filtorder, ...
+		                   params.resampledRate, ...
+		                   params.baseRelativeMS);
 
 		if ~isempty(params.kthresh)
 			k = kurtosis(base_eeg,1,2);
 			base_eeg = base_eeg(k<=params.kthresh,:);
 		end
 
+		%{
+		% old way:
 		% if multiple samples given, use the first
 		base_eeg_vec = base_eeg(:,1);
 		base_mean = nanmean(base_eeg_vec);
-		base_std = nanstd(base_eeg_vec);   
+		base_std = nanstd(base_eeg_vec);
+		%}
+		
+		% new way: get mean and std dev across events for each sample,
+		% then average across samples
+		base_mean = nanmean(nanmean(base_eeg,1));
+		base_std = nanmean(std(base_eeg,1));
 	end
 
 	% get power, z-transform, average each time bin
@@ -78,7 +92,6 @@ for c=1:length(params.channels)
 			if k>params.kthresh
 			  this_eeg(:) = NaN;
 		  end
-			%this_eeg(k>params.kthresh) = NaN;
 		end
 
 		% normalize across sessions
