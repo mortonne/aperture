@@ -1,6 +1,6 @@
 function [pat,pattern,events] = modify_pats(pat, params, patname, resDir)
-%MODIFY_PATS   Modify existing patterns.
-%   PAT = MODIFY_PATS(PAT,PARAMS,PATNAME,RESDIR) modifies PAT using 
+%MODIFY_PAT   Modify an existing pattern.
+%   PAT = MODIFY_PAT(PAT,PARAMS,PATNAME,RESDIR) modifies PAT using 
 %   options in the PARAMS struct.  New patterns are saved in RESDIR/patterns.
 %
 %   See patFilt for options for filtering each dimension, and see patBins 
@@ -10,6 +10,9 @@ function [pat,pattern,events] = modify_pats(pat, params, patname, resDir)
 %
 %   Also see applytosubj.
 
+if isempty(pat)
+  error('The input pat object is empty.')
+end
 if ~exist('patname','var') | isempty(patname)
   % default to overwriting the existing pattern
   patname = pat.name;
@@ -46,8 +49,7 @@ end
 
 % check input files and prepare output files
 if prepFiles(oldpat.file, pat.file, params); % non-zero means error
-  %error('modify_pats: i/o problem.')
-  return
+  error('i/o problem.')
 end
 
 % load the pattern
@@ -87,7 +89,7 @@ if params.absThresh
   % mark the bad events
   pattern(bad_events,:,:,:) = NaN;
   
-  fprintf('Threw out %d events out of %d with abs. val. greater than %d.', sum(bad_events),length(events),params.absThresh)
+  fprintf('Threw out %d events out of %d with abs. val. greater than %d.\n', sum(bad_events),length(events),params.absThresh)
 end
 
 % BINNING

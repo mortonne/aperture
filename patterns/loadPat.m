@@ -16,6 +16,9 @@ function [pattern, events] = loadPat(pat, params)
 %                   over when reconstituting the pattern
 %
 
+if isempty(pat)
+  error('pat is empty.')
+end
 if isstr(pat)
 	% just the pat file has been input
 	newpat.file = pat;
