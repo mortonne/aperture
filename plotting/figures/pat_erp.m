@@ -86,7 +86,7 @@ y_label = 'Voltage (uV)';
 fprintf('Making ERP plots from pattern %s.\nChannel: ', pat.name);
 start_fig = gcf;
 for c=1:size(pattern,2)
-  fprintf('%d ', c)
+  fprintf('%s ', pat.dim.chan(c).label)
   
   if params.mult_fig_windows
     figure(start_fig + c - 1)
