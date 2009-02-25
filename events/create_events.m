@@ -1,24 +1,66 @@
-function create_events(exp,eventsfcn,eventsfcninput,varargin)
-%CREATE_EVENTS   Create events for each session in the exp struct.
-%   CREATE_EVENTS(EXP,EVENTSFCN,EVENTSFCNINPUT,VARARGIN)
+function create_events(subj,fcn_handle,fcn_input,varargin)
+%CREATE_EVENTS   Create events for each session in a subj structure.
 %
-%   Parameters:
-%     'eventsfile'
-%     'files2check'
-%     'agethresh'
+%  create_events(subj, fcn_handle, fcn_input, varargin)
+%
+%  Update the events for every session in a subj structure. For each session,
+%  if an events.mat file does not exist, events will be created and saved.
+%  Also, events structures will be updated if any of the files in files2check
+%  have been modified recently (default: 0.8 days). The default files2check 
+%  include session.log and any .par files.
+%
+%  INPUTS:
+%        subj:  structure representing a number of subjects.
+%
+%  fcn_handle:  handle to a function that creates an events structure
+%               for one session. Must take session directory as first input,
+%               followed by subject ID and session number.
+%
+%   fcn_input:  cell array of additional inputs to fcn_handle.
+%
+%    varargin:  additional arguments can be parameter-value pairs that change
+%               options. See below for options.
+%
+%  OUTPUTS:
+%   For each session, an events structure is saved in [sess.dir]/events.mat.
+%
+%  OPTIONS:
+%   eventsfile:  relative path (from each session's directory) to save each
+%                events structure. Default: 'events.mat'
+%
+%  files2check:  cell array of paths to input files to check for to determine
+%                whether events should be created. For a given session, if any 
+%                of the files are newer than agethresh days, or if eventsfile
+%                doesn't exist, new events will be created and saved. Paths may
+%                contain wildcards "*".
+%
+%    agethresh:  threshold, in days, for determining if a session's data have
+%                been modified and an events structure therefore needs to be
+%                recreated.
+%
+%  EXAMPLE:
+%   % update events for any session that has been parsed in the last week
+%   options = {'agethresh', 7, 'files2check', {'*.par'}};
+%   create_events(subj, @my_events_creation_function, {}, options{:});
 
-if ~exist('eventsfcninput','var')
-  eventsfcninput = {};
+% input checks
+if ~exist('subj','var')
+  error('You must input a subj structure.')
+  elseif ~exist('fcn_handle','var')
+  error('You must pass a handle to an events-creation function.')
+end
+if ~exist('fcn_input','var')
+  fcn_input = {};
 end
 
+% parse options
 def.eventsfile = 'events.mat';
 def.files2check = {'session.log', '*.par'};
 def.agethresh = .8;
-
 [eid,emsg,eventsfile,files2check,agethresh] = getargs(fieldnames(def),struct2cell(def),varargin{:});
 
-for subj=exp.subj
-  for sess=subj.sess
+for this_subj=subj
+  for sess=this_subj.sess
     cd(sess.dir);
     
     % check for recently modified files
@@ -28,12 +70,11 @@ for subj=exp.subj
     end
     
     % create events and save
-    fprintf('Creating events for %s, session %d using %s...\n', subj.id,sess.number,func2str(eventsfcn))
-    events = eventsfcn(sess.dir, subj.id, sess.number, eventsfcninput{:});
+    fprintf('Creating events for %s, session %d using %s...\n', this_subj.id,sess.number,func2str(fcn_handle))
+    events = fcn_handle(sess.dir, this_subj.id, sess.number, fcn_input{:});
     save(eventsfile, 'events');
   end
 end
-
 
 
 function update = filecheck(files,agethresh)
