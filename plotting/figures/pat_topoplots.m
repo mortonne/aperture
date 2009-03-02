@@ -33,7 +33,7 @@ end
 
 clf reset
 
-pattern = loadPat(pat, params);
+pattern = load_pattern(pat, params);
 
 fig.name = figname;
 fig.type = 'topo';

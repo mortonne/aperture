@@ -93,7 +93,7 @@ for c=1:psize(2)
   pattern = [];
   for thispat=subjpat
     % load the pattern for this channel
-    chanpat = loadPat(thispat,struct('patnum',c));
+    chanpat = load_pattern(thispat,struct('patnum',c));
     pattern = cat(1, pattern, chanpat);
   end
 

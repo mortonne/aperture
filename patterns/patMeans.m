@@ -11,7 +11,7 @@ function pattern = patMeans(pattern, bins)
 %    params = struct('fields','recalled', ...
 %                    'eventbinlabels', {'recalled','not recalled'});
 %    [pat,bins] = patBins(pat,params);
-%    pattern = loadPat(pat);
+%    pattern = load_pattern(pat);
 %    pattern = patMeans(pattern,bins);
 %
 %   See also modify_pats, patBins, patFilt.

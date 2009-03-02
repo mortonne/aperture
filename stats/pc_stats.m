@@ -10,7 +10,7 @@ end
 params = structDefaults(params, 'loadSingles', 1);
 status = 1;
 
-pattern = loadPat(pat, params);
+pattern = load_pattern(pat, params);
 
 % flatten all dimensions after events into one vector
 fprintf('vectorizing...')

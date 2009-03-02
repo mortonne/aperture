@@ -62,7 +62,7 @@ params = structDefaults(params, ...
                         'y_lim',            []);
 
 % load the pattern
-pattern = loadPat(pat);
+pattern = load_pattern(pat);
 
 if ~isempty(params.event_bins)
   % create bins using inputs accepted by binEventsField

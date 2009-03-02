@@ -54,7 +54,7 @@ prepFiles({},pat.dim.ev.file);
 save(pat.dim.ev.file, 'events');
 
 % load the pattern to change, with dimension order evXtimeXchanXfreq
-old_pattern = permute(loadPat(pat), [1 3 2 4]);
+old_pattern = permute(load_pattern(pat), [1 3 2 4]);
 
 % now deal with the pattern (ev/timeXchanXfreq)
 pattern = NaN(newlen,psize(2),psize(4));

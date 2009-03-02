@@ -1,9 +1,9 @@
-function [pattern, events] = loadPat(pat, params)
-%LOADPAT   Load a pattern from a pat object.
-%   PATTERN = LOADPAT(PAT,PARAMS) loads PAT.file using options
+function [pattern, events] = load_pattern(pat, params)
+%load_pattern   Load a pattern from a pat object.
+%   PATTERN = load_pattern(PAT,PARAMS) loads PAT.file using options
 %   specified in the PARAMS struct.
 %
-%   [PATTERN,EVENTS] = LOADPAT(PAT,PARAMS) also returns the
+%   [PATTERN,EVENTS] = load_pattern(PAT,PARAMS) also returns the
 %   corresponding EVENTS.
 %
 %   Params:

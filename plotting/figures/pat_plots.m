@@ -74,7 +74,7 @@ end
 
 if params.diff | ~params.plotsig | ~power
   % we need the pattern
-  pattern = loadPat(pat, params);
+  pattern = load_pattern(pat, params);
 end
 
 if params.diff

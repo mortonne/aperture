@@ -58,7 +58,7 @@ end
 pc = init_pc(pcname, pcfile, params);
 
 % load the pattern and corresponding events
-[pattern, events] = loadPat(pat, params);
+[pattern, events] = load_pattern(pat, params);
 
 % get the regressor to use for classification
 reg.vec = binEventsField(events, params.regressor);

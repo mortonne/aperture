@@ -20,7 +20,7 @@ params = structDefaults(params,  'nComp', 150,  'loadSingles', 1);
 
 if ~exist('pattern', 'var')
   % load the pattern from disk
-  pattern = loadPat(pat1, params);
+  pattern = load_pattern(pat1, params);
 end
 
 % flatten all dimensions after events into one vector

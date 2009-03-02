@@ -53,7 +53,7 @@ if prepFiles(oldpat.file, pat.file, params); % non-zero means error
 end
 
 % load the pattern
-[pattern, events] = loadPat(oldpat, params);
+[pattern, events] = load_pattern(oldpat, params);
 
 % apply filters
 [pat,inds,events,evmod(1)] = patFilt(pat,params,events);

@@ -52,7 +52,7 @@ to work with both three- and four-dimensional patterns, as long as the existing
 dimensions are in the correct positions. 
 
 Patterns can be saved in "slices," for example with one file for each channel, and
-loadPat.m can be set to concatenate the slices when the pattern is loaded later.
+load_pattern.m can be set to concatenate the slices when the pattern is loaded later.
 However, the pattern creation scripts are currently designed to save out one giant
 matrix for each subject, and all of the analyses expect to deal with one matrix;
 obviously this puts practical constraints on how large each pattern can be. This

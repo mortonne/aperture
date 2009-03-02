@@ -16,7 +16,7 @@ function [pat,inds,events,evmod] = patFilt(pat,params,events)
 %   Example:
 %    params = struct('eventFilter','strcmp(type,''WORD'')');
 %    [pat,inds] = patFilt(pat,params);
-%    pattern = loadPat(pat);
+%    pattern = load_pattern(pat);
 %    pattern = pattern(inds{:});
 %
 %   See also modify_pats, patBins, patMeans.
