@@ -48,8 +48,11 @@ params = structDefaults(params, 'loadSingles',0, 'patnum', []);
 
 % load the pattern
 if iscell(pat.file) % pattern is split
+  if ~isempty(params.patnum)
+    % load just one slice of the pattern
+    load(pat.file{params.patnum});
   
-  if isfield(pat.dim,'splitdim') && ~isempty(pat.dim.splitdim)
+  elseif isfield(pat.dim,'splitdim') && ~isempty(pat.dim.splitdim)
     % concatenate along the split dimension to reform the pattern
     pattern = NaN(patsize(pat.dim));
     allDim = {':',':',':',':'};
