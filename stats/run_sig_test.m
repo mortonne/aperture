@@ -1,10 +1,24 @@
-function p = run_sig_test(X,group,test,varargin)
+function [p, statistic] = run_sig_test(X,group,test,varargin)
 %RUN_SIG_TEST   Run a test of significance using standard input/output.
 %   P = RUN_SIG_TEST(TEST,X,GROUP,VARARGIN) runs significance test
 %   indicated by the string TEST on data in X. Regressors are specified
 %   in the cell array GROUP. Additional inputs to the significance test
 %   function are passed in as VARARGIN.
 %
+
+% input checks
+if ~exist('X','var')
+  error('You must pass a data vector.')
+  elseif ~isnumeric(X)
+  error('X must be a numeric array.')
+  elseif ~exist('group','var')
+  error('You must pass a cell array of grouping variables.')
+end
+if ~exist('test','var')
+  test = 'anovan';
+end
+
+statistic = NaN;
 
 % remove missing data from X and the regressors
 good = ~isnan(X);
@@ -15,8 +29,11 @@ end
 
 switch test
   case 'anovan'
-   p = anovan(X,group,'display','off',varargin{:});
-  
+   [p,t,stats,terms] = anovan(X,group,'display','off',varargin{:});
+   
+   % get the F-statistic
+   statistic = t{2:end-2, 6};
+
   case 'RMAOV1'
    group = fix_regressors(group);
    filename = varargin{1};
@@ -39,6 +56,9 @@ switch test
    error('Unknown statistical test: %s.', test)
 end
 
+if length(statistic)~=length(p)
+  error('length of statistic does not match length of p.')
+end
 
 function group = fix_regressors(group)
   % fixes regressors so their labels are one-indexed and consecutive
