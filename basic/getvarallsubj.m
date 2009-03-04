@@ -1,7 +1,7 @@
-function varargout = getvarallsubj(subj,path,var_names,dim)
+function varargout = getvarallsubj(subj,path,var_names,dim,file_number)
 %GETVARALLSUBJ   Load a variable from an object from multiple subjects.
 %
-%  varargout = getvarallsubj(subj,path,var_names,dim)
+%  varargout = getvarallsubj(subj, path, var_names, dim, file_number)
 %
 %  Many objects on an exp structure have a "file" field that gives the
 %  path to a MAT-file that holds data. This function is designed to
@@ -26,6 +26,9 @@ function varargout = getvarallsubj(subj,path,var_names,dim)
 %              scalar is passed, it will be used for all variables. 
 %              By default, all variables will be concatenated by rows.
 %
+%  file_number:  integer specifying which file to load, if obj.file
+%                is a cell array.
+%
 %  OUTPUTS:
 %  varargout:  each output is a matrix of one requested variable,
 %              concatenated across subjects along the specified dimension.
@@ -36,6 +39,17 @@ function varargout = getvarallsubj(subj,path,var_names,dim)
 %   % exp.subj.pat.pc.file for a given pat and pc:
 %   pcorr = getvarallsubj(exp.subj,{'pat','my_pat_name','pc','my_pc_name'},'pcorr');
 
+% input checks
+if ~exist('subj','var')
+  error('You must pass a subj structure.')
+  elseif ~isstruct(subj)
+  error('subj must be a structure.')
+  elseif ~isfield(subj,'id')
+  error('subj must have an id field.')
+end
+if ~exist('path','var')
+  path = {};
+end
 if ~exist('dim','var')
   dim = 1;
 end
@@ -48,15 +62,8 @@ end
 if ~(length(dim)==1 || length(dim)==length(var_names))
   error('dim must either be a scalar or the same length as var_names')
 end
-if ~exist('path','var')
-  path = {};
-end
-if ~exist('subj','var')
-  error('You must pass a subj structure.')
-  elseif ~isstruct(subj)
-  error('subj must be a structure.')
-  elseif ~isfield(subj,'id')
-  error('subj must have an id field.')
+if ~exist('file_number','var')
+  file_number = [];
 end
 
 if length(dim)==1
@@ -80,8 +87,18 @@ for s=1:length(subj)
     continue
   end
 
-  % load just the specified variables
-  temp = load(obj.file,var_names{:});
+  if ~isempty(file_number)
+    if ~iscell(obj.file)
+      error('file_number only makes sense if obj.file is a cell array.')
+    end
+    
+    % load the specified variables for this file
+    temp = load(obj.file{file_number}, var_names{:});
+    
+    else
+    % only one file; load the specified variables
+    temp = load(obj.file, var_names{:});
+  end
   
   % place the loaded variables in the cell array
   for v=1:length(var_names)
