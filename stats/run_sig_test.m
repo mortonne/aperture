@@ -18,7 +18,7 @@ if ~exist('test','var')
   test = 'anovan';
 end
 
-statistic = NaN;
+statistic = NaN(1,length(group));
 
 % remove missing data from X and the regressors
 good = ~isnan(X);
@@ -33,20 +33,19 @@ switch test
    
    % get the F-statistic
    statistic = t{2:end-2, 6};
-
   case 'RMAOV1'
    group = fix_regressors(group);
-   filename = varargin{1};
+   %filename = varargin{1};
    
    % write an output file
-   export_r(X,group,filename);
-   keyboard
+   %export_r(X,group,filename);
+   %keyboard
    % delete existing input file
    % run r code
    % wait for input file to be created
    % read input file
    
-   %p = RMAOV1_mod([X group{1} group{2}], 0.05, 0);
+   p = RMAOV1_mod([X group{1} group{2}], 0.05, 0);
    
   case 'RMAOV2'
    group = fix_regressors(group);
@@ -71,7 +70,6 @@ function group = fix_regressors(group)
   end
 %endfunction
 
-  
 function export_r(X,group,filename)
   % if the file already exists, delete and start fresh
   if exist(filename,'file')

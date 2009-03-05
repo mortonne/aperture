@@ -1,15 +1,15 @@
-function stat = mult_pat_sig_test(pats,event_bins,fcn_handle,fcn_inputs,stat_name,res_dir)
-%MULT_PAT_SIG_TEST   Test for significance across multiple patterns.
+function pat = pat_statistics(pat,event_bins,fcn_handle,fcn_inputs,stat_name,res_dir)
+%PAT_STATISTICS   Run a statistical test on a pattern.
 %
-%  stat = mult_pat_sig_test(pats, event_bins, fcn_handle, fcn_inputs, stat_name, res_dir)
+%  pat = pat_statistics(pat, event_bins, fcn_handle, fcn_inputs, stat_name, res_dir)
 %
-%  Use this function to run a test of significance across subjects. You specify the
-%  factors of the test in reference to the events structure corresponding to each
+%  Use this function to run a test of significance on a pattern. You specify the
+%  factors of the test in reference to the events structure corresponding to the
 %  pat. The statistical test can be run by any function with a standard signature
 %  outlined below.
 %
 %  INPUTS:
-%        pats:  vector of pat objects.
+%         pat:  a pat object.
 %
 %  event_bins:  cell array where each cell specifies one factor to create from
 %               each pat's event structure. See binEventsField for options.
@@ -35,19 +35,18 @@ function stat = mult_pat_sig_test(pats,event_bins,fcn_handle,fcn_inputs,stat_nam
 %   stat_name:  string identifier for the statistic.
 %
 %     res_dir:  path to directory to save results (default:
-%               fullfile(fileparts(fileparts(pats(1).file)),'stats')
+%               fullfile(fileparts(fileparts(pat.file)),'stats')
 %
 %  OUTPUTS:
 %        stat:  stat object.
 %
 %  EXAMPLES:
-%   % test for a significant subsequent memory effect across subjects
-%   pats = ;
-%   stat = mult_pat_sig_test(pats, {'recalled'}, @RMAOV1, {}, 'sme')
+%   % test for a significant subsequent memory effect
+%   pat = mult_pat_sig_test(pat, {'recalled'}, @anovan, {}, 'sme')
 
 % input checks
-if ~exist('pats','var')
-  error('You must pass a vector of pat objects.')
+if ~exist('pat','var')
+  error('You must pass a pat object.')
   elseif ~exist('event_bins','var')
   error('You must pass a cell array of event bins.')
   elseif ~exist('fcn_handle','var')
@@ -60,36 +59,34 @@ if ~exist('stat_name','var')
   stat_name = 'stat';
 end
 if ~exist('res_dir','var')
-  % get the path to the first pattern's file
-  if iscell(pats(1).file)
-    pat1_file = pats(1).file{1};
+  % get the path to the pattern's file
+  if iscell(pat.file)
+    pat_file = pat.file{1};
     else
-    pat1_file = pats(1).file;
+    pat_file = pat.file;
   end
   
   % set the default results directory
-  res_dir = fullfile(fileparts(fileparts(pat1_file)), 'stats');
+  res_dir = fullfile(fileparts(fileparts(pat_file)), 'stats');
 end
 if ~exist(res_dir,'dir')
   mkdir(res_dir);
 end
 
 fprintf('creating regressors...')
-nfact = length(event_bins)+1;
+nfact = length(event_bins);
 group = cell(1,nfact);
-for i=1:length(pats)
-  % load the events for this pattern
-  events = loadEvents(pats(i).dim.ev.file);
+
+% load the events for this pattern
+events = loadEvents(pat.dim.ev.file);
   
-  % make the regressors
-  for j=1:length(event_bins)
-    group{j} = [group{j}; binEventsField(events, event_bins{j})'];
-  end
-  group{end} = [group{end}; ones(pats(i).dim.ev.len,1)*i];
+% make the regressors
+for j=1:length(event_bins)
+  group{j} = [group{j}; binEventsField(events, event_bins{j})'];
 end
 
 % set the path to the MAT-file that will hold the results
-filename = sprintf('%s_%s.mat', pats(1).name, stat_name);
+filename = sprintf('%s_%s.mat', pat.name, stat_name);
 stat_file = fullfile(res_dir, filename);
 
 % initialize the stat object
@@ -98,42 +95,24 @@ stat = init_stat(stat_name, stat_file, 'multiple', struct('event_bins',event_bin
 fprintf('running %s...\n', func2str(fcn_handle))
 
 % set the size of the output variables
-psize = patsize(pats(1).dim);
-p = NaN(nfact-1,psize(2),psize(3),psize(4));
+psize = patsize(pat.dim);
+p = NaN(nfact,psize(2),psize(3),psize(4));
 statistic = NaN(nfact,psize(2),psize(3),psize(4));
+
+% load the pattern
+pattern = load_pattern(pat);
 
 fprintf('Channel: ');
 for c=1:psize(2)
-  fprintf('%s', pats(1).dim.chan(c).label);
+  fprintf('%s', pat.dim.chan(c).label);
   
-  % concatenate subjects
-  pattern = [];
-  for pat=pats
-    % load the pattern for this channel
-    if iscell(pat.file)
-      if length(pat.file)~=psize(2)
-        error('pattern %s saved in slices over a dimension other than channels.', pat.name)
-      end
-      
-      % saved in slices; we can load just this channel
-      chan_pat = load_pattern(pat, struct('patnum',c));
-      pattern = cat(1, pattern, chan_pat);
-      
-      else
-      % we need to load the whole pattern
-      full_pattern = load_pattern(pat);
-      pattern = cat(1, pattern, full_pattern(:,c,:,:));
-    end
-  end
-
   % run the statistic
   for t=1:size(pattern,3)
     if ~mod(t,floor(size(pattern,3)/4))
       fprintf('.')
     end
     for f=1:size(pattern,4)
-      [p(:,c,t,f), statistic(:,c,t,f)] = fcn_handle(squeeze(pattern(:,1,t,f)), group, fcn_inputs{:});
-      %p(:,c,t,f) = run_sig_test(squeeze(pattern(:,:,t,f)),group,params.test,params.testinput{:});
+      [p(:,c,t,f), statistic(:,c,t,f)] = fcn_handle(squeeze(pattern(:,c,t,f)), group, fcn_inputs{:});
     end
   end
 end
@@ -144,3 +123,4 @@ if all(isnan(p(:)))
 end
 
 save(stat.file, 'p', 'statistic');
+pat = setobj(pat, 'stat', stat);
