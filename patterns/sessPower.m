@@ -83,7 +83,7 @@ if ~isempty(params.downsample)
 end
 
 % get time bins in MS for each element of time dim for later artifact marking
-timebins = makeBins(1000/final_rate,params.offsetMS,params.offsetMS+params.durationMS);
+timebins = make_bins(1000/final_rate,params.offsetMS,params.offsetMS+params.durationMS);
 
 % initialize the pattern for this session
 pattern = NaN(length(events), length(params.channels), length(pat.dim.time), length(pat.dim.freq));

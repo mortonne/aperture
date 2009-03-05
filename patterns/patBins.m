@@ -251,7 +251,7 @@ if ~isempty(params.MSbins)
   
   if length(params.MSbins)==1
 		stepSize = params.MSbins;
-    params.MSbins = makeBins(stepSize,avgtime(1),avgtime(end));
+    params.MSbins = make_bins(stepSize,avgtime(1),avgtime(end));
   end
   
   for t=1:size(params.MSbins, 1)

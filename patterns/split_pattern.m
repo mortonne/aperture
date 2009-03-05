@@ -44,28 +44,8 @@ if ~exist('res_dir','var')
   mkdir(res_dir);
 end
 
-% process dimension input
-dim_names = {'ev', 'chan', 'time', 'freq'};
-if isnumeric(dimension)
-  % input was dimension number
-  dim_number = dimension;
-  
-  % get dimension name
-  dim_name = dim_names{dimension};
-  
-  elseif ischar(dimension)
-  dim_name = dimension;
-  % make sure the name is valid
-  if ~ismember(dim_name, dim_names)
-    error('Invalid dimension name: %s', dimension)
-  end
-  
-  % get dimension number
-  dim_number = find(strcmp(dim_name, dim_names));
-
-  else
-  error('dimension must be an integer or a string.')
-end
+% parse the dimension input
+[dim_name, dim_number] = read_dim_input(dimension);
 
 % save info in the pat object
 pat.dim.splitdim = dim_number;

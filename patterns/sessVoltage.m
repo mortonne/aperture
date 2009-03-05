@@ -35,7 +35,7 @@ if ~isfield(params,'baseRelativeMS')
 end
 
 % get time bins in MS for each element of time dim for later artifact marking
-timebins = makeBins(1000/params.resampledRate,params.offsetMS,params.offsetMS+params.durationMS);
+timebins = make_bins(1000/params.resampledRate,params.offsetMS,params.offsetMS+params.durationMS);
 
 % initialize the pattern for this session
 pattern = NaN(length(events), length(params.channels), length(pat.dim.time));

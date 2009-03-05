@@ -25,12 +25,13 @@ if ~exist('params','var')
 end
 
 params = structDefaults(params, ...
-                        'nComp',[], ...
-                        'excludeBadChans',0, ...
-                        'absThresh',[], ...
-                        'overwrite',0, ...
-                        'lock',0, ...
-                        'savePat',1);
+                        'nComp',           [], ...
+                        'excludeBadChans', 0,  ...
+                        'absThresh',       [], ...
+                        'overwrite',       0,  ...
+                        'lock',            0,  ...
+                        'splitDim',        [], ...
+                        'savePat',         1);
 
 oldpat = pat;
 
@@ -42,14 +43,23 @@ if ~strcmp(oldpat.name, patname)
   patfile = oldpat.file;
 end
 
+try
+  % check input files and prepare output files
+  prepFiles(oldpat.file, patfile, params);
+catch err
+  % something is wrong with i/o
+  if strfind(err.identifier, 'fileExists')
+    return
+    elseif strfind(err.identifier, 'fileNotFound')
+    rethrow(err)
+    elseif strfind(err.identifier, 'fileLocked')
+    rethrow(err)
+  end
+end
+
 pat = init_pat(patname,patfile,oldpat.source,combineStructs(params,oldpat.params),oldpat.dim);
 if isfield(oldpat,'stat')
   pat.stat = oldpat.stat;
-end
-
-% check input files and prepare output files
-if prepFiles(oldpat.file, pat.file, params); % non-zero means error
-  error('i/o problem.')
 end
 
 % load the pattern
@@ -120,5 +130,11 @@ if params.savePat
 
   % save the new pattern
   save(pat.file, 'pattern');
-  closeFile(pat.file);
+  
+  % resave in slices
+  if ~isempty(params.splitDim)
+    pat = split_pattern(pat, params.splitDim);
+  end
+  
+  %closeFile(pat.file);
 end
