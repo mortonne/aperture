@@ -38,6 +38,10 @@ function varargout = getvarallsubj(subj,path,var_names,dim,file_number)
 %   % to export the variable named "pcorr" saved in the MAT-file in
 %   % exp.subj.pat.pc.file for a given pat and pc:
 %   pcorr = getvarallsubj(exp.subj,{'pat','my_pat_name','pc','my_pc_name'},'pcorr');
+%
+%  NOTES:
+%  NWM: Now that we have getobjallsubj, we might want to strip out the object
+%  grabbing part, and have this function just take in a vector of objects.
 
 % input checks
 if ~exist('subj','var')
@@ -91,9 +95,12 @@ for s=1:length(subj)
     if ~iscell(obj.file)
       error('file_number only makes sense if obj.file is a cell array.')
     end
-    
     % load the specified variables for this file
     temp = load(obj.file{file_number}, var_names{:});
+    
+    elseif iscell(obj.file)
+    % HACK - assume this is a pat object
+    temp.pattern = load_pattern(obj);
     
     else
     % only one file; load the specified variables
