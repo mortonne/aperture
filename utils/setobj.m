@@ -19,7 +19,7 @@ if nargin==3
 else
 	objs = s;
 	obj = f;
-	keyboard
+
 	if isempty(objs)
     s = obj;
     return

@@ -32,20 +32,24 @@ params = structDefaults(params, 'lock', 0,  'overwrite', 1,  'mkdirs', 1,  'igno
 
 % checking read files
 status = 1;
-if isstr(filesToRead)
+if ischar(filesToRead)
   filesToRead = {filesToRead};
 end
 for f=1:length(filesToRead)
   file = filesToRead{f};
-  if ~exist(file) | exist([file '.lock'], 'file')
-    % one of the files doesn't exist or is locked
-    return
+  if ~exist(file)
+    % one of the files doesn't exist
+    error('eeg_ana:prepFiles:fileNotFound', 'Input file %s not found.', file)
+    
+    elseif exist([file '.lock'], 'file')
+    % one of the files is locked
+    error('eeg_ana:prepFiles:fileLocked', 'Input file %s is locked.', file)
   end
 end
 
 % checking write files
 status = 2;
-if isstr(filesToWrite)
+if ischar(filesToWrite)
   filesToWrite = {filesToWrite};
 end
 for f=1:length(filesToWrite)
@@ -79,7 +83,7 @@ for f=1:length(filesToWrite)
   elseif ~params.overwrite
     % if overwriting not allowed, check if file exists
     if exist(file, 'file')
-      return
+      error('eeg_ana:prepFiles:fileExists', 'Output file %s already exists.', file)
     end
   end
   
