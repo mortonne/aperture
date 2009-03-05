@@ -1,5 +1,10 @@
 function [pat,err] = pat_plots(pat, params, figname, resDir)
 %PAT_PLOTS   Make figures from a pattern.
+%
+%   *** DEPRECATED ***
+%   Use pat_erp for ERPs; use this for spectrograms until a new
+%   function is written for that.
+%
 %   PAT = PAT_PLOTS(PAT,PARAMS,FIGNAME,RESDIR) creates figures
 %   using data stored in PAT and options in the PARAMS struct.
 %   A modified PAT with fig object named FIGNAME is returned;

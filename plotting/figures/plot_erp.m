@@ -1,5 +1,9 @@
 function h = plot_erp(timeMS, erp1, erp2, p)
 %PLOT_ERP   Plot one or more ERPs, with or without significance.
+%
+%   *** DEPRECATED ***
+%   See pat_erp for similar features.
+%
 %   H = PLOT_ERP(TIMEMS, ERP) creates a plot of voltage values in
 %   ERP for times in vector TIMEMS, and returns handle H to the figure.
 %
