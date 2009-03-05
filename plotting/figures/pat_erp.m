@@ -80,6 +80,9 @@ params = structDefaults(params, ...
 
 % load the pattern
 pattern = load_pattern(pat);
+if isempty(pattern)
+  error('pattern %s is empty.', pat.name)
+end
 
 if ~isempty(params.event_bins)
   % create bins using inputs accepted by binEventsField
@@ -103,7 +106,7 @@ if ~isempty(params.stat_name)
   % get the stat object
   stat = getobj(pat, 'stat', params.stat_name);
   if isempty(stat)
-    error('pat %s does not contain a stat object named %s.', pat.name, stat_name)
+    error('pat %s does not contain a stat object named %s.', pat.name, params.stat_name)
   end
   
   % load the p-values
@@ -111,11 +114,19 @@ if ~isempty(params.stat_name)
   if ~exist('p','var')
     error('stat file must contain a variable named "p".')
   end
+  
+  % check the size
+  pat_size = patsize(pat.dim);
+  stat_size = size(p);
+  if any(pat_size(2:3)~=stat_size(2:3))
+    error('p must be the same size as pattern.')
+  end
 end
 
 % make one figure per channel
 fprintf('Making ERP plots from pattern %s.\nChannel: ', pat.name);
 start_fig = gcf;
+files = cell(1, size(pattern,2));
 for c=1:size(pattern,2)
   fprintf('%s ', pat.dim.chan(c).label)
   
