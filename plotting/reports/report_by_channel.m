@@ -1,5 +1,8 @@
 function report_by_channel(chan,fig,reportfile,header,title,compile)
 %REPORT_BY_CHANNEL   Create a PDF report with one row per channel.
+%
+%   *** DEPRECATED ***
+%
 %   REPORT_BY_CHANNEL(CHAN,FIG,FILE,HEADER,TITLE,COMPILE)
 %   gets channel information from the CHAN struct, and figure filenames
 %   from the FIG struct, and creates a PDF report.  FIG can be a vector

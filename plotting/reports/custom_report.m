@@ -1,5 +1,8 @@
 function custom_report(exp, reportname, title, whichPats, whichFigs, figtitles, compile)
 %custom_report(exp, reportname, title, whichPats, whichFigs, figtitles, compile)
+%
+%  *** DEPRECATED ***
+%
 
 if ~exist('compile', 'var')
 	compile = 0;

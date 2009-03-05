@@ -1,5 +1,8 @@
 function all_subj_report(exp, patname, figname, title, compile, whichEv)
 %ALL_SUBJ_REPORT   Create a PDF report with a channels X subjects table.
+%
+%   *** DEPRECATED ***
+%   
 %   ALL_SUBJ_REPORT(EXP,PATNAME,FIGNAME,TITLE,COMPILE,WHICHEV) gets the
 %   fig object specified by PATNAME and FIGNAME for each subject in EXP,
 %   and creates a LaTeX report with figures.  The figures will be
