@@ -1,6 +1,6 @@
-function [pat,pattern,events] = modify_pats(pat, params, patname, resDir)
-%MODIFY_PAT   Modify an existing pattern.
-%   PAT = MODIFY_PAT(PAT,PARAMS,PATNAME,RESDIR) modifies PAT using 
+function [pat,pattern,events] = modify_pattern(pat, params, patname, resDir)
+%MODIFY_PATTERN   Modify an existing pattern.
+%   PAT = MODIFY_PATTERN(PAT,PARAMS,PATNAME,RESDIR) modifies PAT using 
 %   options in the PARAMS struct.  New patterns are saved in RESDIR/patterns.
 %
 %   See patFilt for options for filtering each dimension, and see patBins 

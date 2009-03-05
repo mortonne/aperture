@@ -10,7 +10,7 @@ function [pat2, pattern, coeff] = patPCA(pat1, params, pattern)
 %     'loadSingles' If true (default), the pattern will be loaded as a
 %                   singles array
 %
-%   See also modify_pats.
+%   See also modify_pattern.
 
 if ~exist('params','var')
 	params = struct;

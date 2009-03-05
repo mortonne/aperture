@@ -14,7 +14,7 @@ function pattern = patMeans(pattern, bins)
 %    pattern = load_pattern(pat);
 %    pattern = patMeans(pattern,bins);
 %
-%   See also modify_pats, patBins, patFilt.
+%   See also modify_pattern, patBins, patFilt.
 %
 
 allcell = {':',':',':',':'};

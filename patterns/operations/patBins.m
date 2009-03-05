@@ -31,7 +31,7 @@ function [pat2,bins,events,evmod] = patBins(pat1,params,events)
 %     'freqbinlabels'   Cell array of labels corresponding to each frequency
 %                       bin
 %
-%   See also patMeans, modify_pats, patFilt.
+%   See also patMeans, modify_pattern, patFilt.
 %
 
 params = structDefaults(params,  'field', '',  'eventbinlabels', '',  'chanbins', [],  'chanbinlabels', {},  'MSbins', [],  'MSbinlabels', {},  'freqbins', [],  'freqbinlabels', {});

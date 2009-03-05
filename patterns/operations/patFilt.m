@@ -19,7 +19,7 @@ function [pat,inds,events,evmod] = patFilt(pat,params,events)
 %    pattern = load_pattern(pat);
 %    pattern = pattern(inds{:});
 %
-%   See also modify_pats, patBins, patMeans.
+%   See also modify_pattern, patBins, patMeans.
 %
 
 params = structDefaults(params,  'eventFilter', '',  'chanFilter', '',  'chan_filter',[], 'timeFilter', '',  'freqFilter', '');
