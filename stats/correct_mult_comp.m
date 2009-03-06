@@ -39,11 +39,15 @@ switch lower(method)
   h(indx) = mask;
   
   case 'fdr'
-  fprintf('performing FDR correction for multiple comparisons\n');
-  h = fdr(p, alpha);
-  if isempty(h)
+  fprintf('performing FDR correction for multiple comparisons');
+  q = fdr(p, alpha);
+  if isempty(q)
+    fprintf('...no significant values')
     h = false(size(p));
+    else
+    h = p<=q;
   end
+  fprintf('\n')
   
   otherwise
   fprintf('not performing a correction for multiple comparisons\n');
