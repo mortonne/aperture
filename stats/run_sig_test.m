@@ -28,6 +28,27 @@ for i=1:length(group)
 end
 
 switch test
+  case 'pttest'
+  error('This test isn''t working yet.')
+
+  % fix all labels to be consecutive integers
+  group = fix_regressors(group);
+  
+  % get the pair labels
+  pairs = group{2}
+  u_pairs = unique(pairs);
+  
+  % process the condition labels
+  conds = group{1};
+  u_conds = unique(conds);
+  if length(u_conds)~=2
+    error('factor must only contain two unique values.')
+  end
+  
+  % get condition indices
+  cond1_ind = find(cond_labels{1}==conds);
+  cond2_ind = find(cond_labels{2}==conds);
+  
   case 'anovan'
    [p,t,stats,terms] = anovan(X,group,'display','off',varargin{:});
    
