@@ -99,12 +99,22 @@ psize = patsize(pat.dim);
 p = NaN(nfact,psize(2),psize(3),psize(4));
 statistic = NaN(nfact,psize(2),psize(3),psize(4));
 
-% load the pattern
-pattern = load_pattern(pat);
+if ~isfield(pat.dim,'splitdim') || pat.dim.splitdim~=2
+  % load the whole pattern
+  full_pattern = load_pattern(pat);
+end
 
 fprintf('Channel: ');
 for c=1:psize(2)
   fprintf('%s', pat.dim.chan(c).label);
+  
+  if exist('full_pattern','var')
+    % grab this slice
+    pattern = full_pattern(:,c,:,:);
+    else
+    % nothing loaded yet; load just this channel
+    pattern = load_pattern(pat,struct('patnum',c));
+  end
   
   % run the statistic
   for t=1:size(pattern,3)
@@ -112,7 +122,7 @@ for c=1:psize(2)
       fprintf('.')
     end
     for f=1:size(pattern,4)
-      [p(:,c,t,f), statistic(:,c,t,f)] = fcn_handle(squeeze(pattern(:,c,t,f)), group, fcn_inputs{:});
+      [p(:,c,t,f), statistic(:,c,t,f)] = fcn_handle(squeeze(pattern(:,1,t,f)), group, fcn_inputs{:});
     end
   end
 end
