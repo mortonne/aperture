@@ -61,4 +61,7 @@ if isfield(ev, 'ev')
 end
 
 % make the pat structure
-pat = struct('name',name, 'file',file, 'source',source, 'params',params, 'dim',dim);
+pat = struct('name',name, 'file','', 'source',source, 'params',params, 'dim',dim);
+
+% if we assign this in call to struct, pat will be made a vector structure
+pat.file = file;
