@@ -1,7 +1,7 @@
-function [pat,pattern,events] = modify_pattern(pat, params, patname, resDir)
+function [pat,pattern,events] = modify_pattern(pat, params, patname, res_dir)
 %MODIFY_PATTERN   Modify an existing pattern.
-%   PAT = MODIFY_PATTERN(PAT,PARAMS,PATNAME,RESDIR) modifies PAT using 
-%   options in the PARAMS struct.  New patterns are saved in RESDIR/patterns.
+%   PAT = MODIFY_PATTERN(PAT,PARAMS,PATNAME,res_dir) modifies PAT using 
+%   options in the PARAMS struct.  New patterns are saved in res_dir/patterns.
 %
 %   See patFilt for options for filtering each dimension, and see patBins 
 %   for binning each dimension.
@@ -17,8 +17,15 @@ if ~exist('patname','var') | isempty(patname)
   % default to overwriting the existing pattern
   patname = pat.name;
 end
-if ~exist('resDir','var')
-  resDir = fullfile(fileparts(fileparts(fileparts(pat.file))),patname);
+if ~exist('res_dir','var')
+  % get the path to the pattern's file
+  if iscell(pat.file)
+    temp = pat.file{1};
+    else
+    temp = pat.file;
+  end
+  % set the default results directory
+  res_dir = fullfile(fileparts(fileparts(fileparts(temp))), patname);
 end
 if ~exist('params','var')
   params = struct;
@@ -38,7 +45,7 @@ oldpat = pat;
 % initialize the new pat object
 if ~strcmp(oldpat.name, patname)
   % if the patname is different, save the pattern to a new file
-  patfile = fullfile(resDir, 'patterns', objfilename('pattern', patname, pat.source));
+  patfile = fullfile(res_dir, 'patterns', objfilename('pattern', patname, pat.source));
   else
   patfile = oldpat.file;
 end
@@ -110,7 +117,7 @@ pattern = patMeans(pattern, patbins);
 if ~isempty(params.nComp)
   % run PCA on the pattern
   [pat, pattern, coeff] = patPCA(pat, params, pattern);
-  coeffFile = fullfile(resDir, 'patterns', objfilename('coeff', patname, pat.source));
+  coeffFile = fullfile(res_dir, 'patterns', objfilename('coeff', patname, pat.source));
   pat.dim.coeff = coeffFile;
   save(pat.dim.coeff, 'coeff');
 end
@@ -119,12 +126,12 @@ fprintf('Pattern "%s" created.\n', pat.name)
 
 if params.savePat
   if any(evmod)
-    if ~exist(fullfile(resDir, 'events'), 'dir')
-      mkdir(fullfile(resDir, 'events'));
+    if ~exist(fullfile(res_dir, 'events'), 'dir')
+      mkdir(fullfile(res_dir, 'events'));
     end
 
     % we need to save a new events struct
-    pat.dim.ev.file = fullfile(resDir, 'events', objfilename('events', patname, pat.source));  
+    pat.dim.ev.file = fullfile(res_dir, 'events', objfilename('events', patname, pat.source));  
     save(pat.dim.ev.file, 'events');
   end
 
@@ -134,7 +141,9 @@ if params.savePat
   % resave in slices
   if ~isempty(params.splitDim)
     pat = split_pattern(pat, params.splitDim);
+    else
+    pat.dim.splitdim = [];
   end
-  
+
   %closeFile(pat.file);
 end
