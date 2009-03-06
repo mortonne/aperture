@@ -76,6 +76,9 @@ if strcmp(dim_name, 'ev')
   end
   dim.ev.file = fullfile(ev_dir, sprintf('events_%s_multiple.mat', pat_name));
   save(dim.ev.file, 'events')
+  if isfield(dim.ev,'mat')
+    dim.ev.mat = events;
+  end
   
   % update the ev object
   dim.ev.source = 'multiple';

@@ -34,58 +34,52 @@ function [pat2,bins,events,evmod] = patBins(pat1,params,events)
 %   See also patMeans, modify_pattern, patFilt.
 %
 
-params = structDefaults(params,  'field', '',  'eventbinlabels', '',  'chanbins', [],  'chanbinlabels', {},  'MSbins', [],  'MSbinlabels', {},  'freqbins', [],  'freqbinlabels', {});
+params = structDefaults(params, ...
+                        'field',          '',  ...
+                        'eventbinlabels', '',  ...
+                        'chanbins',       [],  ...
+                        'chanbinlabels',  {},  ...
+                        'MSbins',         [],  ...
+                        'MSbinlabels',    {},  ...
+                        'freqbins',       [],  ...
+                        'freqbinlabels',  {});
 
 % initialize
 pat2 = pat1;
 bins = cell(1,4);
 evmod = 0;
 
-% start the averaging
-%fprintf('Binning pattern "%s"...', pat1.name)
-
 % EVENTS
 if ~isempty(params.field)
-  %fprintf('events...');
-
+  % load events
 	if ~exist('events','var') || isempty(events)
-		load(pat1.dim.ev.file);
+		pat1.dim.ev.mat = load_events(pat1.dim.ev);
+		else
+		pat1.dim.ev.mat = events;
 	end
-
   % bin events using a field from the events struct
-  if exist('events', 'var')
-    [pat2.dim.ev, events, bins{1}] = eventBins(pat1.dim.ev, params, events);
-  else
-    [pat2.dim.ev, events, bins{1}] = eventBins(pat1.dim.ev, params);
-  end
-
+  [pat2.dim.ev, bins{1}] = event_bins(pat1.dim.ev, params.field, params.eventbinlabels);
+  events = pat2.dim.ev.mat;
 	evmod = 1;
 end
 
 % CHANNELS
 if ~isempty(params.chanbins)
-  %fprintf('channels...');
-  
   % bin channels by number or region
   [pat2.dim.chan, bins{2}] = chanBins(pat1.dim.chan, params);
 end
 
 % TIME
 if ~isempty(params.MSbins)
-  %fprintf('time...');
-  
   % bin time using MS windows
   [pat2.dim.time, bins{3}] = timeBins(pat1.dim.time, params);
 end
 
 % FREQUENCY
 if ~isempty(params.freqbins)
-  %fprintf('frequency...');
-  
   % bin frequency using freq windows
   [pat2.dim.freq, bins{4}] = freqBins(pat1.dim.freq, params);
 end
-%fprintf('\n')
 
 % check the dimensions
 psize = patsize(pat2.dim);
@@ -98,60 +92,85 @@ if ~exist('events','var')
 end
 
 
-function [ev2, events2, bine] = eventBins(ev1, params, events1)
-%EVENTBINS   Apply bins to an events dimension.
-%   [EV2,EVENTS2] = EVENTBINS(EV1,PARAMS) bins the events
-%   dimension whose information is stored in EV1 using options in
-%   PARAMS, and outputs EV2, a new dimension struct, and EVENTS2,
-%   a struct with one field, "type."
-%
-%   [EV2,EVENTS2,BINE] = EVENTBINS(EV1,PARAMS) also outputs BINE,
-%   a cell array of indices of the original events struct for
-%   each unique value of EVENTS2.
-%
+function [ev2, bins] = event_bins(ev1,bin_defs,labels)
+  %EVENT_BINS   Apply bins to an events dimension.
+  %
+  %  [ev2, bins] = event_bins(ev1, bin_defs, labels)
+  %
+  %  INPUTS:
+  %       ev1:  an ev object.
+  %
+  %  bin_defs:  a cell array with one cell per bin. See binEventsField
+  %             for possible values of each cell.
+  %
+  %    labels:  a cell array of strings indicating a label for each bin.
+  %
+  %  OUTPUTS:
+  %       ev2:  a modified ev object. The events structure is also
+  %             modified and stored in ev2.mat. There will be one event
+  %             for each bin.
+  %
+  %      bins:  a cell array with one cell per bin, where each cell
+  %             contains indices for the events in that bin.
 
-if ~exist('params', 'var')
-	params = struct();
-end
+  % input checks
+  if ~exist('ev1','var')
+    error('You must pass an ev object.')
+    elseif ~exist('bin_defs','var')
+    error('You must define the bins.')
+  end
+  if ~exist('labels','var')
+    labels = {};
+  end
 
-params = structDefaults(params, 'field', '',  'eventbinlabels', '');
+  % load the events
+  events1 = load_events(ev1);
+  fnames = fieldnames(events1);
+  
+  % generate a new events field, one value per bin
+  vec = binEventsField(events1, bin_defs);
+  vals = unique(vec);
 
-if ~exist('events1', 'var')
-	load(ev1.file);
-	events1 = events;
-end
+  % initialize the new ev object
+  ev2 = ev1;
+  ev2.len = length(vals); % one event for each unique value
 
-ev2 = ev1;
-
-% generate a new events field, one value per bin
-vec = binEventsField(events1, params.field);
-
-% find the events corresponding to each condition
-vals = unique(vec);
-ev2.len = length(vals);
-for j=1:length(vals)
-
-	if iscell(vals)
-		% assume all values are strings
-		if ~isempty(params.eventbinlabels)
-			events2(j).type = params.eventbinlabels{j};
-			else
-			events2(j).type = vals{j};
-		end
-		bine{j} = find(strcmp(vec, vals{j}));
-
-		else
-		% values are numeric
-		if ~isempty(params.eventbinlabels)
-			events2(j).type = params.eventbinlabels{j};
-			else
-			events2(j).type = vals(j);
-		end
-		bine{j} = find(vec==vals(j));
-	end
-
-end % unique event types
-
+  for i=1:length(vals)
+    % label this event
+    if ~isempty(labels)
+      label = labels{i};
+      elseif iscell(vals)
+      label = vals{i};
+      else
+      label = vals(i);
+    end
+    events2(i).label = label;
+    
+    % get indices for this bin
+    if iscell(vals)
+      % assume values are strings
+      bins{i} = find(strcmp(vec, vals{i}));
+      else
+      % assume values are numeric
+      bins{i} = find(vec==vals(i));
+    end
+    
+    % salvage fields that have the same value for this whole bin
+    for j=1:length(fnames)
+      u_field = unique(getStructField(events1, fnames{j}));
+      if length(u_field)==1
+        if iscell(u_field)
+          events2(i).(fnames{j}) = u_field{1};
+          else
+          events2(i).(fnames{j}) = u_field;
+        end
+      end
+    end  
+  end
+  
+  % save the events to the new ev object
+  ev2.mat = events2;
+%endfunction
 
 function [chan2, binc] = chanBins(chan1, params)
 %CHANBINS   Apply binning to a channel dimension.
