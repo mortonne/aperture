@@ -20,6 +20,9 @@ function pat = cat_patterns(pats,dimension,pat_name,res_dir)
 %        pat:  pat object with metadata for the new concatenated
 %              pattern.
 
+% use the first pattern to set defaults
+def_pat = pats(1);
+
 % input checks
 if ~exist('pats','var')
   error('You must pass a vector of pat objects.')
@@ -32,13 +35,13 @@ if ~exist('pat_name','var')
 end
 if ~exist('res_dir','var')
   % get the path to the pattern's file
-  if iscell(pats(1).file)
-    pat_file = pats(1).file{1};
+  if iscell(def_pat.file)
+    temp = def_pat.file{1};
     else
-    pat_file = pats(1).file;
+    temp = def_pat.file;
   end
   % set the default results directory
-  res_dir = fileparts(pat_file);
+  res_dir = fileparts(temp);
 end
 
 % parse the dimension input
@@ -58,7 +61,7 @@ for j=1:n_dims
 end
 
 % concatenate the dim structure
-dim = pats(1).dim;
+dim = def_pat.dim;
 if strcmp(dim_name, 'ev')
   % load each events structure
   fprintf('Concatenating events...')
@@ -90,22 +93,54 @@ if strcmp(dim_name, 'ev')
   dim.(dim_name) = [dims.(dim_name)];
 end
 
-% concatenate the pattern
-fprintf('Concatenating patterns...')
-pattern = [];
-for i=1:length(pats)
-  fprintf('%s ', pats(i).source)
-  pattern = cat(dim_number, pattern, load_pattern(pats(i)));
-end
-fprintf('\n')
-
-% save the new pattern
-pat_dir = fullfile(res_dir, 'patterns')
+% set the directory to save the pattern
+pat_dir = fullfile(res_dir, 'patterns');
 if ~exist(pat_dir)
   mkdir(pat_dir)
 end
-pat_file = fullfile(pat_dir, sprintf('pattern_%s_multiple.mat', pat_name));
-save(pat_file, 'pattern')
+
+% concatenate the pattern
+fprintf('Concatenating patterns...')
+if ~isfield(dim,'splitdim') || isempty(dim.splitdim) || dim.splitdim==dim_number
+  % load the whole pattern at once
+  pattern = [];
+  for i=1:length(pats)
+    fprintf('%s ', pats(i).source)
+    pattern = cat(dim_number, pattern, load_pattern(pats(i)));
+  end
+  fprintf('\n')
+  
+  % save the new pattern
+  pat_file = fullfile(pat_dir, sprintf('pattern_%s_multiple.mat', pat_name));
+  save(pat_file, 'pattern')
+  
+  else
+  % we have slices
+  split_dim_name = read_dim_input(dim.splitdim);
+  split_dim = def_pat.dim.(split_dim_name);
+  pat_fileroot = sprintf('pattern_%s_multiple', pat_name);
+  
+  fprintf('loading patterns split along %s dimension...\n', split_dim_name)
+  for i=1:length(split_dim)
+    fprintf('%s %s: \t', split_dim_name, split_dim(i).label)
+    
+    % initialize this slice
+    pattern = [];
+    params = struct('patnum',i);
+    
+    % concatenate slices from all patterns
+    for j=1:length(pats)
+      fprintf('%s ', pats(j).source)
+      pattern = cat(dim_number, pattern, load_pattern(pats(j), params));
+    end
+    
+    % save
+    filename = sprintf('%s_%s%s.mat',pat_fileroot,split_dim_name,split_dim(i).label);
+    pat_file{i} = fullfile(pat_dir,filename);
+    save(pat_file{i}, 'pattern')
+    fprintf('\n')
+  end
+end
 
 % create the new pat object
-pat = init_pat(pat_name, pat_file, 'multiple', pats(1).params, dim);
+pat = init_pat(pat_name, pat_file, 'multiple', def_pat.params, dim);

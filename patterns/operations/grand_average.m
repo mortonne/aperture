@@ -53,4 +53,5 @@ pattern = getvarallsubj(subj, {'pat', pat_name}, 'pattern', 5);
 % average across subjects
 pattern = mean(pattern,5);
 save(pat.file, 'pattern');
-closeFile(pat.file);
+
+pat.dim.splitdim = [];
