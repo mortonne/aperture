@@ -12,12 +12,22 @@ function [obj,ind] = getobj(s,f,objname)
 %   where the object was found in F.
 %
 %   See also setobj, rmobj.
-%
 
-if ~exist('objname', 'var')
+% input checks
+if ~exist('s','var')
+  error('You must pass a structure containing a list of objects.')
+  elseif ~isstruct(s)
+  error('s must be a structure.')
+  elseif length(s)>1
+  error('s cannot be a vector structure.')
+  elseif ~exist('f','var')
+  error('You must specify a field of s.')
+end
+if ~exist('objname','var')
   objname = '';
 end
 
+% get the list of objects
 objs = s.(f);
 if ~isstruct(objs)
   error('Field is not a struct.');
@@ -33,9 +43,9 @@ end
 % get the identifier field
 if isfield(objs, 'name')
   ind = find(strcmp({objs.name},objname));
-elseif isfield(objs, 'id')
+  elseif isfield(objs, 'id')
   ind = find(strcmp({objs.id},objname));
-else
+  else
   error('Objects do not have identifier field.');
 end
 obj = objs(ind);

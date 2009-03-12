@@ -12,7 +12,7 @@ function pat = pat_statistics(pat,event_bins,fcn_handle,fcn_inputs,stat_name,res
 %         pat:  a pat object.
 %
 %  event_bins:  cell array where each cell specifies one factor to create from
-%               each pat's event structure. See binEventsField for options.
+%               each pat's event structure. See make_event_bins for options.
 %
 %  fcn_handle:  handle to a function that runs a statistical test of the form:
 %               [p, statistic] = fcn_handle(chan_vec, group, ...)
@@ -82,7 +82,7 @@ events = loadEvents(pat.dim.ev.file);
   
 % make the regressors
 for j=1:length(event_bins)
-  group{j} = [group{j}; binEventsField(events, event_bins{j})'];
+  group{j} = [group{j}; make_event_bins(events, event_bins{j})'];
 end
 
 % set the path to the MAT-file that will hold the results
@@ -99,7 +99,7 @@ psize = patsize(pat.dim);
 p = NaN(nfact,psize(2),psize(3),psize(4));
 statistic = NaN(nfact,psize(2),psize(3),psize(4));
 
-if ~isfield(pat.dim,'splitdim') || pat.dim.splitdim~=2
+if ~isfield(pat.dim,'splitdim') || isempty(pat.dim.splitdim) || pat.dim.splitdim~=2
   % load the whole pattern
   full_pattern = load_pattern(pat);
 end
@@ -115,7 +115,7 @@ for c=1:psize(2)
     % nothing loaded yet; load just this channel
     pattern = load_pattern(pat,struct('patnum',c));
   end
-  
+
   % run the statistic
   for t=1:size(pattern,3)
     if ~mod(t,floor(size(pattern,3)/4))

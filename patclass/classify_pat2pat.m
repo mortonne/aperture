@@ -11,7 +11,7 @@ function exp = classify_pat2pat(exp, params, pcname, resDir)
 %     'testpatname'  REQUIRED - Specifies which pattern to test the
 %                    classifier on
 %     'regressor'    REQUIRED - Specifies what to use as a regressor. 
-%                    Is input to binEventsField to make the regressor
+%                    Is input to make_event_bins to make the regressor
 %     'classifier'   Indicates the classifier to use
 %                    (default: 'classify'). See run_classifier for
 %                    available classifiers and options
@@ -92,14 +92,14 @@ for s=1:length(exp.subj)
   trainbadvar = find(all(isnan(trainpatall)));
 
   % get the training regressor
-  trainreg.vec = binEventsField(events, params.regressor);
+  trainreg.vec = make_event_bins(events, params.regressor);
   trainreg.vals = unique(trainreg.vec);
 
   % get testing pattern
   [testpatall, events] = load_pattern(pat2, params);
 
   % get the testing regressor
-  testreg.vec = binEventsField(events, params.regressor);
+  testreg.vec = make_event_bins(events, params.regressor);
   testreg.vals = unique(testreg.vec);
 
   if params.scramble

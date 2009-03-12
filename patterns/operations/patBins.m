@@ -14,7 +14,7 @@ function [pat2,bins,events,evmod] = patBins(pat1,params,events)
 %
 %   Params:
 %     'field'           Specifies event bins. Each cell is input to
-%                       binEventsField
+%                       make_event_bins
 %     'eventbinlabels'  Cell array of labels corresponding to each event bin
 %     'chanbins'        Specifies channel bins. Each cell can be a vector
 %                       of channel numbers, a cell array of regions, or a
@@ -100,7 +100,7 @@ function [ev2, bins] = event_bins(ev1,bin_defs,labels)
   %  INPUTS:
   %       ev1:  an ev object.
   %
-  %  bin_defs:  a cell array with one cell per bin. See binEventsField
+  %  bin_defs:  a cell array with one cell per bin. See make_event_bins
   %             for possible values of each cell.
   %
   %    labels:  a cell array of strings indicating a label for each bin.
@@ -128,7 +128,7 @@ function [ev2, bins] = event_bins(ev1,bin_defs,labels)
   fnames = fieldnames(events1);
   
   % generate a new events field, one value per bin
-  vec = binEventsField(events1, bin_defs);
+  vec = make_event_bins(events1, bin_defs);
   vals = unique(vec);
 
   % initialize the new ev object

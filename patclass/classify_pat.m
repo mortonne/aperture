@@ -7,8 +7,8 @@ function [pat,eid] = classify_pat(pat, params, pcname, resDir)
 %
 %   Params:
 %     'regressor'   REQUIRED - Specifies what to use as a regressor. 
-%                   Is input to binEventsField to make the regressor
-%     'selector'    REQUIRED - Also input to binEventsField; 
+%                   Is input to make_event_bins to make the regressor
+%     'selector'    REQUIRED - Also input to make_event_bins; 
 %                   specifies the scale with which the leave-one-out 
 %                   scheme is applied
 %     'classifier'  Indicates the classifier to use
@@ -61,7 +61,7 @@ pc = init_pc(pcname, pcfile, params);
 [pattern, events] = load_pattern(pat, params);
 
 % get the regressor to use for classification
-reg.vec = binEventsField(events, params.regressor);
+reg.vec = make_event_bins(events, params.regressor);
 reg.vals = unique(reg.vec);
 
 % optional scramble to use as a sanity check
@@ -71,7 +71,7 @@ if params.scramble
 end
 
 % get the selector
-sel.vec = binEventsField(events, params.selector);
+sel.vec = make_event_bins(events, params.selector);
 sel.vals = unique(sel.vec);
 
 % flatten all dimensions after events into one vector

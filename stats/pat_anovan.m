@@ -8,7 +8,7 @@ function [pat,status] = pat_anovan(pat, params, statname, resDir)
 %
 %   Params:
 %     'fields'    REQUIRED - Specifies how to create the regressors.  
-%                 See binEventsField for possible values
+%                 See make_event_bins for possible values
 %     'optinput'  Cell array of optional inputs to anovan
 %     'lock'      If true, stat.file will be locked during operation
 %                 (default is false)
@@ -55,7 +55,7 @@ stat = init_stat(statname, statfile, params);
 % make the regressors
 group = cell(1, length(params.fields));
 for i=1:length(params.fields)
-  vec = binEventsField(events, params.fields{i});
+  vec = make_event_bins(events, params.fields{i});
   group{i} = vec';
   if ~isempty(params.factorlabels)
     stat.factor(i).name = params.factorlabels{i};

@@ -85,7 +85,7 @@ if isempty(pattern)
 end
 
 if ~isempty(params.event_bins)
-  % create bins using inputs accepted by binEventsField
+  % create bins using inputs accepted by make_event_bins
   [pat, bins] = patBins(pat, struct('field', params.event_bins));
   
   % do the averaging within each bin
