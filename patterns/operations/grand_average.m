@@ -48,6 +48,7 @@ for s=1:length(subj)
 end
 
 % load and concatenate all subject patterns
+fprintf('calculating grand average for pattern %s...', pat_name)
 pattern = getvarallsubj(subj, {'pat', pat_name}, 'pattern', 5);
 
 % average across subjects

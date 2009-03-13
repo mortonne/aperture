@@ -39,8 +39,9 @@ function [pat,pattern,events] = modify_pattern(pat, params, pat_name, res_dir)
 %
 %  Binning
 %   field          - input to make_event_bins
-%   eventbinlabels - cell array of strings, with one cell per bin, giving
-%                    a label for each event bin
+%   eventbinlabels - cell array of strings, with one cell per bin. Gives
+%                    a label for each event bin, which appears in the
+%                    'label' field of the modified events structure
 %   chanbins       - 
 %   chanbinlabels  - cell array of strings
 %   MSbins         - [N bins X 2] array, where MSbins(Y,1) gives the start
@@ -136,6 +137,8 @@ end
 % load the pattern
 [pattern, events] = load_pattern(oldpat, params);
 
+fprintf('modifying pattern %s...', oldpat.name)
+
 % apply filters
 [pat,inds,events,evmod(1)] = patFilt(pat,params,events);
 pattern = pattern(inds{:});
@@ -186,7 +189,11 @@ if ~isempty(params.nComp)
   save(pat.dim.coeff, 'coeff');
 end
 
-fprintf('Pattern "%s" created.\n', pat.name)
+if strcmp(oldpat.name, pat.name)
+  fprintf('saved.')
+  else
+  fprintf('saved as "%s".\n', pat.name)
+end
 
 if params.savePat
   if any(evmod)

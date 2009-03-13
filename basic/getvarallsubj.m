@@ -75,12 +75,12 @@ if length(dim)==1
   dim = repmat(dim,1,length(var_names));
 end
 
-fprintf('Exporting from subjects...\n')
+fprintf('exporting from subjects...\n')
 
 % first make a subjects X variables cell array
 var_cell = cell(length(subj), length(var_names));
 for s=1:length(subj)
-  fprintf('%s\n', subj(s).id)
+  fprintf('%s ', subj(s).id)
 
   % get the object for this subject
   obj = getobj2(subj(s),path);
@@ -126,6 +126,7 @@ for s=1:length(subj)
     var_cell{s,v} = temp.(var_names{v});
   end
 end
+fprintf('\n')
 
 % concatenate each variable and add to the outputs
 varargout = cell(1,length(var_names));

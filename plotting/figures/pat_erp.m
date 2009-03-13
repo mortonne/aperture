@@ -124,7 +124,7 @@ if ~isempty(params.stat_name)
 end
 
 % make one figure per channel
-fprintf('Making ERP plots from pattern %s.\nChannel: ', pat.name);
+fprintf('making ERP plots from pattern %s...\nchannel: ', pat.name);
 start_fig = gcf;
 files = cell(1, size(pattern,2));
 for c=1:size(pattern,2)

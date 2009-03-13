@@ -64,11 +64,18 @@ end
 dim = def_pat.dim;
 if strcmp(dim_name, 'ev')
   % load each events structure
-  fprintf('Concatenating events...')
+  fprintf('concatenating events...')
   events = [];
+  fields = {};
   for i=1:length(pats)
     fprintf('%s ', pats(i).source)
-    events = [events load_events(pats(i).dim.ev)];
+    pat_ev = load_events(pats(i).dim.ev);
+    if ~isempty(fields)
+      f2rm = setdiff(fieldnames(pat_ev), fields);
+      pat_ev = rmfield(pat_ev, f2rm);
+    end
+    events = [events pat_ev];
+    fields = fieldnames(events);
   end
   fprintf('\n')
 
@@ -100,7 +107,7 @@ if ~exist(pat_dir)
 end
 
 % concatenate the pattern
-fprintf('Concatenating patterns...')
+fprintf('concatenating patterns...')
 if ~isfield(dim,'splitdim') || isempty(dim.splitdim) || dim.splitdim==dim_number
   % load the whole pattern at once
   pattern = [];

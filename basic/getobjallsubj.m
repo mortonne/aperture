@@ -31,12 +31,12 @@ if ~exist('path','var')
   path = {};
 end
 
-fprintf('Exporting from subjects...\n')
+fprintf('exporting %s object %s from subjects...\n', path{end-1}, path{end})
 
 % first make a subjects X variables cell array
 n = 1;
 for s=1:length(subj)
-  fprintf('%s\n', subj(s).id)
+  fprintf('%s ', subj(s).id)
 
   % get the object for this subject
   obj = getobj2(subj(s),path);
@@ -51,3 +51,4 @@ for s=1:length(subj)
   objs(n) = obj;
   n = n + 1;
 end
+fprintf('\n')

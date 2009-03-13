@@ -1,10 +1,26 @@
 function [p, statistic] = run_sig_test(X,group,test,varargin)
 %RUN_SIG_TEST   Run a test of significance using standard input/output.
-%   P = RUN_SIG_TEST(TEST,X,GROUP,VARARGIN) runs significance test
-%   indicated by the string TEST on data in X. Regressors are specified
-%   in the cell array GROUP. Additional inputs to the significance test
-%   function are passed in as VARARGIN.
 %
+%  [p, statistic] = run_sig_test(X, group, test, varargin)
+%
+%  INPUTS:
+%          X:  vector of data.
+%
+%      group:  cell array of grouping variables. Each cell should
+%              contain labels for one factor; labels can be integers
+%              or strings.
+%
+%       test:  string indicating which test to run. Choices are:
+%               'pttest'
+%               'anovan'
+%               'RMAOV1'
+%               'RMAOV2'
+%
+%  OUTPUTS:
+%          p:  p-value of the test.
+%
+%  statistic:  statistic corresponding to the p-value (e.g. t-
+%              or F-statistic)
 
 % input checks
 if ~exist('X','var')
@@ -29,25 +45,19 @@ end
 
 switch test
   case 'pttest'
-  error('This test isn''t working yet.')
-
   % fix all labels to be consecutive integers
   group = fix_regressors(group);
   
-  % get the pair labels
-  pairs = group{2}
-  u_pairs = unique(pairs);
-  
   % process the condition labels
-  conds = group{1};
-  u_conds = unique(conds);
-  if length(u_conds)~=2
+  if length(unique(group{1}))~=2
     error('factor must only contain two unique values.')
   end
-  
-  % get condition indices
-  cond1_ind = find(cond_labels{1}==conds);
-  cond2_ind = find(cond_labels{2}==conds);
+
+  % assuming pairs are in the same order, e.g.
+  % group{1}: [1 2 1 2 1 2]
+  % group{2}: [1 1 2 2 3 3]
+  [h,p,ci,stats] = ttest(X(group{1}==1), X(group{1}==2), varargin{:});
+  statistic = stats.tstat;
   
   case 'anovan'
    [p,t,stats,terms] = anovan(X,group,'display','off',varargin{:});

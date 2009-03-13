@@ -15,7 +15,8 @@ function labels = make_event_bins(events, bins)
 %  OUTPUTS:
 %   labels:  a vector or cell array of strings the same length
 %            as events, where each unique value indicates one
-%            bin.
+%            bin. Events that are not placed in any bin are
+%            marked with a NaN.
 %
 %  BINS FORMAT:
 %    'field_name'
@@ -28,8 +29,7 @@ function labels = make_event_bins(events, bins)
 %
 %    {'filter1','filter2',...}
 %      Cell array of strings that will be input to inStruct to 
-%      form each bin. Note that with this option, it is possible 
-%      to make overlapping bins.
+%      form each bin.
 %
 %    number_of_bins
 %      Integer specifying the number of bins to randomly divide 
@@ -41,6 +41,8 @@ function labels = make_event_bins(events, bins)
 %
 %    'none'
 %      Each event will have its own bin.
+%
+%  See also patBins, modify_pattern.
 
 % input checks
 if ~exist('events','var')

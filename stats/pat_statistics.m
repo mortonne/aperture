@@ -104,7 +104,7 @@ if ~isfield(pat.dim,'splitdim') || isempty(pat.dim.splitdim) || pat.dim.splitdim
   full_pattern = load_pattern(pat);
 end
 
-fprintf('Channel: ');
+fprintf('channel: ');
 for c=1:psize(2)
   fprintf('%s', pat.dim.chan(c).label);
   
