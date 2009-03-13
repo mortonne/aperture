@@ -92,7 +92,7 @@ stat_file = fullfile(res_dir, filename);
 % initialize the stat object
 stat = init_stat(stat_name, stat_file, 'multiple', struct('event_bins',event_bins));
 
-fprintf('running %s...\n', func2str(fcn_handle))
+fprintf('running %s on %s...\n', func2str(fcn_handle), pat.name)
 
 % set the size of the output variables
 psize = patsize(pat.dim);
