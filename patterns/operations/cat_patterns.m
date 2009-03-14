@@ -47,6 +47,14 @@ end
 % parse the dimension input
 [dim_name, dim_number] = read_dim_input(dimension);
 
+% print status
+pats_name = unique({pats.name});
+if length(pats_name)==1
+  fprintf('concatenating %s patterns along %s dimension...\n', pats_name{1}, dim_name)
+  else
+  fprintf('concatenating patterns along %s dimension...\n', dim_name)
+end
+
 % get the dimension sizes of each pattern
 n_dims = 4;
 pat_sizes = NaN(length(pats), n_dims);
@@ -56,7 +64,7 @@ end
 % make sure the other dimensions match up
 for j=1:n_dims
   if dim_number~=j && any(pat_sizes(2:end,j)~=pat_sizes(1,j))
-    error('Dimension %d does not match for all patterns.', j)
+    error('dimension %d does not match for all patterns.', j)
   end
 end
 
@@ -64,7 +72,7 @@ end
 dim = def_pat.dim;
 if strcmp(dim_name, 'ev')
   % load each events structure
-  fprintf('concatenating events...')
+  fprintf('events...')
   events = [];
   fields = {};
   for i=1:length(pats)
@@ -107,7 +115,7 @@ if ~exist(pat_dir)
 end
 
 % concatenate the pattern
-fprintf('concatenating patterns...')
+fprintf('patterns...')
 if ~isfield(dim,'splitdim') || isempty(dim.splitdim) || dim.splitdim==dim_number
   % load the whole pattern at once
   pattern = [];
@@ -151,3 +159,4 @@ end
 
 % create the new pat object
 pat = init_pat(pat_name, pat_file, 'multiple', def_pat.params, dim);
+fprintf('pattern "%s" created.\n', pat_name)

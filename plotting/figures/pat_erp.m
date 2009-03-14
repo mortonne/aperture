@@ -166,7 +166,7 @@ for c=1:size(pattern,2)
   end
   
   % plot all events for this channel
-  h = plot(x, erp);
+  h = plot(x, erp, 'LineWidth', 2);
   xlabel(x_label)
   ylabel(y_label)
  
