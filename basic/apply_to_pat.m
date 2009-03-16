@@ -27,4 +27,4 @@ function subj = apply_to_pat(subj,pat_name,fcn_handle,fcn_inputs)
 %   subj = apply_to_pat(subj, 'volt_pat', @pat_anovan, {params, 'sme'});
 
 % run the function on each subject
-subj = apply_to_subj_test(subj, @apply_to_obj, {'pat', pat_name, fcn_handle, fcn_inputs});
+subj = apply_to_subj(subj, @apply_to_obj, {'pat', pat_name, fcn_handle, fcn_inputs});
