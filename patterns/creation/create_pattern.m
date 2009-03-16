@@ -162,7 +162,7 @@ pat = init_pat(patname, patfile, subj.id, params, ev, subj.chan, time, freq);
 pat.params.channels = [pat.dim.chan.number];
 
 % get the information we'll need later to create bins, and update pat.dim.
-% To conserve memory, we'll do the actual binning as we accumlate the pattern.
+% To conserve memory, we'll do the actual binning as we accumulate the pattern.
 [pat,bins,events,evmod(2)] = patBins(pat,params,src_events);
 
 if any(evmod)
@@ -191,23 +191,22 @@ end
 pattern = NaN(length(src_events), length(pat.dim.chan), length(pat.dim.time), length(pat.dim.freq));
 
 % get a list of sessions in the filtered event struct
-sessions = unique(getStructField(src_events, 'session'));
+sessions = unique([src_events.session]);
 
 % CREATE THE PATTERN
-for n=1:length(sessions)
-  fprintf('\nProcessing %s session %d:\n', subj.id, sessions(n));
+for session=sessions
+  fprintf('\nProcessing %s session %d:\n', subj.id, session);
   
   % get the event indices for this session
-  sessInd = inStruct(src_events, 'session==varargin{1}', sessions(n));
+  sess_ind = [src_events.session]==session;
   
   % get the events and baseline events we need
-  sess_events = src_events(sessInd);
-  sess_base_events = filterStruct(base_events, 'session==varargin{1}', sessions(n));
+  sess_events = src_events(sess_ind);
+  sess_base_events = base_events([base_events.session]==session);
 
   % make the pattern for this session
-  pattern(sessInd,:,:,:) = fcnhandle(pat, bins, sess_events, sess_base_events);
-
-end % session
+  pattern(sess_ind,:,:,:) = fcnhandle(pat, bins, sess_events, sess_base_events);
+end
 fprintf('\n');
 
 % channels, time, and frequency should already be binned. 
