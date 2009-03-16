@@ -15,6 +15,7 @@ function subj = apply_to_subj(subj,fcn_handle,fcn_inputs,dist)
 %
 %        dist:  if true, each subject will be evaluated with
 %               a different distributed task.
+%               Default: false
 %
 %  OUTPUTS:
 %        subj:  a subject vector.
@@ -31,7 +32,7 @@ if ~exist('fcn_inputs','var')
   fcn_inputs = {};
 end
 if ~exist('dist','var')
-  dist = true;
+  dist = false;
 end
 
 if dist
