@@ -59,8 +59,12 @@ if dist
   % get a cell array of output arguments from each task
   temp = getAllOutputArguments(job);
 
-  if isempty(temp)
-    error('No output from %s.', func2str(fcn_handle))
+  % see if any of the outputs are empty
+  bad_subj = cellfun('isempty', temp);
+  if any(bad_subj)
+    emsg_start = sprintf('No output from %s for subjects:\n', func2str(fcn_handle));
+    emsg = [emsg_start sprintf('%s ', subj(bad_subj).id)];
+    error(emsg)
   end
 
   % convert to structure
