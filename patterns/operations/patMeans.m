@@ -48,7 +48,11 @@ for i=1:length(bins)
 		binInd{i} = bins{i}{j};
 
 		% do the average
-		temp(ind{:}) = nanmean(pattern(binInd{:}),i);
+		avg = nanmean(pattern(binInd{:}),i);
+		if all(isnan(avg(:)))
+		  warning('Bin %d of dimension %d contains all NaNs.', j, i)
+	  end
+		temp(ind{:}) = avg;
 	end
 	pattern = temp;
 end
