@@ -37,6 +37,14 @@ function [pat,pattern,events] = modify_pattern(pat, params, pat_name, res_dir)
 %   timeFilter  - filter for the time dimension
 %   freqFilter  - filter for the frequency dimension
 %
+%  Artifact Rejection
+%   excludeBadChans - if true, channels whose numbers are listed in
+%                     fileparts(events.eegfile)/bad_chan.txt
+%                     will be excluded for the relevant events
+%   absThresh       - if any value in an event crosses this this threshold
+%                     (either positive or negative), the event will be
+%                     excluded for that channel
+%
 %  Binning
 %   field          - input to make_event_bins
 %   eventbinlabels - cell array of strings, with one cell per bin. Gives
@@ -166,14 +174,16 @@ if params.absThresh
   % find any values that are above our absolute threshold
   bad_samples = abs(pattern)>params.absThresh;
   
-  % get a logical indicating events that have at least one bad sample
+  % get a logical indicating events/channels that have at least 
+  % one bad sample
   pat_size = size(pattern);  
-  bad_events = any(reshape(bad_samples, pat_size(1), prod(pat_size(2:end))), 2);
+  bad_event_chans = any(reshape(bad_samples, pat_size(1), pat_size(2), prod(pat_size(3:end))), 3);
+  isbad = repmat(bad_event_chans, [1 1 pat_size(3:end)]);
   
   % mark the bad events
-  pattern(bad_events,:,:,:) = NaN;
+  pattern(isbad) = NaN;
   
-  fprintf('Threw out %d events out of %d with abs. val. greater than %d.\n', sum(bad_events),length(events),params.absThresh)
+  fprintf('Threw out %d events out of %d with abs. val. greater than %d.\n', sum(bad_event_chans(:)),prod(pat_size(1:2)),params.absThresh)
 end
 
 % BINNING

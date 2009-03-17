@@ -137,7 +137,7 @@ if ~isfield(dim,'splitdim') || isempty(dim.splitdim) || dim.splitdim==dim_number
   
   fprintf('loading patterns split along %s dimension...\n', split_dim_name)
   for i=1:length(split_dim)
-    fprintf('%s %s: \t', split_dim_name, split_dim(i).label)
+    fprintf('%s ', split_dim(i).label)
     
     % initialize this slice
     pattern = [];
@@ -153,8 +153,8 @@ if ~isfield(dim,'splitdim') || isempty(dim.splitdim) || dim.splitdim==dim_number
     filename = sprintf('%s_%s%s.mat',pat_fileroot,split_dim_name,split_dim(i).label);
     pat_file{i} = fullfile(pat_dir,filename);
     save(pat_file{i}, 'pattern')
-    fprintf('\n')
   end
+  fprintf('\n')
 end
 
 % create the new pat object
