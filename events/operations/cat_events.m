@@ -1,7 +1,7 @@
-function ev = cat_events(evs,ev_name,res_dir)
+function [ev,events] = cat_events(evs,ev_name,res_dir)
 %CAT_EVENTS   Concatenate a set of events.
 %
-%  ev = cat_events(evs, ev_name, res_dir)
+%  [ev, events] = cat_events(evs, ev_name, res_dir)
 %
 %  INPUTS:
 %      evs:  a vector of ev objects.
@@ -23,11 +23,11 @@ if ~exist('ev_name','var')
   ev_name = 'cat_events';
 end
 if ~exist('res_dir','var')
-  res_dir = fileparts(evs(1).file);
+  res_dir = fileparts(fileparts(evs(1).file));
 end
 
 % prepare the directory for the new events structure
-ev_dir = fullfile(res_dir, 'patterns');
+ev_dir = fullfile(res_dir, 'events');
 if ~exist(ev_dir)
   mkdir(ev_dir)
 end
