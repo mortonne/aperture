@@ -118,7 +118,7 @@ for c=1:psize(2)
 
   % run the statistic
   for t=1:size(pattern,3)
-    if ~mod(t,floor(size(pattern,3)/4))
+    if t~=size(pattern,3) && ~mod(t,floor(size(pattern,3)/4))
       fprintf('.')
     end
     for f=1:size(pattern,4)

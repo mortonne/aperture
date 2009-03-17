@@ -1,4 +1,4 @@
-function h = correct_mult_comp(p,alpha,method)
+function h = correct_mult_comp(p,alpha,method,verbose)
 %CORRECT_MULT_COMP   Correct p-values for multiple comparisons.
 %
 %  h = correct_mult_comp(p,alpha,method)
@@ -24,32 +24,47 @@ end
 if ~exist('method','var')
   method = '';
 end
+if ~exist('verbose','var')
+  verbose = false;
+end
 
 switch lower(method)
   case 'bonferoni'
-  fprintf('performing Bonferoni correction for multiple comparisons\n');
+  if verbose
+    fprintf('performing Bonferoni correction for multiple comparisons\n');
+  end
   h = p<=(alpha ./ numel(p));
   
   case 'holms'
   % test the most significatt significance probability against alpha/N, the second largest against alpha/(N-1), etc.
-  fprintf('performing Holms correction for multiple comparisons\n');
+  if verbose
+    fprintf('performing Holms correction for multiple comparisons\n');
+  end
   [p_sort,indx] = sort(p(:));                     % this sorts the significance probabilities from smallest to largest
   mask = p_sort<=(alpha ./ ((length(p):-1:1)'));    % compare each significance probability against its individual threshold
   h = false(size(p));
   h(indx) = mask;
   
   case 'fdr'
-  fprintf('performing FDR correction for multiple comparisons');
+  if verbose
+    fprintf('performing FDR correction for multiple comparisons');
+  end
   q = fdr(p, alpha);
   if isempty(q)
-    fprintf('...no significant values')
+    if verbose
+      fprintf('...no significant values')
+    end
     h = false(size(p));
     else
     h = p<=q;
   end
-  fprintf('\n')
+  if verbose
+    fprintf('\n')
+  end
   
   otherwise
-  fprintf('not performing a correction for multiple comparisons\n');
+  if verbose
+    fprintf('not performing a correction for multiple comparisons\n');
+  end
   h = p<=alpha;
 end

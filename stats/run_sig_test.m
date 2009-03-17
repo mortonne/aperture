@@ -37,6 +37,7 @@ end
 statistic = NaN(1,length(group));
 
 % remove missing data from X and the regressors
+n_obs = length(X);
 good = ~isnan(X);
 X = X(good);
 for i=1:length(group)
@@ -45,6 +46,10 @@ end
 
 switch test
   case 'pttest'
+  if n_obs<sum(good)
+    error('run_sig_test:pttest:X cannot containg NaNs.')
+  end
+  
   % fix all labels to be consecutive integers
   group = fix_regressors(group);
   
