@@ -61,9 +61,13 @@ if dist
 
   % see if any of the outputs are empty
   bad_subj = cellfun('isempty', temp);
-  if any(bad_subj)
+  if isempty(temp) || any(bad_subj)
     emsg_start = sprintf('No output from %s for subjects:\n', func2str(fcn_handle));
-    emsg = [emsg_start sprintf('%s ', subj(bad_subj).id)];
+    if ~isempty(bad_subj)
+      emsg = [emsg_start sprintf('%s ', subj(bad_subj).id)];
+      else
+      emsg = [emsg_start sprintf('%s ', subj.id)];
+    end
     error(emsg)
   end
 
