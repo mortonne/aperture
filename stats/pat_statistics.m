@@ -78,8 +78,8 @@ nfact = length(event_bins);
 group = cell(1,nfact);
 
 % load the events for this pattern
-events = loadEvents(pat.dim.ev.file);
-  
+events = load_events(pat.dim.ev);
+
 % make the regressors
 for j=1:length(event_bins)
   group{j} = [group{j}; make_event_bins(events, event_bins{j})'];
@@ -105,6 +105,7 @@ if ~isfield(pat.dim,'splitdim') || isempty(pat.dim.splitdim) || pat.dim.splitdim
 end
 
 fprintf('channel: ');
+step = floor(psize(3)/4);
 for c=1:psize(2)
   fprintf('%s', pat.dim.chan(c).label);
   
@@ -118,7 +119,7 @@ for c=1:psize(2)
 
   % run the statistic
   for t=1:size(pattern,3)
-    if t~=size(pattern,3) && ~mod(t,floor(size(pattern,3)/4))
+    if t~=size(pattern,3) && ~mod(t,step)
       fprintf('.')
     end
     for f=1:size(pattern,4)
