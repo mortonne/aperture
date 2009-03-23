@@ -34,20 +34,45 @@ if ~exist('test','var')
   test = 'anovan';
 end
 
+% initialize the outputs
+p = NaN(1,length(group));
 statistic = NaN(1,length(group));
 
-% remove missing data from X and the regressors
+% find missing observations
 n_obs = length(X);
 good = ~isnan(X);
-X = X(good);
-for i=1:length(group)
-  group{i} = group{i}(good,:);
+
+% remove bad observations
+if ~strcmp(test,'pttest')
+  % if this is a paired test, we'll need to make sure both
+  % observations in a pair are removed.
+  % otherwise, we can just remove the bad observations:
+  X = X(good);
+  for i=1:length(group)
+    group{i} = group{i}(good,:);
+  end
 end
 
 switch test
   case 'pttest'
-  if n_obs<sum(good)
-    error('run_sig_test:pttest:X cannot containg NaNs.')
+  if sum(good)<n_obs
+    % we have some bad samples, and we will have to throw
+    % out pair(s).
+    bad_obs = find(~good);
+    
+    % logical indicating observations to remove
+    rm = false(size(X));
+    for i=1:length(bad_obs)
+      % get the pair corresponding to this bad sample
+      % assuming group{2} contains strings!
+      pair = strcmp(group{2}, group{2}{bad_obs(i)});
+      rm(pair) = true;
+    end
+    
+    % remove the bad pairs
+    X(rm) = [];
+    group{1}(rm) = [];
+    group{2}(rm) = [];
   end
   
   % fix all labels to be consecutive integers
@@ -63,7 +88,7 @@ switch test
   % group{2}: [1 1 2 2 3 3]
   [h,p,ci,stats] = ttest(X(group{1}==1), X(group{1}==2), varargin{:});
   statistic = stats.tstat;
-  
+
   case 'anovan'
    [p,t,stats,terms] = anovan(X,group,'display','off',varargin{:});
    
@@ -95,13 +120,37 @@ if length(statistic)~=length(p)
   error('length of statistic does not match length of p.')
 end
 
-function group = fix_regressors(group)
-  % fixes regressors so their labels are one-indexed and consecutive
-  temp = group;
-  for i=1:length(temp)
-    vals = unique(temp{i});
+function new_group = fix_regressors(group)
+  %FIX_REGRESSORS   Standardize regressors.
+  %
+  %  group = fix_regressors(group)
+  %
+  %  Fix regressors so their labels are one-indexed 
+  %  and consecutive.
+  
+  % initialize the new set of regressors
+  new_group = cell(1,length(group));
+  
+  for i=1:length(group)
+    % initialize the new labels as a numeric array
+    new_group{i} = NaN(1,length(group{i}));
+    
+    % get unique labels for this regressor
+    vals = unique(group{i});
     for j=1:length(vals)
-      group{i}(temp{i}==vals(j)) = j;
+      % get the indices for this label
+      if isnumeric(vals)
+        % numeric array
+        ind = group{i}==vals(j);
+      elseif iscell(vals) && all(cellfun(@ischar, group{2}))
+        % cell array of strings
+        ind = strcmp(group{i}, vals{j});
+      else
+        error('run_sig_test:regressor must be a numeric array or a cell array of strings.')
+      end
+      
+      % rewrite this label
+      new_group{i}(ind) = j;
     end
   end
 %endfunction
