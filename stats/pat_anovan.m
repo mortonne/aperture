@@ -1,5 +1,10 @@
 function [pat,status] = pat_anovan(pat, params, statname, resDir)
 %PAT_ANOVAN   Run anovan on a pattern.
+%
+%   *** deprecated ***
+%   NWM: phasing out this function, implementing similar functionality
+%   in pat_statistics.
+%
 %   PAT = PAT_ANOVAN(PAT,PARAMS,STATNAME,RESDIR) runs anovan on
 %   the pattern corresponding to PAT, using options specified in
 %   the PARAMS struct.  The results are saved in a "stat" substruct 
