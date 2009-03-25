@@ -38,7 +38,8 @@ if ~exist('res_dir','var')
 end
 
 % initialize the new pattern
-pat_file = fullfile(res_dir, [pat_name '_ga.mat']);
+filename = sprintf('pattern_%s_ga.mat', pat_name);
+pat_file = fullfile(res_dir, filename);
 pat = init_pat(pat_name, pat_file, 'multiple_subjects', subj_pat.params, subj_pat.dim);
 
 % get filenames for all subject patterns
@@ -52,7 +53,7 @@ fprintf('calculating grand average for pattern %s...', pat_name)
 pattern = getvarallsubj(subj, {'pat', pat_name}, 'pattern', 5);
 
 % average across subjects
-pattern = mean(pattern,5);
+pattern = nanmean(pattern,5);
 save(pat.file, 'pattern');
 
 pat.dim.splitdim = [];

@@ -178,12 +178,21 @@ if params.absThresh
   % one bad sample
   pat_size = size(pattern);  
   bad_event_chans = any(reshape(bad_samples, pat_size(1), pat_size(2), prod(pat_size(3:end))), 3);
+  
   isbad = repmat(bad_event_chans, [1 1 pat_size(3:end)]);
   
-  % mark the bad events
+  % mark the bad events/channels
   pattern(isbad) = NaN;
   
-  fprintf('Threw out %d events out of %d with abs. val. greater than %d.\n', sum(bad_event_chans(:)),prod(pat_size(1:2)),params.absThresh)
+  % check the results
+  fprintf('Threw out %d event-channels out of %d with abs. val. greater than %d.\n', sum(bad_event_chans(:)),prod(pat_size(1:2)),params.absThresh)
+  
+  % get channels that are bad for all events
+  bad_chans = find(all(bad_event_chans,1));
+  if ~isempty(bad_chans)
+    emsg = ['channels excluded: ' sprintf('%d ', pat.dim.chan(bad_chans).label)];
+    warning(emsg)
+  end
 end
 
 % BINNING

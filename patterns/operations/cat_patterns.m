@@ -41,7 +41,7 @@ if ~exist('res_dir','var')
     temp = def_pat.file;
   end
   % set the default results directory
-  res_dir = fileparts(temp);
+  res_dir = fileparts(fileparts(temp));
 end
 
 % parse the dimension input
@@ -135,17 +135,14 @@ if ~isfield(dim,'splitdim') || isempty(dim.splitdim) || dim.splitdim==dim_number
   split_dim = def_pat.dim.(split_dim_name);
   pat_fileroot = sprintf('pattern_%s_multiple', pat_name);
   
-  fprintf('loading patterns split along %s dimension...\n', split_dim_name)
+  fprintf('loading patterns split along %s dimension...', split_dim_name)
   for i=1:length(split_dim)
-    fprintf('%s ', split_dim(i).label)
-    
     % initialize this slice
     pattern = [];
     params = struct('patnum',i);
     
     % concatenate slices from all patterns
     for j=1:length(pats)
-      fprintf('%s ', pats(j).source)
       pattern = cat(dim_number, pattern, load_pattern(pats(j), params));
     end
     
@@ -154,7 +151,6 @@ if ~isfield(dim,'splitdim') || isempty(dim.splitdim) || dim.splitdim==dim_number
     pat_file{i} = fullfile(pat_dir,filename);
     save(pat_file{i}, 'pattern')
   end
-  fprintf('\n')
 end
 
 % create the new pat object
