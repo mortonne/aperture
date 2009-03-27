@@ -31,6 +31,7 @@ function files = pat_erp(pat,fig_name,params,res_dir,relative_dir)
 %          correctm:  ('', 'fdr', 'bonferroni')
 %        fill_color:
 
+% input checks
 if exist('relative_dir','var')
   % filenames will be relative to this directory
   if ~exist(relative_dir,'dir')
@@ -114,6 +115,10 @@ if ~isempty(params.stat_name)
   if ~exist('p','var')
     error('stat file must contain a variable named "p".')
   end
+  
+  % HACK - remove any additional p-values and take absolute value
+  p = abs(p(1,:,:,:));
+  % END HACK
   
   % check the size
   pat_size = patsize(pat.dim);
