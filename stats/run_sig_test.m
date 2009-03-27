@@ -79,14 +79,27 @@ switch test
   group = fix_regressors(group);
   
   % process the condition labels
-  if length(unique(group{1}))~=2
-    error('factor must only contain two unique values.')
+  n_labels = length(unique(group{1}));
+  if n_labels>2
+    error('factor cannot contain more than two unique values.')
   end
 
   % assuming pairs are in the same order, e.g.
   % group{1}: [1 2 1 2 1 2]
   % group{2}: [1 1 2 2 3 3]
-  [h,p,ci,stats] = ttest(X(group{1}==1), X(group{1}==2), varargin{:});
+  
+  if n_labels==2
+    % take the difference between the two conditions for each pair
+    X = X(group{1}==2) - X(group{1}==1);
+    [h,p,ci,stats] = ttest(X, 0, 0.05, 'both');
+    
+    elseif n_labels==1
+    % difference has already been taken
+    [h,p,ci,stats] = ttest(X, 0, 0.05, 'both');
+  end
+  
+  % add sign to the p-values
+  p = p*sign(mean(X));
   statistic = stats.tstat;
 
   case 'anovan'
