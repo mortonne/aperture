@@ -48,4 +48,11 @@ if isfield(objs, 'name')
   else
   error('Objects do not have identifier field.');
 end
+
+% did we find the object we were looking for?
+if isempty(ind)
+  error('object %s not found.', objname)
+end
+
+% get the object
 obj = objs(ind);
