@@ -1,18 +1,18 @@
-function h = correct_mult_comp(p,alpha,method,verbose)
+function [alpha_fw] = correct_mult_comp(p,alpha,method)
 %CORRECT_MULT_COMP   Correct p-values for multiple comparisons.
 %
-%  h = correct_mult_comp(p,alpha,method)
+%  alpha_fw = correct_mult_comp(p,alpha,method)
 %
 %  INPUTS:
-%        p:  array of p-values.
+%         p:  array of p-values.
 %
-%    alpha:  scalar indicating the desired false alarm rate. Default is 0.05.
+%     alpha:  scalar indicating the desired false alarm rate. Default is 0.05.
 %
-%   method:  string indicating which method to use for correcting multiple
-%            comparisons. Choices are 'bonferoni', 'holms', and 'fdr'.
+%    method:  string indicating which method to use for correcting multiple
+%             comparisons. Choices are 'bonferroni', 'holms', and 'fdr'.
 %
 %  OUTPUTS:
-%        h:  logical array indicating whether each value in p is significant.
+%  alpha_fw:  adjusted alpha that gives a family-wise false alarm rate.
 
 % input checks
 if ~exist('p','var')
@@ -24,47 +24,21 @@ end
 if ~exist('method','var')
   method = '';
 end
-if ~exist('verbose','var')
-  verbose = false;
-end
 
+% find the threshold we need to set family-wise false alarm rate
+% to alpha
 switch lower(method)
-  case 'bonferoni'
-  if verbose
-    fprintf('performing Bonferoni correction for multiple comparisons\n');
-  end
-  h = p<=(alpha ./ numel(p));
-  
-  case 'holms'
-  % test the most significatt significance probability against alpha/N, the second largest against alpha/(N-1), etc.
-  if verbose
-    fprintf('performing Holms correction for multiple comparisons\n');
-  end
-  [p_sort,indx] = sort(p(:));                     % this sorts the significance probabilities from smallest to largest
-  mask = p_sort<=(alpha ./ ((length(p):-1:1)'));    % compare each significance probability against its individual threshold
-  h = false(size(p));
-  h(indx) = mask;
-  
+  case {'bonferoni', 'bonferroni'}
+  alpha_fw = alpha/numel(p);
+
   case 'fdr'
-  if verbose
-    fprintf('performing FDR correction for multiple comparisons');
-  end
-  q = fdr(p, alpha);
-  if isempty(q)
-    if verbose
-      fprintf('...no significant values')
-    end
-    h = false(size(p));
-    else
-    h = p<=q;
-  end
-  if verbose
-    fprintf('\n')
+  alpha_fw = fdr(p, alpha);
+  if isempty(alpha_fw)
+    alpha_fw = 0;
+    elseif alpha_fw<0
+    keyboard
   end
   
   otherwise
-  if verbose
-    fprintf('not performing a correction for multiple comparisons\n');
-  end
-  h = p<=alpha;
+  alpha_fw = alpha;
 end
