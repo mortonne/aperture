@@ -15,7 +15,10 @@ end
 
 pd = pwd;
 
-cd(fileparts(latex_file))
+parent_dir = fileparts(latex_file);
+if ~isempty(parent_dir)
+  cd(fileparts(latex_file))
+end
 
 fprintf('compiling %s...', latex_file)
 
