@@ -76,7 +76,10 @@ switch test
   end
   
   % fix all labels to be consecutive integers
-  group = fix_regressors(group);
+  [group,good_labels] = fix_regressors(group);
+  
+  % remove points that had invalid labels
+  X = X(good_labels);
   
   % process the condition labels
   n_labels = length(unique(group{1}));
@@ -133,7 +136,7 @@ if length(statistic)~=length(p)
   error('length of statistic does not match length of p.')
 end
 
-function new_group = fix_regressors(group)
+function [new_group,good_labels] = fix_regressors(group)
   %FIX_REGRESSORS   Standardize regressors.
   %
   %  group = fix_regressors(group)
@@ -143,8 +146,27 @@ function new_group = fix_regressors(group)
   
   % initialize the new set of regressors
   new_group = cell(1,length(group));
+  good_labels = true(size(group{1}));
+  
+  % find undefined data points
+  for i=1:length(group)
+    if isnumeric(group{i})
+      % find data points that are not labeled for this factor
+      % (if not labeled, should contain NaNs)
+      good_labels(isnan(group{i})) = false;
+      
+      elseif iscell(group{i}) && all(cellfun(@ischar, group{i}))
+      % cell array of strings
+      % empty strings = bad
+      good_labels(cellfun('isempty', group{i})) = false;
+    end
+  end
   
   for i=1:length(group)
+    % use only the data points that are labeled for
+    % all factors
+    group{i} = group{i}(good_labels);
+    
     % initialize the new labels as a numeric array
     new_group{i} = NaN(1,length(group{i}));
     
