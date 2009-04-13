@@ -75,7 +75,7 @@ for i=1:length(bins)
 	for j=1:length(bins{i})
 	  % check this bin
 		if isempty(bins{i}{j})
-			fprintf('Warning: Empty Bin in Dimension %d.\n', i);
+			warning('eeg_ana:patBinEmpty', 'Warning: Empty Bin in Dimension %d.\n', i);
 		end
 		
 		% get reference for everything going into the bin
@@ -85,7 +85,7 @@ for i=1:length(bins)
 		% do the average along dimension i
 		avg = nanmean(pattern(bin_ind{:}),i);
 		if all(isnan(avg(:)))
-		  warning('Bin %d of dimension %d contains all NaNs.', j, i)
+		  warning('eeg_ana:patBinAllNaNs', 'Bin %d of dimension %d contains all NaNs.', j, i)
 	  end
 	  
 	  % get reference for this bin after averaging
