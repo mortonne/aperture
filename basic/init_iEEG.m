@@ -18,9 +18,9 @@ function exp = init_iEEG(subj,res_dir,experiment,params)
 %               with added information about each subject's channels.
 %
 %  PARAMS:
-%        jacksheet:  path to the jacksheet file.
+%  jacksheet       - path to the jacksheet file.
 %
-%  good_leads_file:  path to a text file with one electrode number per
+%  good_leads_file - path to a text file with one electrode number per
 %                    row, indicating all electrodes that are "good".
 %  
 %  NOTES:
