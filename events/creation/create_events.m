@@ -1,4 +1,4 @@
-function create_events(subj,fcn_handle,fcn_input,varargin)
+function subj = create_events(subj,fcn_handle,fcn_input,varargin)
 %CREATE_EVENTS   Create events for each session in a subj structure.
 %
 %  create_events(subj, fcn_handle, fcn_input, varargin)
