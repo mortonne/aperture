@@ -60,7 +60,7 @@ function subj = create_pattern(subj, fcnhandle, params, patname, resDir)
 
 % input checks
 if ~exist('resDir', 'var')
-	resDir = fullfile(exp.resDir, patname);
+  error('You give a path to a directory in which to save results.')
 end
 if ~exist('patname', 'var')
 	patname = 'pattern';
@@ -205,7 +205,7 @@ for session=sessions
   sess_base_events = base_events([base_events.session]==session);
 
   % make the pattern for this session
-  pattern(sess_ind,:,:,:) = fcnhandle(pat, bins, sess_events, sess_base_events);
+  pattern(sess_ind,:,:,:) = fcnhandle(pat, sess_events, sess_base_events, bins);
 end
 fprintf('\n');
 
