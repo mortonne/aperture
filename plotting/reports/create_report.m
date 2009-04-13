@@ -56,6 +56,7 @@ n_rows = size(fig_files,1);
 
 if ~isempty(row_labels)
   dj = 1; % delta j for adjusting column ind
+  n_char = max(cellfun('length', row_labels));
   else
   dj = 0; % don't have to adjust
 end
@@ -72,7 +73,7 @@ end
 table = cell(n_rows, n_cols);
 
 % calculate the optimal figure width
-fig_size = 1/(size(fig_files,2)+2);
+fig_size = 1/(size(fig_files,2)+1);
 if fig_size>0.2
   fig_size = 0.2;
 end
