@@ -1,40 +1,58 @@
-function [ev,err] = create_data(ev,params,resdir)
+function ev = create_data(ev,fcn_handle,fcn_input,res_dir)
 %CREATE_DATA   Create a data struct from an events struct.
-%   EV = CREATE_DATA(EV,DATAFCN,RESDIR) creates a data structure
-%   from the events structure saved in EV, using DATAFCN. The
-%   resulting data structure is saved in RESDIR/data.mat; the
-%   path to the data structure is stored in ev.datafile.
 %
+%  ev = create_data(ev,fcn_handle,fcn_input,res_dir)
+%
+%  INPUTS:
+%          ev:  an events object.
+%
+%  fcn_handle:  handle to a function of the form:
+%                data = fcn_handle(events, ...)
+%
+%   fcn_input:  cell array of additional inputs to fcn_handle.
+%
+%     res_dir:  path to the directory where the data structure
+%               will be saved. Default: fileparts(ev.file)
+%
+%  OUTPUTS:
+%          ev:  events object with a datafile field added, which
+%               gives the path to the data structure.
 
-if ~exist('resdir','var')
-  [dir,filename] = fileparts(ev.file);
-  resdir = fullfile(fileparts(fileparts(dir)), ev.name);
+% input checks
+if ~exist('ev','var')
+  error('You must pass an ev object.')
+  elseif ~exist('fcn_handle','var')
+  error('You must pass a handle to a data structure creation function.')
 end
-if ~exist('params','var')
-  params = struct;
+if ~exist('fcn_input','var')
+  fcn_input = {};
+end
+if ~exist('res_dir','var')
+  res_dir = fileparts(fileparts(ev.file));
 end
 
-params = structDefaults(params, 'datafcn',@FRdata, 'datafcninput',{});
-
-ev.datafile = fullfile(resdir,'data',sprintf('data_%s.mat',ev.source));
-
-% check input files
-err = prepFiles(ev.file, ev.datafile, params);
-if err
-  return
+% prepare the directory
+data_dir = fullfile(res_dir, 'data');
+if ~exist(data_dir, 'dir')
+  mkdir(data_dir);
 end
 
-events = loadEvents(ev.file);
+% load the events
+events = load_events(ev);
 
 % create the data struct
-fprintf('creating data struct using %s...', func2str(params.datafcn))
+fprintf('creating data struct using %s...', func2str(fcn_handle))
+
+ev.datafile = fullfile(res_dir, 'data', sprintf('data_%s.mat', ev.source));
+
 try
-  data = params.datafcn(events,params.datafcninput{:});
+  data = fcn_handle(events, fcn_input{:});
   catch
-  fprintf('Warning: problem creating data.')
-  err = 3;
+  err = lasterror;
+  fprintf('Warning: Error thrown by %s:\n', func2str(fcn_handle))
+  fprintf('%s\n', err.message)
   return
 end
 
 save(ev.datafile,'data')
-fprintf('saved.')
+fprintf('saved.\n')
