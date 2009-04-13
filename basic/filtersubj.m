@@ -1,18 +1,39 @@
 function [subj,match] = filtersubj(subj,numbers,include)
-%FILTERSUBJ   Filter a subj structure using numbers instead of strings.
-%   SUBJ = FILTERSUBJ(SUBJ,NUMBERS,INCLUDE) filters the
-%   structure SUBJ. NUMBERS is an array of integers indicating
-%   which subjects to match, and INCLUDE is a boolean indicating
-%   whether to include (1) or exclude (0) matching subjects.
+%FILTERSUBJ   Filter a subject structure using numbers instead of strings.
 %
-%   Numbers are extracted from the "id" field of each subject.
+%  [subj, match] = filtersubj(subj, numbers, include)
 %
-%   Example
-%    If subject ids are: 'LTP001', 'LTP002', 'LTP003'
-%    subj = filtersubj(subj,2:3,1) gets subjects LTP002 and LTP003, while
-%    subj = filtersubj(subj,2:3,0) gets subject LTP001.
+%  INPUTS:
+%     subj:  a subject structure. Must be a vector structure with an "id"
+%            field.
 %
+%  numbers:  array of numbers corresponding to the numeric part of a set
+%            of subject ids.
+%
+%  include:  boolean indicating whether to include (true) or exclude (false)
+%            the subjects corresponding to the numbers array.
+%
+%  OUTPUTS:
+%     subj:  a filtered subject structure.
+%
+%    match:  a boolean array of the same length as the unfiltered subject
+%            structure; true for subjects that were included/excluded.
+%
+%  EXAMPLE:
+%   % subject ids are: 'LTP001', 'LTP002', 'LTP003'
+%   % get subjects LTP002 and LTP003
+%   subj = filtersubj(subj,2:3,1)
+%
+%   % get subject LTP001
+%   subj = filtersubj(subj,2:3,0)
 
+% input checks
+if ~exist('subj','var') || ~isstruct(subj)
+  error('You must pass a subject structure.')
+end
+if ~exist('numbers','var')
+  numbers = [];
+end
 if ~exist('include','var')
   include = 1;
 end
@@ -31,9 +52,11 @@ if ~iscell(numbers)
 end
 
 % filter subjects
-match = ismember(num,numbers);
-if include
-  subj = subj(match);
-  else
-  subj = subj(~match);
+if ~isempty(numbers)
+  match = ismember(num,numbers);
+  if include
+    subj = subj(match);
+    else
+    subj = subj(~match);
+  end
 end
