@@ -1,4 +1,6 @@
 == General Issues ==
+ * compatibility with EEGLAB and fieldtrip
+  * For right now, throwing in useful functions to whatever folder seems to fit. Should there be a top-level fork between eeg_ana and other toolbox functions to facilitate updates?
  * what should be included in the toolbox, and what should be user-generated?  For example, should we have a erp+ANOVA+plots with significance script?
  * check feasibility of cross-experiment analyses (running Per's SME-serial position interaction analysis on all LTP FR experiments)
   * possibility: expand merge_exps.m, add 'experiment' field to each subj
