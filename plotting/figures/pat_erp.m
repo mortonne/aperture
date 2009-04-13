@@ -21,15 +21,29 @@ function files = pat_erp(pat,fig_name,params,res_dir,relative_dir)
 %         files:  cell array of paths to printed figures.
 %
 %  PARAMS:
-%       print_input:
-%        event_bins:
-%  mult_fig_windows:
-%            colors:
-%             y_lim:
-%         stat_name:
-%             alpha:
-%          correctm:  ('', 'fdr', 'bonferroni')
-%        fill_color:
+%  Values to plot
+%   event_bins       - input to make_event_bins; can be used to average
+%                      over events before plotting
+%   stat_name        - name of a stat object attached to pat. If
+%                      specified, p will be loaded from stat.file, and
+%                      significant regions will be shaded below each
+%                      ERP plot.
+%   alpha            - critical value to use when determining significance.
+%                      Default: 0.05
+%   correctm         - method to use to correct for multiple comparisions:
+%                       [ {none} | fdr | bonferroni ]
+%  Plotting options
+%   print_input      - input to print to use when printing figures.
+%                      Default: '-depsc'
+%   fill_color       - color to use for shading under significant time
+%                      points. Default: [.8 .8 .8]
+%   mult_fig_windows - if true, each figure will be plotted in a separate
+%                      window. Default: false
+%   colors           - cell array of strings indicating colors to use for
+%                      plotting ERPs. colors{i} will be used for plotting
+%                      pattern(i,:,:).
+%   y_lim            - if specified, y-limit for all figures will be set
+%                      to this.
 
 % input checks
 if exist('relative_dir','var')
@@ -45,11 +59,9 @@ if ~exist('res_dir','var') | isempty(res_dir)
     else
     pat_file = pat.file;
   end
-  
   % change to this pattern's main directory
   main_dir = fileparts(fileparts(pat_file));
   cd(main_dir)
-  
   % save relative paths
   res_dir = 'figs';
 end
@@ -106,16 +118,8 @@ y_label = 'Voltage (uV)';
 if ~isempty(params.stat_name)
   % get the stat object
   stat = getobj(pat, 'stat', params.stat_name);
-  if isempty(stat)
-    error('pat %s does not contain a stat object named %s.', pat.name, params.stat_name)
-  end
-  
-  % load the p-values
-  load(stat.file);
-  if ~exist('p','var')
-    error('stat file must contain a variable named "p".')
-  end
-  
+  load(stat.file, 'p');
+
   % HACK - remove any additional p-values and take absolute value
   p = abs(p(1,:,:,:));
   % END HACK
