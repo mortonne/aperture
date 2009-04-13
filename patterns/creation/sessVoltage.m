@@ -1,4 +1,4 @@
-function pattern = sessVoltage(pat,bins,events,base_events)
+function pattern = sessVoltage(pat,events,base_events,bins)
 %SESSVOLTAGE   Create a voltage pattern for one session.
 %   PATTERN = SESSVOLTAGE(PAT,BINS,EVENTS,BASE_EVENTS)
 %
