@@ -66,6 +66,8 @@ if isfield(s,'name')
   obj.source = s.name;
   elseif isfield(s,'id')
   obj.source = s.id;
+  elseif isfield(s,'experiment')
+  obj.source = s.experiment;
   else
   error('structure has no name field.')
 end
