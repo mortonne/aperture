@@ -91,7 +91,7 @@ if ~exist('pat_name','var') | isempty(pat_name)
   % default to overwriting the existing pattern
   pat_name = pat.name;
 end
-if ~exist('res_dir','var')
+if ~exist('res_dir','var') || isempty(res_dir)
   % get the path to the pattern's file
   if iscell(pat.file)
     temp = pat.file{1};
