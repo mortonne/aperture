@@ -1,7 +1,7 @@
-function post_process_subj(subj,varargin)
+function subj = post_process_subj(subj,varargin)
 %POST_PROCESS_SUBJ   Update the post-processing for one subject.
 %
-%  post_process_subj(subj, varargin)
+%  subj = post_process_subj(subj, varargin)
 %
 %  INPUTS:
 %      subj:  standard subj structure representing one subject.
