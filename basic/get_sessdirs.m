@@ -1,4 +1,4 @@
-function subj = get_sessdirs(dataroot,subjstr,file2check)
+function subj = get_sessdirs(dataroot,subjstr,file2check,sesspath)
 %GET_SESSDIRS   Generate a subj struct for a given experiment directory.
 %   SUBJ = GET_SESSDIRS(DATAROOT,SUBJSTR) looks for directories in
 %   DATAROOT that match SUBJSTR (which may contain wildcards; default is
@@ -29,6 +29,9 @@ if ~iscell(file2check)
 end
 if ~exist('subjstr','var')
   subjstr = 'subj*';
+end
+if ~exist('sesspath','var')
+  sesspath = 'session_*';
 end
 
 % get all directories matching subjstr
@@ -71,12 +74,12 @@ for i=1:length(subjects)
   for j=1:length(subject)
     % get the directory for this subset of the subject
     subj(s).dir{j} = fullfile(dataroot, subject{j});
-    d = dir(fullfile(subj(s).dir{j}, 'session_*'));
+    d = dir(fullfile(subj(s).dir{j}, sesspath));
     
     sessions = {d.name};
     for n=1:length(sessions)
       % get the session path
-      sessdir = fullfile(subj(s).dir{j}, sessions{n});
+      sessdir = fullfile(subj(s).dir{j}, fileparts(sesspath), sessions{n});
 
       for f=1:length(file2check)
         % see if the file2check exists for this session
