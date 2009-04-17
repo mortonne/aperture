@@ -128,7 +128,7 @@ freq = init_freq(params.freqs);
 
 if ~params.updateOnly
   % display information about pattern creation
-  fprintf('\nCreating patterns named %s using %s.\n', patname,func2str(fcnhandle))
+  fprintf('\nCreating patterns for %s named %s using %s.\n', subj.id, patname, func2str(fcnhandle))
   fprintf('Parameters are:\n\n')
   disp(params);
 end
