@@ -40,13 +40,16 @@ if dist
   sm = findResource();
 
   % create a job to run all subjects
-  job = createJob(sm);
+  % use the current path, and override pathdef.m, jobStartup.m, etc.
+  path_cell = regexp(path, ':', 'split');  
+  job = createJob(sm, 'PathDependencies', path_cell);
+  
+  % make a task for each subject
   for this_subj=subj
-    % make a task to run this subject
-    createTask(job, fcn_handle, 1, {this_subj fcn_inputs{:}});
+    createTask(job, fcn_handle, 1, {this_subj fcn_inputs{:}}, 'Name', this_subj.id);
   end
 
-  % capture command window output for all tasks
+  % capture command window output for all tasks (helpful for debugging)
   alltasks = get(job, 'Tasks');
   set(alltasks, 'CaptureCommandWindowOutput', true);
 
@@ -54,25 +57,29 @@ if dist
   tic
   submit(job);
   wait(job);
-  fprintf('apply_to_subj: job finished: %d seconds.\n', toc);
+  fprintf('apply_to_subj: job finished: %.2f seconds.\n', toc);
+
+  % report any errors
+  for i=1:length(job.tasks)
+    task = job.tasks(i);
+    if ~isempty(task.ErrorMessage)
+      warning('eeg_ana:apply_to_subj:SubjError', ...
+              '%s threw an error for subject %s:\n  %s', ...
+              func2str(fcn_handle), task.Name, getReport(task.Error))
+    end
+  end
 
   % get a cell array of output arguments from each task
   temp = getAllOutputArguments(job);
-
-  % see if any of the outputs are empty
-  bad_subj = cellfun('isempty', temp);
-  if isempty(temp) || any(bad_subj)
-    emsg_start = sprintf('No output from %s for subjects:\n', func2str(fcn_handle));
-    if ~isempty(bad_subj)
-      emsg = [emsg_start sprintf('%s ', subj(bad_subj).id)];
-      else
-      emsg = [emsg_start sprintf('%s ', subj.id)];
-    end
-    error(emsg)
+  if isempty(temp)
+    return
   end
 
   % convert to structure
   for i=1:length(temp)
+    if isempty(temp{i})
+      continue
+    end
     subj = setobj(subj, temp{i});
   end
   
