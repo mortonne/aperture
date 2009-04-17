@@ -53,6 +53,11 @@ function pattern = sessPower(pat,events,base_events,bins)
 %  bufferMS       - Size of buffer to use when filtering (see buttfilt)
 %  width          - Size of wavelets to use in power calculation
 %                   (see getphasepow)
+%  precision      - precision of the returned values; can be 'single'
+%                   or 'double' (default)
+%  absThresh      - absolute threshold: if voltage (relative to baseline)
+%                   of an event exceeds this value, power for that event
+%                   will be excluded (replaced with NaNs).
 %  kthresh        - Kurtosis threshold: if kurtosis of the raw voltage 
 %                   of any event exceeds this value, power for that event
 %                   will be excluded (replaced with NaNs).
@@ -94,10 +99,12 @@ params = structDefaults(pat.params, ...
                         'filtorder',       4,        ...
                         'bufferMS',        1000,     ...
                         'width',           6,        ...
-                        'kthresh',         5,        ...
+                        'absThresh',       [],       ...
+                        'kthresh',         [],        ...
                         'ztransform',      true,     ...
                         'logtransform',    false,    ...
-                        'artWindow',       500);
+                        'artWindow',       500,      ...
+                        'precision',       'double');
 
 % initialize the pattern for this session
 pattern = NaN(length(events), length(params.channels), length(pat.dim.time), length(pat.dim.freq));
@@ -127,7 +134,7 @@ for c=1:length(params.channels)
 	% get power, remove artifacts, do binning of time and frequency
 	for e=1:length(events)
 	  % get power for this event in [time X frequency] form
-	  power = squeeze(get_power(events(e), channel, params));
+	  power = permute(get_power(events(e), channel, params), [2 3 1]);
 
     % z-transform
 		if params.ztransform
@@ -171,6 +178,9 @@ function power = get_power(events, channel, params)
     error('You must pass a params structure.')
   end
 
+  %{
+  % old implementation
+  
   % calculate power from raw voltage for a set of frequencies
   power = getphasepow(channel, ...
                       events, ...
@@ -186,6 +196,14 @@ function power = get_power(events, channel, params)
 	                    'resampledRate', params.resampledRate, ...
 	                    'downsample', params.downsample, ...
 	                    'powonly');
+  %}
+
+  % using version in eeg_toolbox/branches/unstable...
+  % calculate power from raw voltage for a set of frequencies
+  p = params;
+  p.absthresh = params.absThresh;
+  p.resampledrate = params.resampledRate;
+  power = getphasepow(events, channel, params.freqs, params.durationMS, params.offsetMS, p);
 
 	% sanity check the power values
 	if any(power(:)<0)
