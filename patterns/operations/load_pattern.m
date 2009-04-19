@@ -1,10 +1,7 @@
-function [pattern,events] = load_pattern(pat,params)
+function pattern = load_pattern(pat,params)
 %LOAD_PATTERN   Load a pattern from a pat object.
 %
-%  [pattern, events] = load_pattern(pat, params)
-%
-%  If pat.file is a string, this is the same as load(pat.file), except
-%  the events structure is also loaded.
+%  pattern = load_pattern(pat, params)
 %
 %  If pat.file is a cell array, the pattern is assumed to be saved in 
 %  slices, and will be reconstituted by loading up all the files in 
@@ -19,17 +16,12 @@ function [pattern,events] = load_pattern(pat,params)
 %  OUTPUTS:
 %  pattern:  an [events X channels X time X frequency] matrix.
 %
-%   events:  a structure with information about the events dimension
-%            of a pattern. If there is only one output argument,
-%            we won't bother to load this.
-%
 %  PARAMS:
 %   'loadSingles' If true (default is false), the pattern will
-%                 be loaded as an array of singles
+%                 be loaded as an array of singles.
 %
-%  NOTES:
-%   In the future, may remove loading of events, stop using a params 
-%   structure, and remove the loadSingles option.
+%  NOTES: This function no longer load events. Use load_events(pat.dim.ev)
+%  to load the events corresponding to the pattern.
 %
 %  See also create_pattern, split_pattern.
 
@@ -66,24 +58,25 @@ if iscell(pat.file) % pattern is split
       pattern(ind{:}) = s.pattern;
     end
     
-    else
+  else
     % if pat.file is a cell array and there's no information about 
     % which dimension to concatenate along, give up
     error('pat.dim must have a ''splitdim'' field.')
   end
-  
-  else % there is just one file; load it up
+
+elseif isfield(pat.mat) && ~isempty(pat.mat)
+  % the pattern is already in the workspace; just return it
+  pattern = pat.mat;
+else % there is just one file; load it up
   load(pat.file);
+end
+
+% sanity check the loaded pattern
+if isempty(pattern)
+  error('pattern %s is empty.', pat.name)
 end
 
 % change to lower precision if desired
 if params.loadSingles
 	pattern = single(pattern);
-end
-
-% load events
-if nargout==2
-  events = loadEvents(pat.dim.ev.file);
-else
-  events = struct;
 end

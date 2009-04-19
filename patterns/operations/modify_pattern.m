@@ -142,8 +142,9 @@ if isfield(oldpat,'stat')
   pat.stat = oldpat.stat;
 end
 
-% load the pattern
-[pattern, events] = load_pattern(oldpat, params);
+% load the pattern and events
+pattern = load_pattern(oldpat, params);
+events = load_events(oldpat.dim.ev);
 
 fprintf('modifying pattern %s...', oldpat.name)
 
@@ -208,13 +209,8 @@ if ~isempty(params.nComp)
   save(pat.dim.coeff, 'coeff');
 end
 
-if strcmp(oldpat.name, pat.name)
-  fprintf('saved.')
-  else
-  fprintf('saved as "%s".\n', pat.name)
-end
-
 if params.savePat
+  % save to disk
   if any(evmod)
     if ~exist(fullfile(res_dir, 'events'), 'dir')
       mkdir(fullfile(res_dir, 'events'));
@@ -233,5 +229,11 @@ if params.savePat
     pat = split_pattern(pat, params.splitDim);
     else
     pat.dim.splitdim = [];
+  end
+  
+  if strcmp(oldpat.name, pat.name)
+    fprintf('saved.')
+    else
+    fprintf('saved as "%s".\n', pat.name)
   end
 end
