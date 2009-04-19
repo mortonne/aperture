@@ -55,7 +55,8 @@ fprintf('\nStarting ANOVAN...');
 stat = init_stat(statname, statfile, params);
 
 % load pattern and events
-[pattern, events] = load_pattern(pat, params);
+pattern = load_pattern(pat, params);
+events = load_events(pat.dim.ev);
 
 % make the regressors
 group = cell(1, length(params.fields));
