@@ -88,9 +88,6 @@ params = structDefaults(params, ...
 
 % load the pattern
 pattern = load_pattern(pat);
-if isempty(pattern)
-  error('pattern %s is empty.', pat.name)
-end
 
 if ~isempty(params.event_bins)
   % create bins using inputs accepted by make_event_bins
