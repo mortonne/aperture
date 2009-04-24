@@ -1,26 +1,77 @@
-function align_subj(subj, sync_ext)
+function align_subj(subj, params)
 %ALIGN_SUBJ   Align a subject's events to EEG data.
 %
-%  align_subj(subj, sync_ext)
+%  align_subj(subj, params)
 %
 %  INPUTS:
-%      subj:
+%    subj:  a subject structure, where each sess subfield has the
+%           following fields:
+%            dir     - directory where behavioral data is stored
+%            eegfile - path to the EEG files, including the filename,
+%                      without the .XXX suffix that indicates the channel
 %
-%  sync_ext:
+%  params:  structure specifying options for running the alignment. See
+%           below.
+%
+%  PARAMS:
+%   eventfile - path (relative to each sess.dir) to the events structure.
+%               Default: 'events.mat'
+%   pulse_ext - file extension for the pulse files, to be appended to
+%               the EEG fileroot for each session. May contain wildcards (*).
+%               Default: '*.sync.txt'
+%   pulse_dir - directory where pulse files are stored. Default is the
+%               parent directory of the first session's EEG file
 %
 %  EXAMPLE:
-%   subj.id = 'TJ003';
-%   subj.sess.eegfile = '/data/eeg/TJ003/eeg.noreref/TJ003_18Feb09_1335';
-%   align_subj(subj, '*.sync.txt');
+%   % path to directory with behavioral data
+%   clear subj params
+%   subj.sess.dir = '/data/eeg/TJ003/behavioral/iCatFR/session_0';
+%
+%   % path to an EEG channel file, minus the .XXX extension
+%   subj.sess.eegfile = '/data/eeg/TJ003/eeg.reref/TJ003_18Feb09_1335';
+%
+%   % change from the default pulse_dir
+%   params.pulse_dir = '/data/eeg/TJ003/eeg.noreref';
+%
+%   % load [subj.sess.dir]/events.mat, align, add eegoffset and eegfile
+%   % fields, and resave
+%   align_subj(subj, params);
+%
+%  NOTES:
+%   This script makes various assumptions about directory structure. Each
+%   sess.dir must contain:
+%    eeg.eeglog.up OR eeg.eeglog
+%
+%   The directory containing each EEG file must contain a file called
+%   params.txt which has information about samplerate.
+%
+%   There must be a EEG channel file [sess.eegfile].001 for each session.   
+
+% input checks
+if ~exist('subj','var')
+  error('You must pass a subject structure.')
+end
+if ~exist('params','var')
+  params = [];
+end
+
+params = structDefaults(params, ...
+                        'eventfile', 'events.mat', ...
+                        'pulse_ext', '*.sync.txt', ...
+                        'pulse_dir', fileparts(subj.sess(1).eegfile));
 
 for sess=subj.sess
+  % read the eegfile(s) from the sess structure
+  if ~isfield(sess, 'eegfile')
+    error('Each session must have an "eegfile" field.')
+  end
   eegfiles = sess.eegfile;
   if ~iscell(eegfiles)
     eegfiles = {eegfiles};
   end
-  sessdir = sess.dir;
 
-  eventfile = fullfile(sessdir, 'events.mat');
+  % get the events structure
+  eventfile = fullfile(sess.dir, params.eventfile);
   if ~exist(eventfile,'file')
     error('Events file not found: %s\n', eventfile)
   end
@@ -29,27 +80,26 @@ for sess=subj.sess
   eegsyncfiles = cell(1,length(eegfiles));
   for i=1:length(eegfiles)
     [pathstr,basename] = fileparts(eegfiles{i});
-    
+
     % get the EEG sync pulse file
-    temp = dir(fullfile(pathstr, [basename sync_ext]));
+    pulse_path = fullfile(params.pulse_dir, [basename params.pulse_ext]);
+    temp = dir(pulse_path);
     if length(temp)==0
-      error('No EEG sync pulse files found that match: %s', ...
-            fullfile(pathstr, [basename sync_ext]))
-    elseif length(temp)>1
-      error('Multiple EEG sync pulse files found that match: %s', ...
-            fullfile(pathstr, [basename sync_ext]))
+      error('No EEG sync pulse files found that match: %s', pulse_path)
+      elseif length(temp)>1
+      error('Multiple EEG sync pulse files found that match: %s', pulse_path)
     end
-    eegsyncfiles{i} = fullfile(pathstr, temp.name);
-    
+    eegsyncfiles{i} = fullfile(params.pulse_dir, temp.name);
+
     % for runAlign, make eegfile point to a specific channel
     eegfiles{i} = [eegfiles{i} '.001'];
   end
 
   % there should be only one behavioral sync pulse file
-  behsyncfile = fullfile(sessdir,'eeg.eeglog.up');
+  behsyncfile = fullfile(sess.dir,'eeg.eeglog.up');
   if ~exist(behsyncfile,'file')
     % if we haven't already, extract the UP pulses
-    raw_behsyncfile = fullfile(sessdir, 'eeg.eeglog');
+    raw_behsyncfile = fullfile(sess.dir, 'eeg.eeglog');
     if ~exist(raw_behsyncfile,'file')
       error('Behavioral pulse file not found: %s\n', raw_behsyncfile)
     end
@@ -57,65 +107,8 @@ for sess=subj.sess
   end
   
   % get the samplerate
-  samplerate = eegparams('samplerate', fullfile(pathstr, [basename 'params.txt']));
+  samplerate = GetRateAndFormat(fileparts(eegfiles{1}));
   
   % run the alignment
-  runAlign(samplerate,{behsyncfile},eegsyncfiles,eegfiles,{eventfile},'mstime',0,1);
+  runAlign(samplerate,{behsyncfile},eegsyncfiles,eegfiles,{eventfile},'mstime',0,0);
 end
-
-function p=eegparams(field,paramfile)
-%EEGPARAMS - Get a subject specific eeg parameter from the params.txt file.
-% 
-% If paramdir is not specified, the function looks in the 'docs/'
-% directory for the params.txt file.
-%
-% The params.txt file can contain many types of parameters and will
-% evaluate them as one per line.  These are examples:
-%
-% Channels 1:64
-% samplerate 256
-% subj 'BR015'
-%
-% FUNCTION:
-%   p = eegparams(field,paramdir)
-%
-% INPUT ARGS:
-%   field = 'samplerate';        % Field to retrieve
-%   paramdir = '~/eeg/012/dat';  % Dir where to find params.txt
-%
-% OUTPUT ARGS:
-%   p- the parameter, evaluated with eval()
-%
-
-% VERSION HISTORY:
-%
-
-switch field
-  case 'samplerate'
-  p = 256.03; % BioLogic standard
-  case 'gain'
-  p = 1; % BioLogic standard
-  otherwise
-  p = [];
-end
-
-% open the file
-in = fopen(paramfile,'rt');
-if in==-1
-  return
-end
-
-% look for the parameter. If not found, return the
-% default value
-done = false;
-while ~done
-  f = fscanf(in,'%s',1);
-  v = fgetl(in);
-  if strcmp(f, field) % found it
-    p = eval(v);
-    done = true;
-  elseif isempty(f) % nothing more to read
-    done = true;
-  end
-end
-fclose(in);
