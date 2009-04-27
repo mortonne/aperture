@@ -105,7 +105,7 @@ end
 % default parameters
 params = structDefaults(params, ...
                         'nComp',           [], ...
-                        'excludeBadChans', 0,  ...
+                        'badChanFiles',   {},  ...
                         'absThresh',       [], ...
                         'overwrite',       0,  ...
                         'lock',            0,  ...
@@ -122,16 +122,14 @@ if ~strcmp(oldpat.name, pat_name)
   patfile = oldpat.file;
 end
 
+% check input files and prepare output files
 try
-  % check input files and prepare output files
   prepFiles(oldpat.file, patfile, params);
 catch err
   % something is wrong with i/o
   if strfind(err.identifier, 'fileExists')
     return
-    elseif strfind(err.identifier, 'fileNotFound')
-    rethrow(err)
-    elseif strfind(err.identifier, 'fileLocked')
+  else
     rethrow(err)
   end
 end
@@ -153,9 +151,9 @@ fprintf('modifying pattern %s...', oldpat.name)
 pattern = pattern(inds{:});
 
 % ARTIFACT FILTERS
-if params.excludeBadChans
+if ~isempty(params.badChanFiles)
   % load bad channel info
-  [bad_chans, event_ind] = get_bad_chans({events.eegfile});
+  [bad_chans, event_ind] = get_bad_chans({events.eegfile}, params.badChanFiles);
   
   % get current channel numbers
   chan_numbers = [pat.dim.chan.number];
