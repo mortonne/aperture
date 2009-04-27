@@ -1,24 +1,31 @@
-function exp = update_exp(exp, varargin)
-%UPDATE_EXP   Apply changes to the exp struct.
-%   EXP = UPDATE_EXP(EXP) loads the most recently saved version of
-%   EXP (locking first if exp.useLock is true), makes a backup of 
-%   that version in exp.resDir/exp_bk, then saves the current version
-%   in exp.file.
+function exp = update_exp(exp,backup_dir)
+%UPDATE_EXP   Save changes to the exp structure.
 %
-%   EXP = UPDATE_EXP(EXP,VARARGIN) makes a backup, runs 
-%   RECURSIVE_SETOBJ to add an object to the most recently saved 
-%   version of exp, then saves the new exp.
-%   
-%   The last two arguments of VARARGIN should be an object type,
-%   i.e. 'pat', and the object to be added.  If there are other
-%   arguments of VARARGIN, they should be object type, object name
-%   pairs that climb the exp heirarchy.
+%  exp = update_exp(exp, backup_dir)
 %
-%   EXAMPLE:
-%      exp = update_exp(exp,'subj','LTP001','pat',pat)
-%      gets the subject named LTP001, then adds pat to that subject's
-%      list of patterns.
+%  INPUTS:
+%         exp:  an experiment structure. Must have 'resDir'
+%               and 'file' fields.
 %
+%  backup_dir:  path to the directory where a backup of the
+%               exp structure will be saved. Default:
+%               [exp.resDir]/'exp_bak'
+%
+%  OUTPUTS:
+%         exp:  the experiment structure, with the lastUpdate
+%               field updated.
+
+% input checks
+if ~exist('exp','var') || ~isstruct(exp)
+  error('You must pass an experiment structure.')
+elseif ~isfield(exp, 'file')
+  error('exp must have a "file" field.')
+elseif ~isfield(exp, 'resDir')
+  error('exp must have a "resDir" field.')
+end
+if ~exist('backup_dir','var')
+  backup_dir = fullfile(exp.resDir, 'exp_bak');
+end
 
 fprintf('update_exp: ');
 
@@ -34,35 +41,25 @@ if exp.useLock
   fprintf('locked...');
 end
 
-% store the version of exp that was passed in
-current = exp;
-
-if exist(exp.file,'file')
-  % get the last version of exp
-  load(exp.file);
-  fprintf('loaded...')
-
-  % make a backup of the old version before making changes
-  exp = backup_exp(exp);
-  else
+if exist(exp.file, 'file')
+  % save a backup of the old exp
+  timestamp = datestr(now, 'mm-dd-yy_HHMM');
+  filename = sprintf('exp_%s.mat', timestamp);
+  backup_file = fullfile(backup_dir, filename);
+  copyfile(exp.file, backup_file);
+  fprintf('backed up in %s...', filename)
+else
   % exp hasn't been saved in exp.file before
   if ~exist(exp.resDir,'dir')
     mkdir(exp.resDir)
   end
 end
 
-if length(varargin)>0
-	% add the object in place specified
-	exp = recursive_setobj(exp, varargin);
-
-  else
-  % just save out the exp that was passed in
-  current.lastUpdate = exp.lastUpdate;
-  exp = current;
-end
+% update the lastUpdate field
+exp.lastUpdate = timestamp;
 
 % commit the new version of exp
 save(exp.file, 'exp');
 closeFile(exp.file);
 
-fprintf('updated and saved.\n');
+fprintf('saved.\n');
