@@ -126,19 +126,25 @@ time = init_time(MSvals);
 % create a "freq" structure to keep track of the frequency dimension
 freq = init_freq(params.freqs);
 
+% set where the pattern will be saved
+patfile = fullfile(resDir, 'patterns', sprintf('pattern_%s_%s.mat', patname, subj.id));
+
+% check input files and prepare output files
+try
+  prepFiles({}, patfile, params);
+catch err
+  if strfind(err.identifier, 'fileExists')
+    return
+  else
+    rethrow(err)
+  end
+end
+
 if ~params.updateOnly
   % display information about pattern creation
   fprintf('\nCreating patterns for %s named %s using %s.\n', subj.id, patname, func2str(fcnhandle))
   fprintf('Parameters are:\n\n')
   disp(params);
-end
-
-% set where the pattern will be saved
-patfile = fullfile(resDir, 'patterns', sprintf('pattern_%s_%s.mat', patname, subj.id));
-
-% check input files and prepare output files
-if prepFiles({}, patfile, params)~=0
-  return
 end
 
 % get this subject's events and baseline events
