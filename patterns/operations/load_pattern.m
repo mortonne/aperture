@@ -64,7 +64,7 @@ if iscell(pat.file) % pattern is split
     error('pat.dim must have a ''splitdim'' field.')
   end
 
-elseif isfield(pat.mat) && ~isempty(pat.mat)
+elseif isfield(pat, 'mat') && ~isempty(pat.mat)
   % the pattern is already in the workspace; just return it
   pattern = pat.mat;
 else % there is just one file; load it up
@@ -72,8 +72,11 @@ else % there is just one file; load it up
 end
 
 % sanity check the loaded pattern
+psize = patsize(pat.dim);
 if isempty(pattern)
   error('pattern %s is empty.', pat.name)
+elseif any(psize(1:ndims(pattern))~=size(pattern))
+  error('size of pattern %s does not match the dim structure.', pat.name)
 end
 
 % change to lower precision if desired
