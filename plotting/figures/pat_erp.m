@@ -83,6 +83,7 @@ end
 params = structDefaults(params, ...
                         'print_input',      '-depsc', ...
                         'event_bins',       '',       ...
+                        'plot_must_events', true,     ...
                         'mult_fig_windows', 0,        ...
                         'colors',           {},       ...
                         'y_lim',            [],       ...
@@ -109,8 +110,6 @@ end
 
 % set axis information
 x = [pat.dim.time.avg]; % for each time bin, use the mean value
-x_label = 'Time (ms)';
-y_label = 'Voltage (uV)';
 
 if ~isempty(params.stat_name)
   % get the stat object
@@ -129,116 +128,54 @@ if ~isempty(params.stat_name)
   end
 end
 
-% make one figure per channel
-fprintf('making ERP plots from pattern %s...\nchannel: ', pat.name);
+% initialize a cell array to hold all the printed figures
+if params.plot_mult_events
+  files = cell(1, size(pattern,2));
+  num_events = 1;
+else
+  files = cell(size(pattern,1), size(pattern,2));
+  num_events = size(pattern,1);
+end
+
+num_figs = prod(size(files));
+fprintf('making %d ERP plots from pattern %s...\n', num_figs, pat.name);
 start_fig = gcf;
-files = cell(1, size(pattern,2));
-for c=1:size(pattern,2)
-  fprintf('%s ', pat.dim.chan(c).label)
-  
-  if params.mult_fig_windows
-    figure(start_fig + c - 1)
-  end
-  clf
 
-  % event-related potential(s) for this channel
-  erp = squeeze(pattern(:,c,:));
-  
-  % min and max of the data
-  y_min = min(erp(:));
-  y_max = max(erp(:));
+n = 1;
+for i=1:num_events
+  for c=1:size(pattern,2)
+    fprintf('%d ', n)
 
-  % set the y-limits
-  if ~isempty(params.y_lim)
-    % use standard y-limits
-    y_lim = params.y_lim;
-    else
-    % buffer from top and bottom
-    buffer = (y_max-y_min)*0.2;
-    y_lim = [y_min-buffer y_max+buffer];
-  end
-  
-  % shade significant regions
-  if ~isempty(params.stat_name)
-    % get significant samples
-    sig = correct_mult_comp(squeeze(p(:,c,:)), params.alpha, params.correctm);
-
-    % shade significant samples
-    offset = diff(y_lim)*0.07;
-    bar_y = min(erp(:)) - offset;
-    bar_y_lim = [(bar_y - offset/2) bar_y];
-    shade_regions(x, sig, bar_y_lim, params.fill_color);
-    hold on
-  end
-  
-  % plot all events for this channel
-  h = plot(x, erp, 'LineWidth', 2);
-  xlabel(x_label)
-  ylabel(y_label)
- 
-  % change line colors from their defaults
-  if ~isempty(params.colors)
-    for i=1:length(h)
-      set(h(i), 'Color', params.colors{i})
+    if params.plot_mult_events
+      e = ':';
+      else
+      e = i;
     end
+
+    if params.mult_fig_windows
+      figure(start_fig + n - 1)
+    end
+    clf
+
+    % event-related potential(s) for this channel
+    erp = squeeze(pattern(e,c,:));
+
+    if ~isempty(params.stat_name)
+      % get significant samples
+      params.mark = correct_mult_comp(squeeze(p(e,c,:)), params.alpha, params.correctm);
+    end
+
+    % make the plot
+    plot_erp(erp, x, params);
+
+    % generate the filename
+    file_name = sprintf('%s_%s_%s_e%dc%d.eps', ...
+    pat.name, fig_name, pat.source, i, c);
+    files{i,c} = fullfile(res_dir, file_name);
+
+    % print this figure
+    print(gcf, params.print_input, files{i,c})
+    n = n + 1;
   end
-
-  % set y-limits
-  set(gca, 'YLimMode','manual')
-  set(gca,'YLim',y_lim)
-  
-  % plot axes
-  hold on
-  plot(get(gca,'XLim'), [0 0], '--k');
-  plot([0 0], y_lim, '--k');
-  publishfig
-
-  % generate the filename
-  file_name = sprintf('%s_%s_%s_c%d', pat.name, fig_name, pat.source, c);
-  files{1,c} = fullfile(res_dir, file_name);
-  
-  % print this figure
-  print(gcf, params.print_input, files{1,c})
 end
 fprintf('\n')
-
-
-function shade_regions(x,sig,y_lim,fill_color)
-  %SHADE_REGIONS   Shade in multiple rectangles.
-  %
-  %  shade_regions(x,sig,y_lim,fill_color)
-  %
-  %  INPUTS:
-  %           x:  vector of x values.
-  %
-  %         sig:  boolean vector where indices to shade are true.
-  %               Must correspond to x.
-  %
-  %       y_lim:  two-element array of the form [y_min y_max],
-  %               indicating the y-limits of each shaded region.
-  %
-  %  fill_color:  color to use when shading each region.
-  
-  % pad x so we can count start and end right
-  diff_vec = diff([0 sig(:)' 0]);
-
-  % get the start and end of each region
-  starts = find(diff_vec(1:end-1)==1);
-  ends = find(diff_vec(2:end)==-1);
-
-  nRegions = length(starts);
-  for i=1:nRegions
-    % start end end start
-    l2r = [starts(i) ends(i)];
-    r2l = fliplr(l2r);
-
-    % x and y coords of this polygon
-    region_x = [x(l2r) x(r2l)];
-    region_y = [y_lim(1) y_lim(1) y_lim(2) y_lim(2)];
-
-    % fill the region
-    h = fill(region_x, region_y, fill_color);
-    set(h, 'edgecolor', fill_color)
-    hold on
-  end
-%endfunction
