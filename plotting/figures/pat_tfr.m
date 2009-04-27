@@ -127,7 +127,7 @@ if ~isempty(params.stat_name)
   [pattern, map, params.map_limits] = sig_colormap(p, [max_sig sig], 'two_way_signed');
   colormap(map)
 else
-  if params.diff || size(pattern,1)~=1
+  if params.diff
     if size(pattern,1)~=2
       error('Can only take difference if there are two event types.')
     end
@@ -148,28 +148,34 @@ x = [pat.dim.time.avg];
 y = [pat.dim.freq.avg];
 
 % make one figure per channel
-fprintf('making TFR plots from pattern %s...\nchannel: ', pat.name);
+n_figs = size(pattern,1)*size(pattern,2);
+fprintf('making %d TFR plots from pattern %s...\n', n_figs, pat.name);
+
+n = 1;
 start_fig = gcf;
-files = cell(1, size(pattern,2));
-for c=1:size(pattern,2)
-  fprintf('%s ', pat.dim.chan(c).label)
-  
-  if params.mult_fig_windows
-    figure(start_fig + c - 1)
+files = cell(size(pattern,1), size(pattern,2));
+for e=1:size(pattern,1)
+  for c=1:size(pattern,2)
+    fprintf('%d ', n)
+
+    if params.mult_fig_windows
+      figure(start_fig + n - 1)
+    end
+    clf
+
+    % get the channel to plot and reorder dimensions for plot_tfr
+    spec = permute(pattern(e,c,:,:), [4 3 1 2]);
+
+    % make the spectrogram
+    h = plot_tfr(spec, y, x, params);
+
+    % generate the filename
+    file_name = sprintf('%s_%s_%s_e%dc%d', pat.name, fig_name, pat.source, e, c);
+    files{e,c} = fullfile(res_dir, file_name);
+
+    % print this figure
+    print(gcf, params.print_input{:}, files{e,c})
+    n = n + 1;
   end
-  clf
-
-  % get the channel to plot and reorder dimensions for plot_tfr
-  spec = permute(nanmean(pattern(:,c,:,:),1), [4 3 1 2]);
-  
-  % make the spectrogram
-  h = plot_tfr(spec, y, x, params);
-
-  % generate the filename
-  file_name = sprintf('%s_%s_%s_c%d', pat.name, fig_name, pat.source, c);
-  files{1,c} = fullfile(res_dir, file_name);
-  
-  % print this figure
-  print(gcf, params.print_input{:}, files{1,c})
 end
 fprintf('\n')
