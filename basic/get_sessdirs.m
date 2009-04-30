@@ -1,34 +1,59 @@
 function subj = get_sessdirs(dataroot,subjstr,file2check,sesspath)
 %GET_SESSDIRS   Generate a subj struct for a given experiment directory.
-%   SUBJ = GET_SESSDIRS(DATAROOT,SUBJSTR) looks for directories in
-%   DATAROOT that match SUBJSTR (which may contain wildcards; default is
-%   'subj*'), and creates a vector of "subj" structs, each containing a 
-%   "sess" struct for each session directory that contains a session.log
-%   file.
 %
-%   SUBJ = GET_SESSDIRS(DATAROOT,SUBJSTR,FILE2CHECK) uses FILE2CHECK as
-%   the criterion for whether a session should be included.  FILE2CHECK
-%   is a path to a file relative to each session directory.  It may contain 
-%   wildcards, and may either be a string or a cell array of strings.  
-%   Set FILE2CHECK to '' to return all session directories, regardless of 
-%   whether they contain data.
+%  subj = get_sessdirs(dataroot, subjstr, file2check, sesspath)
 %
-%   Example
-%     subj = get_sessdirs(dataroot,'LTP*',{'session.log', 'eeg/*.raw'})
-%     gets all subjects in dataroot whose id starts with LTP, and all of
-%     their sessions that have both a session log file and an eeg file.
+%  This function makes a few simplifying assumptions. Each subject's data
+%  is assumed to be in a separate directory, which is named with the subject's
+%  identifier. All subject IDs and the names of the session directories must 
+%  follow a pattern that can be specified using the wildcard characters that 
+%  Matlab recognizes.
 %
-%   See also init_exp, init_scalp, init_iEEG.
+%  INPUTS:
+%    dataroot:  path to the directory that contains subject directories.
 %
+%     subjstr:  string that all subject identifiers must match to be
+%               included in the subject structure. May contain wildcards (*).
+%               Default: '*'.
+%
+%  file2check:  cell array of paths, relative to each session directory,
+%               to files that must exist for a given session to be included.
+%               Default: {'session.log'}. This is standard for pyEPL
+%               behavioral experiments. Set to {} to return all session
+%               directories, regardless of whether they contain data.
+%
+%    sesspath:  path, relative to each subject's directory, to the session
+%               directories. May contain wildcards (*).
+%
+%  OUTPUTS:
+%        subj:  a subject structure, formatted for use in eeg_ana functions.
+%
+%  EXAMPLE:   
+%   dataroot = '/data/eeg/scalp/ltp/apem_e7_ltp';
+%   subjstr = 'LTP*';
+%
+%   % include sessions if they have behavioral and EEG data
+%   files2check = {'session.log', 'eeg/*.raw*'};
+%
+%   % get all session of taskFR LTP that have been run so far
+%   subj = get_sessdirs(dataroot, subjstr, files2check);
+%
+%  See also init_exp, init_scalp, init_iEEG.
 
+% input checks
+if ~exist('dataroot','var') || ~ischar(dataroot)
+  error('You must pass a string indicating the path to the dataroot.')
+elseif ~exist(dataroot,'dir')
+  error('dataroot does not exist: %s', dataroot)
+end
+if ~exist('subjstr','var')
+  subjstr = '*';
+end
 if ~exist('file2check','var')
   file2check = {'session.log'};
 end
 if ~iscell(file2check)
   file2check = {file2check};
-end
-if ~exist('subjstr','var')
-  subjstr = 'subj*';
 end
 if ~exist('sesspath','var')
   sesspath = 'session_*';
