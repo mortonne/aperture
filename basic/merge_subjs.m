@@ -91,12 +91,16 @@ for i=1:length(clones)
     if isfield(clone2.(f), 'name')
       % 2 has a field we need to consider adding
       if isfield(clone1,f)
-        % 1 > 2
-        temp = setobj(clone2, f, clone1.(f));
+        objs = clone1.(f);
+        temp = clone2;
+        for obj=objs
+          % 1 > 2
+          temp = setobj(clone2, f, obj);
+        end
         new_subj.(f) = temp.(f);
       else
         % 1 doesn't have any of this object; just use 2
-        new_subj = setobj(new_subj, f, clone2.(f));
+        new_subj.(f) = clone2.(f);
       end
     end
   end
