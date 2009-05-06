@@ -77,14 +77,15 @@ for i=1:length(fig_names)
     
     % use the labels for this dimension
     dim2_name = read_dim_input(dim_order(2));
-    header = [header pat.dim.(dim2_name).label];
+    col_labels = get_dim_labels(pat.dim, dim2_name);
+    header = [header col_labels];
   else
     header{end+1} = fig_labels{i};
   end
 end
 
 % labels for the report
-row_labels = {pat.dim.(dim_name).label};
+row_labels = get_dim_labels(pat.dim, dim_name);
 
 % create the table
 table = create_report(fig_files, row_labels);
@@ -117,4 +118,15 @@ function [y,dim_order] = fix_dim(x,dim1,n_dims)
   dim_order = [dim1 d find(s==1)];
 
   y = permute(x, dim_order);
+%endfunction
+
+function labels = get_dim_labels(dim, dim_name)
+  if strcmp(dim_name, 'ev')
+    dim.ev = load_events(dim.ev);
+    if ~isfield(dim.ev, 'label')
+      error('events must contain a "label" field.')
+    end
+  end
+  
+  labels = {dim.(dim_name).label};
 %endfunction
