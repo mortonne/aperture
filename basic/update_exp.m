@@ -26,6 +26,9 @@ end
 if ~exist('backup_dir','var')
   backup_dir = fullfile(exp.resDir, 'exp_bak');
 end
+if ~exist(backup_dir,'dir')
+  mkdir(backup_dir);
+end
 
 fprintf('update_exp: ');
 
