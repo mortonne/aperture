@@ -25,6 +25,9 @@ function subj = create_events(subj,fcn_handle,fcn_input,varargin)
 %   For each session, an events structure is saved in [sess.dir]/events.mat.
 %
 %  OPTIONS:
+%   logfiledir:  relative path (from each session's directory) to pass into
+%                the events-creation function. Default: ''
+%
 %   eventsfile:  relative path (from each session's directory) to save each
 %                events structure. Default: 'events.mat'
 %
@@ -54,25 +57,33 @@ if ~exist('fcn_input','var')
 end
 
 % parse options
+def.logfiledir = '';
 def.eventsfile = 'events.mat';
 def.files2check = {'session.log', '*.par'};
 def.agethresh = .8;
-[eid,emsg,eventsfile,files2check,agethresh] = getargs(fieldnames(def),struct2cell(def),varargin{:});
+[eid,emsg,logfiledir,eventsfile,files2check,agethresh] = getargs(fieldnames(def),struct2cell(def),varargin{:});
 
+sess_to_remove = [];
 for this_subj=subj
-  for sess=this_subj.sess
+  for i=1:length(this_subj.sess)
+    sess = this_subj.sess(i);
     cd(sess.dir);
     
     % check for recently modified files
     if exist(eventsfile,'file') && ~isempty(files2check) && ~filecheck(files2check,agethresh)
-      % none found for this session; skip
+      % none found for this session, and an events structure exists; skip
       continue
     end
     
     % create events and save
     fprintf('Creating events for %s, session %d using %s...\n', this_subj.id,sess.number,func2str(fcn_handle))
-    events = fcn_handle(sess.dir, this_subj.id, sess.number, fcn_input{:});
-    save(eventsfile, 'events');
+    try
+      events = fcn_handle(fullfile(sess.dir,logfiledir), this_subj.id, sess.number, fcn_input{:});
+      save(eventsfile, 'events');
+    catch err
+      warning('eeg_ana:create_events:eventCreationError', ...
+              'Error thrown by %s processing: %s', func2str(fcn_handle), getReport(err))
+    end
   end
 end
 
