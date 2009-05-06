@@ -51,7 +51,8 @@ end
 % default parameters
 params = structDefaults(params, ...
                         'events_file',  'events.mat', ...
-                        'event_filter', '');
+                        'event_filter', '',           ...
+                        'check_eeg',    false);
 
 fprintf('concatenating session events...')
 
@@ -62,22 +63,51 @@ for sess=subj.sess
   
   % load the events struct for this session
   sess_events_file = fullfile(sess.dir, params.events_file);
-  s = load(sess_events_file);
-  if ~isfield(s,'events')
-    error('Variable named ''events'' not found in file:\n%s', sess_events_file)
+  if ~exist(sess_events_file, 'file')
+    warning('eeg_ana:import_events:missingEventsFile', ...
+            'events file not found: %s\n', sess_events_file)
+    continue
   end
+
+  s = load(sess_events_file, 'events');
   events = s.events;
+
+  % fill in eeg fields if they are missing
+  if params.check_eeg && ( ~isfield(events,'eegfile') || all(cellfun(@isempty,{events.eegfile})) )
+    try
+      % try to fix it one more time;
+      % force alignment to run again
+      prep_egi_data2(subj.id, sess.dir, ...
+                     'eventfiles', {sess_events_file}, ...
+                     'steps_to_run', {'align'});
+      
+      % it must have worked! load the new events
+      s = load(sess_events_file, 'events');
+      events = s.events;
+    catch err
+      % We failed. Possible causes:
+      % 1. This isn't EGI data; we wouldn't expect prep_egi_data to work.
+      % 2. None of the events aligned, and runAlign crashed without saving
+      %    a new events structure with an "eegfile" field.
+      % 3. There is something wrong with the .raw file.
+      % 4. Unexpected changes to eeg_toolbox functions.
+
+      % give up on alignment and artifact detection. Put in some dummy fields
+      % so we can keep going. When doing EEG analyses, remember to filter out 
+      % events with an empty eegfile.
+      warning('eeg_ana:import_events:failedAlign', ...
+              'Failed alignment of: %s.\nError thrown by prep_egi_data:\n%s', ...
+              sess.dir, getReport(err))
+
+      [events(:).eegfile] = deal('');
+      [events(:).eegoffset] = deal(NaN);
+      [events(:).artifactMS] = deal(NaN);
+    end
+  end
 
   % filter the events
   if ~isempty(params.event_filter)
     events = filterStruct(events, params.event_filter);
-  end
-
-  % fill in eeg fields if they are missing
-  if ~isfield(events,'eegfile')
-    [events(:).eegfile] = deal('');
-    [events(:).eegoffset] = deal(NaN);
-    [events(:).artifactMS] = deal(NaN);
   end
 
   % concatenate
@@ -85,12 +115,6 @@ for sess=subj.sess
 end
 fprintf('\n')
 
-% if no sessions had eeg fields, assume this is a behavioral experiment
-if isempty(unique({events.eegfile}))
-  events = rmfield(events, 'eegfile');
-  events = rmfield(events, 'eegoffset');
-  events = rmfield(events, 'artifactMS');
-end
 events = subj_events;
 
 % save the new events
