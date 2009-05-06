@@ -63,7 +63,10 @@ if ~exist('res_dir','var') | isempty(res_dir)
   main_dir = fileparts(fileparts(pat_file));
   cd(main_dir)
   % save relative paths
-  res_dir = 'figs';
+  res_dir = './figs';
+end
+if ~strcmp(res_dir(1),'/')
+  res_dir = ['./' res_dir];
 end
 if ~exist(res_dir,'dir')
   mkdir(res_dir);
@@ -73,17 +76,15 @@ if ~exist('params','var')
 end
 if ~exist('pat','var')
   error('You must pass in a pat object.')
-  elseif ~isstruct(pat)
+elseif ~isstruct(pat)
   error('Pat must be a structure.')
-  elseif ~isstruct(params)
-  error('params must be a structure.')
 end
 
 % set default parameters
 params = structDefaults(params, ...
                         'print_input',      '-depsc', ...
                         'event_bins',       '',       ...
-                        'plot_must_events', true,     ...
+                        'plot_mult_events', true,     ...
                         'mult_fig_windows', 0,        ...
                         'colors',           {},       ...
                         'y_lim',            [],       ...
