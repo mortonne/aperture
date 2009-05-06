@@ -1,4 +1,30 @@
-function h = plot_erp(data,time,params)
+function h = plot_erp(data, time, params)
+%PLOT_ERP   Plot an event-related potential.
+%
+%  h = plot_erp(data, time, params)
+%
+%  INPUTS:
+%     data:  array of voltage values to plot. Each row will be
+%            plotted as a separate line.
+%
+%     time:  time values corresponding to each column of data.
+%
+%   params:  a structure specifying options for plotting. See
+%            below.
+%
+%  OUTPUTS:
+%        h:  vector of handles for each line plotted.
+%
+%  PARAMS:
+%   time_units - units of the time axis. Default: 'ms'
+%   volt_units - units of the voltage axis. Default: 'uV'
+%   colors     - cell array indicating the order of colors to use 
+%                for the lines
+%   y_lim      - limits of the voltage axis; [min,max]
+%   mark       - boolean vector indicating samples to be marked
+%                (e.g., significant samples). Shading will be put
+%                just below the plot
+%   fill_color - [1 X 3] array giving the color to use for marks
 
 % input checks
 if ~exist('data','var')
@@ -19,16 +45,16 @@ params = structDefaults(params, ...
                         'y_lim',            [],       ...
                         'mark',             [],       ...
                         'fill_color',       [.8 .8 .8]);
-                        
-% x-axis
 
+publishfig
+
+% x-axis
 if ~isempty(time)
   x = time;
   xlabel(sprintf('Time (%s)', params.time_units))
 else
   x = 1:size(data,2);
-  xlabel('Time')
-  set(gca, 'XTick', [], 'XTickLabel', [])
+  xlabel('Time (samples)')
 end
 
 % y-axis
@@ -49,12 +75,12 @@ else
 end
 
 % mark samples
+hold on
 if ~isempty(params.mark)
   offset = diff(y_lim)*0.07;
   bar_y = y_min - offset;
   bar_y_lim = [(bar_y - offset/2) bar_y];
   shade_regions(x, params.mark, bar_y_lim, params.fill_color);
-  hold on
 end
 
 % make the plot
@@ -63,20 +89,18 @@ h = plot(x, data, 'LineWidth', 2);
 % change line colors from their defaults
 if ~isempty(params.colors)
   for i=1:length(h)
-    set(h(i), 'Color', params.colors{i})
+    set(h(i), 'Color', params.colors{mod(i-1,length(params.colors))+1})
   end
 end
 
 % set y-limits
 set(gca, 'YLimMode','manual')
-set(gca,'YLim',y_lim)
+set(gca, 'YLim', y_lim)
 
 % plot axes
-hold on
 plot(get(gca,'XLim'), [0 0], '--k');
 plot([0 0], y_lim, '--k');
-publishfig
-
+hold off
 
 function shade_regions(x,mark,y_lim,fill_color)
   %SHADE_REGIONS   Shade in multiple rectangles.
