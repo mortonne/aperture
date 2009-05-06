@@ -129,7 +129,13 @@ function [ev2, bins] = event_bins(ev1,bin_defs,labels)
   
   % generate a new events field, one value per bin
   vec = make_event_bins(events1, bin_defs);
-  vals = unique(vec(~isnan(vec)));
+  
+  if iscell(vec)
+    vec = vec(~cellfun(@isempty, vec));
+  elseif isnumeric(vec)
+    vec = vec(~isnan(vec));
+  end
+  vals = unique(vec);
 
   % initialize the new ev object
   ev2 = ev1;
