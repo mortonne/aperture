@@ -8,10 +8,7 @@
  * check reporting scripts for generality
 
 == Basic ==
- * expand use of "path" cell array-style exp referencing; may make applytosubj more flexible
-  * New plan: scripts like apply_to_pat that call apply_to_subj and apply_to_obj.
-    We don't need function chaining; just write your own script that calls multiple
-    pat-modifications scripts.  More flexibility, less guesswork.
+ * expand use of "path" cell array-style exp referencing; may make apply_to_obj more flexible
 
 == Events ==
 
@@ -20,17 +17,11 @@
  * support for classifying each time-frequency bin separately (could sig scripts be generalized to include this?)
 
 == Patterns ==
- * remove "eid" standard from pat-modification scripts; just have them throw an error instead.
  * cat_pats can only do the channel dimension
  * saving as and processing patterns as slices (post-creation conversion in split_patfile.m. Support in create_pattern.m would be good.)
  * is expandDim general enough to be included?
 
 == Plotting ==
- * pat_plots: is there a simpler way?
-  * General fig-creation script, with function handles for figure making, perhaps?
- * plot_pow_sig: pick one format for p-values and stick with it, or come with system to deal with different types
- * also double-check significance color maps
-spline files for the new caps!
  * consider beefing up plot_events.  it's unique and potentially very useful.
 
 == Stats ==
@@ -40,6 +31,7 @@ spline files for the new caps!
 
 == Utils ==
  * should objfilename.m be used more?
+ * consider adding ability for getobj and setobj to get/set multiple objects.
  * getobj/setobj/rmobj/recursive_setobj a messy setup. Should just give
    getobj and setobj recursive capabilities.  Also, rmobj is the same as
    recursive_setobj, you just set the object to [].
