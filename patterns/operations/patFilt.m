@@ -82,7 +82,13 @@ end
 % check the dimensions
 psize = patsize(pat.dim);
 if any(~psize)
-	error('A dimension of pattern %s was filtered into oblivion.', pat.name);
+  bad_dims = find(~psize);
+  msg = '';
+  for dim_number=bad_dims
+    [i,j,name] = read_dim_input(dim_number);
+    msg = [msg sprintf('%s dimension filtered into oblivion.\n', name)];
+  end
+	error(msg);
 end
 
 if ~exist('events','var')
