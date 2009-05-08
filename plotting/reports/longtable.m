@@ -46,10 +46,13 @@ if ~exist('title','var')
 end
 if ~exist('filename','var')
   error('You must specify an output file.')
-  elseif ~exist('header','var')
+elseif ~exist('header','var')
   error('You must pass a header cell array.')
-  elseif ~exist('table','var')
+elseif ~exist('table','var')
   error('You must pass a cell array of LaTeX code for the table.')
+end
+if ~exist(fileparts(filename), 'dir')
+  mkdir(fileparts(filename));
 end
 
 % convenience variables
