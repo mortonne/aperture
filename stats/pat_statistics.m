@@ -15,42 +15,44 @@ function pat = pat_statistics(pat,event_bins,fcn_handle,fcn_inputs,stat_name,res
 %               each pat's event structure. See make_event_bins for options.
 %
 %  fcn_handle:  handle to a function that runs a statistical test of the form:
-%               [p, statistic] = fcn_handle(chan_vec, group, ...)
-%               INPUTS:
-%                 chan_vec:  vector of data for one channel concatenated across 
-%                            every pattern in pats.
+%                [p, statistic] = fcn_handle(chan_vec, group, ...)
+%                INPUTS:
+%                  chan_vec:  vector of data for one channel concatenated across 
+%                             every pattern in pats.
 %
-%                    group:  cell array of labels with one cell per factor; each
-%                            cell can contain an array or a cell array of strings.
-%                            group{1} has a unique label for each pattern.
+%                     group:  cell array of labels with one cell per factor; each
+%                             cell can contain an array or a cell array of strings.
+%                             group{1} has a unique label for each pattern.
 %
-%               OUTPUTS:
-%                        p:  scalar p-value of the significance test.
+%                OUTPUTS:
+%                         p:  scalar p-value of the significance test.
 %
-%                statistic:  scalar containing the statistic (e.g. t or F) from
-%                            which the p-value is derived.
+%                 statistic:  scalar containing the statistic (e.g. t or F) from
+%                             which the p-value is derived.
+%               Default fcn_handle is @run_sig_test, a which runs a
+%               number of common significance tests with standard I/O.
 %               
 %  fcn_inputs:  cell array of additional inputs to fcn_handle.
 %
 %   stat_name:  string identifier for the statistic.
 %
-%     res_dir:  path to directory to save results (default:
-%               fullfile(fileparts(fileparts(pat.file)),'stats')
+%     res_dir:  path to directory to save results; if not specified, the pattern's
+%               default stats directory is used.
 %
 %  OUTPUTS:
 %        stat:  stat object.
 %
 %  EXAMPLES:
 %   % test for a significant subsequent memory effect
-%   pat = mult_pat_sig_test(pat, {'recalled'}, @anovan, {}, 'sme')
+%   pat = pat_statistics(pat, {'recalled'}, @run_sig_test, {'anovan'});
 
 % input checks
 if ~exist('pat','var')
   error('You must pass a pat object.')
-  elseif ~exist('event_bins','var')
+elseif ~exist('event_bins','var')
   error('You must pass a cell array of event bins.')
-  elseif ~exist('fcn_handle','var')
-  error('You must pass a handle to a significance test function.')
+elseif ~exist('fcn_handle','var')
+  fcn_handle = @run_sig_test;
 end
 if ~exist('fcn_inputs','var')
   fcn_inputs = {};
@@ -59,17 +61,8 @@ if ~exist('stat_name','var')
   stat_name = 'stat';
 end
 if ~exist('res_dir','var')
-  % get the path to the pattern's file
-  if iscell(pat.file)
-    pat_file = pat.file{1};
-    else
-    pat_file = pat.file;
-  end
-  
-  % set the default results directory
-  res_dir = fullfile(fileparts(fileparts(pat_file)), 'stats');
-end
-if ~exist(res_dir,'dir')
+  res_dir = get_pat_dir(pat, 'stats');
+elseif ~exist(res_dir,'dir')
   mkdir(res_dir);
 end
 
@@ -90,7 +83,7 @@ filename = sprintf('%s_%s.mat', pat.name, stat_name);
 stat_file = fullfile(res_dir, filename);
 
 % initialize the stat object
-stat = init_stat(stat_name, stat_file, 'multiple', struct('event_bins',event_bins));
+stat = init_stat(stat_name, stat_file, pat.source, struct('event_bins',event_bins));
 
 fprintf('running %s on %s...\n', func2str(fcn_handle), pat.name)
 
@@ -112,7 +105,7 @@ for c=1:psize(2)
   if exist('full_pattern','var')
     % grab this slice
     pattern = full_pattern(:,c,:,:);
-    else
+  else
     % nothing loaded yet; load just this channel
     pattern = load_pattern(pat,struct('patnum',c));
   end
@@ -123,7 +116,21 @@ for c=1:psize(2)
       fprintf('.')
     end
     for f=1:size(pattern,4)
-      [p(:,c,t,f), statistic(:,c,t,f)] = fcn_handle(squeeze(pattern(:,1,t,f)), group, fcn_inputs{:});
+      X = squeeze(pattern(:,1,t,f));
+      [samp_p, samp_statistic] = fcn_handle(X, group, fcn_inputs{:});
+
+      % check if we can determine the sign of the effect
+      if length(group)==1
+        reg = group{1}(~isnan(group{1}));
+        vals = unique(reg);
+        if length(vals)==2
+          samp_p = samp_p*sign(nanmean(X(reg==vals(2))) - nanmean(X(reg==vals(1))));
+        end
+      end
+      
+      % add to the larger matrices
+      p(:,c,t,f) = samp_p;
+      statistic(:,c,t,f) = samp_statistic;
     end
   end
 end
