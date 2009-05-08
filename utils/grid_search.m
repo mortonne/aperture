@@ -10,7 +10,9 @@ function fit = grid_search(params, fit_fcn, fit_inputs)
 %               that parameter.
 %
 %     fit_fcn:  function that takes a params structure as
-%               the first input, and returns one number.
+%               the first input, and returns one number. The
+%               output can be of any type, as long as it is
+%               of length 1.
 %
 %  fit_inputs:  cell array of additional inputs to fit_fcn.
 %
