@@ -1,7 +1,7 @@
-function files = pat_tfr(pat,fig_name,params,res_dir,relative_dir)
-%PAT_ERP   Make ERP plots and print them to disk.
+function files = pat_tfr(pat,fig_name,params,res_dir)
+%PAT_TFR   Make time-frequency representation plots and print them to disk.
 %
-%  files = pat_erp(pat, fig_name, params, res_dir, relative_dir)
+%  files = pat_tfr(pat, fig_name, params, res_dir)
 %
 %  INPUTS:
 %           pat:  a pat object containing the pattern to be plotted.
@@ -10,12 +10,9 @@ function files = pat_tfr(pat,fig_name,params,res_dir,relative_dir)
 %
 %        params:  structure with options for plotting. See below.
 %
-%       res_dir:  path to the directory to save figures in.
-%
-%  relative_dir:  if specified, the output files cell array will
-%                 contain paths that are relative to this directory.
-%                 Using relative paths can be useful when later creating
-%                 LaTeX reports.
+%       res_dir:  path to the directory to save figures in. If not
+%                 specified, files will be saved in the pattern's
+%                 reports/figs directory.
 %
 %  OUTPUTS:
 %         files:  cell array of paths to printed figures.
@@ -24,59 +21,50 @@ function files = pat_tfr(pat,fig_name,params,res_dir,relative_dir)
 %  Values to plot
 %   event_bins       - input to make_event_bins; can be used to average
 %                      over events before plotting
+%   diff             - boolean; if true, before plotting, take the 
+%                      difference between event 1 and event 2. Default: false
 %   stat_name        - name of a stat object attached to pat. If
 %                      specified, p will be loaded from stat.file, and
-%                      significant regions will be shaded below each
-%                      ERP plot.
-%   alpha            - critical value to use when determining significance.
-%                      Default: 0.05
+%                      only significant samples will be colored. Positive
+%                      p-values will be plotted red, while negative values
+%                      will be blue.
+%   alpha_range      - if plotting p-values, this gives the range of values
+%                      to color in. alpha_range(1) gives the alpha corresponding
+%                      to the darkest color in the colormap, while alpha_range(2)
+%                      gives the alpha value at which to begin shading.
+%                      Default: [0.005 0.05]
 %   correctm         - method to use to correct for multiple comparisions:
-%                       [ {none} | fdr | bonferroni ]
+%                      [ {none} | fdr | bonferroni ]
 %  Plotting options
+%   map_limits       - limits for the z-axis of each plot: [z-min,z-max].
+%                      Default: -(absolute maximum) to (absolute maximum)
 %   print_input      - input to print to use when printing figures.
-%                      Default: '-depsc'
-%   fill_color       - color to use for shading under significant time
-%                      points. Default: [.8 .8 .8]
+%                      Default: {'-depsc'}
 %   mult_fig_windows - if true, each figure will be plotted in a separate
 %                      window. Default: false
-%   colors           - cell array of strings indicating colors to use for
-%                      plotting ERPs. colors{i} will be used for plotting
-%                      pattern(i,:,:).
-%   y_lim            - if specified, y-limit for all figures will be set
-%                      to this.
+%   Also see plot_tfr for more plotting options.
 
 % input checks
-if exist('relative_dir','var')
-  % filenames will be relative to this directory
-  if ~exist(relative_dir,'dir')
-    mkdir(relative_dir)
-  end
-  cd(relative_dir)
+if ~exist('pat','var') || ~isstruct(pat)
+  error('You must pass in a pat object.')
 end
-if ~exist('res_dir','var') | isempty(res_dir)
-  if iscell(pat.file)
-    pat_file = pat.file{1};
-    else
-    pat_file = pat.file;
-  end
-  % change to this pattern's main directory
-  main_dir = fileparts(fileparts(pat_file));
-  cd(main_dir)
-  % save relative paths
-  res_dir = 'figs';
-end
-if ~exist(res_dir,'dir')
-  mkdir(res_dir);
+if ~exist('fig_name','var')
+  fig_name = 'tfr';
 end
 if ~exist('params','var')
   params = struct;
-end
-if ~exist('pat','var')
-  error('You must pass in a pat object.')
-  elseif ~isstruct(pat)
-  error('Pat must be a structure.')
-  elseif ~isstruct(params)
+elseif ~isstruct(params)
   error('params must be a structure.')
+end
+if ~exist('res_dir','var') || isempty(res_dir)
+  report_dir = get_pat_dir(pat, 'reports');
+  cd(report_dir)
+  res_dir = './figs';
+elseif ~ismember(res_dir(1), {'/','.'})
+  res_dir = ['./' res_dir];
+end
+if ~exist(res_dir,'dir')
+  mkdir(res_dir)
 end
 
 % set default parameters
@@ -85,9 +73,9 @@ params = structDefaults(params, ...
                         'print_input',      {'-depsc'}, ...
                         'event_bins',       '',       ...
                         'diff',             false,    ...
-                        'mult_fig_windows', 0,        ...
+                        'mult_fig_windows', false,    ...
                         'stat_name',        '',       ...
-                        'p_range',          [0.005 0.05], ...
+                        'alpha_range',          [0.005 0.05], ...
                         'correctm',         '');
 
 % load the pattern
@@ -110,8 +98,8 @@ if ~isempty(params.stat_name)
   p = p(1,:,:,:);
   % END HACK
   
-  sig = params.p_range(2); % threshold for significance
-  max_sig = params.p_range(1); % color gradient will max out here
+  sig = params.alpha_range(2); % threshold for significance
+  max_sig = params.alpha_range(1); % color gradient will max out here
   
   if ~isempty(params.correctm)
     % correct for multiple comparisons across all samples

@@ -1,7 +1,7 @@
-function files = pat_erp(pat,fig_name,params,res_dir,relative_dir)
+function files = pat_erp(pat,fig_name,params,res_dir)
 %PAT_ERP   Make ERP plots and print them to disk.
 %
-%  files = pat_erp(pat, fig_name, params, res_dir, relative_dir)
+%  files = pat_erp(pat, fig_name, params, res_dir)
 %
 %  INPUTS:
 %           pat:  a pat object containing the pattern to be plotted.
@@ -10,12 +10,9 @@ function files = pat_erp(pat,fig_name,params,res_dir,relative_dir)
 %
 %        params:  structure with options for plotting. See below.
 %
-%       res_dir:  path to the directory to save figures in.
-%
-%  relative_dir:  if specified, the output files cell array will
-%                 contain paths that are relative to this directory.
-%                 Using relative paths can be useful when later creating
-%                 LaTeX reports.
+%       res_dir:  path to the directory to save figures in. If not
+%                 specified, files will be saved in the pattern's
+%                 reports/figs directory.
 %
 %  OUTPUTS:
 %         files:  cell array of paths to printed figures.
@@ -46,38 +43,26 @@ function files = pat_erp(pat,fig_name,params,res_dir,relative_dir)
 %                      to this.
 
 % input checks
-if exist('relative_dir','var')
-  % filenames will be relative to this directory
-  if ~exist(relative_dir,'dir')
-    mkdir(relative_dir)
-  end
-  cd(relative_dir)
+if ~exist('pat','var') || ~isstruct(pat)
+  error('You must pass in a pat object.')
 end
-if ~exist('res_dir','var') | isempty(res_dir)
-  if iscell(pat.file)
-    pat_file = pat.file{1};
-    else
-    pat_file = pat.file;
-  end
-  % change to this pattern's main directory
-  main_dir = fileparts(fileparts(pat_file));
-  cd(main_dir)
-  % save relative paths
-  res_dir = './figs';
-end
-if ~strcmp(res_dir(1),'/')
-  res_dir = ['./' res_dir];
-end
-if ~exist(res_dir,'dir')
-  mkdir(res_dir);
+if ~exist('fig_name','var')
+  fig_name = 'erp';
 end
 if ~exist('params','var')
   params = struct;
+elseif ~isstruct(params)
+  error('params must be a structure.')
 end
-if ~exist('pat','var')
-  error('You must pass in a pat object.')
-elseif ~isstruct(pat)
-  error('Pat must be a structure.')
+if ~exist('res_dir','var') || isempty(res_dir)
+  report_dir = get_pat_dir(pat, 'reports');
+  cd(report_dir)
+  res_dir = './figs';
+elseif ~ismember(res_dir(1), {'/','.'})
+  res_dir = ['./' res_dir];
+end
+if ~exist(res_dir,'dir');
+  mkdir(res_dir)
 end
 
 % set default parameters

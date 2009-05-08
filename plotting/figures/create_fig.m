@@ -42,15 +42,15 @@ if ~exist('fig_name','var')
 end
 if ~exist('fcn_inputs','var')
   fcn_inputs = {};
-  elseif ~iscell(fcn_inputs)
+elseif ~iscell(fcn_inputs)
   error('fcn_inputs must be a cell array.')
-  elseif ~exist('fcn_handle','var')
+elseif ~exist('fcn_handle','var')
   error('You must specify a figure-creation script.')
-  elseif ~isa(fcn_handle,'function_handle')
+elseif ~isa(fcn_handle,'function_handle')
   error('fcn_handle must be a function handle.')
-  elseif ~exist('obj','var')
+elseif ~exist('obj','var')
   error('You must pass a source object for creating the figures.')
-  elseif ~isstruct(obj)
+elseif ~isstruct(obj)
   error('obj must be a structure.')
 end
 

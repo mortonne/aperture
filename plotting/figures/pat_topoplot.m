@@ -1,7 +1,9 @@
-function files = pat_topoplot(pat,fig_name,params,res_dir,relative_dir)
+function files = pat_topoplot(pat,fig_name,params,res_dir)
 %PAT_TOPOPLOT   Make topoplots and print them to disk.
 %
-%  files = pat_topoplot(pat,fig_name,params,res_dir,relative_dir)
+%  files = pat_topoplot(pat,fig_name,params,res_dir)
+%
+%  Requires EEGLAB for making cartoon or headplots.
 %
 %  INPUTS:
 %           pat:
@@ -33,42 +35,26 @@ function files = pat_topoplot(pat,fig_name,params,res_dir,relative_dir)
 %   mult_fig_windows - 
 
 % input checks
-if ~exist('pat','var')
+if ~exist('pat','var') || ~isstruct(pat)
   error('You must pass in a pat object.')
-  elseif ~isstruct(pat)
-  error('Pat must be a structure.')
-  elseif ~isstruct(params)
-  error('params must be a structure.')
 end
 if ~exist('fig_name','var')
-  fig_name = 'figure';
-end
-if ~exist('res_dir','var') | isempty(res_dir)
-  if iscell(pat.file)
-    pat_file = pat.file{1};
-    else
-    pat_file = pat.file;
-  end
-  % save relative to this pattern's main directory
-  relative_dir = fileparts(fileparts(pat_file));
-  % save relative paths
-  res_dir = 'figs';
-end
-if exist('relative_dir','var')
-  % filenames will be relative to this directory
-  if ~exist(relative_dir,'dir')
-    mkdir(relative_dir)
-  end
-  if ~exist(fullfile(relative_dir, res_dir), 'dir')
-    mkdir(fullfile(res_dir, relative_dir));
-  end
-  cd(relative_dir)
-end
-if ~exist(res_dir,'dir')
-  mkdir(res_dir);
+  fig_name = 'topo';
 end
 if ~exist('params','var')
   params = struct;
+elseif ~isstruct(params)
+  error('params must be a structure.')
+end
+if ~exist('res_dir','var') || isempty(res_dir)
+  report_dir = get_pat_dir(pat, 'reports');
+  cd(report_dir)
+  res_dir = './figs';
+elseif ~ismember(res_dir(1), {'/','.'})
+  res_dir = ['./' res_dir];
+end
+if ~exist(res_dir,'dir')
+  mkdir(res_dir)
 end
 
 % set default parameters
