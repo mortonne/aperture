@@ -54,7 +54,7 @@ if exist(exp.file, 'file')
 else
   % exp hasn't been saved in exp.file before
   if ~exist(exp.resDir,'dir')
-    mkdir(exp.resDir)
+    error('Directory does not exist: %s', exp.resDir)
   end
 end
 
