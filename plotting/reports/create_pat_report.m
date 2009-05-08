@@ -13,11 +13,14 @@ function [table,header] = create_pat_report(pat,dim,fig_names,fig_labels)
 %         dim:  dimension to use for labeling each row of the report.
 %
 %   fig_names:  cell array giving the names of figure objects to
-%               include. If omitted or empty, all figure objects
-%               attached to pat will be used.
+%               include. The order of columns will follow the order that
+%               fig names are specified here. If omitted or empty, all 
+%               figure objects attached to pat will be used.
 %
-%  fig_labels:  cell array of strings giving a label for each fig
-%               object. Default is fig_names.
+%  fig_labels:  cell array of strings giving a label for each column of
+%               the report. If omitted, the labels of the second non-
+%               singleton dimension will be used; if there is only
+%               one non-singleton dimension, the fig_name will be used.
 %
 %  OUTPUTS:
 %       table:  cell array of LaTeX code that can be passed into
@@ -35,22 +38,13 @@ end
 if ~exist('fig_names','var') || isempty(fig_names)
   fig_names = {pat.fig.name};
 end
-if ~exist('fig_labels','var') || isempty(fig_labels)
-  fig_labels = fig_names;
+if ~exist('fig_labels','var')
+  fig_labels = {};
 end
 
 % read the input dimension
 [dim_name, dim_number, dim_long_name] = read_dim_input(dim);
 pat_size = patsize(pat.dim);
-
-% if we're using events as the rows, load up the events
-% structure
-if strcmp(dim_name, 'ev')
-  pat.dim.ev = load_events(pat.dim.ev);
-  if ~isfield(pat.dim.ev, 'label')
-    error('events must contain a "label" field.')
-  end
-end
 
 % get a cell array of figure filenames
 fig_files = {};
@@ -71,7 +65,14 @@ for i=1:length(fig_names)
   fig_files = cat(2, fig_files, files);
 
   % set the header for these column(s)
-  if ndims(files)==2
+  if ~isempty(fig_labels)
+    % use user-defined labels
+    cols_added = size(files,2);
+    tot_cols = size(fig_files,2);
+    ind = tot_cols-cols_added+1:tot_cols;
+    header(ind+1) = fig_labels(ind);
+  elseif length(find(size(files)>1))==2
+    % the second dimension is non-singleton
     % blank out the header for the first column
     header{1} = '';
     
@@ -80,7 +81,8 @@ for i=1:length(fig_names)
     col_labels = get_dim_labels(pat.dim, dim2_name);
     header = [header col_labels];
   else
-    header{end+1} = fig_labels{i};
+    % the second dimension is singleton; use the fig_name
+    header{end+1} = fig.name;
   end
 end
 
