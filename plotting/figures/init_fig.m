@@ -1,24 +1,46 @@
 function fig = init_fig(name, file, source)
 %INIT_FIG   Initialize a struct to hold metadata about figures.
-%   FIG = INIT_FIG() initializes a fig with default values.
 %
-%   FIG = INIT_FIG(NAME,FIGTYPE,FILE,PARAMS,TITLE) initializes a fig
-%   object with fields NAME, FIGTYPE, FILE, PARAMS, and TITLE.
+%  fig = init_fig(name, file, source)
 %
-%   Fields:
-%     'name'    string identifier used to reference the fig object
-%     'file'    string or cell array of strings holding filenames
-%               of figures
-%     'source'  name of the parent object
+%  INPUTS:
+%     name:  string identifier for this fig object.
+%
+%     file:  string or cell array of strings giving paths to
+%            saved figures.
+%
+%   source:  name of the parent object.
+%
+%  OUTPUTS:
+%      fig:  a standard figure object.
+%
+%  See also create_fig.
 
+% input checks
 if ~exist('name','var')
   name = '';
+elseif ~ischar(name)
+  error('name must be a string.')
 end
 if ~exist('file','var')
   file = '';
+elseif (~ischar(file) && ~iscell(file))
+  error('file must be a string or a cell array of strings.')
+elseif ischar(file)
+  if ~exist(file,'file')
+    error('File does not exist: %s', file)
+  end
+elseif iscell(file)
+  if ~all(cellfun(@ischar, file))
+    error('file must be a string or a cell array of strings.')
+  elseif any(cellfun(@(x)(exist(x,'file')), file))
+    error('A file or files in the "file" cell array do not exist.')
+  end
 end
 if ~exist('source','var')
   source = '';
+elseif ~ischar(source)
+  error('source must be a string.')
 end
 
 if iscell(file) & isempty(file)
