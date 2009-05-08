@@ -1,7 +1,7 @@
 function subj = apply_to_subj(subj,fcn_handle,fcn_inputs,dist)
-%APPLYTOSUBJ   Apply a function to all subjects.
+%APPLY_TO_SUBJ   Apply a function to all subjects.
 %
-%  subj = apply_to_subj_test(subj, fcn_handle, fcn_inputs)
+%  subj = apply_to_subj(subj, fcn_handle, fcn_inputs, dist)
 %
 %  Apply a function to each element of a subjects vector.
 %
@@ -20,7 +20,7 @@ function subj = apply_to_subj(subj,fcn_handle,fcn_inputs,dist)
 %  OUTPUTS:
 %        subj:  a subject vector.
 %
-%  See also apply_to_obj, apply_to_pat, distcomp/apply_to_subj.
+%  See also apply_to_obj, apply_to_pat, apply_to_ev.
 
 % input checks
 if ~exist('subj','var')
@@ -41,8 +41,9 @@ if dist
 
   % create a job to run all subjects
   % use the current path, and override pathdef.m, jobStartup.m, etc.
-  path_cell = regexp(path, ':', 'split');  
-  job = createJob(sm, 'PathDependencies', path_cell);
+  path_cell = regexp(path, ':', 'split');
+  job_name = sprintf('apply_to_subj:%s', func2str(fcn_handle));
+  job = createJob(sm, 'PathDependencies', path_cell, 'Name', job_name);
   
   % make a task for each subject
   for this_subj=subj
