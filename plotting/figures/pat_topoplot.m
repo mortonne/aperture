@@ -60,7 +60,9 @@ end
 % set default parameters
 params = structDefaults(params, ...
                         'plot_type',        'topo',                     ...
-                        'chan_locs',        '~/eeg/HCGSN128_clean.loc', ...
+                        'chan_locs',        '~/eeg/HCGSN128.loc',       ...
+                        'splinefile',       '~/eeg/HCGSN128.spl',       ...
+                        'views',            {[280 35],[80 35]},         ...
                         'plot_input',       {},                         ...
                         'map_limits',       [],                         ...
                         'print_input',      {'-depsc'},                 ...
@@ -69,6 +71,8 @@ params = structDefaults(params, ...
                         'colorbar',         true,                       ...
                         'plot_perimeter',   true,                      ...
                         'event_bins',       '',                         ...
+                        'time_bins',        '',                         ...
+                        'freq_bins',        '',                         ...
                         'diff',             false,                      ...
                         'mult_fig_windows', 0,                          ...
                         'stat_name',        '',                         ...
@@ -77,12 +81,19 @@ params = structDefaults(params, ...
                         'correctm',         'fdr',                      ...
                         'correctm_scale',   'all');
 
+if length(params.views)~=2
+  error('You must indicate exactly two viewpoints to plot.')
+end
+
 % load the pattern
 pattern = load_pattern(pat);
 
-if ~isempty(params.event_bins)
+if ~isempty(params.event_bins) || ~isempty(params.time_bins) || ~isempty(params.freq_bins)
   % create bins using inputs accepted by make_event_bins
-  [pat, bins] = patBins(pat, struct('field', params.event_bins));
+  p = struct('field',    params.event_bins, ...
+             'MSbins',   params.time_bins,  ...
+             'freqbins', params.freq_bins);
+  [pat, bins] = patBins(pat, p);
   % do the averaging within each bin
   pattern = patMeans(pattern, bins);
 end
@@ -101,7 +112,6 @@ if ~isempty(params.stat_name)
     % make the colormap, set the pattern to be plotted as the
     % z-scores of the p-values
     [pattern, map, map_limits] = prep_sig_map(pattern, params.p_range, params.correctm, true);
-    colormap(map)
   end
 
 else
@@ -121,7 +131,8 @@ else
     map_limits = [-absmax absmax];
   end
 
-  colormap('default')
+  colormap('default');
+  map = colormap;
 end
 
 % set the peripheral channels to the neutral color
@@ -149,30 +160,82 @@ for e=1:size(pattern,1)
         % make the colormap, set the pattern to be plotted as the
         % z-scores of the p-values
         [x, map, map_limits] = prep_sig_map(x, params.p_range, params.correctm, true);
-        colormap(map)
       end
       
       % remove perimeter channels
       x(to_blank) = mean(map_limits);
       
-      clf
-      if params.colorbar
-        colorbar
-      end
+      close all
+      figure
+      publishfig
+      colormap(map)
       
       % make the plot
       switch params.plot_type
         case 'topo'
         % make the plot for this slice using the supplied function
-        topoplot(x, params.chan_locs, 'maplimits', map_limits, params.plot_input{:});
+        if all(isnan(x))
+          x(:) = 1;
+          topoplot(x, params.chan_locs, 'colormap',[1 1 1], params.plot_input{:});
+        else
+          topoplot(x, params.chan_locs, 'maplimits', map_limits, params.plot_input{:});
+        end
+        if params.colorbar
+          colorbar('FontSize', 16)
+        end
         
         case 'head'
+        views = params.views;
+        
+        if params.colorbar
+          width = .43;
+          edge = width*2;
+          bar_width = (1-edge)/4;
+          %subplot('position', [edge 0 1-edge 1])
+          %set(gca, 'Color', [.8 .8 .8], 'XTick', [], 'YTick', [], 'YColor', [.8 .8 .8])
+          %c = colorbar('FontSize', 16, 'Position', [edge+bar_width/2 0.1 bar_width 0.8]);
+          
+          % show the left
+          subplot('position', [0 0 width 1]);
+          headplot(x, params.splinefile,   ...
+                   'colormap', map,        ...
+                   'maplimits',map_limits, ...
+                   'view',views{1},        ...
+                   params.plot_input{:});
+                   
+          % show the right
+          subplot('position', [width 0 width 1]);
+          [h,c_temp] = headplot(x, params.splinefile, ...
+                                'colormap', map,        ...
+                                'maplimits',map_limits, ...
+                                'view',views{2}, ...
+                                'cbar', 0, ...
+                                params.plot_input{:});
+          set(c_temp, 'FontSize', 16, 'Position', [edge+bar_width/4 0.125 bar_width 0.7]);
+        else
+          % show the left
+          subplot('position', [0 0 .5 1]);
+          headplot(x, params.splinefile,   ...
+                   'colormap', map,        ...          
+                   'maplimits',map_limits, ...
+                   'view',views{1},        ...
+                   params.plot_input{:});
+          
+          % show the right
+          subplot('position', [0.5 0 .5 1]);
+          headplot(x, params.splinefile,   ...
+                   'colormap', map,        ...          
+                   'maplimits',map_limits, ...
+                   'view',views{2},        ...
+                   params.plot_input{:});
+        end
         
         otherwise
         error('Invalid plot type: %s', params.plot_type)
       end
       
       % set properties
+      
       if ~isempty(params.axis_prop)
         set(gca, params.axis_prop{:});
       end
@@ -190,6 +253,7 @@ for e=1:size(pattern,1)
     end
   end
 end
+clf reset
 fprintf('\n')
 
 function [z,map,map_limits] = prep_sig_map(p, p_range, correctm, verbose)
