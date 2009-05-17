@@ -33,8 +33,6 @@ elseif ischar(file)
 elseif iscell(file)
   if ~all(cellfun(@ischar, file))
     error('file must be a string or a cell array of strings.')
-  elseif any(cellfun(@(x)(exist(x,'file')), file))
-    error('A file or files in the "file" cell array do not exist.')
   end
 end
 if ~exist('source','var')
