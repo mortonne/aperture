@@ -31,17 +31,14 @@ if ~exist('dimension','var')
   dimension = 2;
 end
 if ~exist('pat_name','var')
-  pat_name = 'cat_pattern';
+  if length(unique({pats.name}))==1
+    pat_name = def_pat.name;
+  else
+    pat_name = 'cat_pattern';
+  end
 end
 if ~exist('res_dir','var')
-  % get the path to the pattern's file
-  if iscell(def_pat.file)
-    temp = def_pat.file{1};
-    else
-    temp = def_pat.file;
-  end
-  % set the default results directory
-  res_dir = fileparts(fileparts(temp));
+  res_dir = get_pat_dir(def_pat);
 end
 
 % parse the dimension input
@@ -74,16 +71,21 @@ if strcmp(dim_name, 'ev')
   % load each events structure
   fprintf('events...')
   events = [];
-  fields = {};
   for i=1:length(pats)
     fprintf('%s ', pats(i).source)
     pat_ev = load_events(pats(i).dim.ev);
-    if ~isempty(fields)
-      f2rm = setdiff(fieldnames(pat_ev), fields);
+    if ~isempty(events)
+      % remove any fields that aren't in both
+      f1 = fieldnames(events);
+      f2 = fieldnames(pat_ev);
+      
+      f2rm = setdiff(f1, f2);
+      events = rmfield(events, f2rm);
+      
+      f2rm = setdiff(f2, f1);
       pat_ev = rmfield(pat_ev, f2rm);
     end
     events = [events pat_ev];
-    fields = fieldnames(events);
   end
   fprintf('\n')
 

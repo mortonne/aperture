@@ -26,15 +26,7 @@ end
 % get info from the first subject
 subj_pat = getobj(subj(1), 'pat', pat_name);
 if ~exist('res_dir','var')
-  % get the path to the first pattern's file
-  if iscell(subj_pat.file)
-    pat1_file = subj_pat.file{1};
-    else
-    pat1_file = subj_pat.file;
-  end
-  
-  % set the default results directory
-  res_dir = fileparts(pat1_file);
+  res_dir = get_pat_dir(subj_pat, 'patterns');
 end
 
 % initialize the new pattern
