@@ -72,6 +72,18 @@ wait(j.job);
 
 % put the outputs into grid format
 out = getAllOutputArguments(j.job);
+
+% initialize the goodness-of-fit array
+out_size = size(j.id);
+if all(cellfun(@isnumeric, out))
+  fit = NaN(out_size);
+elseif all(cellfun(@iscell, out))
+  fit = cell(out_size);
+else
+  error('fit_fcn %s is producing illegal output type %s.', ...
+        func2str(fit_fcn), unique(cellfun(@class,out)))
+end
+
 for i=1:length(out)
   fit(j.id==i) = out{i};
 end
