@@ -65,3 +65,4 @@ for n=1:length(sessions)
   % add to the ev object
   ev.blinks(n) = percent_art;
 end
+fprintf('done.\n')

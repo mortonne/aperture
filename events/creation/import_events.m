@@ -54,12 +54,16 @@ params = structDefaults(params, ...
                         'event_filter', '',           ...
                         'check_eeg',    false);
 
-fprintf('concatenating session events...')
+if length(subj.sess)>1
+  fprintf('concatenating session events...')
+end
 
 % concatenate all sessions
 subj_events = [];
 for sess=subj.sess
-  fprintf('%d ', sess.number)
+  if length(subj.sess)>1
+    fprintf('%d ', sess.number)
+  end
   
   % load the events struct for this session
   sess_events_file = fullfile(sess.dir, params.events_file);
@@ -113,7 +117,9 @@ for sess=subj.sess
   % concatenate
   subj_events = [subj_events(:); events(:)]';
 end
-fprintf('\n')
+if length(subj.sess)>1
+  fprintf('\n')
+end
 
 events = subj_events;
 

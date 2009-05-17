@@ -68,6 +68,7 @@ end
 
 % default parameters
 params = structDefaults(params, ...
+                        'overwrite', false, ...
                         'eventFilter','', ...
                         'replace_eegfile',{}, ...
                         'ev_mod_fcn',[], ...
@@ -79,7 +80,7 @@ ev_source = oldev.source;
 if ~isempty(ev_name)
   % save to a new file
   ev_file = fullfile(res_dir,'events',sprintf('%s_%s.mat', ev_name, ev_source));
-  else
+else
   % overwrite the old events
   ev_name = oldev.name;
   ev_file = oldev.file;
