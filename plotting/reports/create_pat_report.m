@@ -114,10 +114,12 @@ function [y,dim_order] = fix_dim(x,dim1,n_dims)
 
   % if the first dim is there, remove it from the list
   d = d(d~=dim1);
+  sing = find(s==1);
+  sing = sing(sing~=dim1);
 
   % place the first dimension at the beginning, then
   % non-singleton dimensions, then singleton
-  dim_order = [dim1 d find(s==1)];
+  dim_order = [dim1 d sing];
 
   y = permute(x, dim_order);
 %endfunction
