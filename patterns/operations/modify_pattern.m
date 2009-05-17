@@ -41,6 +41,11 @@ function [pat,pattern,events] = modify_pattern(pat, params, pat_name, res_dir)
 %   excludeBadChans - if true, channels whose numbers are listed in
 %                     fileparts(events.eegfile)/bad_chan.txt
 %                     will be excluded for the relevant events
+%   blinkthresh     - events where fast-slow running average of the difference
+%                     between the EOG channels crosses this threshold are
+%                     excluded (see find_eog_artifacts).
+%   eog_channels    - channel number or pair of channels to use in blink
+%                     detection
 %   absThresh       - if any value in an event crosses this this threshold
 %                     (either positive or negative), the event will be
 %                     excluded for that channel
@@ -105,8 +110,13 @@ end
 % default parameters
 params = structDefaults(params, ...
                         'nComp',           [], ...
-                        'badChanFiles',   {},  ...
+                        'badChanFiles',    {},  ...
+                        'blinkthresh',     [], ...
+                        'eog_channels',    {[25 127], [8 126]}, ...
+                        'eog_buffer',      200, ...
+                        'blinkopt',        [.5, .5, .975, .025], ...
                         'absThresh',       [], ...
+                        'min_samp',        [], ...
                         'overwrite',       0,  ...
                         'lock',            0,  ...
                         'splitDim',        [], ...
@@ -169,6 +179,25 @@ if ~isempty(params.badChanFiles)
   pattern(isbad) = NaN;
 end
 
+if ~isempty(params.blinkthresh)
+  bad_events = false(size(pattern,1),1);
+  first = pat.dim.time(1).MSvals(1);
+  last = pat.dim.time(end).MSvals(end);
+  offsetMS = first - params.eog_buffer;
+  durationMS = last + first + params.eog_buffer;
+  for i=1:length(params.eog_channels)
+    bad_samples = find_eog_artifacts(events, params.eog_channels{i}, ...
+                                    offsetMS, ...
+                                    durationMS, ...
+                                    params);
+    bad_events = bad_events | any(bad_samples,2);
+  end                                    
+
+  pattern(bad_events,:,:,:) = NaN;
+  fprintf('Threw out %d events out of %d with EOG artifacts.\n', ...
+          length(find(bad_events)), length(bad_events))
+end
+
 if params.absThresh
   % find any values that are above our absolute threshold
   bad_samples = abs(pattern)>params.absThresh;
@@ -196,7 +225,7 @@ end
 
 % BINNING
 [pat,patbins,events,evmod(2)] = patBins(pat,params,events);
-pattern = patMeans(pattern, patbins);
+pattern = patMeans(pattern, patbins, params.min_samp);
 
 % PCA
 if ~isempty(params.nComp)
@@ -230,7 +259,7 @@ if params.savePat
   end
   
   if strcmp(oldpat.name, pat.name)
-    fprintf('saved.')
+    fprintf('saved.\n')
     else
     fprintf('saved as "%s".\n', pat.name)
   end
