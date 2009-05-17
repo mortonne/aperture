@@ -84,8 +84,9 @@ if dist
     subj = setobj(subj, temp{i});
   end
   
-  else
+else
   % run the function on each element of the subject vector
+  tic
   for this_subj=subj
     fprintf('%s\n', this_subj.id)
 
@@ -93,4 +94,5 @@ if dist
     % and modify the subject vector
     subj = setobj(subj, fcn_handle(this_subj, fcn_inputs{:}));
   end
+  fprintf('apply_to_subj: finished: %.2f seconds.\n', toc);
 end
