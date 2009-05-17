@@ -30,6 +30,8 @@ function files = pat_erp(pat,fig_name,params,res_dir)
 %   correctm         - method to use to correct for multiple comparisions:
 %                       [ {none} | fdr | bonferroni ]
 %  Plotting options
+%   plot_mult_events - if true, if there are multiple events, they will be
+%                      plotted on one axis. Default: true
 %   print_input      - input to print to use when printing figures.
 %                      Default: '-depsc'
 %   fill_color       - color to use for shading under significant time
