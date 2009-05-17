@@ -76,7 +76,8 @@ psize = patsize(pat.dim);
 if isempty(pattern)
   error('pattern %s is empty.', pat.name)
 elseif any(psize(1:ndims(pattern))~=size(pattern))
-  error('size of pattern %s does not match the dim structure.', pat.name)
+  warning('eeg_ana:load_pattern:badPatSize', ...
+          'size of pattern %s does not match the dim structure.', pat.name)
 end
 
 % change to lower precision if desired
