@@ -100,7 +100,7 @@ end
 fprintf('channel: ');
 step = floor(psize(3)/4);
 for c=1:psize(2)
-  fprintf('%s', pat.dim.chan(c).label);
+  fprintf('%s ', pat.dim.chan(c).label);
   
   if exist('full_pattern','var')
     % grab this slice
