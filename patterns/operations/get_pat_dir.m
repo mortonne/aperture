@@ -38,8 +38,13 @@ else
   pat_file = pat.file;
 end
 
+main_dir = fileparts(fileparts(pat_file));
+if ~exist(main_dir,'dir')
+  mkdir(main_dir);
+end
+
 % get the requested directory
-pat_dir = fullfile(fileparts(fileparts(pat_file)), subdir);
+pat_dir = fullfile(main_dir, subdir);
 
 % make sure it exists
 if ~exist(pat_dir,'dir')
