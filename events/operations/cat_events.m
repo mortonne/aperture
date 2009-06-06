@@ -1,7 +1,7 @@
 function [ev,events] = cat_events(evs,ev_name,res_dir,label)
 %CAT_EVENTS   Concatenate a set of events.
 %
-%  [ev, events] = cat_events(evs, ev_name, res_dir)
+%  [ev, events] = cat_events(evs, ev_name, res_dir, label)
 %
 %  INPUTS:
 %      evs:  a vector of ev objects.
@@ -10,6 +10,9 @@ function [ev,events] = cat_events(evs,ev_name,res_dir,label)
 %
 %  res_dir:  directory where the new events structure will
 %            be saved.
+%
+%    label:  optional string indicating a suffix to use for the
+%            filename of the concatenated events structure.
 %
 %  OUTPUTS:
 %       ev:  ev object with metadata for the new concatenated
@@ -23,16 +26,10 @@ if ~exist('ev_name','var')
   ev_name = 'cat_events';
 end
 if ~exist('res_dir','var')
-  res_dir = fileparts(fileparts(evs(1).file));
+  res_dir = get_ev_dir(evs(1), 'events');
 end
 if ~exist('label','var')
   label = 'multiple';
-end
-
-% prepare the directory for the new events structure
-ev_dir = fullfile(res_dir, 'events');
-if ~exist(ev_dir,'dir')
-  mkdir(ev_dir)
 end
 
 % print status
@@ -52,7 +49,7 @@ end
 fprintf('\n')
 
 % save the new events
-ev_file = fullfile(ev_dir, sprintf('%s_%s.mat', ev_name, label));
+ev_file = fullfile(res_dir, sprintf('%s_%s.mat', ev_name, label));
 save(ev_file, 'events')
 
 % create the new ev object

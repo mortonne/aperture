@@ -12,7 +12,7 @@ function ev = create_data(ev,fcn_handle,fcn_input,res_dir)
 %   fcn_input:  cell array of additional inputs to fcn_handle.
 %
 %     res_dir:  path to the directory where the data structure
-%               will be saved. Default: fileparts(ev.file)
+%               will be saved.
 %
 %  OUTPUTS:
 %          ev:  events object with a datafile field added, which
@@ -21,20 +21,14 @@ function ev = create_data(ev,fcn_handle,fcn_input,res_dir)
 % input checks
 if ~exist('ev','var')
   error('You must pass an ev object.')
-  elseif ~exist('fcn_handle','var')
+elseif ~exist('fcn_handle','var')
   error('You must pass a handle to a data structure creation function.')
 end
 if ~exist('fcn_input','var')
   fcn_input = {};
 end
 if ~exist('res_dir','var')
-  res_dir = fileparts(fileparts(ev.file));
-end
-
-% prepare the directory
-data_dir = fullfile(res_dir, 'data');
-if ~exist(data_dir, 'dir')
-  mkdir(data_dir);
+  res_dir = get_ev_dir(ev, 'data');
 end
 
 % load the events
@@ -43,11 +37,11 @@ events = load_events(ev);
 % create the data struct
 fprintf('creating data struct using %s...', func2str(fcn_handle))
 
-ev.datafile = fullfile(res_dir, 'data', sprintf('data_%s.mat', ev.source));
+ev.datafile = fullfile(res_dir, sprintf('data_%s.mat', ev.source));
 
 try
   data = fcn_handle(events, fcn_input{:});
-  catch
+catch
   err = lasterror;
   fprintf('Warning: Error thrown by %s:\n', func2str(fcn_handle))
   fprintf('%s\n', err.message)
