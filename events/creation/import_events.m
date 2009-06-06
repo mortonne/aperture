@@ -99,9 +99,24 @@ for sess=subj.sess
       % give up on alignment and artifact detection. Put in some dummy fields
       % so we can keep going. When doing EEG analyses, remember to filter out 
       % events with an empty eegfile.
-      warning('eeg_ana:import_events:failedAlign', ...
-              'Failed alignment of: %s.\nError thrown by prep_egi_data:\n%s', ...
-              sess.dir, getReport(err))
+      switch get_error_id(err)
+       case {'NoMatchStart', 'NoMatchEnd'}
+        fprintf('Warning: alignment failed for %s.\n', ...
+                sess.dir)
+       case 'PulseFileNotFound'
+        fprintf('Warning: pulse file not found for %s.\n', ...
+                sess.dir)
+       case 'NoEEGFile'
+        fprintf('Warning: all events out of bounds for %s.\n', ...
+                sess.dir)
+       case 'CorruptedEEGFile'
+        fprintf('Warning: EEG file for %s is corrupted.\n', sess.dir)
+       otherwise
+        % just print the error output
+        warning('eeg_ana:post_process_subj:SessError', ...
+                'prep_egi_data2 threw an error for %s:\n %s', ...
+                sess.dir, getReport(err))
+      end
 
       [events(:).eegfile] = deal('');
       [events(:).eegoffset] = deal(NaN);
