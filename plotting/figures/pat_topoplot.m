@@ -165,8 +165,6 @@ for e=1:size(pattern,1)
       % remove perimeter channels
       x(to_blank) = mean(map_limits);
       
-      close all
-      figure
       publishfig
       colormap(map)
       
@@ -185,6 +183,8 @@ for e=1:size(pattern,1)
         end
         
         case 'head'
+        close all
+        figure
         views = params.views;
         
         if params.colorbar
