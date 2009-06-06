@@ -14,24 +14,36 @@ function events = load_events(ev)
 %   events:  an events structure.
 
 % input checks
-if ~exist('ev','var')
+if ~exist('ev','var') || ~isstruct(ev)
   error('You must pass an ev object.')
+elseif ~any(isfield(ev, {'file', 'mat'}))
+  error('The events object must have a "file" or "mat" field.')
 end
 
-if isfield(ev,'mat')
+if isfield(ev,'mat') && ~isempty(ev.mat)
   % already loaded; just grab it
   events = ev.mat;
-  
-  else
+else
   % must load from file
-  if ~exist(ev.file,'file')
-    error('Events file %s not found.', ev.file)
+  if ~exist(ev.file, 'file')
+    error('Events file not found: %s', ev.file)
   end
   
   % load the events structure
-  s = load(ev.file);
-  if ~isfield(s,'events')
-    error('File %s does not contain a variable named events.')
-  end
+  s = load(ev.file, 'events');
   events = s.events;
+end
+
+% check the events structure
+if isempty(events)
+  warning('loading an empty events structure.')
+elseif ~isstruct(events)
+  error('events must be a structure.')
+elseif ~isvector(events)
+  error('events must be a vector')
+end
+
+% make sure we are returning a row vector
+if size(events,1)>1
+  events = reshape(events, 1, length(events));
 end
