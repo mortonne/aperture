@@ -13,9 +13,15 @@ function subj = apply_to_subj(subj,fcn_handle,fcn_inputs,dist)
 %
 %  fcn_inputs:  additional inputs to fcn_handle.
 %
-%        dist:  if true, each subject will be evaluated with
-%               a different distributed task.
-%               Default: false
+%        dist:  indicates how to evaluate the subjects:
+%               0 - subjects are evaluated with a normal for 
+%                   loop (default)
+%               1 - each subject is processed by a separate
+%                   distributed task (requires the distributed
+%                   computing engine; uses the default configuration)
+%               2 - subjects are run in parallel using a parfor
+%                   loop (to benefit from this, must have an open
+%                   matlabpool)
 %
 %  OUTPUTS:
 %        subj:  a subject vector.
@@ -32,10 +38,10 @@ if ~exist('fcn_inputs','var')
   fcn_inputs = {};
 end
 if ~exist('dist','var')
-  dist = false;
+  dist = 0;
 end
 
-if dist
+if dist==1
   % get the default job manager/scheduler
   sm = findResource();
 
@@ -83,13 +89,22 @@ if dist
     end
     subj = setobj(subj, temp{i});
   end
-  
+elseif dist==2
+  % use parfor
+  tic
+  new_subj = [];
+  parfor i=1:length(subj)
+    fprintf('%s\n', subj(i).id)
+    new_subj = [new_subj fcn_handle(subj(i), fcn_inputs{:})];
+  end
+  subj = new_subj;
+  fprintf('apply_to_subj: finished: %.2f seconds.\n', toc);
 else
   % run the function on each element of the subject vector
   tic
-  for this_subj=subj
+  for i=1:length(subj)
+    this_subj = subj(i);
     fprintf('%s\n', this_subj.id)
-
     % pass this subject as input to the function
     % and modify the subject vector
     subj = setobj(subj, fcn_handle(this_subj, fcn_inputs{:}));
