@@ -44,9 +44,9 @@ if exp.useLock
   fprintf('locked...');
 end
 
+timestamp = datestr(now, 'mm-dd-yy_HHMM');
 if exist(exp.file, 'file')
   % save a backup of the old exp
-  timestamp = datestr(now, 'mm-dd-yy_HHMM');
   filename = sprintf('exp_%s.mat', timestamp);
   backup_file = fullfile(backup_dir, filename);
   copyfile(exp.file, backup_file);
