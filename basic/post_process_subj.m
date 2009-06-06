@@ -15,8 +15,24 @@ for sess=subj.sess
     % split, sync, rereference, detect blink artifacts
     prep_egi_data2(subj.id,sess.dir,varargin{:});
   catch err
-    warning('eeg_ana:post_process_subj:SessError', ...
-            'prep_egi_data2 threw an error for %s session %d:\n %s', ...
-            subj.id, sess.number, getReport(err))
+    switch get_error_id(err)
+     case {'NoMatchStart', 'NoMatchEnd'}
+      fprintf('Warning: alignment failed for %s.\n', ...
+              sess.dir)
+     case 'PulseFileNotFound'
+      fprintf('Warning: pulse file not found for %s.\n', ...
+              sess.dir)
+     case 'NoEEGFile'
+      fprintf('Warning: all events out of bounds for %s.\n', ...
+              sess.dir)
+     case 'CorruptedEEGFile'
+      fprintf('Warning: EEG file for %s is corrupted.\n', sess.dir)
+     otherwise
+      % just print the error output
+      warning('eeg_ana:post_process_subj:SessError', ...
+              'prep_egi_data2 threw an error for %s:\n %s', ...
+              sess.dir, getReport(err))
+    end
   end
+  
 end
