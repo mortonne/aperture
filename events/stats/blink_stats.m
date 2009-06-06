@@ -43,7 +43,7 @@ for n=1:length(sessions)
 
   art = getStructField(sess_events, 'artifactMS');
   if all(isnan(art))
-    warning('session %d events have no artifact info. Skipping...',sessions(n));
+    fprintf('Warning: session %d events have no artifact info. Skipping...\n',sessions(n));
     continue
   end
 
