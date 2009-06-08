@@ -1,4 +1,4 @@
-function pattern = patMeans(pattern, bins)
+function pattern = patMeans(pattern, bins, min_samp)
 %PATMEANS   Bin one or more dimensions of a pattern.
 %
 %  pattern = patMeans(pattern, bins)
@@ -36,12 +36,15 @@ function pattern = patMeans(pattern, bins)
 % input checks
 if ~exist('pattern','var')
   error('You must pass an array to be binned.')
-  elseif ~isnumeric(pattern)
+elseif ~isnumeric(pattern)
   error('pattern must be a numeric array.')
-  elseif ~exist('bins','var')
+elseif ~exist('bins','var')
   error('You must specify bins to use.')
-  elseif ~iscell(bins)
+elseif ~iscell(bins)
   error('bins must be a cell array.')
+end
+if ~exist('min_samp','var')
+  min_samp = [];
 end
 
 % a cell array that can be used to index the whole pattern
@@ -83,10 +86,17 @@ for i=1:length(bins)
 		bin_ind{i} = bins{i}{j};
 
 		% do the average along dimension i
-		avg = nanmean(pattern(bin_ind{:}),i);
-		if all(isnan(avg(:)))
-		  warning('eeg_ana:patBinAllNaNs', 'Bin %d of dimension %d contains all NaNs.', j, i)
-	  end
+		x = pattern(bin_ind{:});
+		if length(find(~isnan(x(:))))/numel(x) < min_samp
+		  % leave this bin as NaNs
+		  fprintf('rm %d,%d ', i,j)
+		  continue
+		end
+
+	  avg = nanmean(x,i);
+	  if all(isnan(avg(:)))
+	    warning('eeg_ana:patBinAllNaNs', 'Bin %d of dimension %d contains all NaNs.', j, i)
+    end
 	  
 	  % get reference for this bin after averaging
 		ind = ALL_CELL;
