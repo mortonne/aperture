@@ -126,7 +126,12 @@ switch test
    
   case 'RMAOV2'
    group = fix_regressors(group);
-   p = RMAOV2_mod([X group{1} group{2} group{3}], 0.05, 0);
+   Y = [X group{1} group{2} group{3}];
+   
+   p = RMAOV2_mod(Y, 0.05, 0);
+   
+   % remove the subject term
+   p = p(1:3);
    
    otherwise
    error('Unknown statistical test: %s.', test)
@@ -136,59 +141,6 @@ if length(statistic)~=length(p)
   error('length of statistic does not match length of p.')
 end
 
-function [new_group,good_labels] = fix_regressors(group)
-  %FIX_REGRESSORS   Standardize regressors.
-  %
-  %  group = fix_regressors(group)
-  %
-  %  Fix regressors so their labels are one-indexed 
-  %  and consecutive.
-  
-  % initialize the new set of regressors
-  new_group = cell(1,length(group));
-  good_labels = true(size(group{1}));
-  
-  % find undefined data points
-  for i=1:length(group)
-    if isnumeric(group{i})
-      % find data points that are not labeled for this factor
-      % (if not labeled, should contain NaNs)
-      good_labels(isnan(group{i})) = false;
-      
-      elseif iscell(group{i}) && all(cellfun(@ischar, group{i}))
-      % cell array of strings
-      % empty strings = bad
-      good_labels(cellfun('isempty', group{i})) = false;
-    end
-  end
-  
-  for i=1:length(group)
-    % use only the data points that are labeled for
-    % all factors
-    group{i} = group{i}(good_labels);
-    
-    % initialize the new labels as a numeric array
-    new_group{i} = NaN(1,length(group{i}));
-    
-    % get unique labels for this regressor
-    vals = unique(group{i});
-    for j=1:length(vals)
-      % get the indices for this label
-      if isnumeric(vals)
-        % numeric array
-        ind = group{i}==vals(j);
-      elseif iscell(vals) && all(cellfun(@ischar, group{2}))
-        % cell array of strings
-        ind = strcmp(group{i}, vals{j});
-      else
-        error('run_sig_test:regressor must be a numeric array or a cell array of strings.')
-      end
-      
-      % rewrite this label
-      new_group{i}(ind) = j;
-    end
-  end
-%endfunction
 
 function export_r(X,group,filename)
   % if the file already exists, delete and start fresh
