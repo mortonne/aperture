@@ -1,57 +1,76 @@
-function [pat,inds,events,evmod] = patFilt(pat,params,events)
+function [pat,inds] = patFilt(pat,params)
 %PATFILT   Filter the dimensions of a pat object.
-%   [PAT,INDS,EVENTS,EVMOD] = PATFILT(PAT,PARAMS,EVENTS) alters the
-%   the dimensions information contained in PAT, in preparation for
-%   filtering a pattern.  Options for what dimensions to filter and
-%   how are contained in the PARAMS struct.  EVENTS can optionally 
-%   be input to avoid having to reload it.
 %
-%   INDS gives a cell array of the indices required to reference 
-%   the pattern and carry out the filtering.
-%   
-%   EVENTS, an altered events struct, will also be output if the events
-%   dimension has been altered or it was part of the input.  EVMOD
-%   is true if the events dimension was altered, otherwise false.
+%  [pat, inds] = patFilt(pat, params)
 %
-%   Example:
-%    params = struct('eventFilter','strcmp(type,''WORD'')');
-%    [pat,inds] = patFilt(pat,params);
-%    pattern = load_pattern(pat);
-%    pattern = pattern(inds{:});
+%  INPUTS:
+%      pat:  a pattern object.
 %
-%   See also modify_pattern, patBins, patMeans.
+%   params:  structure specifying options for filtering the pattern.
+%            See below for options.
 %
+%  OUTPUTS:
+%      pat:  the modified pattern object.
+%
+%     inds:  cell array of the indices required to reference the
+%            pattern and carry out the filtering.
+%
+%  PARAMS:
+%   eventFilter - string to be input to filterStruct to filter events
+%   chanFilter  - string filter for channels
+%   timeFilter  - string filter for time
+%   freqFilter  - string filter for frequency
+%
+%  EXAMPLE:
+%   % filter the pattern object
+%   params = struct('eventFilter', 'strcmp(type,''WORD'')');
+%   [pat, inds] = patFilt(pat, params);
+%
+%   % filter the pattern matrix
+%   pattern = load_pattern(pat);
+%   pattern = pattern(inds{:});
+%
+%  See also modify_pattern, patBins, patMeans.
 
-params = structDefaults(params,  'eventFilter', '',  'chanFilter', '',  'chan_filter',[], 'timeFilter', '',  'freqFilter', '');
+% input checks
+if ~exist('pat','var') || ~isstruct(pat)
+  error('You must input a pat object.')
+end
+if ~exist('params','var')
+  params = struct;
+end
+if ~isfield(pat.dim.ev, 'modified')
+  pat.dim.ev.modified = false;
+end
+
+% default parameters
+params = structDefaults(params, ...
+                        'eventFilter', '', ...
+                        'chanFilter',  '',  ...
+                        'chan_filter', [],  ...
+                        'timeFilter',  '',  ...
+                        'freqFilter',  '');
 
 % initialize
-for i=1:4
-  inds{i} = ':';
-end
-evmod = 0;
+inds = repmat({':'},1,4);
 
-% start the averaging
-%fprintf('Binning pattern "%s"...', pat.name)
-
-% EVENTS
+% events
 if ~isempty(params.eventFilter)
-	if ~exist('events','var') || isempty(events)
-		load(pat.dim.ev.file);
-	end
+  % load
+  events = get_mat(pat.dim.ev);
 	
+	% filter
 	inds{1} = inStruct(events, params.eventFilter);
 	events = events(inds{1});
-	pat.dim.ev.len = length(events);
-	
-	evmod = 1;
+	pat.dim.ev = set_mat(pat.dim.ev, events);
 end
 
-% CHANNELS
+% channels
 % old way of filtering
 if ~isempty(params.chanFilter)
-  if isstr(params.chanFilter)
+  if ischar(params.chanFilter)
 	  inds{2} = inStruct(pat.dim.chan, params.chanFilter);
-	  else
+	else
 	  inds{2} = find(ismember([pat.dim.chan.number], params.chanFilter));
   end
 	pat.dim.chan = pat.dim.chan(inds{2});
@@ -66,18 +85,17 @@ if ~isempty(params.chan_filter)
   inds{2} = filter_struct(pat.dim.chan, filt_fcn, filt_input);
 end
 
-% TIME
+% time
 if ~isempty(params.timeFilter)
 	inds{3} = inStruct(pat.dim.time, params.timeFilter);
 	pat.dim.time = pat.dim.time(inds{3});
 end
 
-% FREQUENCY
+% frequency
 if ~isempty(params.freqFilter)
   inds{4} = inStruct(pat.dim.freq, params.freqFilter);
 	pat.dim.freq = pat.dim.freq(inds{4});
 end
-%fprintf('\n')
 
 % check the dimensions
 psize = patsize(pat.dim);
@@ -88,9 +106,5 @@ if any(~psize)
     [i,j,name] = read_dim_input(dim_number);
     msg = [msg sprintf('%s dimension filtered into oblivion.\n', name)];
   end
-	error(msg);
-end
-
-if ~exist('events','var')
-	events = struct;
+	error('eeg_ana:patFilt:EmptyPattern', msg);
 end
