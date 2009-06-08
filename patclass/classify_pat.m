@@ -1,61 +1,81 @@
-function [pat,eid] = classify_pat(pat, params, pcname, resDir)
+function pat = classify_pat(pat, params, pc_name, res_dir)
 %CLASSIFY_PAT   Run a pattern classifier on a pattern.
-%   PAT = CLASSIFY_PAT(PAT,PARAMS,PCNAME,RESDIR) runs a pattern
-%   classifier specified by options in the PARAMS struct on the
-%   pattern stored in PAT.  Results are stored in a "pc" object
-%   named PCNAME, and saved in RESDIR/patclass.
 %
-%   Params:
-%     'regressor'   REQUIRED - Specifies what to use as a regressor. 
-%                   Is input to make_event_bins to make the regressor
-%     'selector'    REQUIRED - Also input to make_event_bins; 
-%                   specifies the scale with which the leave-one-out 
-%                   scheme is applied
-%     'classifier'  Indicates the classifier to use
-%                   (default: 'classify'). See run_classifier for
-%                   available classifiers and options
-%     'scramble'    If true (default is false), the regressor will
-%                   be scrambled before classification
-%                   (for debugging purposes)
-%     'lock'        If true (default is false), pc.file will be
-%                   locked during processing
-%     'overwrite'   If true (default), existing files will be
-%                   overwritten
+%  pat = classify_pat(pat, params, pc_name, res_dir)
 %
-%   Example:
-%    params = struct('regressor','recalled', 'selector','list');
-%    pat = classify_pat(pat,params,'sme');
-%    
+%  INPUTS:
+%      pat:  a pattern object.
+%
+%   params:  structure with options for the classifier.  See below for
+%            options.
+%
+%  pc_name:  string identifier of the new pattern classification object.
+%
+%  res_dir:  directory where results will be saved.
+%
+%  OUTPUTS:
+%      pat:  modified pattern object with an added pc object.
+%
+%  PARAMS:
+%   regressor  - REQUIRED - input to make_event_bins; used to create the
+%                regressor for classification.
+%   selector   - REQUIRED - input to make_event_bins; used to create
+%                indices for cross-validation.
+%   classifier - string indicating the type of classifier to use.  See
+%                run_classifier for available classifiers and options.
+%                Default: 'classify'
+%   scramble   - boolean; if true, the regressor will be scrambled before
+%                classification.  Useful for debugging.  Default: false
+%   overwrite  - if true, existing pc files will be overwritten.
+%                Default: false
+%
+%  EXAMPLE:
+%   % classify based on subsequent memory
+%   params = [];
+%   params.regressor = 'recalled';
+%
+%   % cross-validate at the level of trials
+%   params.selector = 'trial';
+%
+%   % run, and save results in a pc object name "sme"
+%   pat = classify_pat(pat, params, 'sme');
 
-if ~exist('resDir', 'var')
-	resDir = fileparts(fileparts(pat.file));
-end
-if ~exist('pcname', 'var')
-	pcname = 'patclass';
-end
-if ~isfield(params, 'regressor')
+% input checks
+if ~exist('pat','var') || ~isstruct(pat)
+  error('You must pass a pattern object.')
+elseif ~exist('params','var') || ~isstruct(params)
+  error('You must pass a params structure.')
+elseif ~isfield(params, 'regressor')
 	error('You must specify a regressor in params.')
-end
-if ~isfield(params, 'selector')
+elseif ~isfield(params, 'selector')
 	error('You must specify a selector in params.')
 end
+if ~exist('pc_name', 'var')
+	pc_name = 'patclass';
+end
+if ~exist('res_dir', 'var')
+  res_dir = get_pat_dir(pat, 'patclass');
+end
 
-params = structDefaults(params, 'classifier','classify', 'nComp',[], 'scramble',0, 'lock',0, 'overwrite',1, 'loadSingles',1, 'select_test',1,'patthresh',[]);
-
-status = 0;
+params = structDefaults(params, ...
+                        'classifier', 'classify', ...
+                        'scramble',   0,          ...
+                        'lock',       0,          ...
+                        'overwrite',  1,          ...
+                        'select_test',1,          ...
+                        'patthresh',  []);
 
 % set where the results will be saved
-filename = sprintf('%s_%s_%s.mat', pat.name, pcname, pat.source);
-pcfile = fullfile(resDir, 'patclass', filename);
+filename = sprintf('%s_%s_%s.mat', pat.name, pc_name, pat.source);
+pc_file = fullfile(res_dir, filename);
 
-% check input files and prepare output files
-eid = prepFiles(pat.file, pcfile, params);
-if eid
+% check the output file
+if ~params.overwrite && exist(pc_file, 'file')
   return
 end
 
 % initialize the pc object
-pc = init_pc(pcname, pcfile, params);
+pc = init_pc(pc_name, pc_file, params);
 
 % load the pattern and corresponding events
 pattern = load_pattern(pat, params);
@@ -83,7 +103,7 @@ end
 
 % deal with any nans in the pattern (variables may be thrown out)
 if ~isempty(params.patthresh)
-  pattern(abs(pattern)>params.patthresh)=NaN;
+  pattern(abs(pattern)>params.patthresh) = NaN;
 end
 pattern = remove_nans(pattern);
 
@@ -94,14 +114,14 @@ else
 end
 
 fprintf('running %s classifier...', params.classifier)
-pcorr = NaN(1,length(sel.vals));
-class = NaN(length(sel.vals),nTestEv);
-posterior = NaN(length(sel.vals),nTestEv,length(reg.vals));
+pcorr = NaN(1, length(sel.vals));
+class = NaN(length(sel.vals), nTestEv);
+posterior = NaN(length(sel.vals), nTestEv, length(reg.vals));
 fprintf('\nPercent Correct:\n')
 for j=1:length(sel.vals)
   if iscell(sel.vals)
     fprintf('%s:\t', sel.vals{j})
-    match = strcmp(sel.vec,sel.vals{j});
+    match = strcmp(sel.vec, sel.vals{j});
   else
     fprintf('%d:\t', sel.vals(j))
     match = sel.vec==sel.vals(j);
@@ -118,12 +138,12 @@ for j=1:length(sel.vals)
   end
 
   % get the training and testing patterns
-  trainpat = pattern(find(trainsel),:);
-  testpat = pattern(find(testsel),:);
+  trainpat = pattern(trainsel,:,:,:);
+  testpat = pattern(testsel,:,:,:);
 
   % get the corresponding regressors for train and test
-  trainreg = reg.vec(find(trainsel));
-  testreg(j,:) = reg.vec(find(testsel));
+  trainreg = reg.vec(trainsel);
+  testreg(j,:) = reg.vec(testsel);
 
   try
     % run classification algorithms
@@ -143,4 +163,4 @@ save(pc.file, 'class', 'pcorr', 'meanpcorr', 'posterior', 'testreg');
 closeFile(pc.file);
 
 % add the pc object to pat
-pat = setobj(pat,'pc',pc);
+pat = setobj(pat, 'pc', pc);
