@@ -17,8 +17,8 @@ function pattern = load_pattern(pat,params)
 %  pattern:  an [events X channels X time X frequency] matrix.
 %
 %  PARAMS:
-%   'loadSingles' If true (default is false), the pattern will
-%                 be loaded as an array of singles.
+%   patnum - specifies a "slice" of the pattern to load. 
+%   pat.file{params.patnum} will be loaded.
 %
 %  NOTES: This function no longer load events. Use load_events(pat.dim.ev)
 %  to load the events corresponding to the pattern.
@@ -28,7 +28,7 @@ function pattern = load_pattern(pat,params)
 % input checks
 if ~exist('pat','var')
   error('You must pass a pat object.')
-  elseif isempty(pat)
+elseif isempty(pat)
   error('The input pat object is empty.')
 end
 if ~exist('params', 'var')
@@ -36,18 +36,17 @@ if ~exist('params', 'var')
 end
 
 % set default parameters
-params = structDefaults(params, 'loadSingles',0, 'patnum', []);
+params = structDefaults(params, 'patnum', []);
 
 % load the pattern
 if iscell(pat.file) % pattern is split
   if ~isempty(params.patnum)
     % load just one slice of the pattern
     load(pat.file{params.patnum});
-  
   elseif isfield(pat.dim,'splitdim') && ~isempty(pat.dim.splitdim)
     % concatenate along the split dimension to reform the pattern
     pattern = NaN(patsize(pat.dim));
-    allDim = {':',':',':',':'};
+    allDim = repmat({':'}, 1, ndims(pattern));
     for i=1:length(pat.file)
       % load this slice
       s = load(pat.file{i});
@@ -56,14 +55,12 @@ if iscell(pat.file) % pattern is split
       ind = allDim;
       ind{pat.dim.splitdim} = i;
       pattern(ind{:}) = s.pattern;
-    end
-    
+    end    
   else
     % if pat.file is a cell array and there's no information about 
     % which dimension to concatenate along, give up
     error('pat.dim must have a ''splitdim'' field.')
   end
-
 elseif isfield(pat, 'mat') && ~isempty(pat.mat)
   % the pattern is already in the workspace; just return it
   pattern = pat.mat;
@@ -75,12 +72,7 @@ end
 psize = patsize(pat.dim);
 if isempty(pattern)
   error('pattern %s is empty.', pat.name)
-elseif any(psize(1:ndims(pattern))~=size(pattern))
+elseif isempty(params.patnum) && any(psize(1:ndims(pattern))~=size(pattern))
   warning('eeg_ana:load_pattern:badPatSize', ...
           'size of pattern %s does not match the dim structure.', pat.name)
-end
-
-% change to lower precision if desired
-if params.loadSingles
-	pattern = single(pattern);
 end

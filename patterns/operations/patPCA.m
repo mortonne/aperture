@@ -18,10 +18,7 @@ end
 
 params = structDefaults(params,  'nComp', 150,  'loadSingles', 1);
 
-if ~exist('pattern', 'var')
-  % load the pattern from disk
-  pattern = load_pattern(pat1, params);
-end
+pattern = get_mat(pat1);
 
 % flatten all dimensions after events into one vector
 patsize = size(pattern);
@@ -48,3 +45,5 @@ for c=1:size(pattern,2)
 end
 pat2.dim.time = init_time();
 pat2.dim.freq = init_freq();
+
+pat2 = set_mat(pat2, pattern);
