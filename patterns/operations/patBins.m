@@ -1,42 +1,68 @@
-function [pat2,bins,events,evmod] = patBins(pat1,params,events)
+function [pat, bins] = patBins(pat, params)
 %PATBINS   Apply bins to dimensions of a pat object.
-%   [PAT2,BINS,EVENTS,EVMOD] = PATBINS(PAT1,PARAMS,EVENTS) alters the 
-%   dimensions information contained in PAT1, in preparation for binning 
-%   a pattern.  Options for what dimensions to bin and how are contained 
-%   in the PARAMS struct.  EVENTS can optionally be input to avoid having
-%   to reload it.
 %
-%   PAT2 is the altered pat object. BINS contains information
-%   that can be passed into PATMEANS to carry out binning of a pattern.
-%   EVENTS, an altered events struct, will also be output if the events
-%   dimension has been altered or it was part of the input.  EVMOD
-%   is true if the events dimension was altered, otherwise false.
+%  [pat, bins] = patBins(pat, params)
 %
-%   Params:
-%     'field'           Specifies event bins. Each cell is input to
-%                       make_event_bins
-%     'eventbinlabels'  Cell array of labels corresponding to each event bin
-%     'chanbins'        Specifies channel bins. Each cell can be a vector
-%                       of channel numbers, a cell array of regions, or a
-%                       string to be passed into filterStruct
-%     'chanbinlabels'   Cell array of labels corresponding to each channel
-%                       group
-%     'MSbins'          Specifies time bins. Should be a nbinsX2 matrix,
-%                       with MSbins(i,:) giving the range of MS values for 
-%                       bin i
-%     'MSbinlabels'     Cell array of labels corresponding to each time bin
-%     'freqbins'        Specifies frequency bins. Should be a nbinsX2 matrix,
-%                       with freqbins(i,:) giving the range of frequencies
-%                       for bin i
-%     'freqbinlabels'   Cell array of labels corresponding to each frequency
-%                       bin
+%  Prepares a pattern for binning along one or more dimensions. The dim
+%  field is updated, but the pattern is not modified. Use patMeans to
+%  carry out the averaging within each bin.
 %
-%   See also patMeans, modify_pattern, patFilt.
+%  INPUTS:
+%      pat:  a pattern object.
 %
+%   params:  structure specifying options for binning the pattern.
+%            See below for options.
+%
+%  OUTPUTS:
+%      pat:  the modified pattern object.
+%
+%     bins:  a cell array with one cell for each dimension of the pattern.
+%            Each cell contains a cell array with one cell for each bin,
+%            which contains the indices in the pattern that correspond to
+%            the bin.
+%
+%  PARAMS:
+%   eventbins      - cell array specifying event bins. Each cell is input
+%                    to make_event_bins. For backwards compatibility, this
+%                    parameter can also be called 'field'
+%   eventbinlabels - cell array of strings giving a label for each event
+%                    bin
+%   chanbins       - cell array specifying channel bins. Each cell can be
+%                    a vector of channel numbers, a cell array of regions,
+%                    or a string to be passed into filterStruct
+%   chanbinlabels  - cell array of string labels for each channel bin
+%   MSbins         - [nbins X 2] array specifying time bins. MSbins(i,:)
+%                    gives the range of millisecond values for bin i
+%   MSbinlabels    - cell array of string labels for each time bin
+%   freqbins       - [nbins X 2] array specifying frequency bins. 
+%                    freqbins(i,:) gives the range of frequencies for bin i
+%   freqbinlabels  - cell array of string labels for each frequency bin
+%
+%  See also make_bins, patMeans, modify_pattern, patFilt.
 
+% input checks
+if ~exist('pat','var') || ~isstruct(pat)
+  error('You must pass a pattern object.')
+end
+if ~exist('params','var')
+  params = struct;
+elseif ~isstruct(params)
+  error('params must be a structure.')
+end
+if ~isfield(pat.dim.ev, 'modified')
+  pat.dim.ev.modified = false;
+end
+
+% backwards compatibility
+if isfield(params, 'field')
+  params.eventbins = params.field;
+  params = rmfield(params, 'field');
+end
+
+% default parameters
 params = structDefaults(params, ...
-                        'field',          '',  ...
-                        'eventbinlabels', '',  ...
+                        'eventbins',      [],  ...
+                        'eventbinlabels', {},  ...
                         'chanbins',       [],  ...
                         'chanbinlabels',  {},  ...
                         'MSbins',         [],  ...
@@ -45,60 +71,51 @@ params = structDefaults(params, ...
                         'freqbinlabels',  {});
 
 % initialize
-pat2 = pat1;
 bins = cell(1,4);
-evmod = 0;
 
-% EVENTS
-if ~isempty(params.field)
+% events
+if ~isempty(params.eventbins)
   % load events
-	if ~exist('events','var') || isempty(events)
-		pat1.dim.ev.mat = load_events(pat1.dim.ev);
-		else
-		pat1.dim.ev.mat = events;
-	end
-  % bin events using a field from the events struct
-  [pat2.dim.ev, bins{1}] = event_bins(pat1.dim.ev, params.field, params.eventbinlabels);
-  events = pat2.dim.ev.mat;
-	evmod = 1;
+  ev = move_obj_to_workspace(pat.dim.ev);
+  [pat.dim.ev, bins{1}] = event_bins(ev, params.eventbins, ...
+                                     params.eventbinlabels);
 end
 
-% CHANNELS
+% channels
 if ~isempty(params.chanbins)
-  % bin channels by number or region
-  [pat2.dim.chan, bins{2}] = chanBins(pat1.dim.chan, params);
+  [pat.dim.chan, bins{2}] = chan_bins(pat.dim.chan, ...
+                                      params.chanbins, ...
+                                      params.chanbinlabels);
 end
 
-% TIME
+% time
 if ~isempty(params.MSbins)
-  % bin time using MS windows
-  [pat2.dim.time, bins{3}] = timeBins(pat1.dim.time, params);
+  [pat.dim.time, bins{3}] = time_bins(pat.dim.time, ...
+                                      params.MSbins, ...
+                                      params.MSbinlabels);
 end
 
-% FREQUENCY
+% frequency
 if ~isempty(params.freqbins)
-  % bin frequency using freq windows
-  [pat2.dim.freq, bins{4}] = freqBins(pat1.dim.freq, params);
+  [pat.dim.freq, bins{4}] = freq_bins(pat.dim.freq, ...
+                                      params.freqbins, ...
+                                      params.freqbinlabels);
 end
 
 % check the dimensions
-psize = patsize(pat2.dim);
+psize = patsize(pat.dim);
 if any(~psize)
 	error('A dimension of pattern %s was binned into oblivion.', pat.name);
 end
 
-if ~exist('events','var')
-	events = struct;
-end
 
-
-function [ev2, bins] = event_bins(ev1,bin_defs,labels)
+function [ev, bins] = event_bins(ev, bin_defs, labels)
   %EVENT_BINS   Apply bins to an events dimension.
   %
-  %  [ev2, bins] = event_bins(ev1, bin_defs, labels)
+  %  [ev, bins] = event_bins(ev, bin_defs, labels)
   %
   %  INPUTS:
-  %       ev1:  an ev object.
+  %        ev:  an ev object.
   %
   %  bin_defs:  a cell array with one cell per bin. See make_event_bins
   %             for possible values of each cell.
@@ -106,17 +123,17 @@ function [ev2, bins] = event_bins(ev1,bin_defs,labels)
   %    labels:  a cell array of strings indicating a label for each bin.
   %
   %  OUTPUTS:
-  %       ev2:  a modified ev object. The events structure is also
-  %             modified and stored in ev2.mat. There will be one event
+  %        ev:  a modified ev object. The events structure is also
+  %             modified and stored in ev.mat. There will be one event
   %             for each bin.
   %
   %      bins:  a cell array with one cell per bin, where each cell
   %             contains indices for the events in that bin.
 
   % input checks
-  if ~exist('ev1','var')
+  if ~exist('ev','var')
     error('You must pass an ev object.')
-    elseif ~exist('bin_defs','var')
+  elseif ~exist('bin_defs','var')
     error('You must define the bins.')
   end
   if ~exist('labels','var')
@@ -124,42 +141,34 @@ function [ev2, bins] = event_bins(ev1,bin_defs,labels)
   end
 
   % load the events
-  events1 = load_events(ev1);
+  events1 = get_mat(ev);
   fnames = fieldnames(events1);
   
   % generate a new events field, one value per bin
   vec = make_event_bins(events1, bin_defs);
-  
-  if iscell(vec)
-    vec = vec(~cellfun(@isempty, vec));
-  elseif isnumeric(vec)
-    vec = vec(~isnan(vec));
+  if ~isnumeric(vec) || iscellstr(vec)
+    error('The labels returned by make_event_bins have an invalid type.')
   end
+  
+  % get values that correspond to bins; NaNs are not included anywhere
   vals = unique(vec);
+  if isnumeric(vals)
+    vals = vals(~isnan(vals));
+  end
 
-  % initialize the new ev object
-  ev2 = ev1;
-  ev2.len = length(vals); % one event for each unique value
-
+  % set the labels field for the new events
+  if isempty(labels)
+    if iscellstr(vals)
+      labels = vals;
+    else
+      labels = num2cell(vals);
+    end
+  end
+  events2 = struct('label', labels);
+  
   for i=1:length(vals)
-    % label this event
-    if ~isempty(labels)
-      label = labels{i};
-      elseif iscell(vals)
-      label = vals{i};
-      else
-      label = vals(i);
-    end
-    events2(i).label = label;
-    
     % get indices for this bin
-    if iscell(vals)
-      % assume values are strings
-      bins{i} = find(strcmp(vec, vals{i}));
-      else
-      % assume values are numeric
-      bins{i} = find(vec==vals(i));
-    end
+    bins{i} = find(ismember(vec, vals(i)));
     
     % salvage fields that have the same value for this whole bin
     for j=1:length(fnames)
@@ -167,194 +176,220 @@ function [ev2, bins] = event_bins(ev1,bin_defs,labels)
       if length(u_field)==1
         if iscell(u_field)
           events2(i).(fnames{j}) = u_field{1};
-          else
+        else
           events2(i).(fnames{j}) = u_field;
         end
       end
     end  
   end
-  
+
   % save the events to the new ev object
-  ev2.mat = events2;
+  ev = set_mat(ev, events2);
 %endfunction
 
-function [chan2, binc] = chanBins(chan1, params)
-%CHANBINS   Apply binning to a channel dimension.
-%   [CHAN2] = CHANBINS(CHAN1,PARAMS) bins the channels dimension
-%   whose information is stored in CHAN1 using options in PARAMS,
-%   and outputs a new chan struct CHAN2.
-%
-%   [CHAN2,BINC] = CHANBINS(CHAN1,PARAMS) also outputs BINC,
-%   a cell array of indices of the original chan struct for
-%   each channel group in CHAN2.
-%
-%   OPTIONAL PARAMS:
-%      CHANBINS - a cell array indicating how to make each
-%                 channel group; each cell can be a vector
-%                 of channel numbers, a cell array of regions,
-%                 or a string to be passed into FILTERSTRUCT.
-%      CHANBINLABELS - a cell array containing names for each
-%                      channel group
-%      
+function [chan, bins] = chan_bins(chan, bin_defs, labels)
+  %CHAN_BINS   Apply binning to a channel dimension.
+  %
+  %  [chan, bins] = chan_bins(chan, bin_defs, labels)
+  %
+  %  INPUTS:
+  %      chan:  a channels structure.
+  %
+  %  bin_defs:  a cell array, where each cell defines one bin.
+  %             Each cell may contain:
+  %              [c1 c2 c2 ...] - an array of channel numbers
+  %              {'r1' 'r2' 'r3' ...} - a cell array of region labels
+  %              'filter'       - a string to be input to filterStruct
+  %
+  %    labels:  a cell array of strings giving a label for each
+  %             bin.  If not specified, and each bin contains a unique
+  %             region, region labels will be used as labels for each
+  %             bin.  Otherwise, channel numbers will be used as labels.
+  %
+  %  OUTPUTS:
+  %     chan:  the modified channels structure.
+  %
+  %     bins:  cell array where each cell contains the indices for
+  %            the corresponding bin in the original channels dimension.
 
-if ~exist('params', 'var')
-	params = struct();
-end
+  % input checks
+  if ~exist('chan','var') || ~isstruct(chan)
+    error('You must pass a channels structure to bin.')
+  elseif ~exist('bin_defs','var')
+    error('You must pass bin definitions.')
+  end
+  if ~exist('labels','var')
+    labels = {};
+  elseif ~iscellstr(labels)
+    error('labels must be a cell array of strings.')
+  elseif ~isempty(labels) && length(labels)~=length(bin_defs)
+    error('labels must be the same length as bin_defs.')
+  end
 
-params = structDefaults(params, 'chanbins', {},  'chanbinlabels', {});
+  % get numbers and regions from the old channels struct
+  c = bin_defs;
+  numbers = [chan.number];
+  regions = {chan.region};
+  if length(numbers)>length(chan) || length(regions)>length(chan)
+    error('Some channels have multiple channel numbers or regions associated with them. Perhaps you have already binned the channels dimension once.')
+  end
 
-if isempty(params.chanbins)
-	% no binning will occur
-	for c=1:length(chan1)
-		binc{c} = c;
-	end
-	chan2 = chan1;
-	return
-end
-
-% define the new channel bins
-for c=1:length(params.chanbins)
-
-	if ~iscell(params.chanbins)
-		% each bin contains just one channel
-		binc{c} = params.chanbins(c);
-
-		elseif isnumeric(params.chanbins{c})
-		% this bin contains multiple channel numbers
-		binc{c} = find(inStruct(chan1, 'ismember(number, varargin{1})', params.chanbins{c}));
-
-		elseif iscell(params.chanbins{c})
-		% this bin contains multiple regions
-		regions = getStructField(chan1, 'region');
-		binc{c} = find(inStruct(chan1, 'ismember(region, varargin{1})', params.chanbins{c}));
-
-		elseif isstr(params.chanbins{c})
-		% create the bin using a chanfilter string
-		binc{c} = find(inStruct(chan1, 'strcmp(region, varargin{1})', params.chanbins{c}));
-	end
-
-	% make the new chan struct
-	theseChans = chan1(binc{c});
-	chan2(c).number = getStructField(theseChans, 'number');
-	chan2(c).region = getStructField(theseChans, 'region');
-end
-
-% update the channel labels
-for c=1:length(chan2)
-	if ~isempty(params.chanbinlabels)
-		% use user-specified labels
-		chan2(c).label = params.chanbinlabels{c};
-
-		elseif length(unique({chan2.region}))==length(chan2)
-		% if each bin has a unique region, we can use that
-		chan2(c).label = chan2(c).region;
-
-		else
-		% just use the channel number(s)
-		chan2(c).label = num2str(chan2(c).number);
-	end
-end
-
-
-function [time2, bint] = timeBins(time1, params)
-%[time, bint] = function(timeBins, params)
-
-if ~exist('time1', 'var')
-  time1 = [];
-end
-if ~exist('params', 'var')
-  params = struct();
-end
-
-params = structDefaults(params, 'MSbins', {},  'MSbinlabels', {});
-
-% make the new time bins
-if ~isempty(params.MSbins)
-
-  % get the current list of times
-  avgtime = [time1.avg];
-  
-  if length(params.MSbins)==1
-		stepSize = params.MSbins;
-    params.MSbins = make_bins(stepSize,avgtime(1),avgtime(end));
+  % backwards compatibility
+  if isnumeric(c)
+    c = num2cell(c);
   end
   
-  for t=1:size(params.MSbins, 1)
-    % define this bin
-    bint{t} = find(avgtime>=params.MSbins(t,1) & avgtime<params.MSbins(t,2));
-
-    % get ms value for each sample in the new time bin
-    time2(t).MSvals = avgtime(bint{t});
-    time2(t).avg = mean(params.MSbins(t,:));
-    
-    % update the time bin label
-    if ~isempty(params.MSbinlabels)
-      time2(t).label = params.MSbinlabels{t};
-    else
-      time2(t).label = sprintf('%d to %d ms', fix(time2(t).MSvals(1)), fix(time2(t).MSvals(end)));
+  % define the new channel bins
+  for i=1:length(c)
+    if isnumeric(c{i})
+      % channel number(s)
+      bins{i} = find(ismember(numbers, c{i}));
+    elseif iscellstr(c{i})
+      % region(s)
+      bins{i} = find(ismember(regions, c{i}));
+    elseif ischar(c{i})
+      % filter string
+      bins{i} = find(inStruct(chan, c{i}));
     end
+    bin_numbers{i} = numbers(bins{i});
+    uniq_regions = unique(regions(bins{i}));
+    bin_regions{i} = [uniq_regions{:}];
   end
-	
-elseif ~isempty(time1) % just copy info from time1
 
-  % copy the existing struct
-  time2 = time1;
-  
-  % define the bins
-  for t=1:length(time2)
-    bint{t} = t;
+  % initialize the new channels structure
+  chan = struct('number', bin_numbers, 'region', bin_regions);
+
+  % update the channel labels
+  if ~isempty(labels)
+    [chan.label] = labels{:};
+  elseif length(unique({chan.region}))==length(chan)
+    % each bin has a unique region
+    [chan.label] = chan.region;
+  else
+    % just use the channel numbers
+    labels = cellfun(@num2str, {chan.number}, 'UniformOutput', false);
+    [chan.label] = labels{:};
   end
-  
-else % no time info; can't create the struct or bin it
-  time2 = init_time();
-  bint = {};
-end
+%endfunction
 
+function [time, bins] = time_bins(time, bin_defs, labels)
+  %TIME_BINS   Apply binning to a time dimension.
+  %
+  %  [time, bins] = time_bins(time, bin_defs, labels)
+  %
+  %  INPUTS:
+  %      time:  a time structure.
+  %
+  %  bin_defs:  
+  %
+  %    labels:  a cell array of strings for each bin.
+  %
+  %  OUTPUTS:
+  %      time:  a modified time structure.
+  %
+  %      bins:  a cell array where each cell contains the indices for
+  %             that bin.
 
-function [freq2, binf] = freqBins(freq1, params)
-%[freq2, binf] = freqBins(freq1, params)
+  % input checks
+  if ~exist('time','var') || ~isstruct(time)
+    error('You must pass a time structure to bin.')
+  elseif ~exist('bin_defs','var')
+    error('You must pass bin definitions.')
+  end
+  if ~exist('labels','var')
+    labels = {};
+  elseif ~iscellstr(labels)
+    error('labels must be a cell array of strings.')
+  elseif ~isempty(labels) && length(labels)~=length(bin_defs)
+    error('labels must be the same length as bin_defs.')
+  end
 
-if ~exist('freq1', 'var')
-  freq1 = [];
-end
-if ~exist('params', 'var')
-  params = struct();
-end
-
-params = structDefaults(params, 'freqbins', {},  'freqbinlabels', {});
-
-% make the new freq bins
-if ~isempty(params.freqbins)
-  
-  % get the current list of frequencies
-  avgfreq = [freq1.avg];
-  
-  for f=1:length(params.freqbins)
-    % define this bin
-    binf{f} = find(avgfreq>=params.freqbins(f,1) & avgfreq<params.freqbins(f,2));
+  avgs = [time.avg];
+  for i=1:size(bin_defs,1)
+    % find the time bins that fall in this range
+    bin_range = bin_defs(i,:);
+    bins{i} = find(avgs >= bin_range(1) & ...
+                   avgs < bin_range(2));
     
-    freq2(f).vals = avgfreq(binf{f});
-    freq2(f).avg = mean(freq2(f).vals);
-    
-    % update the labels
-    if ~isempty(params.freqbinlabels)
-      freq2(f).label = params.freqbinlabels{f};
+    % save the original start and end samples from this bin
+    if ~isempty(bins{i})
+      start_val = time(bins{i}(1)).MSvals(1);
+      end_val = time(bins{i}(end)).MSvals(end);
+      bin_vals{i} = [start_val end_val];
     else
-      freq2(f).label = sprintf('%d to %d Hz', freq2(f).vals(1), freq2(f).vals(end));
+      bin_vals{i} = NaN(1,2);
     end
+    bin_avgs{i} = mean(bin_vals{i});
   end
-  
-elseif ~isempty(freq1)
-  
-  % copy the existing struct
-  freq2 = freq1;
-  
-  % define the bins
-  for f=1:length(freq2)
-    binf{f} = f;
+
+  % make the new structure
+  time = struct('avg', bin_avgs, 'MSvals', bin_vals);
+
+  % update the labels
+  if isempty(labels)
+    f = @(x)sprintf('%d to %d ms', x(1), x(end));
+    labels = cellfun(f, {time.MSvals}, 'UniformOutput', false);
   end
-  
-else
-  freq2 = init_freq();
-  binf = {};
-end
+  [time.label] = labels{:};
+%endfunction
+
+function [freq, bins] = freq_bins(freq, bin_defs, labels)
+  %FREQ_BINS   Apply binning to a frequency dimension.
+  %
+  %  [freq, bins] = freq_bins(freq, bin_defs, labels)
+  %
+  %  INPUTS:
+  %      freq:  a frequency structure.
+  %
+  %  bin_defs:  
+  %
+  %    labels:  a cell array of strings for each bin.
+  %
+  %  OUTPUTS:
+  %      freq:  a modified frequency structure.
+  %
+  %      bins:  a cell array where each cell contains the indices for
+  %             that bin.
+
+  % input checks
+  if ~exist('freq','var') || ~isstruct(freq)
+    error('You must pass a freq structure to bin.')
+  elseif ~exist('bin_defs','var')
+    error('You must pass bin definitions.')
+  end
+  if ~exist('labels','var')
+    labels = {};
+  elseif ~iscellstr(labels)
+    error('labels must be a cell array of strings.')
+  elseif ~isempty(labels) && length(labels)~=length(bin_defs)
+    error('labels must be the same length as bin_defs.')
+  end
+
+  avgs = [freq.avg];
+  for i=1:size(bin_defs,1)
+    % find the freq bins that fall in this range
+    bin_range = bin_defs(i,:);
+    bins{i} = find(avgs >= bin_range(1) & ...
+                   avgs < bin_range(2));
+    
+    % save the original start and end samples from this bin
+    if ~isempty(bins{i})
+      start_val = freq(bins{i}(1)).vals(1);
+      end_val = freq(bins{i}(end)).vals(end);
+      bin_vals{i} = [start_val end_val];
+    else
+      bin_vals{i} = NaN(1,2);
+    end
+    bin_avgs{i} = mean(bin_vals{i});
+  end
+
+  % make the new structure
+  freq = struct('avg', bin_avgs, 'vals', bin_vals);
+
+  % update the labels
+  if isempty(labels)
+    f = @(x)sprintf('%d to %d Hz', round(x(1)), round(x(end)));
+    labels = cellfun(f, {freq.vals}, 'UniformOutput', false);
+  end
+  [freq.label] = labels{:};
+%endfunction
