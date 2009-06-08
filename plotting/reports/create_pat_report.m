@@ -71,7 +71,8 @@ for i=1:length(fig_names)
     tot_cols = size(fig_files,2);
     ind = tot_cols-cols_added+1:tot_cols;
     header(ind+1) = fig_labels(ind);
-  elseif length(find(size(files)>1))==2
+  %elseif length(find(size(files)>1))==2
+  elseif size(files,2)>1
     % the second dimension is non-singleton
     % blank out the header for the first column
     header{1} = '';
@@ -92,6 +93,12 @@ row_labels = get_dim_labels(pat.dim, dim_name);
 % create the table
 table = create_report(fig_files, row_labels);
 
+% check our outputs
+if length(row_labels)~=size(table,1)
+  error('row_labels does not match the number of rows in table.')
+elseif length(header)~=size(table,2)
+  error('header does not match the number of columns in table.')
+end
 
 function [y,dim_order] = fix_dim(x,dim1,n_dims)
   %FIX_DIM   Put a specified dimension first, then non-singleton,
