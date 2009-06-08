@@ -40,8 +40,9 @@ end
 % set default parameters
 params = structDefaults(params, ...
                         'time_units',       'ms',     ...
-                        'volt_units',       'uV',     ...
+                        'volt_units',       '\muV',   ...
                         'colors',           {},       ...
+                        'x_lim',            [],       ...
                         'y_lim',            [],       ...
                         'mark',             [],       ...
                         'fill_color',       [.8 .8 .8]);
@@ -55,6 +56,13 @@ if ~isempty(time)
 else
   x = 1:size(data,2);
   xlabel('Time (samples)')
+end
+
+% set the x-limits
+if ~isempty(params.x_lim)
+  x_lim = params.x_lim;
+else
+  x_lim = [x(1) x(end)];
 end
 
 % y-axis
@@ -93,9 +101,9 @@ if ~isempty(params.colors)
   end
 end
 
-% set y-limits
+% set limits
 set(gca, 'YLimMode','manual')
-set(gca, 'YLim', y_lim)
+set(gca, 'XLim',x_lim, 'YLim',y_lim)
 
 % plot axes
 plot(get(gca,'XLim'), [0 0], '--k');
