@@ -17,33 +17,49 @@ function pattern = sessVoltage(pat,events,base_events,bins)
 %   See also create_pattern, sessPower.
 %
 
-% set defaults for pattern creation
+% default parameters
 params = structDefaults(pat.params, ...
-                        'relativeMS',     [],      ...
-                        'baseOffsetMS',   -200,    ...
-                        'baseDurationMS', 100,     ...
-                        'filttype',       'stop',  ...
-                        'filtfreq',       [58 62], ...
-                        'filtorder',      4,       ...
-                        'bufferMS',       1000,    ...
-                        'kthresh',        5,       ...
-                        'ztransform',     1,       ...
-                        'artWindow',      [-Inf Inf]);
-
-if ~isfield(params,'baseRelativeMS')
+                'evname', 'events',          ...
+                'replace_eegfile', {},       ...
+                'eventFilter',     '',       ...
+                'kthresh',         5,        ...
+                'chanFilter',      '',       ...
+                'resampledRate',   500,      ...
+                'offsetMS',        -200,     ...
+                'durationMS',      2200,     ...
+                'relativeMS',      [-200 0], ...
+                'filttype',        'stop',   ...
+                'filtfreq',        [58 62],  ...
+                'filtorder',       4,        ...
+                'bufferMS',        1000,     ...
+                'ztransform',      false,    ...
+                'baseOffsetMS',    -200,     ...
+                'baseDurationMS',  200,      ...
+                'lock',            false,    ...
+                'overwrite',       false,    ...
+                'updateOnly',      false);
+if ~isfield(params, 'baseEventFilter')
+  params.baseEventFilter = params.eventFilter;
+end
+if ~isfield(params, 'baseRelativeMS')
   params.baseRelativeMS = params.relativeMS;
 end
 
+fprintf('Parameters are:\n\n')
+disp(params);
+
+%{
 % get time bins in MS for each element of time dim for later artifact marking
 timebins = make_bins(1000/params.resampledRate,params.offsetMS,params.offsetMS+params.durationMS);
+%}
 
 % initialize the pattern for this session
 pattern = NaN(length(events), length(params.channels), length(pat.dim.time));
 
 % load bad channel info for these events
-if params.excludeBadChans
-  [bad_chans, event_ind] = get_bad_chans({events.eegfile});
-end
+%if params.excludeBadChans
+%  [bad_chans, event_ind] = get_bad_chans({events.eegfile});
+%end
 
 fprintf('Channels: ')
 for c=1:length(params.channels)
@@ -62,19 +78,13 @@ for c=1:length(params.channels)
 		                   params.resampledRate, ...
 		                   params.baseRelativeMS);
 
+    %{
 		if ~isempty(params.kthresh)
 			k = kurtosis(base_eeg,1,2);
 			base_eeg = base_eeg(k<=params.kthresh,:);
 		end
-
-		%{
-		% old way:
-		% if multiple samples given, use the first
-		base_eeg_vec = base_eeg(:,1);
-		base_mean = nanmean(base_eeg_vec);
-		base_std = nanstd(base_eeg_vec);
 		%}
-		
+
 		% new way: get mean and std dev across events for each sample,
 		% then average across samples
 		base_mean = nanmean(nanmean(base_eeg,1));
@@ -94,6 +104,7 @@ for c=1:length(params.channels)
 		                           params.resampledRate, ...
 		                           params.relativeMS));
 
+    %{
 		% check kurtosis for this event, add info to boolean mask for later
 		if ~isempty(params.kthresh)
 			k = kurtosis(this_eeg);
@@ -101,12 +112,14 @@ for c=1:length(params.channels)
 			  this_eeg(:) = NaN;
 		  end
 		end
+		%}
 
 		% normalize across sessions
 		if params.ztransform
 			this_eeg = (this_eeg - base_mean)/base_std;
 		end
 		
+		%{
 		if ~isempty(params.artWindow)
 		  % remove blink artifacts
 		  art = markArtifacts(events(e), timebins, params.artWindow);
@@ -120,6 +133,7 @@ for c=1:length(params.channels)
 		    this_eeg(:) = NaN;
 	    end
 	  end
+	  %}
 		
 		% add this event/channel to the pattern
 		pattern(e,c,:) = patMeans(this_eeg(:), bins(3));
