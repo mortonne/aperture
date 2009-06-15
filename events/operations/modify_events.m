@@ -1,7 +1,7 @@
-function [ev,events] = modify_events(ev,params,ev_name,res_dir)
+function ev = modify_events(ev, params, ev_name, res_dir)
 %MODIFY_EVENTS   Modify an existing events structure.
 %
-%  [ev, events] = modify_events(ev, params, ev_name, res_dir)
+%  ev = modify_events(ev, params, ev_name, res_dir)
 %
 %  INPUTS:
 %       ev:  an events object.
@@ -10,8 +10,8 @@ function [ev,events] = modify_events(ev,params,ev_name,res_dir)
 %            events structure. See below.
 %
 %  ev_name:  string identifier for the new events structure. If
-%            empty, the old events will be replaced.
-%            default: ''
+%            this is not specified, the same as ev.name, or empty, 
+%            the old events will be replaced. default: ev.name
 %
 %  res_dir:  the new events will be saved in:
 %             [res_dir]/events/[ev_name].mat
@@ -56,14 +56,17 @@ function [ev,events] = modify_events(ev,params,ev_name,res_dir)
 if ~exist('ev','var')
   error('You must pass an events object.')
 end
-if ~exist('params','var')
-  params = [];
+if ~isfield(ev, 'modified')
+  ev.modified = false;
 end
-if ~exist('ev_name','var')
-  ev_name = '';
+if ~exist('params','var')
+  params = struct;
+end
+if ~exist('ev_name','var') || isempty(ev_name)
+  ev_name = ev.name;
 end
 if ~exist('res_dir','var')
-  res_dir = fileparts(fileparts(ev.file));
+  res_dir = get_ev_dir(ev, ev_name);
 end
 
 % default parameters
@@ -73,45 +76,36 @@ params = structDefaults(params, ...
                         'replace_eegfile',{}, ...
                         'ev_mod_fcn',[], ...
                         'ev_mod_inputs',{});
-oldev = ev;
-ev_source = oldev.source;
 
-% set the filepath for the new events
-if ~isempty(ev_name)
-  % save to a new file
-  ev_file = fullfile(res_dir,'events',sprintf('%s_%s.mat', ev_name, ev_source));
+fprintf('modifying events structure "%s"...\n', ev.name)
+
+% if the ev_name is different, save events to a new file
+if ~strcmp(ev.name, ev_name)
+  saveas = true;
+  ev.name = ev_name;
+  ev_file = fullfile(res_dir, sprintf('%s_%s.mat', ev.name, ev.source));
 else
-  % overwrite the old events
-  ev_name = oldev.name;
-  ev_file = oldev.file;
+  saveas = false;
+  ev_file = ev.file;
 end
 
-try
-  % check input files and prepare output files
-  prepFiles(oldev.file, ev_file, params);
-catch err
-  % something is wrong with i/o
-  if strfind(err.identifier, 'fileExists')
-    return
-    elseif strfind(err.identifier, 'fileNotFound')
-    rethrow(err)
-    elseif strfind(err.identifier, 'fileLocked')
-    rethrow(err)
-  end
+% if the file exists and we're not overwriting, return
+ev_loc = get_obj_loc(ev);
+if strcmp(ev_loc, 'hd') && ~params.overwrite && exist(ev_file, 'file')
+  fprintf('events %s exist. Skipping...\n', ev.name)
+  return
 end
 
 % load the events structure
-events = load_events(oldev);
+events = get_mat(ev);
 
-fprintf('modifying events structure "%s"...', oldev.name)
+% update the events file
+ev.file = ev_file;
 
 % run strrep on the eegfile of each event
 if ~isempty(params.replace_eegfile)
-  for e=1:length(events)
-    for r=params.replace_eegfile'
-	    events(e).eegfile = strrep(events(e).eegfile,r{1},r{2});
-    end
-  end
+  rep = params.replace_eegfile';
+  events = rep_eegfile(events, rep{:});
 end
 
 % filter the events structure
@@ -119,16 +113,17 @@ events = filterStruct(events, params.eventFilter);
 
 % run a custom script to modify events
 if ~isempty(params.ev_mod_fcn)
-  events = params.ev_mod_fcn(events,params.ev_mod_inputs{:});
+  events = params.ev_mod_fcn(events, params.ev_mod_inputs{:});
 end
 
 % save
-save(ev_file, 'events');
-if strcmp(oldev.name, ev_name)
-  fprintf('saved.\n')
+ev = set_mat(ev, events);
+if strcmp(ev_loc, 'hd')
+  if saveas
+    fprintf('saved as "%s".\n', ev_name)
   else
-  fprintf('saved as "%s".\n', ev_name)
+    fprintf('saved.\n')
+  end
+else
+  ev.modified = true;
 end
-
-% create a new ev object
-ev = init_ev(ev_name, ev_source, ev_file, length(events));
