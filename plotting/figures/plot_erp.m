@@ -70,7 +70,13 @@ ylabel(sprintf('Voltage (%s)', params.volt_units))
 
 % min and max of the data
 y_min = min(data(:));
+if isnan(y_min)
+  y_min = -1;
+end
 y_max = max(data(:));
+if isnan(y_max)
+  y_max = 1;
+end
 
 % set the y-limits
 if ~isempty(params.y_lim)
