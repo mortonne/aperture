@@ -76,10 +76,12 @@ for this_subj=subj
     end
     
     % create events and save
-    fprintf('Creating events for %s, session %d using %s...\n', this_subj.id,sess.number,func2str(fcn_handle))
+    fprintf('Creating events for %s, session %d using %s...', ...
+            this_subj.id, sess.number, func2str(fcn_handle))
     try
       events = fcn_handle(fullfile(sess.dir,logfiledir), this_subj.id, sess.number, fcn_input{:});
       save(eventsfile, 'events');
+      fprintf('saved.\n')
     catch err
       warning('eeg_ana:create_events:eventCreationError', ...
               'Error thrown by %s processing: %s', func2str(fcn_handle), getReport(err))
