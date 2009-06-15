@@ -1,49 +1,87 @@
-function [pat2, pattern, coeff] = patPCA(pat1, params, pattern)
+function [pat, coeff] = patPCA(pat, params)
 %PATPCA   Get principal components of a pattern.
-%   [PAT2,PATTERN,COEFF] = PATPCA(PAT1,PARAMS,PATTERN) does PCA on PATTERN
-%   according to options specified in the PARAMS struct.  The modified PAT2
-%   gives meta-data on the new pattern.  COEFF contains the coefficients of
-%   each principle component used.
 %
-%   PARAMS:
-%     'nComp'       Number of principal components to return
-%     'loadSingles' If true (default), the pattern will be loaded as a
-%                   singles array
+%  [pat, coeff] = patPCA(pat, params)
 %
-%   See also modify_pattern.
+%  INPUTS:
+%      pat:  a pattern object.
+%
+%   params:  structure that specifies options for running PCA.  See 
+%            below.
+%
+%  OUTPUTS:
+%      pat:  a modified pattern object.
+%
+%    coeff:  coefficients of the principal components.
+%
+%  PARAMS:
+%   nComp - number of principal components to return
+%   scree - if true, make a scree plot of variance explained
+%
+%  See also modify_pattern.
 
+% input checks
+if ~exist('pat','var') || ~isstruct(pat)
+  error('You must pass a pattern object.')
+end
 if ~exist('params','var')
 	params = struct;
+elseif isempty(params.nComp) || ~isnumeric(params.nComp)
+  error('nComp must be numeric.')
 end
 
-params = structDefaults(params,  'nComp', 150,  'loadSingles', 1);
+params = structDefaults(params, ...
+                        'nComp', 150,  ...
+                        'scree', false);
 
-pattern = get_mat(pat1);
+pat_loc = get_obj_loc(pat);
+pat = move_obj_to_workspace(pat);
 
 % flatten all dimensions after events into one vector
-patsize = size(pattern);
-pattern = reshape(pattern, [patsize(1) prod(patsize(2:end))]);
+pat_size = size(pat.mat);
+pat.mat = reshape(pat.mat, [pat_size(1) prod(pat_size(2:end))]);
 
 % deal with any nans in the pattern (variables may be thrown out)
-pattern = remove_nans(pattern);
+pat.mat = remove_nans(pat.mat);
 
-if ~isempty(params.nComp)
-	fprintf('getting first %d principal components...\n', params.nComp)
-	% get principal components
-	[coeff,pattern] = princomp(pattern,'econ');
-	%coeff = coeff(1:params.nComp,1:params.nComp);
-	pattern = pattern(:,1:params.nComp);
+fprintf('getting first %d principal components...\n', params.nComp)
+% get principal components
+[coeff, pat.mat, latent] = princomp(pat.mat, 'econ');
+
+if params.scree
+  scree(latent);
 end
+
+%coeff = coeff(1:params.nComp,1:params.nComp);
+pat.mat = pat.mat(:,1:params.nComp);
 
 % update the pat object
-pat2 = pat1;
-pat2.dim.chan = struct;
-for c=1:size(pattern,2)
-	pat2.dim.chan(c).number = c;
-	pat2.dim.chan(c).region = '';
-	pat2.dim.chan(c).label = sprintf('Component %d', c);
+pat.dim.chan = struct;
+for c=1:size(pat.mat,2)
+	pat.dim.chan(c).number = c;
+	pat.dim.chan(c).region = '';
+	pat.dim.chan(c).label = sprintf('Component %d', c);
 end
-pat2.dim.time = init_time();
-pat2.dim.freq = init_freq();
+pat.dim.time = init_time();
+pat.dim.freq = init_freq();
 
-pat2 = set_mat(pat2, pattern);
+% update the pattern
+if strcmp(pat_loc, 'hd')
+  pat = move_obj_to_hd(pat);
+else
+  pat.modified = true;
+end
+
+function scree(variance)
+  explained = variance/sum(variance);
+  cum = NaN(size(explained));
+  opt = [];
+  for i=1:length(explained)
+    cum(i) = sum(explained(1:i));
+  end
+  plot(cum, '-k', 'LineWidth',3);
+  xlabel('Number of Principal Components')
+  ylabel('Variance Explained')
+  publishfig
+  drawnow
+%endfunction
