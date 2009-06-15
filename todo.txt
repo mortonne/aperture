@@ -6,6 +6,7 @@
   * possibility: expand merge_exps.m, add 'experiment' field to each subj
  * user-friendly script to generate basic ERPs for a subject, create PDF report
  * check reporting scripts for generality
+ * add MVPA-style summarize function
 
 == Basic ==
  * expand use of "path" cell array-style exp referencing; may make apply_to_obj more flexible
