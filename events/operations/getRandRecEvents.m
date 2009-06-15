@@ -1,74 +1,92 @@
-function allRetEvents = getRandRecEvents(events,params)
-%GETRANDRECEVENTS - Get important events from FR retrieval period
+function rec_events = getRandRecEvents(events, params)
+%GETRANDRECEVENTS   Get clean events from a free recall period
 %
-% Assumptions:
-%   - REC_START and REC_WORD events
-%   - 90 second recall period
-% 
-% FUNCTION:
-%   allRetEvents = getRandRecEvents(events,params)
+%  rec_events = getRandRecEvents(events, params)
 %
-% params.samplerate
-% params.bufferMS
-% params.check
-% params.recTime (default is 90000)
-% params.recWordField (default is REC_WORD, can change to FFR_REC_WORD)
+%  INPUTS:
+%   events:  an events structure with the following fields:
+%             'session'
+%             'trial'
+%             'type'      - must include REC_START, REC_WORD
+%             'itemno'
+%             'intrusion'
+%             'eegoffset'
 %
-% Possible event types:
-%   REC_WORD - Correct recall (only first recall per list).
-%   REP_WORD - Correct word repetition.
-%   RAND_WORD - Random epochs when nothing else is happening.
-%   REC_WORD_VV - Non-recall-related vocalization.
-%   INT_WORD - Recall intrusion.
+%   params:  structure whose fields specify options for finding
+%            recall events.  See below.
+%
+%  OUTPUTS:
+%  rec_events:  a recall events structure.  Possible event types are:
+%                REC_WORD    - correct recall
+%                REP_WORD    - correct word repetition
+%                RAND_WORD   - random epoch where there are no
+%                              vocalizations
+%                REC_WORD_VV - vocalization that was not a recall
+%                              attempt
+%                INT_WORD    - intrusion; can be a PLI or XLI
+%
+%  PARAMS:
+%   recBuffer         - vocalization-free period in ms each recall 
+%                       event must have in order to be included in
+%                       rec_events. Default: 1000
+%   recDuration       - assumed duration of each vocalization in ms.
+%                       Default: 1000
+%   recPeriodDuration - length of each recall period in ms. 
+%                       Default: 90000
+%   recWordField      - string that is in the beginning of the "type" 
+%                       field of all recall events that involve 
+%                       vocalizations
+%   check             - if true, an image will be plotted showing the
+%                       label of each sample in each recall period
 
-if ~isfield(params,'check')
-  check = 0;
-else
-  check = params.check;
+% input checks
+if ~exist('events','var') || ~isstruct(events)
+  error('You must pass an events structure.')
+end
+if ~exist('params','var')
+  params = struct;
 end
 
-if ~isfield(params,'recTime')
-  recTime = 90000;
-else
-  recTime = params.recTime;
-end
+params = structDefaults(params, ...
+                        'recPeriodDuration', 90000, ...
+                        'recDuration',       1000,  ...
+                        'recBuffer',         1000,       ...
+                        'recWordField',      'REC_WORD', ...
+                        'check',             false);
 
-if ~isfield(params,'recWordField')
-  recWordField = 'REC_WORD';
-else
-  recWordField = params.recWordField;
-end
-
+check = params.check;
+recWordField = params.recWordField;
 if ~isfield(events,'list')
   listfield = 'trial';
-  else
+else
   listfield = 'list';
 end
 
 % sanity checks!
 types = unique({events.type});
-if ~ismember(recWordField,types)
+if ~ismember(recWordField, types)
   error('No recall period start events (type=REC_START) found.')
-elseif ~ismember(recWordField,types)
+elseif ~ismember(recWordField, types)
   error('No word recall events (type=REC_WORD) found.')
 end
 
 % some defaults
-% recTime = 90000;
-recSamples = floor(recTime * params.samplerate/1000);
-bufferSamp = floor(params.bufferMS * params.samplerate/1000);
+samplerate = GetRateAndFormat(events(1));
+recSamples = ms2samp(params.recPeriodDuration, samplerate);
+voc_buffer = ms2samp(params.recBuffer, samplerate);
+voc_duration = ms2samp(params.recDuration, samplerate);
 
 % get all the word events
-allWord_events = filterStruct(events,strcat('strfound(type,''',recWordField,''')'));
+allWord_events = events(strmatch(recWordField, {events.type}));
 
 % get start of each recall period
-recStart = inStruct(events,'strcmp(type,''REC_START'')');
-recStart = [logical(0) recStart(1:end-1)];
-recStart_events = events(recStart);
-lists = getStructField(recStart_events,listfield);
-sessions = getStructField(recStart_events,'session');
+recStart_events = events(strcmp({events.type}, 'REC_START') & ...
+                         ~isnan([events.(listfield)]));
 
-length(lists)
+% get session and list numbers; assuming each session has
+% the same number of lists
+sessions = [recStart_events.session];
+lists = [recStart_events.(listfield)];
 
 % events to fill
 word_events = struct([]);
@@ -78,70 +96,74 @@ rand_events = struct([]);
 scheck = [];
 
 % loop over all session and lists
+num_rec_events = 0;
+num_bad_rec_events = 0;
 for l = 1:length(lists)
-  fprintf('Session %d\tList %d\n',sessions(l),lists(l));
+  %fprintf('Session %d\tList %d\n', sessions(l), lists(l));
 
-  % clean out the possible start setting to all possible
-  samps = ones(1,recSamples);   % 1 if free
-  tsamp = zeros(1,recSamples);  % if and how a sample is used
+  % vector representing all samples in the recall period.
+  % Free samples are true.
+  samps = true(1,recSamples);
+  
+  % tsamp indicates the usage of each sample. codes are:
+  %  not used         - 0
+  %  recall events    - 0.5
+  %  excluded samples - 1
+  %  rand events      - 2
+  % these values are used to set colors in the imagesc check at 
+  % the end.
+  tsamp = zeros(1,recSamples);
 
   % mark out the first buffersize worth so we are always after
   % start of recall
-  samps(1:bufferSamp) = 0;
+  samps(1:voc_buffer) = 0;
 
   % get the list events
-  listEvents = filterStruct(allWord_events,sprintf('%s==%d & session==%d', listfield, lists(l), sessions(l)));
-  %  listEvents = filterStruct(allWord_events,'list == varargin{1} & session == varargin{2}',lists(l),sessions(l));
-  if length(listEvents) == 0
-    % no events for list
-    continue;
+  list_ind = [allWord_events.session]==sessions(l) & ...
+             [allWord_events.(listfield)]==lists(l);
+  if ~any(list_ind)
+    fprintf('No recall events. Skipping...')
+    continue
   end
+  listEvents = allWord_events(list_ind);
 
   % correct the event offsets for start of recall
   recOffset = recStart_events(l).eegoffset;
-  eventOffsets = getStructField(listEvents,'eegoffset')-recOffset + 1;
+  eventOffsets = [listEvents.eegoffset] - recOffset + 1;
 
   % mark off the buffer around each word
   lastEventIndex = 0;
   for e = 1:length(listEvents)
-    if strcmp(listEvents(e).eegfile,'')
-      % no in recorded data
+    if isempty(listEvents(e).eegfile)
       fprintf('Recall does not fall in recorded data!  Ignoring...\n');
-
       % ignore this and all future recalls in the list
       if e == 1
         samps(:) = 0;
         tsamp(:) = 1;
-        else
+      else
         samps(eventOffsets(e-1):end) = 0;
         tsamp(eventOffsets(e-1):end) = 1;
       end
-
-      % don't process any more of the events for this list
-      break;
+      break
     end
 
     % make sure it is from the same file as previous ones
-    if e > 1 & ~strcmp(listEvents(e).eegfile,listEvents(e-1).eegfile)
+    if e > 1 && ~strcmp(listEvents(e).eegfile, listEvents(e-1).eegfile)
       % different files, so ignore this and the rest
       samps(eventOffsets(e-1):end) = 0;
       tsamp(eventOffsets(e-1):end) = 1;
       fprintf('Recall split over two files!  Ignoring second file.\n');
-
-      break;
+      break
     end
 
-    % set the start and end to mark
-    mStart = eventOffsets(e) - bufferSamp + 1;
-    mEnd = eventOffsets(e) + (2*bufferSamp);
+    % set the start and end to mark:
+    % [voc_buffer] | [voc_duration] [voc_buffer] (rand event can go here)
+    mStart = eventOffsets(e) - voc_buffer + 1;
+    mEnd = eventOffsets(e) + voc_duration + voc_buffer;
 
     % make sure it's within bounds
-    if mStart < 1
-      mStart = 1;
-    end
-    if mEnd > recSamples
-      mEnd = recSamples;
-    end
+    mStart = max([mStart 1]);
+    mEnd = min([recSamples mEnd]);
 
     % mark the range as used
     samps(mStart:mEnd) = 0;
@@ -161,15 +183,19 @@ for l = 1:length(lists)
 
   % append all non-overlapping events
   newEvents = listEvents(1:lastEventIndex);
-  newKeep = logical(ones(length(newEvents),1));
+  newKeep = true(size(newEvents));
   for e = 2:lastEventIndex;
     % see the diff of onset of one to the next
-    tdiff = eventOffsets(e) - eventOffsets(e-1) - 2*bufferSamp;
-    if tdiff < 0
+    tdiff = eventOffsets(e) - eventOffsets(e-1);
+    if tdiff < voc_duration + voc_buffer
       newKeep(e) = 0;
-      fprintf('Removed recall event: %g ms\n',tdiff*1000/params.samplerate);
+      %fprintf('Removed recall event. Onset difference: %g ms\n', ...
+      %        tdiff * 1000 / samplerate);
     end
   end
+  num_rec_events = num_rec_events + length(newKeep);
+  num_bad_rec_events = num_bad_rec_events + nnz(~newKeep);
+  
   newEvents = newEvents(newKeep);
 
   % append new words
@@ -177,29 +203,24 @@ for l = 1:length(lists)
 
   % generate random events (try to get same number as real events)
   newRand_events = newEvents;
-  newKeep = logical(zeros(length(newEvents),1));
+  newKeep = false(size(newEvents));
   for e = 1:length(newRand_events)
     % see what is available
     avail = find(samps);
 
     % make sure there are still ones avail
-    if length(avail) == 0
-      % problem
-      fprintf('ERROR: Not enough free space for random recalls.\n');
-      break;
+    if isempty(avail)
+      fprintf('Warning: Not enough free space for random recalls.\n');
+      break
     end
 
-    % get random index
-    rind = randperm(length(avail));
-
-    % pick the offset
-    rsamp = avail(rind(1));
+    % get a random offset
+    rsamp = randsample(avail, 1);
 
     % mark region as used
-    mStart = rsamp - bufferSamp + 1;
-    if mStart < 1
-      mStart = 1;
-    end
+    mStart = rsamp - voc_buffer + 1;
+    mStart = max([mStart 1]);
+
     samps(mStart:rsamp) = 0;
     tsamp(mStart:rsamp) = 2;
 
@@ -208,8 +229,8 @@ for l = 1:length(lists)
     newRand_events(e).eegoffset = rsamp + recOffset - 1;
     newRand_events(e).type = 'RAND_WORD';
     newRand_events(e).item = '';
-    newRand_events(e).itemno = -999;
-    newRand_events(e).rectime = -999;
+    newRand_events(e).itemno = NaN;
+    newRand_events(e).rectime = NaN;
   end
 
   % append the new rand events
@@ -219,7 +240,8 @@ for l = 1:length(lists)
   % append the tsamp for verification
   scheck = [scheck ; tsamp];
 end
-
+fprintf('Removed %d out of %d recall events.\n', ...
+        num_bad_rec_events, num_rec_events)
 
 % categorize events
 
@@ -254,8 +276,8 @@ allVoc_events = replicateField(word_events(VVind),'type','VOC_WORD');
 % all intrusions, ignoring vocalizations
 allInt_events = replicateField(filterStruct(word_events(~VVind),'intrusion ~= -999 & intrusion ~= 0'),'type','INT_WORD');
 
-allRetEvents = [allRec_events,allRand_events,allRep_events,allVoc_events,allInt_events];
+rec_events = [allRec_events,allRand_events,allRep_events,allVoc_events,allInt_events];
 
 if check
-  imagesc(scheck);colorbar
+  imagesc(scheck)
 end
