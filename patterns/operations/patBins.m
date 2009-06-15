@@ -146,7 +146,7 @@ function [ev, bins] = event_bins(ev, bin_defs, labels)
   
   % generate a new events field, one value per bin
   vec = make_event_bins(events1, bin_defs);
-  if ~isnumeric(vec) || iscellstr(vec)
+  if ~(isnumeric(vec) || iscellstr(vec))
     error('The labels returned by make_event_bins have an invalid type.')
   end
   
