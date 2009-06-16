@@ -97,12 +97,13 @@ for s=1:length(subj)
     end
     % load the specified variables for this file
     temp = load(obj.file{file_number}, var_names{:});
-    
-    elseif iscell(obj.file)
-    % HACK - assume this is a pat object
-    temp.pattern = load_pattern(obj);
-    
+  elseif iscell(obj.file)
+    if strcmp(get_obj_type, 'pattern')
+      temp.pattern = load_pattern(obj);
     else
+      error('obj.file is a cell array. You must specify a file_number.')
+    end
+  else
     % only one file; load the specified variables
     temp = load(obj.file, var_names{:});
   end
