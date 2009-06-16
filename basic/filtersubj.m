@@ -17,7 +17,7 @@ function [subj,match] = filtersubj(subj,numbers,include)
 %     subj:  a filtered subject structure.
 %
 %    match:  a boolean array of the same length as the unfiltered subject
-%            structure; true for subjects that were included/excluded.
+%            structure; true for subjects that were included.
 %
 %  EXAMPLE:
 %   % subject ids are: 'LTP001', 'LTP002', 'LTP003'
@@ -54,9 +54,8 @@ end
 % filter subjects
 if ~isempty(numbers)
   match = ismember(num,numbers);
-  if include
-    subj = subj(match);
-    else
-    subj = subj(~match);
+  if ~include
+    match = ~match;
   end
+  subj = subj(match);
 end
