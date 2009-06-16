@@ -16,6 +16,8 @@ function events = load_events(ev)
 % input checks
 if ~exist('ev','var') || ~isstruct(ev)
   error('You must pass an ev object.')
+elseif length(ev)>1
+  error('ev must be of length 1.')
 elseif ~any(isfield(ev, {'file', 'mat'}))
   error('The events object must have a "file" or "mat" field.')
 end
