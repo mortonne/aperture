@@ -73,7 +73,7 @@ end
 table = cell(n_rows, n_cols);
 
 % calculate the optimal figure width
-fig_size = 1/(size(fig_files,2)+1);
+fig_size = 1/(size(fig_files,2)+2);
 if fig_size>0.2
   fig_size = 0.2;
 end
@@ -87,7 +87,7 @@ for i=1:n_rows
     % first cell should be the row label
     table{i,1} = sprintf('\\raisebox{%f\\textwidth}{%s}', raise, row_labels{i});
   end
-  
+
   % write in the figures
   for j=1:n_cols-dj
     %table{i,j+dj} = sprintf('\\includegraphics[width=%f\\textwidth,viewport=120 60 1100 840]{%s}', fig_size, fig_files{i,j});
