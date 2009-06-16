@@ -56,7 +56,7 @@ for s=1:length(exp.subj)
   end % j class out
   
   % calculate the cross-sel corrmat
-  res.subj(s).cs_corrmat = squeeze(nanmean(res.subj(s).corrmat));
+  res.subj(s).cs_corrmat = permute(nanmean(res.subj(s).corrmat, 1), [2 3 1]);
   
   % calculate the significance of each cs_corrmat cell
   for j=1:ncat
