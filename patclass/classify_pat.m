@@ -97,7 +97,7 @@ sel.vals = unique(sel.vec);
 
 % flatten all dimensions after events into one vector
 patsize = size(pattern);
-if length(patsize)>2
+if ndims(pattern)>2
   pattern = reshape(pattern, [patsize(1) prod(patsize(2:end))]);
 end
 
@@ -148,8 +148,9 @@ for j=1:length(sel.vals)
   try
     % run classification algorithms
     [class(j,:),err,posterior(j,:,:)] = run_classifier(trainpat,trainreg,testpat,testreg(j,:),params.classifier,params);
-    catch
-    warning('Classifier threw an error.')
+  catch
+    warning('eeg_ana:classify_pat:ClassifierError', ...
+            'Classifier threw an error.')
   end
 
   % check the performance
