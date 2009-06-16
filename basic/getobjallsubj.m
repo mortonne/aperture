@@ -22,9 +22,9 @@ function objs = getobjallsubj(subj,path)
 % input checks
 if ~exist('subj','var')
   error('You must pass a subj structure.')
-  elseif ~isstruct(subj)
+elseif ~isstruct(subj)
   error('subj must be a structure.')
-  elseif ~isfield(subj,'id')
+elseif ~isfield(subj,'id')
   error('subj must have an id field.')
 end
 if ~exist('path','var')
@@ -33,13 +33,16 @@ end
 
 fprintf('exporting %s object %s from subjects...\n', path{end-1}, path{end})
 
-% first make a subjects X variables cell array
-n = 1;
+objs = [];
 for s=1:length(subj)
   fprintf('%s ', subj(s).id)
 
   % get the object for this subject
-  obj = getobj2(subj(s),path);
+  try
+    obj = getobj2(subj(s), path);
+  catch
+    obj = [];
+  end
 
   if isempty(obj)
     % we couldn't find an object corresponding to that path
@@ -48,7 +51,15 @@ for s=1:length(subj)
   end
 
   % add to the array
-  objs(n) = obj;
-  n = n + 1;
+  if isempty(objs)
+    objs = obj;
+  else
+    objs = cat_structs(objs, obj);
+  end
 end
+
+if isempty(objs)
+  error('no objects found.')
+end
+
 fprintf('\n')
