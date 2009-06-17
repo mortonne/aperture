@@ -1,37 +1,80 @@
-function exp = init_exp(subj, resDir, experiment, recordingType, useLock)
-%INIT_EXP   Initialize an exp struct.
-%   EXP = INIT_EXP(SUBJ,RESDIR,EXPERIMENT,RECORDINGTYPE,USELOCK) creates an
-%   exp struct EXP containing subjects in the SUBJ struct and saves it in
-%   RESDIR.  The lastUpdate field will be initialized to the time of creation.
+function exp = init_exp(experiment, varargin)
+%INIT_EXP   Initialize an exp structure.
 %
-%   Optional inputs:
-%     EXPERIMENT - name of the experiment
-%     RECORDINGTYPE - if brain data was collected, which type was it 
-%     USELOCK - specifies whether the exp struct needs to be locked before
-%               updates (default 0)
+%  exp = init_exp(experiment, varargin)
 %
-%   See also init_iEEG, init_scalp.
+%  Create an experiment structure that can be used to keep track of 
+%  analyses.
 %
+%  INPUTS:
+%  experiment:  string identifier for the experiment.
+%
+%  OUTPUTS:
+%      exp:  an experiment object with the following optional fields,
+%            which can be set by passing in parameter, value pairs
+%            as additional arguments:
+%
+%             subj          - vector of subject objects. See get_sessdirs.
+%             recordingType - the type of brain data collected
+%             resDir        - directory where results will be saved
+%             file          - path to the MAT-file where this exp
+%                             structure will be saved
+%             useLock       - if true, exp.file will be locked during
+%                             loading and saving. Useful for running
+%                             distributed jobs that modify exp
+%
+%  EXAMPLE:
+%   % import information about subjects
+%   subj = get_sessdirs(dataroot, 'subj*');
+%
+%   % create a new exp structure
+%   exp = init_exp('catFR', 'subj', subj, 'recordingType', 'scalp');
 
+% input checks
 if ~exist('experiment','var')
-  experiment = '';
-end
-if ~exist('recordingType','var')
-  recordingType = 'N/A';
-end
-if ~exist('useLock','var')
-  useLock = 0;
+  error('You must specify an experiment name.')
 end
 
-if ~exist(resDir)
+% set defaults
+def = struct('experiment',    experiment, ...
+             'recordingType', '',         ...
+             'subj',          struct,     ...
+             'resDir',        '',         ...
+             'file',          '',         ...
+             'useLock',       false,      ...
+             'lastUpdate',    '');
+
+try
+  in = struct(varargin{:});
+catch err
+  % not parameter, value pairs--must be using the old calling signature
+  old_args = {'resDir', 'experiment', 'recordingType', 'useLock'};
+  pairs = {};
+  for i=1:length(varargin)
+    pairs{end+1} = old_args{i};
+    pairs{end+1} = varargin{i};
+  end
+  in = struct(pairs{:});
+end
+
+exp = combineStructs(in, def);
+exp = orderfields(exp, def);
+
+% sanity checks
+if ~ischar(exp.experiment)
+  error('experiment must be a string.')
+elseif ~ischar(exp.recordingType)
+  error('recordingType must be a string.')
+elseif ~isstruct(exp.subj)
+  error('subj must be a structure.')
+elseif ~ischar(exp.resDir)
+  error('resDir must be a string.')
+elseif ~islogical(exp.useLock)
+  error('useLock must be a logical.')
+end
+
+% make sure the results directory exists and define exp.file
+if ~isempty(exp.resDir) && ~exist(exp.resDir, 'dir')
   mkdir(resDir);
+  file = fullfile(resDir, 'exp.mat');
 end
-
-% create the struct
-exp = struct('experiment', experiment, 'recordingType', recordingType, 'subj', subj, 'resDir', resDir, 'file', fullfile(resDir, 'exp.mat'), 'useLock', useLock);  
-
-% write the creation time
-exp.lastUpdate = datestr(now, 'ddmmmyy_HHMM');
-
-% save the new exp struct
-save(fullfile(exp.resDir, 'exp.mat'), 'exp');
