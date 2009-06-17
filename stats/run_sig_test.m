@@ -110,6 +110,7 @@ switch test
    
    % get the F-statistic
    statistic = t{2:end-2, 6};
+   
   case 'RMAOV1'
    group = fix_regressors(group);
    %filename = varargin{1};

@@ -74,8 +74,8 @@ group = cell(1,nfact);
 events = load_events(pat.dim.ev);
 
 % make the regressors
-for j=1:length(event_bins)
-  group{j} = [group{j}; make_event_bins(events, event_bins{j})'];
+for i=1:length(event_bins)
+  group{i} = make_event_bins(events, event_bins{i})';
 end
 
 % set the path to the MAT-file that will hold the results
@@ -83,32 +83,40 @@ filename = sprintf('%s_%s.mat', pat.name, stat_name);
 stat_file = fullfile(res_dir, filename);
 
 % initialize the stat object
-stat = init_stat(stat_name, stat_file, pat.source, struct('event_bins',event_bins));
+params.event_bins = event_bins;
+stat = init_stat(stat_name, stat_file, pat.source, params);
 
 fprintf('running %s on %s...\n', func2str(fcn_handle), pat.name)
 
 % set the size of the output variables
 psize = patsize(pat.dim);
-p = NaN(nfact,psize(2),psize(3),psize(4));
-statistic = NaN(nfact,psize(2),psize(3),psize(4));
+%p = NaN(nfact,psize(2),psize(3),psize(4));
+%statistic = NaN(nfact,psize(2),psize(3),psize(4));
 
 if ~isfield(pat.dim,'splitdim') || isempty(pat.dim.splitdim) || pat.dim.splitdim~=2
   % load the whole pattern
   full_pattern = load_pattern(pat);
+else
+  full_pattern = [];
 end
 
 fprintf('channel: ');
 step = floor(psize(3)/4);
+p = [];
+statistic = [];
 for c=1:psize(2)
   fprintf('%s ', pat.dim.chan(c).label);
   
-  if exist('full_pattern','var')
+  if ~isempty(full_pattern)
     % grab this slice
     pattern = full_pattern(:,c,:,:);
   else
     % nothing loaded yet; load just this channel
-    pattern = load_pattern(pat,struct('patnum',c));
+    pattern = load_pattern(pat, struct('patnum', c));
   end
+  
+  p_chan = NaN(nfact, 1, psize(3), psize(4));
+  statistic_chan = NaN(nfact, 1, psize(3), psize(4));
 
   % run the statistic
   for t=1:size(pattern,3)
@@ -120,24 +128,31 @@ for c=1:psize(2)
       [samp_p, samp_statistic] = fcn_handle(X, group, fcn_inputs{:});
 
       % check if we can determine the sign of the effect
-      if length(group)==1
-        reg = group{1}(~isnan(group{1}));
+      temp = fix_regressors(group);
+      for i=1:length(temp)
+        reg = temp{i}(~isnan(temp{i}));
         vals = unique(reg);
         if length(vals)==2
-          samp_p = samp_p*sign(nanmean(X(reg==vals(2))) - nanmean(X(reg==vals(1))));
+          samp_p(i) = samp_p(i)*sign(nanmean(X(reg==vals(2))) - nanmean(X(reg==vals(1))));
         end
       end
       
       % add to the larger matrices
-      p(:,c,t,f) = samp_p;
-      statistic(:,c,t,f) = samp_statistic;
+      %p(:,c,t,f) = samp_p;
+      %statistic(:,c,t,f) = samp_statistic;
+      p_chan(:,1,t,f) = samp_p;
+      statistic_chan(:,1,t,f) = samp_statistic;
+
     end
   end
+  
+  p = [p p_chan];
+  statistic = [statistic statistic_chan];
 end
 fprintf('\n')
 
 if all(isnan(p(:)))
-  error('Problem with sig test; p values are all NaNs.')
+  warning('Problem with sig test; p values are all NaNs.')
 end
 
 save(stat.file, 'p', 'statistic');

@@ -35,7 +35,7 @@ switch lower(method)
   alpha_fw = fdr(p, alpha);
   if isempty(alpha_fw)
     alpha_fw = 0;
-    elseif alpha_fw<0
+  elseif alpha_fw<0
     keyboard
   end
   
