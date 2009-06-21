@@ -89,13 +89,21 @@ switch p_type
   % 0 to alpha
   % red
   
+  % if either of our alphas are 0, make it eps
+  % so norminv will be defined
+  p_range(p_range==0) = eps;
+  
   % points of inflection for the map
   sig = norminv(p_range(2));
   max_sig = norminv(p_range(1));
   
-  % define the windows
+  % write values for each area 
   windows{1} = [max_sig sig];
-  window_colors = { { DK_BLUE, LT_BLUE }};
+  windows{2} = [sig -max_sig];
+  
+  % set the corresponding colors
+  window_colors = { { DK_RED, LT_RED }, ...
+                      WHITE            };
 
   % make the colormap
   [map, map_limits] = make_sig_map(windows, window_colors, [], map_size);
