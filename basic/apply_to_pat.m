@@ -32,9 +32,9 @@ function subj = apply_to_pat(subj,pat_name,fcn_handle,fcn_inputs,dist)
 % input checks
 if ~exist('subj','var')
   error('You must pass a subjects vector.')
-  elseif ~exist('pat_name','var')
+elseif ~exist('pat_name','var')
   error('You must specify the name of a pattern.')
-  elseif ~exist('fcn_handle','var')
+elseif ~exist('fcn_handle','var')
   error('You must pass a handle to a function.')
 end
 if ~exist('fcn_inputs','var')
@@ -45,4 +45,16 @@ if ~exist('dist','var')
 end
 
 % run the function on each subject
-subj = apply_to_subj(subj, @apply_to_obj, {'pat', pat_name, fcn_handle, fcn_inputs}, dist);
+if ~dist
+  % use apply_to_subj the standard way, so we can see subject ID get 
+  % printed out
+  subj = apply_to_subj(subj, @apply_to_obj, ...
+                      {'pat', pat_name, fcn_handle, fcn_inputs}, dist);
+else
+  % export pattern objects first, so there is less to send to each worker
+  pats = getobjallsubj(subj, {'pat', pat_name});
+  pats = apply_to_subj(pats, fcn_handle, fcn_inputs, dist);
+  for i=1:length(subj)
+    subj(i) = setobj(subj(i), 'pat', pats(i));
+  end
+end

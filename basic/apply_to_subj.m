@@ -31,7 +31,7 @@ function subj = apply_to_subj(subj,fcn_handle,fcn_inputs,dist)
 % input checks
 if ~exist('subj','var')
   error('You must pass a subject structure.')
-  elseif ~exist('fcn_handle','var')
+elseif ~exist('fcn_handle','var')
   error('You must pass a handle to a function.')
 end
 if ~exist('fcn_inputs','var')
@@ -53,7 +53,8 @@ if dist==1
   
   % make a task for each subject
   for this_subj=subj
-    createTask(job, fcn_handle, 1, {this_subj fcn_inputs{:}}, 'Name', this_subj.id);
+    name = get_obj_name(this_subj);
+    createTask(job, fcn_handle, 1, {this_subj fcn_inputs{:}}, 'Name', name);
   end
 
   % capture command window output for all tasks (helpful for debugging)
@@ -77,6 +78,7 @@ if dist==1
   end
 
   % get a cell array of output arguments from each task
+  fprintf('loading updated subjects...')
   temp = getAllOutputArguments(job);
   if isempty(temp)
     return
@@ -87,14 +89,15 @@ if dist==1
     if isempty(temp{i})
       continue
     end
-    subj = setobj(subj, temp{i});
+    subj = addobj(subj, temp{i});
   end
+  fprintf('done.\n')
 elseif dist==2
   % use parfor
   tic
   new_subj = [];
   parfor i=1:length(subj)
-    fprintf('%s\n', subj(i).id)
+    fprintf('%s\n', get_obj_name(this_subj))
     new_subj = [new_subj fcn_handle(subj(i), fcn_inputs{:})];
   end
   subj = new_subj;
@@ -104,10 +107,10 @@ else
   tic
   for i=1:length(subj)
     this_subj = subj(i);
-    fprintf('%s\n', this_subj.id)
+    fprintf('%s\n', get_obj_name(this_subj))
     % pass this subject as input to the function
     % and modify the subject vector
-    subj = setobj(subj, fcn_handle(this_subj, fcn_inputs{:}));
+    subj = addobj(subj, fcn_handle(this_subj, fcn_inputs{:}));
   end
   fprintf('apply_to_subj: finished: %.2f seconds.\n', toc);
 end
