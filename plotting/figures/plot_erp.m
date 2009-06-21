@@ -44,6 +44,7 @@ params = structDefaults(params, ...
                         'colors',           {},       ...
                         'x_lim',            [],       ...
                         'y_lim',            [],       ...
+                        'y_label',          '',       ...
                         'mark',             [],       ...
                         'fill_color',       [.8 .8 .8]);
 
@@ -66,7 +67,11 @@ else
 end
 
 % y-axis
-ylabel(sprintf('Voltage (%s)', params.volt_units))
+if ~isempty(params.y_label)
+  ylabel(params.y_label)
+else
+  ylabel(sprintf('Voltage (%s)', params.volt_units))
+end
 
 % min and max of the data
 y_min = min(data(:));
@@ -91,6 +96,12 @@ end
 % mark samples
 hold on
 if ~isempty(params.mark)
+  if ~isvector(params.mark)
+    error('params.mark must be a vector.')
+  elseif length(params.mark)~=length(x)
+    error('params.mark must be the same length as data.')
+  end
+  
   offset = diff(y_lim)*0.07;
   bar_y = y_min - offset;
   bar_y_lim = [(bar_y - offset/2) bar_y];
