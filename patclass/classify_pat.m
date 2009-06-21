@@ -62,8 +62,7 @@ params = structDefaults(params, ...
                         'scramble',   0,          ...
                         'lock',       0,          ...
                         'overwrite',  1,          ...
-                        'select_test',1,          ...
-                        'patthresh',  []);
+                        'select_test',1);
 
 % set where the results will be saved
 filename = sprintf('%s_%s_%s.mat', pat.name, pc_name, pat.source);
@@ -94,6 +93,7 @@ end
 % get the selector
 sel.vec = make_event_bins(events, params.selector);
 sel.vals = unique(sel.vec);
+sel.vals = sel.vals(~isnan(sel.vals));
 
 % flatten all dimensions after events into one vector
 patsize = size(pattern);
@@ -102,13 +102,11 @@ if ndims(pattern)>2
 end
 
 % deal with any nans in the pattern (variables may be thrown out)
-if ~isempty(params.patthresh)
-  pattern(abs(pattern)>params.patthresh) = NaN;
-end
 pattern = remove_nans(pattern);
 
 if params.select_test
-  nTestEv = length(sel.vec)/length(sel.vals);
+  included = nnz(~isnan(sel.vec));
+  nTestEv = included/length(sel.vals);
 else
   nTestEv = length(events);
 end

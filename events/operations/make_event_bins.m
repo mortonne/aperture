@@ -24,8 +24,8 @@ function labels = make_event_bins(events, bins)
 %      getStructField(events, 'field_name').
 %
 %    {'field_name1','field_name2',...}
-%      Cell array of fieldnames. Bins will be made such that each 
-%      conjuction of the fields will be unique. (BROKEN)
+%      Cell array of fieldnames. There will be one label for each
+%      unique combination of values of the fields.
 %
 %    {'filter1','filter2',...}
 %      Cell array of strings that will be input to inStruct to 
@@ -33,8 +33,8 @@ function labels = make_event_bins(events, bins)
 %
 %    number_of_bins
 %      Integer specifying the number of bins to randomly divide 
-%      events into non-overlapping bins that are of as equal 
-%      length as possible.
+%      events into non-overlapping bins of equal length.  If events
+%      do not divide evenly, unassigned events will be labeled NaN.
 %
 %    'overall'
 %      All events will be put into one bin.
@@ -47,26 +47,22 @@ function labels = make_event_bins(events, bins)
 % input checks
 if ~exist('events','var')
   error('You must pass an events structure.')
-  elseif ~isstruct(events)
+elseif ~isstruct(events)
   error('events must be a structure.')
-  elseif ~exist('bins','var')
+elseif ~exist('bins','var')
   error('You must specify how to create the bins.')
 end
 
-if iscell(bins)
+if iscellstr(bins)
 	% first check if each string in the cell array is a field
-	fnames = fieldnames(events);
-	if false %sum(~ismember(bins,fnames))==0
-		% make the new field a conjunction of multiple fields
-		for i=1:length(events)
-		  val = '';
-		  for j=1:length(bins)
-		    val = [val num2str(events(i).(bins{j})) '.'];
-		  end
-		  labels{i} = val;
-		end
-
-		else
+	if all(ismember(bins, fieldnames(events)))
+	  f = cell(1, length(bins));
+	  for i=1:length(bins)
+	    f{i} = getStructField(events, bins{i});
+    end
+    % one label for each unique combination of values
+	  labels = make_index(f{:});
+	else
 		% assume each cell contains an eventfilter
 		labels = NaN(1,length(events));
 		for i=1:length(bins)
@@ -75,24 +71,37 @@ if iscell(bins)
 		end
 	end
 
-	elseif isfield(events, bins)
+elseif isfield(events, bins)
 	% each unique value of the field will be used
 	labels = getStructField(events, bins);
 
-	elseif strcmp(bins, 'overall')
+elseif strcmp(bins, 'overall')
 	% lump all events together
 	labels = ones(1, length(events));
 
-	elseif isnumeric(bins)
+elseif isnumeric(bins)
 	% randomly divide up the events
-	events_per_bin = fix(length(events)/bins);
-	inds = repmat(1:bins,1,events_per_bin);
-	labels = inds(randperm(length(inds)));
+	if bins < length(events)
+	  events_per_bin = floor(length(events)/bins);
+	else
+	  bins = length(events);
+	  events_per_bin = 1;
+  end
 
-	elseif strcmp(bins,'none')
+  % make the labels
+	labels = repmat(1:bins, 1, events_per_bin);
+	
+	% NaN out any remainder events
+	n_unlabeled = length(events) - length(labels);
+	labels = [labels NaN(1, n_unlabeled)];
+	
+	% shuffle
+	labels = randsample(labels, length(labels));
+
+elseif strcmp(bins, 'none')
 	% no binning will take place
 	labels = 1:length(events);
 	
-	else
+else
 	error('Invalid input for bins.')
 end
