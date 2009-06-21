@@ -79,7 +79,8 @@ params = structDefaults(params, ...
                         'p_range',          [0.005 0.05],               ...
                         'cap_type',         'HCGSN128',                 ...
                         'correctm',         'fdr',                      ...
-                        'correctm_scale',   'all');
+                        'correctm_scale',   'all',                      ...
+                        'map_type',         '');
 
 if length(params.views)~=2
   error('You must indicate exactly two viewpoints to plot.')
@@ -104,6 +105,15 @@ if ~isempty(params.stat_name)
   stat = getobj(pat, 'stat', params.stat_name);
   load(stat.file, 'p');
   
+  % if we didn't specify the type of sig map, guess!
+  if isempty(params.map_type)
+    if any(p(:)<0)
+      params.map_type = 'two_way_signed';
+    else
+      params.map_type = 'two_way';
+    end
+  end
+  
   % HACK - remove any additional p-values
   pattern = p(1,:,:,:);
   % END HACK
@@ -111,7 +121,9 @@ if ~isempty(params.stat_name)
   if strcmp(params.correctm_scale, 'all')
     % make the colormap, set the pattern to be plotted as the
     % z-scores of the p-values
-    [pattern, map, map_limits] = prep_sig_map(pattern, params.p_range, params.correctm, true);
+    [pattern, map, map_limits] = prep_sig_map(pattern, params.p_range, ...
+                                              params.correctm, ...
+                                              params.map_type, true);
   end
 
 else
@@ -125,7 +137,7 @@ else
   if ~isempty(params.map_limits)
     % user-defined map limits
     map_limits = params.map_limits;
-    else
+  else
     % use absolute maximum
     absmax = max(abs(pattern(:)));
     map_limits = [-absmax absmax];
@@ -159,7 +171,9 @@ for e=1:size(pattern,1)
       if ~isempty(params.stat_name) && strcmp(params.correctm_scale, 'fig')
         % make the colormap, set the pattern to be plotted as the
         % z-scores of the p-values
-        [x, map, map_limits] = prep_sig_map(x, params.p_range, params.correctm, true);
+        [x, map, map_limits] = prep_sig_map(x, params.p_range, ...
+                                            params.correctm, ...
+                                            params.map_type, true);
       end
       
       % remove perimeter channels
@@ -184,7 +198,7 @@ for e=1:size(pattern,1)
         
         case 'head'
         close all
-        figure
+        sfigure;
         views = params.views;
         
         if params.colorbar
@@ -256,7 +270,10 @@ end
 clf reset
 fprintf('\n')
 
-function [z,map,map_limits] = prep_sig_map(p, p_range, correctm, verbose)
+function [z,map,map_limits] = prep_sig_map(p, p_range, correctm, map_type, verbose)
+  if ~exist('map_type','var')
+    map_type = 'two_way_signed';
+  end
   if ~exist('verbose','var')
     verbose = false;
   end
@@ -277,5 +294,5 @@ function [z,map,map_limits] = prep_sig_map(p, p_range, correctm, verbose)
   
   % make the colormap, set the pattern to be plotted as the
   % z-scores of the p-values
-  [z, map, map_limits] = sig_colormap(p, [max_sig sig], 'two_way_signed');
+  [z, map, map_limits] = sig_colormap(p, [max_sig sig], map_type);
 %endfunction
