@@ -1,34 +1,35 @@
 == General Issues ==
+ * documentation needs an update!
  * compatibility with EEGLAB and fieldtrip
   * For right now, throwing in useful functions to whatever folder seems to fit. Should there be a top-level fork between eeg_ana and other toolbox functions to facilitate updates?
- * what should be included in the toolbox, and what should be user-generated?  For example, should we have a erp+ANOVA+plots with significance script?
  * check feasibility of cross-experiment analyses (running Per's SME-serial position interaction analysis on all LTP FR experiments)
   * possibility: expand merge_exps.m, add 'experiment' field to each subj
- * user-friendly script to generate basic ERPs for a subject, create PDF report
- * check reporting scripts for generality
  * add MVPA-style summarize function
 
 == Basic ==
  * expand use of "path" cell array-style exp referencing; may make apply_to_obj more flexible
+ * make an init_subj function; currently get_sessdirs is the only way to make a subj structure
+ * remove init_scalp and init_iEEG, added scripts for adding channel information to existing subjects
 
 == Events ==
 
 == Patclass ==
  * more classifiers, general section to give access to all MVPA functions
+ * ANOVA feature selection - see if there is anything we can take from MVPA
  * support for classifying each time-frequency bin separately (could sig scripts be generalized to include this?)
 
 == Patterns ==
- * cat_pats can only do the channel dimension
  * saving as and processing patterns as slices (post-creation conversion in split_patfile.m. Support in create_pattern.m would be good.)
- * is expandDim general enough to be included?
+ * is expandDim general enough to be included? (Need to remember what this was used for).
 
 == Plotting ==
  * consider beefing up plot_events.  it's unique and potentially very useful.
 
 == Stats ==
- * should we make run_anovan a serious script? 
-  * ANOVA/event-related mean/plotting/report script: sme_erp.m
-    needs to be formalized (add in across-subject significance)
+ * bootstrapping/summed z
+ * RMAOV
+ * permutation test on subject significance
+ * cluster statistic
 
 == Utils ==
  * should objfilename.m be used more?
