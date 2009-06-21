@@ -1,15 +1,6 @@
 function [obj, ind] = getobj(s, varargin)
 %GETOBJ   Retrieve an object from a list of objects.
 %
-%  [obj, ind] = getobj(s, f, obj_name)
-%
-%  [obj, ind] = getobj(s, f1, obj_name1, f2, obj_name2, ...)
-%
-%  Get an object from a list of objects.  You can also retrieve objects
-%  recursively; that is, if the object has a subfield that is a list of
-%  objects, you can retrieve an object from that list by specifying 
-%  another pair of fieldname, objname arguments.
-%
 %  INPUTS:
 %         s:  a structure whose subfield you wish to retrieve an object
 %             from.
@@ -23,6 +14,15 @@ function [obj, ind] = getobj(s, varargin)
 %       obj:  the specified object.
 %
 %       ind:  index of the object in the list.
+%
+%  [obj, ind] = getobj(s, f, obj_name)
+%
+%  Gets an object from a list of objects stored in subfield f
+%  of structure s.
+%
+%  [obj, ind] = getobj(s, f1, obj_name1, f2, obj_name2, ...)
+%
+%  Retrieves objects recursively.
 %
 %  EXAMPLE:
 %   % get a pat object named "voltage" from subj "LTP001"
@@ -71,7 +71,7 @@ end
 % get the identifier field
 names = arrayfun(@get_obj_name, objs, 'UniformOutput', false);
 [tf, loc] = ismember(obj_name, names);
-ind = find(loc);
+ind = nonzeros(loc);
 
 if isempty(ind)
   error('Object %s not found.', obj_name)

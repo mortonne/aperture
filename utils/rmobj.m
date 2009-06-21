@@ -1,41 +1,59 @@
-function s = rmobj(s, vars)
+function s = rmobj(s, varargin)
 %RMOBJ   Remove an object from an object hierarchy.
 %
-%  s = rmobj(s, vars)
-%
 %  INPUTS:
-%        s:  structure containing an object that is to be removed.
+%         s:  structure containing an object that is to be removed.
 %
-%     vars:  cell array of object type, object name pairs that climbs
-%            the hierarchy of s. The last pair indicates the object
-%            to be removed.
+%         f:  name of a field containing a list of objects.
+%
+%  obj_name:  name of the object to be removed.
 %
 %  OUTPUTS:
 %        s:  the modified structure, with the specified object deleted.
+%
+%  s = rmobj(s, f, obj_name)
+%
+%  Removes the object named obj_name of type f from s.
+%
+%  s = rmobj(s, f1, obj_name1, f2, obj_name2, ...)
+%
+%  Removes an arbitrarily nested object.  The last fieldname, objname
+%  pair specifies the object to be removed.
+%
+%  See also getobj, setobj.
 
-if mod(length(vars),2)~=0
-  error('The length of vars must be a multiple of 2.')
-  
-elseif length(vars)==2
+% input checks
+if ~exist('s','var') || ~isstruct(s)
+  error('You must pass a structure.')
+elseif length(s) > 1
+  error('Structure must be of length 1.')
+elseif length(varargin)<2
+  error('Not enough input arguments.')
+end
+
+% unpack the arguments we need this round
+[f, obj_name] = varargin{1:2};
+
+if length(varargin)==2
   try
 	  % we've reached the object to delete
-	  [obj2rm, ind] = getobj(s, vars{1}, vars{2});
+	  [obj2rm, ind] = getobj(s, f, obj_name);
 	catch
 	  % couldn't find it
-		fprintf('WARNING: no object "%s" found in field "%s"\n', vars{2}, vars{1});
+		fprintf('Warning: no object "%s" found in field "%s"\n', obj_name, f);
 		return
 	end
 
 	% remove the object
-	s.(vars{1})(ind) = [];
+	s.(f)(ind) = [];
 
-elseif length(vars)>2
+else
 	% get the next object
-	obj = getobj(s, vars{1}, vars{2});
+	obj = getobj(s, f, obj_name);
 	
 	% call rmobj with this new object
-	obj = rmobj(obj, vars(3:end));
+	obj = rmobj(obj, varargin{3:end});
 	
 	% when we've finished climbing, unwind using setobj
-	s = setobj(s, vars{1}, obj);
+	s = setobj(s, f, obj);
 end
