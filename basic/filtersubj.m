@@ -32,7 +32,8 @@ if ~exist('subj','var') || ~isstruct(subj)
   error('You must pass a subject structure.')
 end
 if ~exist('numbers','var')
-  numbers = [];
+  match = true(1,length(subj));
+  return
 end
 if ~exist('include','var')
   include = 1;
