@@ -1,7 +1,7 @@
-function [table,header] = create_pat_report(pat,dim,fig_names,fig_labels)
+function [table, header] = create_pat_report(pat, dim, fig_names, fig_labels)
 %CREATE_PAT_REPORT   Create a PDF report of figures derived from a pattern.
 %
-%  [table,header] = create_pat_report(pat,dim,fig_names,fig_labels)
+%  [table, header] = create_pat_report(pat, dim, fig_names, fig_labels)
 %
 %  Use this function to prepare a report with one fig object per column,
 %  and a dimension label in the first column.
@@ -37,9 +37,13 @@ elseif ~exist('dim','var')
 end
 if ~exist('fig_names','var') || isempty(fig_names)
   fig_names = {pat.fig.name};
+elseif ~iscellstr(fig_names)
+  error('fig_names must be a cell array of strings.')
 end
 if ~exist('fig_labels','var')
   fig_labels = {};
+elseif ~iscellstr(fig_labels)
+  error('fig_labels must be a cell array of strings.')
 end
 
 % read the input dimension
@@ -83,7 +87,9 @@ for i=1:length(fig_names)
     header = [header col_labels];
   else
     % the second dimension is singleton; use the fig_name
-    header{end+1} = fig.name;
+    % remove underscores; i'm assuming that people don't mean to use
+    % subscripts in their fig_names
+    header{end+1} = strrep(fig.name, '_', ' ');
   end
 end
 
