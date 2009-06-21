@@ -198,7 +198,7 @@ for e=1:size(pattern,1)
         
         case 'head'
         close all
-        sfigure;
+        figure;
         views = params.views;
         
         if params.colorbar
