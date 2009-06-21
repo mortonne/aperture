@@ -1,4 +1,4 @@
-function include = filter_struct(s, filt_fcn, filt_inputs)
+function [s,i] = filter_struct(s, filt_fcn, filt_inputs)
 %FILTER_STRUCT   Filter a structure using a custom function.
 %
 %  include = filter_struct(s, filt_fcn, filt_inputs)
@@ -40,3 +40,6 @@ for i=1:length(s)
     include(i) = true;
   end
 end
+
+s = s(include);
+i = include;
