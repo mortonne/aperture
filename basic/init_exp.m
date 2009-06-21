@@ -48,8 +48,9 @@ try
   in = struct(varargin{:});
 catch err
   % not parameter, value pairs--must be using the old calling signature
-  old_args = {'resDir', 'experiment', 'recordingType', 'useLock'};
+  old_args = {'subj', 'resDir', 'experiment', 'recordingType', 'useLock'};
   pairs = {};
+  varargin = {experiment, varargin{:}};
   for i=1:length(varargin)
     pairs{end+1} = old_args{i};
     pairs{end+1} = varargin{i};
@@ -74,7 +75,9 @@ elseif ~islogical(exp.useLock)
 end
 
 % make sure the results directory exists and define exp.file
-if ~isempty(exp.resDir) && ~exist(exp.resDir, 'dir')
-  mkdir(resDir);
-  file = fullfile(resDir, 'exp.mat');
+if ~isempty(exp.resDir)
+  if ~exist(exp.resDir, 'dir')
+    mkdir(exp.resDir);
+  end
+  exp.file = fullfile(exp.resDir, 'exp.mat');
 end
