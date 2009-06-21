@@ -91,11 +91,6 @@ if ~isempty(params.event_bins)
   pattern = patMeans(pattern, bins);
 end
 
-% make sure this is a voltage pattern
-if ndims(pattern)>3
-  error('pattern cannot have a frequency (4th) dimension.')
-end
-
 % set axis information
 x = [pat.dim.time.avg]; % for each time bin, use the mean value
 
@@ -118,12 +113,12 @@ end
 
 % initialize a cell array to hold all the printed figures
 if params.plot_mult_events
-  files = cell(1, size(pattern,2));
   num_events = 1;
 else
-  files = cell(size(pattern,1), size(pattern,2));
   num_events = size(pattern,1);
 end
+files = cell(num_events, size(pattern,2), 1, size(pattern,4));
+base_filename = sprintf('%s_%s_%s', pat.name, fig_name, pat.source);
 
 num_figs = prod(size(files));
 fprintf('making %d ERP plots from pattern %s...\n', num_figs, pat.name);
@@ -132,38 +127,45 @@ start_fig = gcf;
 n = 1;
 for i=1:num_events
   for c=1:size(pattern,2)
-    fprintf('%d ', n)
+    for f=1:size(pattern,4)
+      fprintf('%d ', n)
 
-    if params.plot_mult_events
-      e = ':';
+      if params.plot_mult_events
+        e = ':';
       else
-      e = i;
+        e = i;
+      end
+
+      if params.mult_fig_windows
+        figure(start_fig + n - 1)
+      end
+      clf
+
+      % event-related potential(s) for this channel
+      erp = squeeze(pattern(e,c,:,f));
+
+      if ~isempty(params.stat_name)
+        % get significant samples
+        p_samp = squeeze(p(e,c,:,f));
+        alpha_fw = correct_mult_comp(p_samp, params.alpha, params.correctm);
+        params.mark = p_samp < alpha_fw;
+      end
+
+      % make the plot
+      plot_erp(erp, x, params);
+
+      % generate the filename
+      if ndims(pattern)==4
+        filename = sprintf('%s_e%dc%df%d.eps', base_filename, i, c, f);
+      else
+        filename = sprintf('%s_e%dc%d.eps', base_filename, i, c);
+      end
+      files{i,c,1,f} = fullfile(res_dir, filename);
+
+      % print this figure
+      print(gcf, params.print_input, files{i,c,1,f})
+      n = n + 1;
     end
-
-    if params.mult_fig_windows
-      figure(start_fig + n - 1)
-    end
-    clf
-
-    % event-related potential(s) for this channel
-    erp = squeeze(pattern(e,c,:));
-
-    if ~isempty(params.stat_name)
-      % get significant samples
-      params.mark = correct_mult_comp(squeeze(p(e,c,:)), params.alpha, params.correctm);
-    end
-
-    % make the plot
-    plot_erp(erp, x, params);
-
-    % generate the filename
-    file_name = sprintf('%s_%s_%s_e%dc%d.eps', ...
-    pat.name, fig_name, pat.source, i, c);
-    files{i,c} = fullfile(res_dir, file_name);
-
-    % print this figure
-    print(gcf, params.print_input, files{i,c})
-    n = n + 1;
   end
 end
 fprintf('\n')
