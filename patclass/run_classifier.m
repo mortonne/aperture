@@ -55,6 +55,25 @@ switch classifier
 	[class,posterior] = corr_class(testpat,trainpat,trainreg); 
   
 	case 'svm'
+	
+	params = structDefaults(params);
+
+	% adapt the inputs
+	trainreg = vec2mat(trainreg);
+	testreg = vec2mat(testreg);
+keyboard
+	% run the classifier
+	sp1 = train_svm(trainpat', trainreg', params);
+	[posterior,sp2] = test_svm(testpat', testreg', sp1);
+
+	% standardize the outputs
+	err = sp2.logreg.trainError;
+	[m,i] = max(posterior);
+	class = i';
+	class = class-1; % eeg_ana starts with 0 for categories
+	posterior = posterior';
+	
+	%{
 	% LIBSVM VERSION
 	% standardize input
 	trainreg = grp2idx(trainreg);
@@ -67,6 +86,7 @@ switch classifier
 	% it's between 0 and 1?
 	[class,temp,posterior] = svmpredict(testreg,testpat,model);
 	err = 1-(temp(1)/100);
+	%}
 	
 	%{
 	% MATLAB VERSION
