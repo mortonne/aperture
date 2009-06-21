@@ -1,4 +1,4 @@
-function objs = getobjallsubj(subj,path)
+function objs = getobjallsubj(subj, path)
 %GETOBJALLSUBJ   Get objects from multiple subjects.
 %
 %  objs = getobjallsubj(subj, path)
@@ -39,7 +39,7 @@ for s=1:length(subj)
 
   % get the object for this subject
   try
-    obj = getobj2(subj(s), path);
+    obj = getobj(subj(s), path{:});
   catch
     obj = [];
   end

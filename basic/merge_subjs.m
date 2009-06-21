@@ -54,7 +54,7 @@ subjtoadd = subj2(i);
 
 % add them
 for thissubj=subjtoadd
-  subj = setobj(subj, thissubj);
+  subj = addobj(subj, thissubj);
 end
 
 % get subjects that are in both
@@ -106,7 +106,7 @@ for i=1:length(clones)
   end
 
   % modify this subject
-  subj = setobj(subj, new_subj);
+  subj = addobj(subj, new_subj);
 end
 
 % sort the new subjects in

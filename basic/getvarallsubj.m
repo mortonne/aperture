@@ -83,7 +83,7 @@ for s=1:length(subj)
   fprintf('%s ', subj(s).id)
 
   % get the object for this subject
-  obj = getobj2(subj(s),path);
+  obj = getobj(subj(s), path{:});
 
   if isempty(obj)
     % we couldn't find an object corresponding to that path

@@ -16,11 +16,11 @@ function s = rmobj(s, vars)
 if mod(length(vars),2)~=0
   error('The length of vars must be a multiple of 2.')
   
-  elseif length(vars)==2
-	% we've reached the object to delete
-	[obj2rm, ind] = getobj(s, vars{1}, vars{2});
-
-	if isempty(obj2rm)
+elseif length(vars)==2
+  try
+	  % we've reached the object to delete
+	  [obj2rm, ind] = getobj(s, vars{1}, vars{2});
+	catch
 	  % couldn't find it
 		fprintf('WARNING: no object "%s" found in field "%s"\n', vars{2}, vars{1});
 		return
@@ -29,7 +29,7 @@ if mod(length(vars),2)~=0
 	% remove the object
 	s.(vars{1})(ind) = [];
 
-  elseif length(vars)>2
+elseif length(vars)>2
 	% get the next object
 	obj = getobj(s, vars{1}, vars{2});
 	
