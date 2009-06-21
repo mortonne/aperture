@@ -113,6 +113,7 @@ params = structDefaults(params, ...
                         'eog_buffer',      200, ...
                         'blinkopt',        [.5, .5, .975, .025], ...
                         'absThresh',       [], ...
+                        'kthresh',         [],  ...
                         'min_samp',        [], ...
                         'ztrans',          0,  ...
                         'ztrans_eventbins', 'overall', ...
@@ -127,22 +128,30 @@ fprintf('modifying pattern %s...', pat.name)
 if ~strcmp(pat.name, pat_name)
   saveas = true;
   pat.name = pat_name;
-  pat.file = fullfile(res_dir, 'patterns', ...
+  pat_dir = fullfile(res_dir, 'patterns');
+  pat_file = fullfile(pat_dir, ...
                       objfilename('pattern', pat.name, pat.source));
+  if ~exist(pat_dir,'dir')
+    mkdir(pat_dir);
+  end
 else
   saveas = false;
+  pat_file = pat.file;
 end
 
-% is pattern on hard drive or in the workspace?
-pat_loc = get_obj_loc(pat);
-
 % if the file exists and we're not overwriting, return
-if strcmp(pat_loc, 'hd') && ~params.overwrite && exist(pat.file,'file')
+pat_loc = get_obj_loc(pat);
+if strcmp(pat_loc, 'hd') && ~params.overwrite && exist(pat_file,'file')
   fprintf('pattern %s exists. Skipping...\n', pat.name)
   return
 end
 
-% update the parameters for the pattern
+% get the pattern and corresponding events
+pat = move_obj_to_workspace(pat);
+pat.dim.ev = move_obj_to_workspace(pat.dim.ev);
+
+% update the pattern object
+pat.file = pat_file;
 pat.params = combineStructs(params, pat.params);
 
 % make requested modifications
@@ -178,15 +187,13 @@ end
 
 
 function pat = pattern_ops(pat, params)
-  % get the pattern and corresponding events
-  pat = move_obj_to_workspace(pat);
-  pat.dim.ev = move_obj_to_workspace(pat.dim.ev);
-  
   % apply filtering
   [pat, inds] = patFilt(pat, params);
   pat.mat = pat.mat(inds{:});
+  pat_size = patsize(pat.dim);
 
   % ARTIFACT FILTERS
+  % exclude bad channel-sessions
   if ~isempty(params.badChanFiles)
     % load bad channel info
     [bad_chans, event_ind] = get_bad_chans({events.eegfile}, params.badChanFiles);
@@ -198,48 +205,57 @@ function pat = pattern_ops(pat, params)
     isbad = mark_bad_chans(chan_numbers, bad_chans, event_ind);
 
     % expand isbad to the same dimensions as pattern
-    pat_size = patsize(pat.dim);
     isbad = repmat(isbad, [1 1 pat_size(3:end)]);
 
     % mark bad parts of the pattern
     pat.mat(isbad) = NaN;
   end
 
+  % reject time bins with blink artifacts
   if ~isempty(params.blinkthresh)
-    bad_events = false(patsize(pat.dim, 1), 1);
+    % set range of samples to search
     first = pat.dim.time(1).MSvals(1);
     last = pat.dim.time(end).MSvals(end);
-    offsetMS = first - params.eog_buffer;
-    durationMS = last + first + params.eog_buffer;
+    offsetMS = first;
+    durationMS = last - first;
+    
+    % events X time
+    params.resampledrate = get_pat_samplerate(pat);
+    bad_samples = false(patsize(pat.dim,1), patsize(pat.dim,3));
     for i=1:length(params.eog_channels)
-      bad_samples = find_eog_artifacts(pat.dim.ev.mat, params.eog_channels{i}, ...
-                                      offsetMS, ...
-                                      durationMS, ...
-                                      params);
-      bad_events = bad_events | any(bad_samples,2);
+      artifacts = find_eog_artifacts(pat.dim.ev.mat, ...
+                                     params.eog_channels{i}, ...
+                                     offsetMS, ...
+                                     durationMS, ...
+                                     params);
+      bad_samples = bad_samples | [artifacts artifacts(:,end)];
     end
-
-    pat.mat(bad_events,:,:,:) = NaN;
-    fprintf('Threw out %d events out of %d with EOG artifacts.\n', ...
-            length(find(bad_events)), length(bad_events))
+    %bad_samples(any(bad_samples,2),:) = true;
+    
+    bad = repmat(bad_samples, [1 1 pat_size(2) pat_size(4)]);
+    bad = permute(bad, [1 3 2 4]);
+    pat.mat(bad) = NaN;
+    fprintf('Threw out %d samples out of %d with eye artifacts.\n', ...
+            nnz(bad_samples), numel(bad_samples))
+    %pat.mat(bad_events,:,:,:) = NaN;
+    %fprintf('Threw out %d events out of %d with EOG artifacts.\n', ...
+    %        length(find(bad_events)), length(bad_events))
   end
 
+  % reject event-channels that have any values above a given threshold
   if params.absThresh
-    % find any values that are above our absolute threshold
-    bad_samples = abs(pat.mat)>params.absThresh;
-
     % get a logical indicating events/channels that have at least 
     % one bad sample
-    pat_size = patsize(pat.dim);  
+    bad_samples = abs(pat.mat)>params.absThresh;
     bad_event_chans = any(reshape(bad_samples, pat_size(1), pat_size(2), prod(pat_size(3:end))), 3);
 
-    isbad = repmat(bad_event_chans, [1 1 pat_size(3:end)]);
-
     % mark the bad events/channels
+    isbad = repmat(bad_event_chans, [1 1 pat_size(3:end)]);
     pat.mat(isbad) = NaN;
 
     % check the results
-    fprintf('Threw out %d event-channels out of %d with abs. val. greater than %d.\n', sum(bad_event_chans(:)),prod(pat_size(1:2)),params.absThresh)
+    fprintf('Threw out %d event-channels out of %d with abs. val. greater than %d.\n', ...
+            nnz(bad_event_chans), numel(bad_event_chans), params.absThresh)
 
     % get channels that are bad for all events
     bad_chans = find(all(bad_event_chans,1));
@@ -247,6 +263,12 @@ function pat = pattern_ops(pat, params)
       emsg = ['channels excluded: ' sprintf('%d ', pat.dim.chan(bad_chans).label)];
       warning(emsg)
     end
+  end
+
+  % reject event-channel-freqs with high kurtosis
+  if params.kthresh
+    mask = reject_kurtosis(pat.mat, params.kthresh);
+    pat.mat(mask) = NaN;
   end
 
   % Z-TRANSFORM
@@ -268,7 +290,7 @@ function pat = pattern_ops(pat, params)
   % PCA
   if ~isempty(params.nComp)
     % run PCA on the pattern
-    [pat, pat.mat, coeff] = patPCA(pat, params, pat.mat);
+    [pat, coeff] = patPCA(pat, params);
     filename = objfilename('coeff', pat.name, pat.source);
     pat.dim.coeff = fullfile(get_pat_dir(pat, 'patterns'), filename);
     save(pat.dim.coeff, 'coeff');
