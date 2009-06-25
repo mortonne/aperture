@@ -19,10 +19,17 @@ if isfield(obj, 'name')
   objname = obj.name;
 elseif isfield(obj, 'id')
   objname = obj.id;
-elseif isfield(obj, 'number')
-  objname = obj.number;
 elseif isfield(obj, 'experiment')
   objname = obj.experiment;
+elseif isfield(obj, 'dir')
+  % if no other identifier, use the directory
+  objname = obj.dir;
 else
   objname = '';
+end
+
+% sanity check the name
+if ~ischar(objname)
+  disp(objname)
+  error('Object name must be a string.')
 end
