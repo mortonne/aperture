@@ -3,30 +3,32 @@ function subj = get_sessdirs(dataroot,subjstr,file2check,sesspath)
 %
 %  subj = get_sessdirs(dataroot, subjstr, file2check, sesspath)
 %
-%  This function makes a few simplifying assumptions. Each subject's data
-%  is assumed to be in a separate directory, which is named with the subject's
-%  identifier. All subject IDs and the names of the session directories must 
-%  follow a pattern that can be specified using the wildcard characters that 
-%  Matlab recognizes.
+%  This function makes a few simplifying assumptions. Each subject's
+%  data is assumed to be in a separate directory, which is named with
+%  the subject's identifier. All subject IDs and the names of the
+%  session directories must follow a pattern that can be specified using
+%  the wildcard characters that Matlab recognizes.
 %
 %  INPUTS:
 %    dataroot:  path to the directory that contains subject directories.
 %
 %     subjstr:  string that all subject identifiers must match to be
-%               included in the subject structure. May contain wildcards (*).
+%               included in the subject structure. May contain wildcards.
 %               Default: '*'.
 %
 %  file2check:  cell array of paths, relative to each session directory,
-%               to files that must exist for a given session to be included.
-%               Default: {'session.log'}. This is standard for pyEPL
-%               behavioral experiments. Set to {} to return all session
-%               directories, regardless of whether they contain data.
+%               to files that must exist for a given session to be
+%               included. Default: {'session.log'}. This is standard for
+%               pyEPL behavioral experiments. Set to {} to return all
+%               session directories, regardless of whether they contain
+%               data.
 %
-%    sesspath:  path, relative to each subject's directory, to the session
-%               directories. May contain wildcards (*).
+%    sesspath:  path, relative to each subject's directory, to the
+%               session directories. May contain wildcards (*).
 %
 %  OUTPUTS:
-%        subj:  a subject structure, formatted for use in eeg_ana functions.
+%        subj:  a subject structure, formatted for use in eeg_ana
+%               functions.
 %
 %  EXAMPLE:   
 %   dataroot = '/data/eeg/scalp/ltp/apem_e7_ltp';
