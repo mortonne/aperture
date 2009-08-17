@@ -92,6 +92,8 @@ for s=1:length(exp.subj)
   regions = regions(cidx);
   
   % create the chan struct for this subject
+  chan = [];
+  
   for c=1:length(channels)
     chan(c).number = channels(c);
     chan(c).region = regions{c};
