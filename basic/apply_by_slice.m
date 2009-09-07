@@ -29,32 +29,53 @@ function x = apply_by_slice(f, iter_dims, matrices, varargin)
 %   % to operate along, not the dimension to iterate over
 %   x = max(a, [], 2);
 
-mat_ndims = cellfun(@ndims, matrices);
+% input checks
+if ~exist('f', 'var') || ~isa(f, 'function_handle')
+  error('You must pass a function handle to evaluate.')
+elseif ~exist('iter_dims', 'var') || ~isnumeric(iter_dims)
+  error('You must pass a vector of dimensions to iterate over.')
+elseif isempty(iter_dims)
+  error('iter_dims cannot be empty.')
+elseif ~exist('matrices', 'var') || isempty(matrices)
+  error('You must pass a cell array of matrices.')
+end
+if size(iter_dims, 1) > 1
+  iter_dims = iter_dims';
+end
+if ~iscell(matrices)
+  matrices = {matrices};
+end
 
-% each matrix must have the same size on iter_dims.  For now,
-% assuming this to be true.
-in_dim_sizes = size(matrices{1});
-all_dims = 1:ndims(matrices{1});
-not_iter_dims = ~ismember(all_dims, iter_dims);
+% get the size of the output matrix.
+% all non-iter dimensions will be singleton, ndims for the output is the
+% highest iter dimension or 2, whichever is higher
+out_dim_sizes = ones(1, max([iter_dims 2]));
+for dim=iter_dims
+  iter_dim_sizes = unique(cellfun('size', matrices, dim));
+  if length(iter_dim_sizes) > 1
+    error('Sizes of matrices are mismatched along dimension %d', dim)
+  end
+  out_dim_sizes(dim) = iter_dim_sizes;
+end
 
-% get the size of the output matrix; set all non-iter dims to
-% singleton
-out_dim_sizes = in_dim_sizes;
-out_dim_sizes(not_iter_dims) = 1;
+% initialize the output matrix
 x = nan(out_dim_sizes);
 
+% get indices that will work with all the input matrices
+max_in_dim = max(cellfun(@ndims, matrices));
+i = repmat({':'}, 1, max_in_dim);
+
 n = 1;
-i = repmat({':'}, 1, length(in_dim_sizes));
 
 % run the function on each slice with dark recursive magic
-x = eval_dim(matrices, x, i, n, iter_dims, in_dim_sizes, f, varargin);
+x = eval_dim(matrices, x, i, n, iter_dims, out_dim_sizes, f, varargin);
 
 function out_matrix = eval_dim(in_matrices, out_matrix, i, n, iter_dims, s, f, f_in)
   % in_matrices - complete input matrices
   % out_matrix - output matrix so far
   % i - current indices in the input matrices
   % n - current dimension number
-  % s - matrix sizes
+  % s - output matrix size
   % f - function to evaluate on each slice
   % f_in - additional inputs
   
