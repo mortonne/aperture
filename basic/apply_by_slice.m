@@ -97,8 +97,14 @@ function out_matrix = eval_dim(in_matrices, out_matrix, i, n, iter_dims, s, f, f
       end
       
       % call the function to get the output for this slice
-      % colons should correspond to collapsed dimensions
-      out_matrix(i{:}) = f(slices{:}, f_in{:});
+      f_out = f(slices{:}, f_in{:});
+      if ~isscalar(f_out)
+        error('Output of f must be scalar.')
+      end
+      
+      % place the output; colons should correspond to collapsed 
+      % dimensions
+      out_matrix(i{:}) = f_out;
     end
   end
 %endfunction
