@@ -1,29 +1,37 @@
-function x = apply_by_slice(f, iter_dims, matrices, varargin)
+function x = apply_by_slice(f, matrices, iter_dims, constant_in, varargin)
 %APPLY_BY_SLICE   Iterate over slices of matrices, applying a function.
 %
-%  x = apply_by_slice(f, iter_dims, matrices, varargin)
+%  x = apply_by_slice(f, matrices, iter_dims, constant_in, varargin)
 %
 %  INPUTS:
-%          f:  handle to a function to apply to each slice.  Output must
-%              be a scalar.
+%             f:  handle to a function to apply to each slice.  Output
+%                 must be a scalar.
 %
-%  iter_dims:  array of dimension numbers, indicating the dimensions to
-%              be iterated over.
+%      matrices:  cell array of matrices.  Each must have the same size
+%                 along each iter_dim.  Other dimensions can be
+%                 different.
 %
-%   matrices:  cell array of matrices.  Each must have the same size
-%              along each iter_dim.  Other dimensions can be different.
+%     iter_dims:  array of dimension numbers, indicating the dimensions
+%                 to be iterated over.
 %
-%   varargin:  additional inputs to f; will be input after all slices.
+%   constant_in:  cell array of additional inputs to f, after all slices.
+%                 These inputs are the same regardless of what slice is
+%                 being processed.
 %
 %  OUTPUTS:
-%          x:  matrix of output values.  All dimensions not listed in
-%              iter_dims will be singleton.
+%             x:  matrix of output values.  All dimensions not listed in
+%                 iter_dims will be singleton.
+%
+%  ARGS:
+%  Optional additional arguments passed in as parameter, value pairs:
+%   uniform_output  - if true, output will be an array; if false, output
+%                     will be a cell array (true)
 %
 %  EXAMPLES:
 %   a = magic(3);
 %
 %   % get the maximum value, iterating over each row
-%   x = apply_by_slice(@max, 1, {a});
+%   x = apply_by_slice(@max, {a}, 1);
 %
 %   % compare to calling max directly; here, you specify the dimension
 %   % to operate along, not the dimension to iterate over
@@ -39,12 +47,21 @@ elseif isempty(iter_dims)
 elseif ~exist('matrices', 'var') || isempty(matrices)
   error('You must pass a cell array of matrices.')
 end
+if ~exist('constant_in', 'var')
+  constant_in = {};
+end
 if size(iter_dims, 1) > 1
   iter_dims = iter_dims';
 end
 if ~iscell(matrices)
   matrices = {matrices};
 end
+if ~iscell(constant_in)
+  constant_in = {constant_in};
+end
+
+defaults.uniform_output = true;
+params = propval(varargin, defaults);
 
 % get the size of the output matrix.
 % all non-iter dimensions will be singleton, ndims for the output is the
@@ -59,7 +76,11 @@ for dim=iter_dims
 end
 
 % initialize the output matrix
-x = nan(out_dim_sizes);
+if params.uniform_output
+  x = nan(out_dim_sizes);
+else
+  x = cell(out_dim_sizes);
+end
 
 % get indices that will work with all the input matrices
 max_in_dim = max(cellfun(@ndims, matrices));
@@ -68,7 +89,7 @@ i = repmat({':'}, 1, max_in_dim);
 n = 1;
 
 % run the function on each slice with dark recursive magic
-x = eval_dim(matrices, x, i, n, iter_dims, out_dim_sizes, f, varargin);
+x = eval_dim(matrices, x, i, n, iter_dims, out_dim_sizes, f, constant_in);
 
 function out_matrix = eval_dim(in_matrices, out_matrix, i, n, iter_dims, s, f, f_in)
   % in_matrices - complete input matrices
@@ -98,14 +119,17 @@ function out_matrix = eval_dim(in_matrices, out_matrix, i, n, iter_dims, s, f, f
       
       % call the function to get the output for this slice
       f_out = f(slices{:}, f_in{:});
-      if ~isscalar(f_out)
-        error('Output of f must be scalar.')
-      end
       
       % place the output; colons should correspond to collapsed 
       % dimensions
-      out_matrix(i{:}) = f_out;
+      if isnumeric(out_matrix)
+        if ~isscalar(f_out)
+          error(['Output of f must be scalar, or uniform_output must be set to false.'])
+        end
+        out_matrix(i{:}) = f_out;
+      else
+        out_matrix{i{:}} = f_out;
+      end
     end
   end
 %endfunction
-
