@@ -73,93 +73,116 @@ if ~params.overwrite && exist(pc_file, 'file')
   return
 end
 
-% initialize the pc object
-pc = init_pc(pc_name, pc_file, params);
+% initialize the stat object
+stat = init_stat(pc_name, pc_file, pat.name, params);
 
 % load the pattern and corresponding events
 pattern = load_pattern(pat, params);
 events = load_events(pat.dim.ev);
 
 % get the regressor to use for classification
-reg.vec = make_event_bins(events, params.regressor);
-reg.vals = unique(reg.vec);
-
-% optional scramble to use as a sanity check
-if params.scramble
-  fprintf('scrambling regressors...')
-  reg.vec = reg.vec(randperm(length(reg.vec)));
+targ_vec = make_event_bins(events, params.regressor);
+conds = unique(targ_vec(~isnan(targ_vec)));
+targets = zeros(length(events), length(conds));
+for i=1:length(conds)
+  cond_match = targ_vec == conds(i);
+  targets(:, i) = cond_match;
 end
 
 % get the selector
-sel.vec = make_event_bins(events, params.selector);
-sel.vals = unique(sel.vec);
-sel.vals = sel.vals(~isnan(sel.vals));
+selector = make_event_bins(events, params.selector);
 
-% flatten all dimensions after events into one vector
-patsize = size(pattern);
-if ndims(pattern)>2
-  pattern = reshape(pattern, [patsize(1) prod(patsize(2:end))]);
-end
+% run pattern classification separately for each time and frequency bin
+p = [];
+p.penalty = 10;
+res = apply_by_slice(@xval, {pattern}, [3 4], {selector, targets, params}, 
+                   'uniform_output', false);
 
-% deal with any nans in the pattern (variables may be thrown out)
-pattern = remove_nans(pattern);
+save(stat.file, 'res');
 
-if params.select_test
-  included = nnz(~isnan(sel.vec));
-  nTestEv = included/length(sel.vals);
-else
-  nTestEv = length(events);
-end
+pat = setobj(pat, 'stat', stat);
 
-fprintf('running %s classifier...', params.classifier)
-pcorr = NaN(1, length(sel.vals));
-class = NaN(length(sel.vals), nTestEv);
-posterior = NaN(length(sel.vals), nTestEv, length(reg.vals));
-fprintf('\nPercent Correct:\n')
-for j=1:length(sel.vals)
-  if iscell(sel.vals)
-    fprintf('%s:\t', sel.vals{j})
-    match = strcmp(sel.vec, sel.vals{j});
-  else
-    fprintf('%d:\t', sel.vals(j))
-    match = sel.vec==sel.vals(j);
-  end
 
-  if params.select_test
-    % select which events to test
-    testsel = match;
-    trainsel = ~testsel;
-  else
-    % train on this value, test on everything
-    trainsel = match;
-    testsel = true(size(sel.vec));
-  end
+% % get the regressor to use for classification
+% reg.vec = make_event_bins(events, params.regressor);
+% reg.vals = unique(reg.vec);
 
-  % get the training and testing patterns
-  trainpat = pattern(trainsel,:,:,:);
-  testpat = pattern(testsel,:,:,:);
+% % optional scramble to use as a sanity check
+% if params.scramble
+%   fprintf('scrambling regressors...')
+%   reg.vec = reg.vec(randperm(length(reg.vec)));
+% end
 
-  % get the corresponding regressors for train and test
-  trainreg = reg.vec(trainsel);
-  testreg(j,:) = reg.vec(testsel);
+% % get the selector
+% sel.vec = make_event_bins(events, params.selector);
+% sel.vals = unique(sel.vec);
+% sel.vals = sel.vals(~isnan(sel.vals));
 
-  try
-    % run classification algorithms
-    [class(j,:),err,posterior(j,:,:)] = run_classifier(trainpat,trainreg,testpat,testreg(j,:),params.classifier,params);
-  catch
-    warning('eeg_ana:classify_pat:ClassifierError', ...
-            'Classifier threw an error.')
-  end
+% % flatten all dimensions after events into one vector
+% patsize = size(pattern);
+% if ndims(pattern)>2
+%   pattern = reshape(pattern, [patsize(1) prod(patsize(2:end))]);
+% end
 
-  % check the performance
-  pcorr(j) = sum(testreg(j,:)==class(j,:))/length(testreg(j,:));
-  fprintf('%.4f\n', pcorr(j))
-end % selector
+% % deal with any nans in the pattern (variables may be thrown out)
+% pattern = remove_nans(pattern);
 
-meanpcorr = mean(pcorr);
+% if params.select_test
+%   included = nnz(~isnan(sel.vec));
+%   nTestEv = included/length(sel.vals);
+% else
+%   nTestEv = length(events);
+% end
 
-save(pc.file, 'class', 'pcorr', 'meanpcorr', 'posterior', 'testreg');
-closeFile(pc.file);
+% fprintf('running %s classifier...', params.classifier)
+% pcorr = NaN(1, length(sel.vals));
+% class = NaN(length(sel.vals), nTestEv);
+% posterior = NaN(length(sel.vals), nTestEv, length(reg.vals));
+% fprintf('\nPercent Correct:\n')
+% for j=1:length(sel.vals)
+%   if iscell(sel.vals)
+%     fprintf('%s:\t', sel.vals{j})
+%     match = strcmp(sel.vec, sel.vals{j});
+%   else
+%     fprintf('%d:\t', sel.vals(j))
+%     match = sel.vec==sel.vals(j);
+%   end
 
-% add the pc object to pat
-pat = setobj(pat, 'pc', pc);
+%   if params.select_test
+%     % select which events to test
+%     testsel = match;
+%     trainsel = ~testsel;
+%   else
+%     % train on this value, test on everything
+%     trainsel = match;
+%     testsel = true(size(sel.vec));
+%   end
+
+%   % get the training and testing patterns
+%   trainpat = pattern(trainsel,:,:,:);
+%   testpat = pattern(testsel,:,:,:);
+
+%   % get the corresponding regressors for train and test
+%   trainreg = reg.vec(trainsel);
+%   testreg(j,:) = reg.vec(testsel);
+
+%   try
+%     % run classification algorithms
+%     [class(j,:),err,posterior(j,:,:)] = run_classifier(trainpat,trainreg,testpat,testreg(j,:),params.classifier,params);
+%   catch
+%     warning('eeg_ana:classify_pat:ClassifierError', ...
+%             'Classifier threw an error.')
+%   end
+
+%   % check the performance
+%   pcorr(j) = sum(testreg(j,:)==class(j,:))/length(testreg(j,:));
+%   fprintf('%.4f\n', pcorr(j))
+% end % selector
+
+% meanpcorr = mean(pcorr);
+
+% save(pc.file, 'class', 'pcorr', 'meanpcorr', 'posterior', 'testreg');
+% closeFile(pc.file);
+
+% % add the pc object to pat
+% pat = setobj(pat, 'pc', pc);
