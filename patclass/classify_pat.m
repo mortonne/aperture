@@ -95,11 +95,11 @@ end
 selector = make_event_bins(events, params.selector);
 
 % run pattern classification separately for each time and frequency bin
-p = [];
-p.penalty = 10;
 res = apply_by_slice(@xval, {pattern}, params.iter_dims, ...
 		     {selector, targets, params}, ...
 		     'uniform_output', false);
+
+
 
 save(stat.file, 'res');
 

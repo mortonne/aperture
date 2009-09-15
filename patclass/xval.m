@@ -43,7 +43,15 @@ end
 
 params = structDefaults(params,                   ...
                         'f_train', @train_logreg, ...
-                        'f_test',  @test_logreg);
+                        'f_test',  @test_logreg,  ...
+                        'f_perfmet', {@perfmet_maxclass});
+if ~iscell(params.f_perfmet)
+  params.f_perfmet = {params.f_perfmet};
+end
+if ~isfield(params, 'perfmet_args')
+  params.perfmet_args = cell(1, length(params.f_perfmet));
+  params.perfmet_args{:} = deal(struct);
+end
 
 % get the selector value for each iteration
 sel_vals = unique(selector);
@@ -64,6 +72,8 @@ end
 pattern = remove_nans(pattern);
 
 n_iter = length(sel_vals);
+n_perfs = length(params.f_perfmet);
+store_perfs = NaN(n_iter, n_perfs);
 for i=1:n_iter
   
   % find the observations to train and test on
@@ -75,17 +85,40 @@ for i=1:n_iter
   scratchpad = f_train(pattern(train_idx,:)', targets(train_idx,:)', params);
   
   % test
-  [acts, scratchpad] = f_test(pattern(test_idx,:)', targets(test_idx,:)', scratchpad);
+  test_targets = targets(test_idx,:)';
+  [acts, scratchpad] = f_test(pattern(test_idx,:)', test_targets, scratchpad);
+  scratchpad.cur_iteration = i;
   
+  % calculate performance
+  for p=1:n_perfs
+    pm_fh = params.f_perfmet{p};
+    pm = pm_fh(acts, test_targets, scratchpad, params.perfmet_args{p});
+    pm.function_name = func2str(pm_fh);
+    
+    iter_res.perfmet{p} = pm;
+    [iter_res.perf(p), store_perfs(i,p)] = deal(pm.perf);
+  end
+
   % save data from this iteration in MVPA style
-  res.iterations(i) = struct('train_idx',   train_idx,  ...
-                             'test_idx',    test_idx,   ...
-                             'unused_idx',  unused_idx, ...
-                             'unknown_idx', [],         ...
-                             'acts',        acts,       ...
-                             'scratchpad',  scratchpad, ...
-                             'train_funct_name', func2str(f_train), ...
-                             'test_funct_name', func2str(f_test), ...
-                             'args',        params);
-  
+  iter_res.train_idx = train_idx;
+  iter_res.test_idx = test_idx;
+  iter_res.unused_idx = unused_idx;
+  iter_res.unknown_idx = [];
+  iter_res.targs = test_targets;
+  iter_res.acts = acts;
+  iter_res.scratchpad = scratchpad;
+  iter_res.train_funct_name = func2str(f_train);
+  iter_res.test_funct_name = func2str(f_test);
+  iter_res.args = params;
+  res.iterations(i) = iter_res;
+
+  fprintf('%.2f\t', res.iterations(i).perf)
+  if n_perfs > 1
+    fprintf('\n')
+  end
 end
+
+if n_perfs==1
+  fprintf('\n')
+end
+
