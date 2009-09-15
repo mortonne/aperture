@@ -28,6 +28,8 @@ function pat = classify_pat(pat, params, pc_name, res_dir)
 %                classification.  Useful for debugging.  Default: false
 %   overwrite  - if true, existing pc files will be overwritten.
 %                Default: false
+%   iter_dims  - vector of which dimensions the classification
+%                should iterate over.  Default?
 %
 %  EXAMPLE:
 %   % classify based on subsequent memory
@@ -95,8 +97,9 @@ selector = make_event_bins(events, params.selector);
 % run pattern classification separately for each time and frequency bin
 p = [];
 p.penalty = 10;
-res = apply_by_slice(@xval, {pattern}, [3 4], {selector, targets, params}, 
-                   'uniform_output', false);
+res = apply_by_slice(@xval, {pattern}, params.iter_dims, ...
+		     {selector, targets, params}, ...
+		     'uniform_output', false);
 
 save(stat.file, 'res');
 
