@@ -50,7 +50,7 @@ if dist==1
   path_cell = regexp(path, ':', 'split');
   job_name = sprintf('apply_to_subj:%s', func2str(fcn_handle));
   job = createJob(sm, 'PathDependencies', path_cell, 'Name', job_name);
-  
+
   % make a task for each subject
   for this_subj=subj
     name = get_obj_name(this_subj);

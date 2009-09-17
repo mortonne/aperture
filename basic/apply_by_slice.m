@@ -106,7 +106,7 @@ function out_matrix = eval_dim(in_matrices, out_matrix, i, n, iter_dims, s, f, f
     % update the index
     i{dim} = j;
     
-    if dim < length(iter_dims)
+    if dim < max(iter_dims)
       % call recursively, using the next iter_dim
       out_matrix = eval_dim(in_matrices, out_matrix, i, n + 1, iter_dims, s, ...
                             f, f_in);
