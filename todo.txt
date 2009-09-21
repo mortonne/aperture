@@ -7,7 +7,6 @@
  * add MVPA-style summarize function
 
 == Basic ==
- * expand use of "path" cell array-style exp referencing; may make apply_to_obj more flexible
  * make an init_subj function; currently get_sessdirs is the only way to make a subj structure
  * remove init_scalp and init_iEEG, added scripts for adding channel information to existing subjects
 
@@ -34,6 +33,3 @@
 == Utils ==
  * should objfilename.m be used more?
  * consider adding ability for getobj and setobj to get/set multiple objects.
- * getobj/setobj/rmobj/recursive_setobj a messy setup. Should just give
-   getobj and setobj recursive capabilities.  Also, rmobj is the same as
-   recursive_setobj, you just set the object to [].
