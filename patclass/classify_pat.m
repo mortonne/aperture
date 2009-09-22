@@ -61,6 +61,7 @@ end
 
 params = structDefaults(params, ...
                         'classifier', 'classify', ...
+                        'iter_dims',  [],         ...
                         'scramble',   0,          ...
                         'lock',       0,          ...
                         'overwrite',  1,          ...
@@ -113,86 +114,3 @@ save(stat.file, 'res');
 
 pat = setobj(pat, 'stat', stat);
 
-% % get the regressor to use for classification
-% reg.vec = make_event_bins(events, params.regressor);
-% reg.vals = unique(reg.vec);
-
-% % optional scramble to use as a sanity check
-% if params.scramble
-%   fprintf('scrambling regressors...')
-%   reg.vec = reg.vec(randperm(length(reg.vec)));
-% end
-
-% % get the selector
-% sel.vec = make_event_bins(events, params.selector);
-% sel.vals = unique(sel.vec);
-% sel.vals = sel.vals(~isnan(sel.vals));
-
-% % flatten all dimensions after events into one vector
-% patsize = size(pattern);
-% if ndims(pattern)>2
-%   pattern = reshape(pattern, [patsize(1) prod(patsize(2:end))]);
-% end
-
-% % deal with any nans in the pattern (variables may be thrown out)
-% pattern = remove_nans(pattern);
-
-% if params.select_test
-%   included = nnz(~isnan(sel.vec));
-%   nTestEv = included/length(sel.vals);
-% else
-%   nTestEv = length(events);
-% end
-
-% fprintf('running %s classifier...', params.classifier)
-% pcorr = NaN(1, length(sel.vals));
-% class = NaN(length(sel.vals), nTestEv);
-% posterior = NaN(length(sel.vals), nTestEv, length(reg.vals));
-% fprintf('\nPercent Correct:\n')
-% for j=1:length(sel.vals)
-%   if iscell(sel.vals)
-%     fprintf('%s:\t', sel.vals{j})
-%     match = strcmp(sel.vec, sel.vals{j});
-%   else
-%     fprintf('%d:\t', sel.vals(j))
-%     match = sel.vec==sel.vals(j);
-%   end
-
-%   if params.select_test
-%     % select which events to test
-%     testsel = match;
-%     trainsel = ~testsel;
-%   else
-%     % train on this value, test on everything
-%     trainsel = match;
-%     testsel = true(size(sel.vec));
-%   end
-
-%   % get the training and testing patterns
-%   trainpat = pattern(trainsel,:,:,:);
-%   testpat = pattern(testsel,:,:,:);
-
-%   % get the corresponding regressors for train and test
-%   trainreg = reg.vec(trainsel);
-%   testreg(j,:) = reg.vec(testsel);
-
-%   try
-%     % run classification algorithms
-%     [class(j,:),err,posterior(j,:,:)] = run_classifier(trainpat,trainreg,testpat,testreg(j,:),params.classifier,params);
-%   catch
-%     warning('eeg_ana:classify_pat:ClassifierError', ...
-%             'Classifier threw an error.')
-%   end
-
-%   % check the performance
-%   pcorr(j) = sum(testreg(j,:)==class(j,:))/length(testreg(j,:));
-%   fprintf('%.4f\n', pcorr(j))
-% end % selector
-
-% meanpcorr = mean(pcorr);
-
-% save(pc.file, 'class', 'pcorr', 'meanpcorr', 'posterior', 'testreg');
-% closeFile(pc.file);
-
-% % add the pc object to pat
-% pat = setobj(pat, 'pc', pc);
