@@ -99,12 +99,19 @@ res = apply_by_slice(@xval, {pattern}, params.iter_dims, ...
 		     {selector, targets, params}, ...
 		     'uniform_output', false);
 
+% fix the res structure
+res_size = size(res);
+res_fixed_size = [length(res{1}.iterations) res_size(2:end)];
 
+cell_vec = [res{:}];
+struct_vec = [cell_vec.iterations];
+res_fixed.iterations = reshape(struct_vec, res_fixed_size);
+res = res_fixed;
 
+% save the results
 save(stat.file, 'res');
 
 pat = setobj(pat, 'stat', stat);
-
 
 % % get the regressor to use for classification
 % reg.vec = make_event_bins(events, params.regressor);
