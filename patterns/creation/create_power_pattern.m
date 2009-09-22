@@ -1,7 +1,7 @@
-function subj = create_voltage_pattern(subj, pat_name, params, res_dir)
-%CREATE_VOLTAGE_PATTERN   Create a voltage pattern for one subject.
+function subj = create_power_pattern(subj, pat_name, params, res_dir)
+%CREATE_POWER_PATTERN   Create a power pattern for one subject.
 %
-%  subj = create_voltage_pattern(subj, pat_name, params, res_dir)
+%  subj = create_power_pattern(subj, pat_name, params, res_dir)
 %
 %  INPUTS:
 %      subj:  a subject object. See get_sessdirs.
@@ -33,6 +33,11 @@ function subj = create_voltage_pattern(subj, pat_name, params, res_dir)
 %   kthresh         - kurtosis threshold; scalar indicating the maximum 
 %                     allowable kurtosis for an event before it is excluded 
 %                     (5)
+%   artWindow       - 
+%   absThresh       - 
+%   width           - 
+%   logtransform    - 
+%   precision       - 
 %
 %  Channels
 %   chanFilter      - used to choose which channels to include in the pattern. 
@@ -40,14 +45,13 @@ function subj = create_voltage_pattern(subj, pat_name, params, res_dir)
 %                     channel numbers to include ('')
 %   chanbins        - 
 %   chanbinlabels   - 
+%   excludeBadChans - 
 %
 %  Time
 %   resampledRate   - rate to resample to (500)
 %   offsetMS        - time in milliseconds before each event to start the 
 %                     pattern (-200)
 %   durationMS      - duration in milliseconds of each epoch (2200)
-%   relativeMS      - range of times relative to the start of each event to 
-%                     use for baseline subtraction ([-200 0])
 %   MSbins          - 
 %   MSbinlabels     - 
 %
@@ -66,8 +70,6 @@ function subj = create_voltage_pattern(subj, pat_name, params, res_dir)
 %   baseOffsetMS    - time before each baseline event to start the baseline 
 %                     period (-200)
 %   baseDurationMS  - duration of each baseline event epoch (200)
-%   baseRelativeMS  - range of times relative to the start of each event to 
-%                     use for baseline subtraction (params.relativeMS)
 %
 %  File Management
 %   lock            - if true, the pattern's file will be locked during 
@@ -80,7 +82,7 @@ function subj = create_voltage_pattern(subj, pat_name, params, res_dir)
 %                     object will be created and attached to the subject 
 %                     object (false)
 %
-%   See also create_power_pattern.
+%   See also create_voltage_pattern.
 
 % input checks
 if ~exist('subj','var') || ~isstruct(subj)
@@ -94,7 +96,7 @@ elseif ~isstruct(params)
   error('params must be a structure.')
 end
 if ~exist('pat_name','var')
-  pat_name = 'volt_pattern';
+  pat_name = 'power_pattern';
 elseif ~ischar(pat_name)
   error('pat_name must be a string.')
 end
@@ -104,6 +106,6 @@ elseif ~ischar(res_dir)
   error('res_dir must be a string.')
 end
 
-% sessVoltage and create_pattern will set our default parameters;
+% sessPower and create_pattern will set our default parameters;
 % just run it
-subj = create_pattern(subj, @sessVoltage, params, pat_name, res_dir);
+subj = create_pattern(subj, @sessPower, params, pat_name, res_dir);
