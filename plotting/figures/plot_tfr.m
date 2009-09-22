@@ -19,11 +19,11 @@ function h = plot_tfr(data, freq, time, params)
 %        h:  handle to the image.
 %
 %  PARAMS:
-%   freq_units - units of the frequency axis
-%   time_units - units of the time axis
-%   map_limits - limits for the z-axis
-%   colorbar   - boolean; if true, a colorbar will be displayed
-%   colormap   - colormap to use for mapping z-values to colors
+%   freq_units - units of the frequency axis ('Hz')
+%   time_units - units of the time axis ('ms')
+%   map_limits - limits for the z-axis ([])
+%   colorbar   - boolean; if true, a colorbar will be displayed (true)
+%   colormap   - colormap to use for mapping z-values to colors ([])
 
 % input checks
 if ~exist('data','var')
