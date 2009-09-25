@@ -53,7 +53,18 @@ if ~dist
 else
   % export pattern objects first, so there is less to send to each worker
   pats = getobjallsubj(subj, {'pat', pat_name});
+  
+  % name will not be unique, but source will
+  sources = {pats.source};
+  [pats.name] = deal(sources{:});
+  
+  % run as though the pat objects were subj objects
   pats = apply_to_subj(pats, fcn_handle, fcn_inputs, dist);
+  
+  % fix the name field
+  [pats.name] = deal(pat_name);
+  
+  % put the updated pattern objects back on the subjects
   for i=1:length(subj)
     subj(i) = setobj(subj(i), 'pat', pats(i));
   end
