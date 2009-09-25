@@ -97,7 +97,7 @@ elseif dist==2
   tic
   new_subj = [];
   parfor i=1:length(subj)
-    fprintf('%s\n', get_obj_name(this_subj))
+    fprintf('%s\n', get_obj_name(subj(i)))
     new_subj = [new_subj fcn_handle(subj(i), fcn_inputs{:})];
   end
   subj = new_subj;
