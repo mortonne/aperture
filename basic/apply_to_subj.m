@@ -48,9 +48,12 @@ if dist==1
   % create a job to run all subjects
   % use the current path, and override pathdef.m, jobStartup.m, etc.
   path_cell = regexp(path, ':', 'split');
+  main_dir = fileparts(which('eeg_ana'));
+  job_startup_file = fullfile(main_dir, 'utils', 'jobStartup.m');
   job_name = sprintf('apply_to_subj:%s', func2str(fcn_handle));
-  job = createJob(sm, 'PathDependencies', path_cell, 'Name', job_name);
-
+  job = createJob(sm, 'FileDependencies', {job_startup_file}, 'Name', job_name);
+  job.PathDependencies = path_cell;
+  
   % make a task for each subject
   for this_subj=subj
     name = get_obj_name(this_subj);
@@ -64,6 +67,8 @@ if dist==1
   % submit the job and wait for it to finish
   tic
   submit(job);
+  fprintf('Job submitted.  Waiting for all tasks to finish...\n')
+  
   wait(job);
   fprintf('apply_to_subj: job finished: %.2f seconds.\n', toc);
 
