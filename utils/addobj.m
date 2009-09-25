@@ -48,6 +48,9 @@ end
 obj_name = get_obj_name(obj);
 names = arrayfun(@get_obj_name, objs, 'UniformOutput', false);
 [tf, i] = ismember(obj_name, names);
+if nnz(tf) > 1
+  error('object list contains multiple objects named %s.', obj_name)
+end
 
 % add the new object to the end, and adding necessary fields in the
 % process
