@@ -30,8 +30,7 @@ function s = print_obj(subobj, obj_type, long_name, dim_labels, obj_names, ...
 %   The first column gives the index of the object in the list, and the
 %   object's name.  The second column displays the object's size.  The
 %   dimensions vary depending on the type of object.  If there are
-%   multiple objects, each dimension will be printed as NaN unless it is
-%   the same for all of the objects in the list.
+%   multiple objects, the range of sizes will be printed.
 %
 %  NOTES:
 %   Currently, only 'subj', 'ev', and 'pat' objects are supported.

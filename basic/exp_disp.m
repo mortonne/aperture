@@ -27,7 +27,7 @@ for i=1:length(obj_types)
   switch obj_types{i}
     
    case {'ev', 'events'}
-    if ~isfield(exp, 'ev')
+    if ~isfield(exp, 'ev') || isempty(exp.ev)
       continue
     end
     
@@ -36,7 +36,7 @@ for i=1:length(obj_types)
                      sort({exp.ev.name})))
 
    case {'pat', 'patterns'}
-    if ~isfield(exp, 'pat')
+    if ~isfield(exp, 'pat') || isempty(exp.pat)
       continue
     end
     
@@ -45,7 +45,7 @@ for i=1:length(obj_types)
                       sort({exp.pat.name})))
     
    case {'subj', 'subject'}
-    if ~isfield(exp, 'subj')
+    if ~isfield(exp, 'subj') || isempty(exp.subj)
       continue
     end
     
