@@ -95,6 +95,9 @@ end
 
 % get the selector
 selector = make_event_bins(events, params.selector);
+if iscellstr(selector)
+  selector = make_index(selector);
+end
 
 if isempty(params.iter_dims)
   % use all features for classification
