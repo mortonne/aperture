@@ -14,7 +14,9 @@ function pat = cat_patterns(pats,dimension,pat_name,res_dir)
 %
 %   pat_name:  string identifier for the new pattern.
 %
-%    res_dir:  directory where the new pattern will be saved.
+%    res_dir:  directory where the new pattern will be saved.  If not
+%              specified, the main directory of the first pattern will
+%              be used.
 %
 %  OUTPUTS:
 %        pat:  pat object with metadata for the new concatenated
@@ -65,6 +67,14 @@ for j=1:n_dims
   end
 end
 
+% get a source identifier to set filenames
+source = unique({pats.source});
+if length(source) > 1
+  source = 'multiple';
+else
+  source = source{1};
+end
+
 % concatenate the dim structure
 dim = def_pat.dim;
 if strcmp(dim_name, 'ev')
@@ -94,14 +104,15 @@ if strcmp(dim_name, 'ev')
   if ~exist(ev_dir)
     mkdir(ev_dir);
   end
-  dim.ev.file = fullfile(ev_dir, sprintf('events_%s_multiple.mat', pat_name));
+  dim.ev.file = fullfile(ev_dir, ...
+                         sprintf('events_%s_%s.mat', pat_name, source));
   save(dim.ev.file, 'events')
   if isfield(dim.ev,'mat')
     dim.ev.mat = events;
   end
   
   % update the ev object
-  dim.ev.source = 'multiple';
+  dim.ev.source = source;
   dim.ev.len = length(events);
   
   else
@@ -128,14 +139,15 @@ if ~isfield(dim,'splitdim') || isempty(dim.splitdim) || dim.splitdim==dim_number
   fprintf('\n')
   
   % save the new pattern
-  pat_file = fullfile(pat_dir, sprintf('pattern_%s_multiple.mat', pat_name));
+  pat_file = fullfile(pat_dir, ...
+                      sprintf('pattern_%s_%s.mat', pat_name, source));
   save(pat_file, 'pattern')
   
-  else
+else
   % we have slices
   split_dim_name = read_dim_input(dim.splitdim);
   split_dim = def_pat.dim.(split_dim_name);
-  pat_fileroot = sprintf('pattern_%s_multiple', pat_name);
+  pat_fileroot = sprintf('pattern_%s_%s', pat_name, source);
   
   fprintf('loading patterns split along %s dimension...', split_dim_name)
   for i=1:length(split_dim)
@@ -156,5 +168,5 @@ if ~isfield(dim,'splitdim') || isempty(dim.splitdim) || dim.splitdim==dim_number
 end
 
 % create the new pat object
-pat = init_pat(pat_name, pat_file, 'multiple', def_pat.params, dim);
+pat = init_pat(pat_name, pat_file, source, def_pat.params, dim);
 fprintf('pattern "%s" created.\n', pat_name)
