@@ -121,7 +121,12 @@ function obj_size = get_obj_size(subobj, obj_type, obj_name)
 
   % get the size of each object
   for i=1:length(subobj)
-    obj = getobj(subobj(i), obj_type, obj_name);
+    try
+      obj = getobj(subobj(i), obj_type, obj_name);
+    catch
+      % this subobj doesn't have the object
+      continue
+    end
     
     switch obj_type
      case 'pat'
@@ -133,8 +138,16 @@ function obj_size = get_obj_size(subobj, obj_type, obj_name)
       obj_sizes(i,2) = length(obj.chan);
     end
   end
+
+  % make sure the size of each dimension is unique; if not, use the range
+  bad_subobjs = all(isnan(obj_sizes), 2);
+  if any(bad_subobjs)
+    obj_sizes(bad_subobjs,:) = [];
+    prefix = '*';
+  else
+    prefix = '';
+  end
   
-  % make sure the size of each dimension is unique; if not, set it to NaN
   obj_size = cell(1, size(obj_sizes,2));
   for i=1:size(obj_sizes,2)
     uniq_dim_size = unique(obj_sizes(:,i));
@@ -144,5 +157,6 @@ function obj_size = get_obj_size(subobj, obj_type, obj_name)
       obj_size{i} = sprintf('%i', uniq_dim_size);
     end
   end
+  obj_size{1} = [prefix obj_size{1}];
 %endfunction
 

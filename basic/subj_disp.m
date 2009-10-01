@@ -39,6 +39,9 @@ for i=1:length(obj_types)
     ev_dim_labels = {'events'};
     evs = cell(1, length(subj));
     for i=1:length(subj)
+      if isempty(subj(i).ev)
+        continue
+      end      
       evs{i} = {subj(i).ev.name};
     end
     ev_names = unique([evs{:}]);
@@ -55,6 +58,9 @@ for i=1:length(obj_types)
     pat_dim_labels = {'events', 'chans', 'time', 'freq'};
     pats = cell(1, length(subj));
     for i=1:length(subj)
+      if isempty(subj(i).pat)
+        continue
+      end
       pats{i} = {subj(i).pat.name};
     end
     pat_names = unique([pats{:}]);
