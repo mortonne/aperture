@@ -135,7 +135,9 @@ function obj_size = get_obj_size(subobj, obj_type, obj_name)
       obj_sizes(i) = obj.len;
      case 'subj'
       obj_sizes(i,1) = length(obj.sess);
-      obj_sizes(i,2) = length(obj.chan);
+      if isfield(obj, 'chan')
+        obj_sizes(i,2) = length(obj.chan);
+      end
     end
   end
 

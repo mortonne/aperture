@@ -26,8 +26,9 @@ for i=1:length(obj_types)
   switch obj_types{i}    
    case {'subj', 'subject'}
     % print information for all subjects
+    dim_labels = {'nSess', 'nChan'};
     dummy_obj.subj = subj;
-    fprintf(print_obj(dummy_obj, 'subj', 'Subjects', {'nSess', 'nChan'}, ...
+    fprintf(print_obj(dummy_obj, 'subj', 'Subjects', dim_labels, ...
                       sort({subj.id})));
     
    case {'ev', 'events'}
