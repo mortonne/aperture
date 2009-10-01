@@ -31,11 +31,11 @@ if ~exist('path','var')
   path = {};
 end
 
-fprintf('exporting %s object %s from subjects...\n', path{end-1}, path{end})
+%fprintf('exporting %s object %s from subjects...\n', path{end-1}, path{end})
 
 objs = [];
 for s=1:length(subj)
-  fprintf('%s ', subj(s).id)
+  %fprintf('%s ', subj(s).id)
 
   % get the object for this subject
   try
@@ -62,4 +62,4 @@ if isempty(objs)
   error('no objects found.')
 end
 
-fprintf('\n')
+%fprintf('\n')
