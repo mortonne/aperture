@@ -4,7 +4,10 @@
   * For right now, throwing in useful functions to whatever folder seems to fit. Should there be a top-level fork between eeg_ana and other toolbox functions to facilitate updates?
  * check feasibility of cross-experiment analyses (running Per's SME-serial position interaction analysis on all LTP FR experiments)
   * possibility: expand merge_exps.m, add 'experiment' field to each subj
- * add MVPA-style summarize function
+ * improve consistency:
+  * naming conventions - getobj vs. get_mat
+  * input - getobjallsubj takes "path" while getobj takes varargin
+  * remove "basic" directory, move all "obj" functions to one directory
 
 == Basic ==
  * make an init_subj function; currently get_sessdirs is the only way to make a subj structure
