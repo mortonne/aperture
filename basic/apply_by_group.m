@@ -28,8 +28,8 @@ function x = apply_by_group(f, matrices, iter_cell, constant_in, varargin)
 %                 being processed.
 %
 %  OUTPUTS:
-%             x:  matrix of output values.  All dimensions not listed in
-%                 iter_dims will be singleton.
+%             x:  matrix of output values.  All empty dimensions in
+%                 iter_cell will be singleton.
 %
 %  ARGS:
 %  Optional additional arguments passed in as parameter, value pairs:
@@ -59,6 +59,15 @@ if ~iscell(constant_in)
 end
 
 % throw an error if a cell in iter_cell has a string other than iter
+for i = 1:length(iter_cell)
+  for j = 1:length(iter_cell{i})
+    if isstr(iter_cell{i}{j})
+      if ~strcmp(iter_cell{i}{j},'iter')
+	error('string inputs in cells can only be ''iter''');
+      end
+    end
+  end
+end
 
 defaults.uniform_output = true;
 params = propval(varargin, defaults);
