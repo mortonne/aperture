@@ -43,10 +43,10 @@ end
 % export stat objects first, so there is less to send to each worker
 stats = getobjallsubj(subj, obj_path);
 
-% name will not be unique, but source will
+% name will not be unique, but index will
 stat_name = obj_path{end-1};
-sources = {stats.source};
-[stats.name] = deal(sources{:});
+temp_name = cellfun(@num2str, num2cell(1:length(stats)), 'UniformOutput', false);
+[stats.name] = deal(temp_name{:});
 
 % run as though the stat objects were subj objects
 stats = apply_to_subj(stats, fcn_handle, fcn_inputs, dist);
