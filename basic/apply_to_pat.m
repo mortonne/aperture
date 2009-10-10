@@ -16,7 +16,12 @@ function subj = apply_to_pat(subj,pat_name,fcn_handle,fcn_inputs,dist)
 %  fcn_inputs:  a cell array of additional inputs (after pat) to fcn_handle.
 %
 %        dist:  if true, subjects will be evaluated in distributed tasks.
-%               Default: false
+%                0: serial
+%                1: distributed
+%                2: parallel
+%                3: if the name of the output pat object will be the same
+%                   as the input name, use this to run (1) using a faster
+%                   algorithm.
 %
 %  OUTPUTS:
 %        subj:  a modified subjects vector.
@@ -45,7 +50,7 @@ if ~exist('dist','var')
 end
 
 % run the function on each subject
-if ~dist
+if dist~=3
   % use apply_to_subj the standard way, so we can see subject ID get 
   % printed out
   subj = apply_to_subj(subj, @apply_to_obj, ...
