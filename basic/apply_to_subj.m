@@ -1,4 +1,4 @@
-function subj = apply_to_subj(subj,fcn_handle,fcn_inputs,dist)
+function subj = apply_to_subj(subj, fcn_handle, fcn_inputs, dist)
 %APPLY_TO_SUBJ   Apply a function to all subjects.
 %
 %  subj = apply_to_subj(subj, fcn_handle, fcn_inputs, dist)
@@ -9,24 +9,24 @@ function subj = apply_to_subj(subj,fcn_handle,fcn_inputs,dist)
 %        subj:  a subject object or vector of subject objects.
 %
 %  fcn_handle:  a handle to a function of the form:
-%               subj = fcn_handle(subj, ...)
+%                subj = fcn_handle(subj, ...)
 %
 %  fcn_inputs:  additional inputs to fcn_handle.
 %
 %        dist:  indicates how to evaluate the subjects:
-%               0 - subjects are evaluated with a normal for 
-%                   loop (default)
-%               1 - each subject is processed by a separate
-%                   distributed task (requires the distributed
-%                   computing engine; uses the default configuration)
-%               2 - subjects are run in parallel using a parfor
-%                   loop (to benefit from this, must have an open
-%                   matlabpool)
+%                0 - subjects are evaluated with a normal for loop
+%                    (default)
+%                1 - each subject is processed by a separate distributed
+%                    task (requires the distributed computing engine;
+%                    uses the default configuration)
+%                2 - subjects are run in parallel using a parfor loop
+%                    (to benefit from this, must have an open
+%                    matlabpool)
 %
 %  OUTPUTS:
 %        subj:  a subject vector.
 %
-%  See also apply_to_obj, apply_to_pat, apply_to_ev.
+%  See also apply_to_subj_obj, apply_to_pat, apply_to_ev.
 
 % input checks
 if ~exist('subj','var')

@@ -1,27 +1,23 @@
-function subj = apply_to_pat(subj,pat_name,fcn_handle,fcn_inputs,dist)
+function subj = apply_to_pat(subj, pat_name, fcn_handle, fcn_inputs, dist)
 %APPLY_TO_PAT   Apply a function to a pat object for all subjects.
 %
 %  subj = apply_to_pat(subj, pat_name, fcn_handle, fcn_inputs, dist)
 %  
 %  INPUTS:
-%        subj:  a [1 X N subjects] structure representing each subject in an
-%               experiment.
+%        subj:  a [1 X N subjects] structure representing each subject
+%               in an experiment.
 %
-%    pat_name:  the name of a pat object that has been created for at least
-%               one of the subjects in the subj vector.
+%    pat_name:  the name of a pat object that has been created for at
+%               least one of the subjects in the subj vector.
 %
-%  fcn_handle:  a handle for a function that takes a pat object as first input,
-%               and outputs a pat object.
+%  fcn_handle:  a handle for a function that takes a pat object as first
+%               input, and outputs a pat object.
 %
-%  fcn_inputs:  a cell array of additional inputs (after pat) to fcn_handle.
+%  fcn_inputs:  a cell array of additional inputs (after pat) to
+%               fcn_handle.
 %
-%        dist:  if true, subjects will be evaluated in distributed tasks.
-%                0: serial
-%                1: distributed
-%                2: parallel
-%                3: if the name of the output pat object will be the same
-%                   as the input name, use this to run (1) using a faster
-%                   algorithm.
+%        dist:  distributed evaluation; see apply_to_subj for possible
+%               values.
 %
 %  OUTPUTS:
 %        subj:  a modified subjects vector.
@@ -30,9 +26,12 @@ function subj = apply_to_pat(subj,pat_name,fcn_handle,fcn_inputs,dist)
 %   % create a pattern for each subject
 %   subj = apply_to_subj(subj, @create_pattern, {@sessVoltage, struct, 'volt_pat'});
 %
-%   % run an ANOVA on each pattern comparing recalled and not recalled events
+%   % run an ANOVA on each pattern comparing recalled and not recalled
+%   % events
 %   params.fields = {'recalled'};
 %   subj = apply_to_pat(subj, 'volt_pat', @pat_anovan, {params, 'sme'});
+%
+%  See also apply_to_ev, apply_to_subj_obj, apply_to_subj.
 
 % input checks
 if ~exist('subj','var')
@@ -49,28 +48,6 @@ if ~exist('dist','var')
   dist = false;
 end
 
-% run the function on each subject
-if dist~=3
-  % use apply_to_subj the standard way, so we can see subject ID get 
-  % printed out
-  subj = apply_to_subj(subj, @apply_to_obj, ...
-                      {'pat', pat_name, fcn_handle, fcn_inputs}, dist);
-else
-  % export pattern objects first, so there is less to send to each worker
-  pats = getobjallsubj(subj, {'pat', pat_name});
-  
-  % name will not be unique, but source will
-  sources = {pats.source};
-  [pats.name] = deal(sources{:});
-  
-  % run as though the pat objects were subj objects
-  pats = apply_to_subj(pats, fcn_handle, fcn_inputs, dist);
-  
-  % fix the name field
-  [pats.name] = deal(pat_name);
-  
-  % put the updated pattern objects back on the subjects
-  for i=1:length(subj)
-    subj(i) = setobj(subj(i), 'pat', pats(i));
-  end
-end
+% apply_to_subj_obj does all the work
+subj = apply_to_subj_obj(subj, {'pat', pat_name}, fcn_handle, fcn_inputs, dist);
+
