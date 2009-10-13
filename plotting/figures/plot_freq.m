@@ -1,13 +1,13 @@
 function h = plot_freq(data, freq, params)
-%PLOT_ERP   Plot an event-related potential.
+%PLOT_FREQ   Plot a variable versus frequency.
 %
-%  h = plot_erp(data, time, params)
+%  h = plot_freq(data, freq, params)
 %
 %  INPUTS:
 %     data:  array of voltage values to plot. If data is a matrix, each
 %            row will be plotted as a separate line.
 %
-%     time:  time values corresponding to each column of data.
+%     freq:  frequency values corresponding to each column of data.
 %
 %   params:  a structure specifying options for plotting. See below.
 %
@@ -16,19 +16,17 @@ function h = plot_freq(data, freq, params)
 %
 %  PARAMS:
 %   x_lim      - limits of the time axis in [min, max] form
-%   time_units - units of the time axis. ('ms')
-%   x_label    - label for the x-axis. ('Time (time_units)' if time
-%                vector given, otherwise 'Time (samples)')
-%   y_lim      - limits of the voltage axis in [min, max] form
-%   volt_units - units of the voltage axis. ('\muV')
-%   y_label    - label for the y-axis. ('Voltage (volt_units)')
+%   freq_units - units of the frequency axis. ('Hz')
+%   x_label    - label for the x-axis. ('Frequency (freq_units)' if
+%                frequency vector given, otherwise 'Frequency (samples)')
+%   y_lim      - limits of the y axis in [min, max] form
+%   y_label    - label for the y-axis. ('')
 %   colors     - cell array indicating the order of colors to use 
 %                for the lines. ({})
-%   mark       - boolean vector indicating samples to be marked
-%                (e.g., significant samples). Shading will be put
-%                just below the plot. ([])
-%   fill_color - [1 X 3] array giving the color to use for marks.
-%                ([.8 .8 .8])
+%   plot_fcn   - function used for plotting (@plot, unless err_type is
+%                specified; then @errorbar)
+%   plot_input - cell array of optional inputs to plot_fcn
+%   err_type   - type of error to use for plotting error bars. [{'std'}]
 
 % input checks
 if ~exist('data','var')
@@ -52,6 +50,7 @@ params = structDefaults(params, ...
                         'x_tick',           [],         ...
                         'plot_fcn',         @errorbar,  ...
                         'plot_input',       {},         ...
+                        'mark',             [],         ...
                         'err_type',         '');
 
 clf
@@ -101,6 +100,17 @@ if isempty(params.err_type)
   h = plot(x, data, params.plot_input{:}, 'LineWidth', 2);
 else
   h = errorbar(x, data, err, params.plot_input{:}, 'LineWidth', 2);
+end
+
+if ~isempty(params.mark)
+  if ~isvector(data)
+    error('Cannot plot marks when there are multiple lines to plot.')
+  elseif length(params.mark) ~= length(data)
+    error('mark must be the same length as data.')
+  end
+  
+  hold on
+  plot(x, data(params.mark), 'or', 'MarkerFaceColor', 'r');
 end
 
 publishfig
