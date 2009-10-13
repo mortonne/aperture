@@ -1,5 +1,24 @@
-function stat = perf_perm_test(subj, stat_path, stat_name, params, res_dir)
+function stat = perf_perm_test(subj, stat_path, stat_name, res_dir)
+%PERF_PERM_TEST   Test significance of a permutated performance metric.
+%
+%  stat = perf_perm_test(subj, stat_path, stat_name, res_dir)
+%
+%  INPUTS:
+%       subj:  vector of subject objects.
+%
+%  stat_path:  cell array of obj_type, obj_name pairs giving the path to
+%              a stat object that contains results of permuted
+%              classifier performance metrics (created by perfmet_perm).
+%
+%  stat_name:  name of the new stat object that will hold results of the
+%              significance test.
+%
+%    res_dir:  directory where the results of the test will be saved.
+%
+%  OUTPUTS:
+%       stat:  stat object with results.
 
+% input checks
 if ~exist('stat_name', 'var')
   stat_name = 'perf_perm';
 end
@@ -21,7 +40,7 @@ p = apply_by_slice(@perm_test, {res}, 2:4, {params});
 stat = init_stat(stat_name, '', '', params);
 stat.p = p;
 
-function p = perm_test(res, params)
+function p = perm_test(res)
   % [subj X iter X chan X time X freq]
   res = permute(res, [5 1 2 3 4]);
 
