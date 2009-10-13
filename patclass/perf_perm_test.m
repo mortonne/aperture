@@ -35,7 +35,7 @@ for i=1:length(stats)
   res = cat(5, res, subj_res.iterations);
 end
 
-p = apply_by_slice(@perm_test, {res}, 2:4, {params});
+p = apply_by_slice(@perm_test, {res}, 2:4, {});
 
 stat = init_stat(stat_name, '', '', params);
 stat.p = p;
