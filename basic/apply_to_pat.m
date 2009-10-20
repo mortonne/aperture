@@ -10,8 +10,12 @@ function subj = apply_to_pat(subj, pat_name, fcn_handle, fcn_inputs, dist)
 %    pat_name:  the name of a pat object that has been created for at
 %               least one of the subjects in the subj vector.
 %
-%  fcn_handle:  a handle for a function that takes a pat object as first
-%               input, and outputs a pat object.
+%  fcn_handle:  a handle for a function of the form:
+%                [pat, ...] = fcn(pat, ...)
+%               If the name of the output pat object is different
+%               from pat_name, a new object will be added to each
+%               subject; otherwise, the existing object will be
+%               overwritten.
 %
 %  fcn_inputs:  a cell array of additional inputs (after pat) to
 %               fcn_handle.
@@ -21,15 +25,6 @@ function subj = apply_to_pat(subj, pat_name, fcn_handle, fcn_inputs, dist)
 %
 %  OUTPUTS:
 %        subj:  a modified subjects vector.
-%
-%  EXAMPLES:
-%   % create a pattern for each subject
-%   subj = apply_to_subj(subj, @create_pattern, {@sessVoltage, struct, 'volt_pat'});
-%
-%   % run an ANOVA on each pattern comparing recalled and not recalled
-%   % events
-%   params.fields = {'recalled'};
-%   subj = apply_to_pat(subj, 'volt_pat', @pat_anovan, {params, 'sme'});
 %
 %  See also apply_to_ev, apply_to_subj_obj, apply_to_subj.
 

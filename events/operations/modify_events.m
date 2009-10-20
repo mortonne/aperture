@@ -9,42 +9,38 @@ function ev = modify_events(ev, params, ev_name, res_dir)
 %   params:  a structure specifying options for modifying the
 %            events structure. See below.
 %
-%  ev_name:  string identifier for the new events structure. If
-%            this is not specified, the same as ev.name, or empty, 
-%            the old events will be replaced. default: ev.name
+%  ev_name:  string identifier for the new events structure.  If
+%            empty or not specified, the name will not be changed.
 %
-%  res_dir:  the new events will be saved in:
-%             [res_dir]/events/[ev_name].mat
-%            default: fileparts(fileparts(ev.file))
+%  res_dir:  directory where the new events structure will be saved.
+%            Default: get_ev_dir(ev, ev_name)
 %
 %  OUTPUTS:
 %       ev:  a modified events object.
 %
-%   events:  the modified events structure.
-%
 %  PARAMS:
+%  overwrite       - boolean indicating whether existing events
+%                    structures should be overwritten. (false)
 %  eventFilter     - string to be passed into filterStruct to filter
-%                    the events structure. default: '' (no filtering)
+%                    the events structure. ('')
 %  replace_eegfile - cell array of strings. Each row specifies one
 %                    string replacement to run on events.eegfile, e.g.
 %                     strrep(eegfile, replace_eegfile{r,1}, ...
 %                             replace_eegfile{r,2})
 %                    is run for each row. Useful for fixing references
-%                    to EEG data.
+%                    to EEG data. ({})
 %  ev_mod_fcn      - handle to a function of the form:
-%                     [events, ...] = ev_mod_fcn(events, ...)
-%  ev_mod_inputs   - cell array of additional inputs to ev_mod_fcn.
-%
-%  NOTES:
-%   The 'eventFilter' and 'replace_eegfile' options are included for
-%   convenience; the same functionality can be achieved using the 'evmodfcn'
-%   and 'evmodinput' fields.
+%                     [events, ...] = fcn(events, ...)
+%                    Set this option to use a custom function to modify
+%                    the events structure.
+%  ev_mod_inputs   - cell array of additional inputs to ev_mod_fcn. ({})
 %
 %  EXAMPLES:
 %   % filter an events structure and overwrite the old events
-%   ev = getobj(exp.subj(1), 'ev', 'my_events');
+%   params = [];
 %   params.eventFilter = 'strcmp(type, ''WORD'')';
-%   [ev, events] = modify_events(ev, params);
+%   params.overwrite = true;
+%   ev = modify_events(ev, params);
 %
 %   % run an arbitrary function to modify events for all subjects
 %   old_ev = 'events'; % name of the ev object to modify

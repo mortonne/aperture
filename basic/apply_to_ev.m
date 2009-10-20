@@ -10,11 +10,17 @@ function subj = apply_to_ev(subj, ev_name, fcn_handle, fcn_inputs, dist)
 %     ev_name:  the name of an ev object that has been created for at
 %               least one of the subjects in the subj vector.
 %
-%  fcn_handle:  a handle for a function that takes a pat object as first
-%               input, and outputs a pat object.
+%  fcn_handle:  a handle for a function of the form:
+%                [ev, ...] = fcn(ev, ...)
+%               If the name of the output ev object is different
+%               from ev_name, a new object will be added to each
+%               subject; otherwise, the existing object will be
+%               overwritten.
 %
-%  fcn_inputs:  a cell array of additional inputs (after pat) to
-%               fcn_handle.
+%  fcn_inputs:  a cell array of additional inputs (after ev) to
+%               fcn_handle.  If fcn_inputs = c, then fcn_handle will be
+%               called with:
+%                ev = fcn_handle(ev, c{1}, c{2}, ... c{end})
 %
 %        dist:  distributed evaluation; see apply_to_subj for possible
 %               values.
@@ -22,7 +28,20 @@ function subj = apply_to_ev(subj, ev_name, fcn_handle, fcn_inputs, dist)
 %  OUTPUTS:
 %        subj:  a modified subjects vector.
 %
-%  See also apply_to_pat, apply_to_subj_obj, apply_to_subj.
+%  EXAMPLES:
+%   % create a subj structure with ten subjects with ev objects
+%   id = num2cell('a':'j');
+%   subj = struct('id', id, 'ev', init_ev('my_events'));
+%
+%   % add a new field to each ev object
+%   f = @(ev) setfield(ev, 'newfield', 'spam');
+%   subj = apply_to_ev(subj, 'my_events', f);
+%
+%   % create a copy of "my_events"
+%   f = @(ev, new_ev_name) setfield(ev, 'name', new_ev_name);
+%   subj = apply_to_ev(subj, 'my_events', f, {'new_events'});
+%
+%  See also modify_events, apply_to_pat, apply_to_subj_obj.
 
 % input checks
 if ~exist('subj','var')
