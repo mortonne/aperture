@@ -1,12 +1,16 @@
-function files = pat_erp(pat,fig_name,params,res_dir)
-%PAT_ERP   Make ERP plots and print them to disk.
+function files = pat_erp(pat, fig_name, params, res_dir)
+%PAT_ERP   Make event-related potential plots and print them to disk.
 %
 %  files = pat_erp(pat, fig_name, params, res_dir)
 %
-%  INPUTS:
-%           pat:  a pat object containing the pattern to be plotted.
+%  Create a plot for each [event X channel X frequency] in a pattern.
+%  Typically used for plotting ERPs, but can also be used for plotting
+%  other values that vary over time.
 %
-%      fig_name:  string identifier for this set of figures.
+%  INPUTS:
+%           pat:  pat object containing the pattern to be plotted.
+%
+%      fig_name:  string identifier for the new fig object.
 %
 %        params:  structure with options for plotting. See below.
 %
@@ -18,31 +22,43 @@ function files = pat_erp(pat,fig_name,params,res_dir)
 %         files:  cell array of paths to printed figures.
 %
 %  PARAMS:
+%  All fields are optional.  Default values are shown in parentheses.
+%  Also see plot_erp for more plotting params.
 %  Values to plot
 %   event_bins       - input to make_event_bins; can be used to average
-%                      over events before plotting
+%                      over events before plotting. ([])
 %   stat_name        - name of a stat object attached to pat. If
 %                      specified, p will be loaded from stat.file, and
 %                      significant regions will be shaded below each
-%                      ERP plot.
-%   alpha            - critical value to use when determining significance.
-%                      Default: 0.05
-%   correctm         - method to use to correct for multiple comparisions:
-%                       [ {none} | fdr | bonferroni ]
+%                      plot. ('')
+%   alpha            - critical value to use when determining
+%                      significance. (0.05)
+%   correctm         - method to use to correct for multiple
+%                      comparisions. [{none} | fdr | bonferroni]
 %  Plotting options
-%   plot_mult_events - if true, if there are multiple events, they will be
-%                      plotted on one axis. Default: true
-%   print_input      - input to print to use when printing figures.
-%                      Default: '-depsc'
+%   plot_mult_events - if true, all events will be plotted on one axis.
+%                      Otherwise, each event will be plotted on a
+%                      separate figure. (true)
+%   print_input      - cell array of inputs to print to use when
+%                      printing figures. ({'-depsc'})
 %   fill_color       - color to use for shading under significant time
-%                      points. Default: [.8 .8 .8]
-%   mult_fig_windows - if true, each figure will be plotted in a separate
-%                      window. Default: false
-%   colors           - cell array of strings indicating colors to use for
-%                      plotting ERPs. colors{i} will be used for plotting
-%                      pattern(i,:,:).
+%                      points. ([.8 .8 .8])
+%   mult_fig_windows - if true, each figure will be plotted in a
+%                      separate window. (false)
+%   colors           - cell array of strings indicating colors to use
+%                      for plotting ERPs. colors{i} will be used for
+%                      plotting pattern(i,:,:). ({})
 %   y_lim            - if specified, y-limit for all figures will be set
-%                      to this.
+%                      to this. ([])
+%
+%  EXAMPLES:
+%   % make ERPs for each channel in my_pattern for all subjects, and
+%   % save information about the plots in a fig object
+%   pat_name = 'my_pattern';
+%   fig_name = 'erp';
+%   subj = apply_to_pat(subj, pat_name, @create_fig, {fig_name, @pat_erp});
+%
+%  See also create_fig, create_pat_report, pat_topoplot.
 
 % input checks
 if ~exist('pat','var') || ~isstruct(pat)
@@ -69,7 +85,7 @@ end
 
 % set default parameters
 params = structDefaults(params, ...
-                        'print_input',      '-depsc', ...
+                        'print_input',      {'-depsc'}, ...
                         'event_bins',       '',       ...
                         'plot_mult_events', true,     ...
                         'mult_fig_windows', 0,        ...
@@ -81,11 +97,11 @@ params = structDefaults(params, ...
                         'fill_color',       [.8 .8 .8]);
 
 % load the pattern
-pattern = load_pattern(pat);
+pattern = get_mat(pat);
 
 if ~isempty(params.event_bins)
   % create bins using inputs accepted by make_event_bins
-  [pat, bins] = patBins(pat, struct('field', params.event_bins));
+  [pat, bins] = patBins(pat, struct('eventbins', params.event_bins));
   
   % do the averaging within each bin
   pattern = patMeans(pattern, bins);
@@ -163,7 +179,7 @@ for i=1:num_events
       files{i,c,1,f} = fullfile(res_dir, filename);
 
       % print this figure
-      print(gcf, params.print_input, files{i,c,1,f})
+      print(gcf, params.print_input{:}, files{i,c,1,f})
       n = n + 1;
     end
   end

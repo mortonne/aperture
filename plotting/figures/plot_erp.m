@@ -15,6 +15,7 @@ function h = plot_erp(data, time, params)
 %        h:  vector of handles for each line plotted.
 %
 %  PARAMS:
+%  All fields are optional.  Default values are shown in parentheses.
 %   x_lim      - limits of the time axis in [min, max] form
 %   time_units - units of the time axis. ('ms')
 %   x_label    - label for the x-axis. ('Time (time_units)' if time
@@ -22,13 +23,15 @@ function h = plot_erp(data, time, params)
 %   y_lim      - limits of the voltage axis in [min, max] form
 %   volt_units - units of the voltage axis. ('\muV')
 %   y_label    - label for the y-axis. ('Voltage (volt_units)')
-%   colors     - cell array indicating the order of colors to use 
-%                for the lines. ({})
+%   colors     - cell array indicating the order of colors to use for
+%                the lines. ({})
 %   mark       - boolean vector indicating samples to be marked
-%                (e.g., significant samples). Shading will be put
-%                just below the plot. ([])
+%                (e.g., significant samples). Shading will be put just
+%                below the plot. ([])
 %   fill_color - [1 X 3] array giving the color to use for marks.
 %                ([.8 .8 .8])
+%
+%  See also pat_erp.
 
 % input checks
 if ~exist('data','var')
