@@ -26,7 +26,7 @@ function files = pat_erp(pat, fig_name, params, res_dir)
 %  Also see plot_erp for more plotting params.
 %  Values to plot
 %   event_bins       - input to make_event_bins; can be used to average
-%                      over events before plotting. ([])
+%                      over events before plotting. ('')
 %   stat_name        - name of a stat object attached to pat. If
 %                      specified, p will be loaded from stat.file, and
 %                      significant regions will be shaded below each

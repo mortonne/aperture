@@ -1,38 +1,82 @@
-function files = pat_topoplot(pat,fig_name,params,res_dir)
+function files = pat_topoplot(pat, fig_name, params, res_dir)
 %PAT_TOPOPLOT   Make topoplots and print them to disk.
 %
 %  files = pat_topoplot(pat,fig_name,params,res_dir)
 %
-%  Requires EEGLAB for making cartoon or headplots.
+%  Create a topographical plot for each [event X time X frequency] in a
+%  pattern.  Requires EEGLAB for the plotting functions, as well as a
+%  channel coordinates file that can be read by readlocs.  3D headplots
+%  also require a splinefile (see topoplot).
 %
 %  INPUTS:
-%           pat:
+%           pat:  pat object containing the pattern to be plotted.
 %
-%      fig_name:
+%      fig_name:  string identifier for the new fig object.
 %
-%        params:
+%        params:  structure with options for plotting.  See below.
 %
-%       res_dir:
-%
-%  relative_dir:
+%       res_dir:  path to the directory to save figures in. If not
+%                 specified, files will be saved in the pattern's
+%                 reports/figs directory.
 %
 %  OUTPUTS:
-%         files:
+%         files:  cell array of paths to printed figures.
 %
 %  PARAMS:
 %  Values to Plot
-%   event_bins - 
-%   stat_name  - 
-%   p_range    - 
-%   correctm   - 
+%   event_bins     - input to make_event_bins; can be used to average
+%                    over events before plotting. ('')
+%   time_bins      - [nbins X 2] array specifying time bins.
+%                    time_bins(i,:) gives the range of ms values for
+%                    bin i. ([])
+%   freq_bins      - [nbins X 2] array specifying frequency bins in Hz.
+%                    ([])
+%   diff           - if true, the difference between events will be
+%                    plotted. (false)
+%   stat_name      - name of a stat object attached to pat. If
+%                    specified, p will be loaded from stat.file, and
+%                    significant channels will be shaded. ('')
+%   map_type       - type of p-values being plotted (see sig_colormap).
+%                    If not specified, type will be assumed based on the
+%                    p-values.
+%                    [one_way | {two_way} | two_way_signed]
+%   p_range        - range of critical values to plot.  p_range(2)
+%                    gives the lowest p-value that will be shaded;
+%                    p_range(1) corresponds to the darkest color.
+%                    ([0.005 0.05])
+%   correctm       - method to use to correct for multiple comparisions.
+%                    [{none} | fdr | bonferroni]
+%   correctm_scale - scale at which to correct multiple comparisons.
+%                    [{fig} | all]
 %  Plotting Options
-%   plot_type        - 
-%   plot_input       - 
-%   cap_type         - 
-%   chan_locs        - 
-%   map_limits       - 
-%   print_input      - 
-%   mult_fig_windows - 
+%   plot_type        - type of plot to make.  'topo' and 'head' use
+%                      topoplot and headplot, respectively.
+%                      [{topo} | head]
+%   plot_input       - cell array of additional inputs to the plotting
+%                      function. ({})
+%   plot_perimeter   - if false, perimeter channels will be set to the
+%                      middle value of the colormap to prevent color
+%                      from being interpolated onto the face. (false)
+%   cap_type         - string identifier of the type of electrode cap
+%                      used.  Only necessary if plot_perimeter is false.
+%                      See perimeter_chans. ('HCGSN128')
+%   chan_locs        - path to a channel locations file compatible with
+%                      readlocs. ('~/eeg/HCGSN128.loc')
+%   splinefile       - headplots only: path to a spline file compatible
+%                      with headplot. ('~/eeg/HCGSN128.spl')
+%   views            - headplots only: camera views to use when printing
+%                      headplots.  See headplot.  ({[280 35],[80 35]})
+%   colorbar         - if true, a colorbar will be plotted. (true)
+%   figure_prop      - cell array of property, value pairs for modifying
+%                      each figure. ({})
+%   axis_prop        - cell array of property, value pairs for modifying
+%                      each figure's axes. ({})
+%   map_limits       - range of values corresponding to the limits of
+%                      the colormap. ([])
+%   print_input      - cell array of inputs to use when printing
+%                      figures. ({})
+%   mult_fig_windows - if true, each figure will be plotted in a
+%                      separate window. (false)
 
 % input checks
 if ~exist('pat','var') || ~isstruct(pat)
@@ -71,8 +115,8 @@ params = structDefaults(params, ...
                         'colorbar',         true,                       ...
                         'plot_perimeter',   true,                      ...
                         'event_bins',       '',                         ...
-                        'time_bins',        '',                         ...
-                        'freq_bins',        '',                         ...
+                        'time_bins',        [],                         ...
+                        'freq_bins',        [],                         ...
                         'diff',             false,                      ...
                         'mult_fig_windows', 0,                          ...
                         'stat_name',        '',                         ...
@@ -91,7 +135,7 @@ pattern = load_pattern(pat);
 
 if ~isempty(params.event_bins) || ~isempty(params.time_bins) || ~isempty(params.freq_bins)
   % create bins using inputs accepted by make_event_bins
-  p = struct('field',    params.event_bins, ...
+  p = struct('eventbins',    params.event_bins, ...
              'MSbins',   params.time_bins,  ...
              'freqbins', params.freq_bins);
   [pat, bins] = patBins(pat, p);
