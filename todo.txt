@@ -25,6 +25,7 @@
  * is expandDim general enough to be included? (Need to remember what this was used for).
 
 == Plotting ==
+ * fix calling signation of pat_* plotting functions.  The user shouldn't have to worry about create_fig.  Switching the signature may be tricky, since there is no way to ensure backwards compatibility.
  * consider beefing up plot_events.  it's unique and potentially very useful.
 
 == Stats ==
