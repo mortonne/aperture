@@ -77,6 +77,8 @@ function files = pat_topoplot(pat, fig_name, params, res_dir)
 %                      figures. ({})
 %   mult_fig_windows - if true, each figure will be plotted in a
 %                      separate window. (false)
+%
+%  See also create_fig, create_pat_report.
 
 % input checks
 if ~exist('pat','var') || ~isstruct(pat)
