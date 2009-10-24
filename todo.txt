@@ -1,9 +1,9 @@
 == General Issues ==
- * documentation needs an update!
+ * documentation needs an update, especially the README
  * compatibility with EEGLAB and fieldtrip
   * For right now, throwing in useful functions to whatever folder seems to fit. Should there be a top-level fork between eeg_ana and other toolbox functions to facilitate updates?
  * check feasibility of cross-experiment analyses (running Per's SME-serial position interaction analysis on all LTP FR experiments)
-  * possibility: expand merge_exps.m, add 'experiment' field to each subj
+  * possibility: expand merge_exps.m, add 'experiment' field to each subj (or session) - could also add functions for running analyses at the session level
  * improve consistency:
   * naming conventions - getobj vs. get_mat
   * input - getobjallsubj takes "path" while getobj takes varargin
@@ -18,11 +18,14 @@
 == Patclass ==
  * more classifiers, general section to give access to all MVPA functions
  * ANOVA feature selection - see if there is anything we can take from MVPA
- * support for classifying each time-frequency bin separately (could sig scripts be generalized to include this?)
+ * make generalized version of classify_pat2pat
 
 == Patterns ==
  * saving as and processing patterns as slices (post-creation conversion in split_patfile.m. Support in create_pattern.m would be good.)
  * is expandDim general enough to be included? (Need to remember what this was used for).
+ * support for continuous patterns
+ * generalize dimension objects, give option for any dimension to be saved to disk to free up memory
+ * make order of dimensions flexible
 
 == Plotting ==
  * fix calling signation of pat_* plotting functions.  The user shouldn't have to worry about create_fig.  Switching the signature may be tricky, since there is no way to ensure backwards compatibility.

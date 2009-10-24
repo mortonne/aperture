@@ -18,7 +18,9 @@ function subj = apply_to_pat(subj, pat_name, fcn_handle, fcn_inputs, dist)
 %               overwritten.
 %
 %  fcn_inputs:  a cell array of additional inputs (after pat) to
-%               fcn_handle.
+%               fcn_handle.  If fcn_inputs = c, then fcn_handle will be
+%               called with:
+%                pat = fcn_handle(pat, c{1}, c{2}, ... c{end})
 %
 %        dist:  distributed evaluation; see apply_to_subj for possible
 %               values.
