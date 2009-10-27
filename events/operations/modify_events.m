@@ -13,7 +13,7 @@ function ev = modify_events(ev, params, ev_name, res_dir)
 %            empty or not specified, the name will not be changed.
 %
 %  res_dir:  directory where the new events structure will be saved.
-%            Default: get_ev_dir(ev, ev_name)
+%            Default: get_ev_dir(ev)
 %
 %  OUTPUTS:
 %       ev:  a modified events object.
@@ -62,7 +62,7 @@ if ~exist('ev_name','var') || isempty(ev_name)
   ev_name = ev.name;
 end
 if ~exist('res_dir','var')
-  res_dir = get_ev_dir(ev, ev_name);
+  res_dir = get_ev_dir(ev);
 end
 
 % default parameters
