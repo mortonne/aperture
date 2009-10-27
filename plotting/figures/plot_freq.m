@@ -53,8 +53,6 @@ params = structDefaults(params, ...
                         'mark',             [],         ...
                         'err_type',         '');
 
-clf
-
 switch params.err_type
  case 'std'
   err = std(data)/sqrt(size(data,1)-1);
@@ -104,13 +102,16 @@ end
 
 if ~isempty(params.mark)
   if ~isvector(data)
-    error('Cannot plot marks when there are multiple lines to plot.')
+    %error('Cannot plot marks when there are multiple lines to plot.')
   elseif length(params.mark) ~= length(data)
     error('mark must be the same length as data.')
   end
   
   hold on
-  plot(x(params.mark), data(params.mark), 'or', 'MarkerFaceColor', 'r');
+  for i=1:size(params.mark,1)
+    plot(x(params.mark(i,:)), data(i,params.mark(i,:)), 'or', ...
+         'MarkerFaceColor', 'r');
+  end
 end
 
 publishfig
