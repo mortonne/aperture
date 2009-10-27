@@ -110,7 +110,7 @@ if ~isempty(params.mark)
   end
   
   hold on
-  plot(x, data(params.mark), 'or', 'MarkerFaceColor', 'r');
+  plot(x(params.mark), data(params.mark), 'or', 'MarkerFaceColor', 'r');
 end
 
 publishfig
