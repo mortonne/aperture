@@ -81,7 +81,8 @@ for i = 1:length(iter_cell)
   %keyboard
   if isempty(iter_cell{i})
     out_dim_sizes(i) = 1;
-    iter_cell{i} = {1:size(matrices{1},i)};
+    % iter_cell{i} = {1:size(matrices{1},i)};
+    iter_cell{i} = {':'};
   elseif strcmp(iter_cell{i},'iter')
     out_dim_sizes(i) = size(matrices{1},i);
     iter_cell{i} = num2cell(1:size(matrices{1},i));
