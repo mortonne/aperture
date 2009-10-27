@@ -10,7 +10,7 @@ function [mask, kurt] = reject_kurtosis(pattern, thresh, varargin)
 %             Default: 5
 %
 %  OUPUTS:
-%      mask:  logical array the same size as pattern; false samples mark
+%      mask:  logical array the same size as pattern; true samples mark
 %             events with high kurtosis.
 %
 %  kurtosis:  corresponding kurtosis values.

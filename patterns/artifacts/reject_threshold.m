@@ -10,7 +10,7 @@ function mask = reject_threshold(pattern, thresh, varargin)
 %             included.  Default: 100
 %
 %  OUPUTS:
-%      mask:  logical array the same size as pattern; false samples mark
+%      mask:  logical array the same size as pattern; true samples mark
 %             events with high max absolute values.
 %
 %  ARGS:
