@@ -23,6 +23,25 @@ function res = traintest(testpattern, trainpattern, testtargets, traintargets, p
 %             iteration.
 
 
+if isempty(testpattern)
+  res.perf = NaN;
+  res.unknown_idx = [];
+  res.targs = NaN;
+  res.acts = NaN;
+  res.scratchpad = NaN;
+  res.train_funct_name = '';
+  res.test_funct_name = '';
+  res.args = NaN;
+  res.perfmet.guesses = NaN;
+  res.perfmet.desireds = NaN;
+  res.perfmet.corrects = NaN;
+  res.perfmet.perf = NaN;
+  res.perfmet.scratchpad = [];
+  res.perfmet.perm_perf = NaN;
+  res.perfmet.function_name = '';
+  return;
+end
+
 % input checks
 if ~exist('trainpattern', 'var') || ~isnumeric(trainpattern)
   error('You must pass training pattern matrix.')
