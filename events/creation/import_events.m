@@ -12,8 +12,6 @@ function subj = import_events(subj,res_dir,ev_name,params)
 %     subj:  a subject structure.
 %
 %  res_dir:  path to the directory where results will be saved.
-%            An events structure will be saved in:
-%             [res_dir]/events
 %
 %  ev_name:  string identifier for the created ev object.
 %            default: 'events'
@@ -139,11 +137,10 @@ end
 events = subj_events;
 
 % save the new events
-ev_dir = fullfile(res_dir, 'events');
-if ~exist(ev_dir,'dir')
-  mkdir(ev_dir)
+if ~exist(res_dir,'dir')
+  mkdir(res_dir)
 end
-ev_file = fullfile(ev_dir, sprintf('%s_%s.mat', ev_name, subj.id));
+ev_file = fullfile(res_dir, sprintf('%s_%s.mat', ev_name, subj.id));
 save(ev_file, 'events')
 
 % create a new ev object
