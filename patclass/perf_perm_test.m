@@ -54,6 +54,12 @@ function p = perm_test(res)
   % get permuted performance
   temp = [res.perfmet];
   temp = [temp{:}];
+  % get rid of NaN structs
+  for i=1:length(temp)
+    rem_these(i) = isnan(temp(i).perm_perf(1));
+  end
+  temp(rem_these) = [];
+  n_subj = size(temp,2);
   n_perms = length(temp(1).perm_perf);
   temp = reshape([temp.perm_perf], [n_perms, n_subj n_iter]);
 
