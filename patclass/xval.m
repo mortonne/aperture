@@ -22,6 +22,14 @@ function res = xval(pattern, selector, targets, params)
 %  OUTPUTS:
 %       res:  Structure with results of the classification for each
 %             iteration.
+%
+%  PARAMS:
+%   f_train      - function handle for training a classifier
+%   train_args   - args to be passed into f_train
+%   f_test       - function handle a classifier
+%   f_perfmet    - function handle for calculating performance
+%   perfmet_args - cell array of addition arguments for the perfmet
+%                  function
 
 % input checks
 if ~exist('pattern', 'var') || ~isnumeric(pattern)
@@ -43,6 +51,7 @@ end
 
 params = structDefaults(params,                   ...
                         'f_train', @train_logreg, ...
+                        'train_args',   struct,   ...
                         'f_test',  @test_logreg,  ...
                         'f_perfmet', {@perfmet_maxclass});
 if ~iscell(params.f_perfmet)
@@ -51,6 +60,9 @@ end
 if ~isfield(params, 'perfmet_args')
   params.perfmet_args = cell(1, length(params.f_perfmet));
   params.perfmet_args{:} = deal(struct);
+end
+if isstruct(params.train_args)
+  params.train_args = {params.train_args};
 end
 
 % get the selector value for each iteration
@@ -82,7 +94,7 @@ for i=1:n_iter
   unused_idx = isnan(selector);
   
   % train
-  scratchpad = f_train(pattern(train_idx,:)', targets(train_idx,:)', params);
+  scratchpad = f_train(pattern(train_idx,:)', targets(train_idx,:)', params.train_args{:});
   
   % test
   test_targets = targets(test_idx,:)';
@@ -92,7 +104,12 @@ for i=1:n_iter
   % calculate performance
   for p=1:n_perfs
     pm_fh = params.f_perfmet{p};
-    pm = pm_fh(acts, test_targets, scratchpad, params.perfmet_args{p});
+    args = params.perfmet_args{p};
+    if iscell(args)
+      pm = pm_fh(acts, test_targets, scratchpad, args{:});
+    else
+      pm = pm_fh(acts, test_targets, scratchpad, args);
+    end
     pm.function_name = func2str(pm_fh);
     
     iter_res.perfmet{p} = pm;
