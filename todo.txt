@@ -14,6 +14,7 @@
  * remove init_scalp and init_iEEG, added scripts for adding channel information to existing subjects
 
 == Events ==
+ * look at usage of get_ev_dir; should there be a general get_obj_dir?  Do we even need this function?
 
 == Patclass ==
  * more classifiers, general section to give access to all MVPA functions

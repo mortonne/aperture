@@ -27,7 +27,7 @@ if ~exist('subdir','var')
 end
 
 % get the requested directory
-ev_dir = fullfile(fileparts(fileparts(ev.file)), subdir);
+ev_dir = fullfile(fileparts(ev.file), subdir);
 
 % make sure it exists
 if ~exist(ev_dir,'dir')
