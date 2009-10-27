@@ -1,21 +1,33 @@
-function [mask, kurt] = reject_kurtosis(pattern, thresh, params)
+function [mask, kurt] = reject_kurtosis(pattern, thresh, varargin)
 %REJECT_KURTOSIS   Reject samples of a pattern based on kurtosis.
 %
-%  [mask, kurt] = reject_kurtosis(pattern, thresh)
+%  [mask, kurt] = reject_kurtosis(pattern, thresh, args)
+%
+%  INPUTS:
+%   pattern:  [events X channels X time X freq] matrix.
+%
+%    thresh:  maximum allowable kurtosis for an event to be included.
+%             Default: 5
+%
+%  OUPUTS:
+%      mask:  logical array the same size as pattern; false samples mark
+%             events with high kurtosis.
+%
+%  kurtosis:  corresponding kurtosis values.
+%
+%  ARGS:
+%  verbose - if true, more information will be printed. (true)
 
 % input checks
-if ~exist('pattern','var') || ~isnumeric(pattern)
+if ~exist('pattern', 'var') || ~isnumeric(pattern)
   error('You must pass a pattern matrix.')
 end
 if ~exist('thresh','var')
   thresh = 5;
 end
-if ~exist('params','var')
-  params = struct;
-end
 
-params = structDefaults(params, ...
-                        'verbose', true);
+defaults.verbose = true;
+params = propval(varargin, defaults);
 
 % get kurtosis along the time dimension
 kurt = kurtosis(pattern, 1, 3);

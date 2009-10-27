@@ -242,34 +242,18 @@ function pat = pattern_ops(pat, params)
     %        length(find(bad_events)), length(bad_events))
   end
 
+  mask = false(pat_size);
+  
   % reject event-channels that have any values above a given threshold
   if params.absThresh
-    % get a logical indicating events/channels that have at least 
-    % one bad sample
-    bad_samples = abs(pat.mat)>params.absThresh;
-    bad_event_chans = any(reshape(bad_samples, pat_size(1), pat_size(2), prod(pat_size(3:end))), 3);
-
-    % mark the bad events/channels
-    isbad = repmat(bad_event_chans, [1 1 pat_size(3:end)]);
-    pat.mat(isbad) = NaN;
-
-    % check the results
-    fprintf('Threw out %d event-channels out of %d with abs. val. greater than %d.\n', ...
-            nnz(bad_event_chans), numel(bad_event_chans), params.absThresh)
-
-    % get channels that are bad for all events
-    bad_chans = find(all(bad_event_chans,1));
-    if ~isempty(bad_chans)
-      emsg = ['channels excluded: ' sprintf('%d ', pat.dim.chan(bad_chans).label)];
-      warning(emsg)
-    end
+    mask = mask | reject_threshold(pat.mat, params.absThresh);
   end
 
   % reject event-channel-freqs with high kurtosis
   if params.kthresh
-    mask = reject_kurtosis(pat.mat, params.kthresh);
-    pat.mat(mask) = NaN;
+    mask = mask | reject_kurtosis(pat.mat, params.kthresh);
   end
+  pat.mat(mask) = NaN;
 
   % Z-TRANSFORM
   if params.ztrans
