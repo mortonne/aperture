@@ -46,7 +46,7 @@ function subj = apply_to_ev(subj, ev_name, fcn_handle, fcn_inputs, dist)
 % input checks
 if ~exist('subj','var')
   error('You must pass a subjects vector.')
-elseif ~exist('ev_name','var')
+elseif ~exist('ev_name','var') || ~ischar(ev_name)
   error('You must specify the name of an events structure.')
 elseif ~exist('fcn_handle','var')
   error('You must pass a handle to a function.')

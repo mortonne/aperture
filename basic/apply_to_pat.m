@@ -33,7 +33,7 @@ function subj = apply_to_pat(subj, pat_name, fcn_handle, fcn_inputs, dist)
 % input checks
 if ~exist('subj','var')
   error('You must pass a subjects vector.')
-elseif ~exist('pat_name','var')
+elseif ~exist('pat_name','var') || ~ischar(pat_name)
   error('You must specify the name of a pattern.')
 elseif ~exist('fcn_handle','var')
   error('You must pass a handle to a function.')
