@@ -36,24 +36,24 @@ end
 
 if length(varargin)==2
   try
-	  % we've reached the object to delete
-	  [obj2rm, ind] = getobj(s, f, obj_name);
-	catch
-	  % couldn't find it
-		fprintf('Warning: no object "%s" found in field "%s"\n', obj_name, f);
-		return
-	end
+    % we've reached the object to delete
+    [obj2rm, ind] = getobj(s, f, obj_name);
+  catch
+    % couldn't find it
+    fprintf('Warning: no object "%s" found in field "%s"\n', obj_name, f);
+    return
+  end
 
-	% remove the object
-	s.(f)(ind) = [];
+  % remove the object
+  s.(f)(ind) = [];
 
 else
-	% get the next object
-	obj = getobj(s, f, obj_name);
-	
-	% call rmobj with this new object
-	obj = rmobj(obj, varargin{3:end});
-	
-	% when we've finished climbing, unwind using setobj
-	s = setobj(s, f, obj);
+  % get the next object
+  obj = getobj(s, f, obj_name);
+  
+  % call rmobj with this new object
+  obj = rmobj(obj, varargin{3:end});
+  
+  % when we've finished climbing, unwind using setobj
+  s = setobj(s, f, obj);
 end
