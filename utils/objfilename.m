@@ -1,6 +1,6 @@
-function filename = objfilename(objtype,objname,source)
+function filename = objfilename(obj_type, obj_name, source)
 %OBJFILENAME   Construct a standard filename for an object.
-%   FILENAME = OBJFILENAME(OBJTYPE,OBJNAME,SOURCE)
-%
+%   
+%  filename = objfilename(obj_type, obj_name, source)
 
-filename = sprintf('%s_%s_%s.mat', objtype, objname, source);
+filename = sprintf('%s_%s_%s.mat', obj_type, obj_name, source);
