@@ -6,11 +6,11 @@ function ev = modify_events(ev, params, ev_name, res_dir)
 %  INPUTS:
 %       ev:  an events object.
 %
-%   params:  a structure specifying options for modifying the
-%            events structure. See below.
+%   params:  a structure specifying options for modifying the events
+%            structure. See below.
 %
-%  ev_name:  string identifier for the new events structure.  If
-%            empty or not specified, the name will not be changed.
+%  ev_name:  string identifier for the new events structure.  If empty
+%            or not specified, the name will not be changed.
 %
 %  res_dir:  directory where the new events structure will be saved.
 %            Default: get_ev_dir(ev)
@@ -49,29 +49,31 @@ function ev = modify_events(ev, params, ev_name, res_dir)
 %   subj = apply_to_ev(subj, old_ev, @modify_events, {params, new_ev});
 
 % input checks
-if ~exist('ev','var')
+if ~exist('ev', 'var')
   error('You must pass an events object.')
 end
 if ~isfield(ev, 'modified')
   ev.modified = false;
 end
-if ~exist('params','var')
+if ~exist('params', 'var')
   params = struct;
 end
-if ~exist('ev_name','var') || isempty(ev_name)
+if ~exist('ev_name', 'var') || isempty(ev_name)
   ev_name = ev.name;
+elseif ~ischar(ev_name)
+  error('ev_name must be a string.')
 end
-if ~exist('res_dir','var')
+if ~exist('res_dir', 'var')
   res_dir = get_ev_dir(ev);
 end
 
 % default parameters
 params = structDefaults(params, ...
-                        'overwrite', false, ...
-                        'eventFilter','', ...
-                        'replace_eegfile',{}, ...
-                        'ev_mod_fcn',[], ...
-                        'ev_mod_inputs',{});
+                        'overwrite',       false, ...
+                        'eventFilter',     '',    ...
+                        'replace_eegfile', {},    ...
+                        'ev_mod_fcn',      [],    ...
+                        'ev_mod_inputs',   {});
 
 fprintf('modifying events structure "%s"...\n', ev.name)
 
@@ -79,7 +81,7 @@ fprintf('modifying events structure "%s"...\n', ev.name)
 if ~strcmp(ev.name, ev_name)
   saveas = true;
   ev.name = ev_name;
-  ev_file = fullfile(res_dir, sprintf('%s_%s.mat', ev.name, ev.source));
+  ev_file = fullfile(res_dir, objfilename('events', ev.name, ev.source));
 else
   saveas = false;
   ev_file = ev.file;
@@ -94,6 +96,11 @@ end
 
 % load the events structure
 events = get_mat(ev);
+
+if isempty(events)
+  fprintf('events are empty.  Skipping...\n')
+  return
+end
 
 % update the events file
 ev.file = ev_file;
@@ -113,7 +120,7 @@ if ~isempty(params.ev_mod_fcn)
 end
 
 % save
-ev = set_mat(ev, events);
+ev = set_mat(ev, events, ev_loc);
 if strcmp(ev_loc, 'hd')
   if saveas
     fprintf('saved as "%s".\n', ev_name)
@@ -121,5 +128,10 @@ if strcmp(ev_loc, 'hd')
     fprintf('saved.\n')
   end
 else
+  if saveas
+    fprintf('stored as "%s".\n', ev_name)
+  else
+    fprintf('done.\n')
+  end
   ev.modified = true;
 end
