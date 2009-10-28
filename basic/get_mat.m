@@ -35,8 +35,7 @@ else
   if strcmp(objtype, 'pattern')
     mat = load_pattern(obj);
   else
-    s = load(obj.file, objtype);
-    mat = s.(objtype);
+    mat = getfield(load(obj.file, objtype), objtype);
   end
 end
 
@@ -44,8 +43,9 @@ if isempty(mat)
   warning('loading an empty mat.')
 end
 
+bad_obj_size = false;
 switch objtype
-  case 'events'
+ case 'events'
   % check the events structure
   if ~isstruct(mat)
     error('events must be a structure.')
@@ -54,15 +54,24 @@ switch objtype
   end
 
   % make sure we are returning a row vector
-  if size(mat,1)>1
+  if size(mat, 1) > 1
     mat = reshape(mat, 1, length(mat));
   end
   
-  case 'pattern'
+  % check the size
+  bad_obj_size = ~(length(mat)==obj.len);
+  
+ case 'pattern'
   % sanity check the loaded pattern
   psize = patsize(obj.dim);
   if any(psize(1:ndims(mat))~=size(mat))
-    warning('eeg_ana:get_mat:badPatSize', ...
-            'size of pattern %s does not match the dim structure.', obj.name)
+    bad_obj_size = true;
   end
 end
+
+if bad_obj_size
+  warning('eeg_ana:get_mat:badObjSize', ...
+          'size of %s object "%s" does not match the metadata.', ...
+          objtype, obj.name)
+end
+
