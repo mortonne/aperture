@@ -1,38 +1,32 @@
-function s = struct_strrep(s, rep_str)
+function s = struct_strrep(s, varargin)
 %STRUCT_STRREP   Recursively run strrep on all strings in a structure.
 %
-%  s = struct_strrep(s, rep_str)
+%  s = struct_strrep(s, varargin)
 %
 %  INPUTS:
-%        s:  structure containing strings to be modified.
+%         s:  structure containing strings to be modified.
 %
-%  rep_str:  cell array with one row per strrep command, where
-%            rep_str{row, 1} and rep_str{row, 2} are the string to be
-%            replaced and the replacement, respectively.  Rows are
-%            evaluated in order.
+%  varargin:  any number of string pairs, where the first is the string
+%             to replace, and the second is the string to replace it
+%             with.
 %
 %  OUTPUTS:
-%        s:  modified structure.
+%         s:  modified structure.
 %
 %  EXAMPLE:
-%   clear s rep_str
+%   clear s
 %   s.string = 'hello world!';
 %   s.subfield.string = 'hi!';
-%   rep_str(1,:) = {'hi', 'hi, Dr. Nick'};
-%   rep_str(2,:) = {'hello world', 'hi, everybody'};
-%   s = struct_strrep(s, rep_str);
+%   s = struct_strrep(s, 'hi', 'hi, Dr. Nick', ...
+%                     'hello world', 'hi, everybody');
 
 % input checks
 if ~exist('s', 'var')
   error('You must input a structure.')
 elseif ~isstruct(s)
   error('s must be a structure.')
-elseif ~exist('rep_str', 'var')
-  error('You must input rep_str.')
-elseif ~iscell(rep_str) || size(rep_str, 2)~=2
-  error('rep_str must be a cell array with two columns.')
-elseif ~iscellstr(rep_str)
-  error('rep_str must contain strings.')
+elseif ~iscellstr(varargin) || mod(length(varargin), 2)
+  error('varargin must contain pairs of strings.')
 end
 
 fnames = fieldnames(s);
@@ -44,14 +38,16 @@ for i=1:length(fnames)
 
     % run strrep if applicable
     if isstr(f) || iscellstr(f)
-      for r=1:size(rep_str,1)
-        f = strrep(f, rep_str{r,1}, rep_str{r,2});
+      for r=1:2:length(varargin)
+        to_replace = varargin{r};
+        replacement = varargin{r+1};
+        f = strrep(f, to_replace, replacement);
       end
     end
 
     % or call function recursively
     if isstruct(f)
-      f = struct_strrep(f, rep_str);
+      f = struct_strrep(f, varargin{:});
     end
 
     % we're done with this element; set it back in the structure
