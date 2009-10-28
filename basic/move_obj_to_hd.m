@@ -3,6 +3,9 @@ function obj = move_obj_to_hd(obj, overwrite)
 %
 %  obj = move_obj_to_hd(obj, overwrite)
 %
+%  Save obj.mat in obj.file as a variable named objtype.  The object's
+%  mat is removed, and obj.modified is set to false.
+%
 %  INPUTS:
 %        obj:  an object.
 %
@@ -24,7 +27,7 @@ if ~exist('overwrite','var')
 end
 
 % check if the file already exists
-if ~overwrite && exist(obj.file,'file')
+if ~overwrite && exist(obj.file, 'file')
   error('File already exists: %s', obj.file)
   return
 end

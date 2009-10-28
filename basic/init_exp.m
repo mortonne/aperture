@@ -1,7 +1,7 @@
 function exp = init_exp(experiment, varargin)
 %INIT_EXP   Initialize an exp structure.
 %
-%  exp = init_exp(experiment, varargin)
+%  exp = init_exp(experiment, ...)
 %
 %  Create an experiment structure that can be used to keep track of 
 %  analyses.
