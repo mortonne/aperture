@@ -1,43 +1,59 @@
-== General Issues ==
- * documentation needs an update, especially the README
+== Project Management ==
+ * SVN or GIT?
+ * README need an update!  Change to give basic installation instructions, point to online documenation
+ * make documentation public-viewable
+ * system for reporting bugs/requesting features
+ * more specialized tutorials, e.g. artifact removal, binning.
+ * version management - procedures for testing new releases, when to create a new version branch, where/how to publish new versions for public use, etc.
+ * make clearer separation between core and EEG functions
  * compatibility with EEGLAB and fieldtrip
-  * For right now, throwing in useful functions to whatever folder seems to fit. Should there be a top-level fork between eeg_ana and other toolbox functions to facilitate updates?
- * check feasibility of cross-experiment analyses (running Per's SME-serial position interaction analysis on all LTP FR experiments)
-  * possibility: expand merge_exps.m, add 'experiment' field to each subj (or session) - could also add functions for running analyses at the session level
+  * For right now, throwing in useful functions to whatever folder seems to fit. Should there be a top-level fork between eeg_ana and other toolbox functions to facilitate updates?  How do other software projects handle this?
+
+== General Issues ==
  * improve consistency:
   * naming conventions - getobj vs. get_mat
   * input - getobjallsubj takes "path" while getobj takes varargin
+  * parameter names - chanFilter vs. chanbins vs. eog_channels
   * remove "basic" directory, move all "obj" functions to one directory
+  * unit tests?
+ * should we switch over to using propval instead of structDefaults?  Allows use of either struct or property-value pairs.  Prop-val pairs may not be suitable for some functions, but it still wouldn't hurt to use propval.  Also, should there be checks for unused params?  Might help prevent beginning users from making errors.
+ * check feasibility of cross-experiment analyses (e.g. running Per's SME-serial position interaction analysis on all LTP FR experiments)
+  * possibility: expand merge_exps.m, add 'experiment' field to each subj (or session) - could also add functions for running analyses at the session level
 
 == Basic ==
- * make an init_subj function; currently get_sessdirs is the only way to make a subj structure
- * remove init_scalp and init_iEEG, added scripts for adding channel information to existing subjects
+ * make an init_subj function; currently get_sessdirs is the only programmatic way to make a subj structure
+ * remove init_scalp and init_iEEG, add scripts for adding channel information to existing subjects
 
 == Events ==
- * look at usage of get_ev_dir; should there be a general get_obj_dir?  Do we even need this function?
+ * generalized scripts for events -> data -> events (import/export from beh_toolbox)
 
 == Patclass ==
+ * refine and test patclass_dev features
  * more classifiers, general section to give access to all MVPA functions
  * ANOVA feature selection - see if there is anything we can take from MVPA
- * make generalized version of classify_pat2pat
 
 == Patterns ==
- * saving as and processing patterns as slices (post-creation conversion in split_patfile.m. Support in create_pattern.m would be good.)
- * is expandDim general enough to be included? (Need to remember what this was used for).
- * support for continuous patterns
+ * re-evaluate pattern creation; are there ways to simplify the process?
+ * import advances in EOG artifact detection (individual grid searches)
+ * fix updating of params in modify_pattern; currently replaces some params with their defaults in modify_pattern
+ * support for continuous patterns - one event, many time bins?  How is events information stored?
  * generalize dimension objects, give option for any dimension to be saved to disk to free up memory
- * make order of dimensions flexible
 
 == Plotting ==
- * fix calling signation of pat_* plotting functions.  The user shouldn't have to worry about create_fig.  Switching the signature may be tricky, since there is no way to ensure backwards compatibility.
+ * fix calling signature of pat_* plotting functions.  The user shouldn't have to worry about create_fig.  Switching the signature may be tricky, since there is no way to ensure backwards compatibility.
  * consider beefing up plot_events.  it's unique and potentially very useful.
+ * support for making brain plots
 
 == Stats ==
+ * re-evaluate design of statistics function.
+  * compatability with apply_by_slice?
+  * monolithic function with many params/possible outputs, or a function for each type of stat test?
+  * what is the proper format for stat results?  What about n-way tests, interactions?  One object, or one for each effect?
+  * fix sign test bug
+ * support for stat printing in exp_disp
  * bootstrapping/summed z
  * RMAOV
  * permutation test on subject significance
  * cluster statistic
 
 == Utils ==
- * should objfilename.m be used more?
- * consider adding ability for getobj and setobj to get/set multiple objects.
