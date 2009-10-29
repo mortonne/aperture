@@ -148,6 +148,7 @@ end
 
 % get the pattern and corresponding events
 pat = move_obj_to_workspace(pat);
+ev_loc = get_obj_loc(ev);
 pat.dim.ev = move_obj_to_workspace(pat.dim.ev);
 
 % update the pattern object
@@ -163,7 +164,13 @@ pat = pattern_ops(pat, params);
 % pat_name as before.
 if pat.dim.ev.modified
   events_dir = get_pat_dir(pat, 'events');
-  pat.dim.ev.file = fullfile(events_dir, objfilename('events', pat.name, pat.source));
+  pat.dim.ev.file = fullfile(events_dir, objfilename('events', ...
+                                                    pat.name, pat.source));
+  % if the original events were saved to disk, save the new events to
+  % disk as well
+  if strcmp(ev_loc, 'hd')
+    ev = move_obj_to_hd(ev);
+  end
 end
 
 % save the pattern where we found it
