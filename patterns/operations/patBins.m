@@ -300,7 +300,7 @@ function [time, bins] = time_bins(time, bin_defs, labels)
     labels = {};
   elseif ~iscellstr(labels)
     error('labels must be a cell array of strings.')
-  elseif ~isempty(labels) && length(labels)~=length(bin_defs)
+  elseif ~isempty(labels) && length(labels)~=size(bin_defs, 1)
     error('labels must be the same length as bin_defs.')
   end
 
@@ -361,7 +361,7 @@ function [freq, bins] = freq_bins(freq, bin_defs, labels)
     labels = {};
   elseif ~iscellstr(labels)
     error('labels must be a cell array of strings.')
-  elseif ~isempty(labels) && length(labels)~=length(bin_defs)
+  elseif ~isempty(labels) && length(labels)~=size(bin_defs, 1)
     error('labels must be the same length as bin_defs.')
   end
 
