@@ -72,6 +72,7 @@ params = structDefaults(params, ...
                         'map_limits',       [],       ...
                         'print_input',      {'-depsc'}, ...
                         'event_bins',       '',       ...
+                        'plot_mult_events', false,    ...                        
                         'diff',             false,    ...
                         'mult_fig_windows', false,    ...
                         'stat_name',        '',       ...
@@ -83,7 +84,9 @@ pattern = load_pattern(pat);
 
 if ~isempty(params.event_bins)
   % create bins using inputs accepted by make_event_bins
-  [pat, bins] = patBins(pat, struct('field', params.event_bins));
+  p = [];
+  p.field = params.event_bins;
+  [pat, bins] = patBins(pat, p);
   
   % do the averaging within each bin
   pattern = patMeans(pattern, bins);
@@ -132,37 +135,67 @@ else
 end
 
 % set axis information
-x = [pat.dim.time.avg];
-y = [pat.dim.freq.avg];
+time = [pat.dim.time.avg];
+freq = [pat.dim.freq.avg];
+
+t_sing = length(time) < 2;
+f_sing = length(freq) < 2;
+
+if params.plot_mult_events
+  num_events = 1;
+else
+  num_events = size(pattern,1);
+end
+files = cell(num_events, size(pattern,2));
 
 % make one figure per channel
-n_figs = size(pattern,1)*size(pattern,2);
+n_figs = prod(size(files));
 fprintf('making %d TFR plots from pattern %s...\n', n_figs, pat.name);
 
 n = 1;
 start_fig = gcf;
-files = cell(size(pattern,1), size(pattern,2));
-for e=1:size(pattern,1)
+files = cell(num_events, size(pattern,2));
+for i=1:num_events
   for c=1:size(pattern,2)
     fprintf('%d ', n)
 
+    if params.plot_mult_events
+      e = ':';
+    else
+      e = i;
+    end
+    
     if params.mult_fig_windows
       figure(start_fig + n - 1)
     end
     clf
 
     % get the channel to plot and reorder dimensions for plot_tfr
-    spec = permute(pattern(e,c,:,:), [4 3 1 2]);
+    data = pattern(e,c,:,:);
 
-    % make the spectrogram
-    h = plot_tfr(spec, y, x, params);
+    if ~(t_sing || f_sing)
+      % make a spectrogram
+      data = permute(data, [4 3 1 2]);
+      h = plot_tfr(data, freq, time, params);
+    elseif t_sing && f_sing
+      error(['Cannot plot if both time and freqeuncy dimensions are ' ...
+             'singleton.'])
+    elseif f_sing
+      % power vs. time
+      data = permute(data, [1 3 4 2]);
+      h = plot_erp(data, time, params);
+    elseif t_sing
+      % power vs. frequency
+      data = permute(data, [1 4 2 3]);
+      h = plot_freq(data, freq, params);
+    end
 
     % generate the filename
-    file_name = sprintf('%s_%s_%s_e%dc%d', pat.name, fig_name, pat.source, e, c);
-    files{e,c} = fullfile(res_dir, file_name);
+    file_name = sprintf('%s_%s_%s_e%dc%d', pat.name, fig_name, pat.source, i, c);
+    files{i,c} = fullfile(res_dir, file_name);
 
     % print this figure
-    print(gcf, params.print_input{:}, files{e,c})
+    print(gcf, params.print_input{:}, files{i,c})
     n = n + 1;
   end
 end
