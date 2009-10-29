@@ -84,7 +84,7 @@ pc = init_pc(pc_name, pc_file, params);
 
 % get the training pattern (assumed to have only one time bin)
 trainpatall = load_pattern(pat1, params);
-events = load_events(pat1.dim.ev);
+events = get_mat(pat1.dim.ev);
 if ndims(trainpatall)>2
   % make into obsXvars matrix
   patsize = size(trainpatall);
@@ -101,7 +101,7 @@ trainreg.vals = unique(trainreg.vec);
 
 % get testing pattern
 testpatall = load_pattern(pat2, params);
-events = load_events(pat2.dim.ev);
+events = get_mat(pat2.dim.ev);
 
 % get the testing regressor
 testreg.vec = make_event_bins(events, params.regressor);

@@ -82,7 +82,7 @@ stat = init_stat(stat_name, stat_file, pat.name, params);
 
 % load the pattern and corresponding events
 pattern = load_pattern(pat, params);
-events = load_events(pat.dim.ev);
+events = get_mat(pat.dim.ev);
 
 % get the regressor to use for classification
 targ_vec = make_event_bins(events, params.regressor);

@@ -20,9 +20,6 @@ function pattern = load_pattern(pat,params)
 %   patnum - specifies a "slice" of the pattern to load. 
 %   pat.file{params.patnum} will be loaded.
 %
-%  NOTES: This function no longer load events. Use load_events(pat.dim.ev)
-%  to load the events corresponding to the pattern.
-%
 %  See also create_pattern, split_pattern.
 
 % input checks

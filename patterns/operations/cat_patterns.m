@@ -83,7 +83,7 @@ if strcmp(dim_name, 'ev')
   events = [];
   for i=1:length(pats)
     fprintf('%s ', pats(i).source)
-    pat_ev = load_events(pats(i).dim.ev);
+    pat_ev = get_mat(pats(i).dim.ev);
     if ~isempty(events)
       % remove any fields that aren't in both
       f1 = fieldnames(events);
