@@ -28,6 +28,7 @@
  * generalized scripts for events -> data -> events (import/export from beh_toolbox)
 
 == Patclass ==
+ * integrate load_pattern features into get_mat, replace load_pattern with get_mat in all toolbox functions
  * refine and test patclass_dev features
  * more classifiers, general section to give access to all MVPA functions
  * ANOVA feature selection - see if there is anything we can take from MVPA
