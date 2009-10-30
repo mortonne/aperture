@@ -64,9 +64,9 @@ def.sweep_cell = {{},{},{},{}};
 params = combineStructs(params, def);
 
 % set up channel groups
-if isfield(param, 'chan_group_names') & isfield(param,'chan_field')
+if isfield(params, 'chan_group_names') & isfield(params,'chan_field')
   cgroups = create_groups_from_labels(subj, ...
-				      param.chan_field, param.chan_group_names);
+				      params.chan_field, params.chan_group_names);
   params.iter_cell{2} = cgroups;
 end
 
@@ -74,11 +74,21 @@ end
 res.iterations = apply_by_group(@sweep_wrapper, ...
                                 {train_pattern, test_pattern}, ...
                                 params.iter_cell, ...
-                                {train_targs, test_targs}, ...
+                                {train_targs, test_targs, params}, ...
                                 'uniform_output', false);
 
 % handle the output
-res.iterations = reshape([res.iterations{:}], size(res.iterations));
+
+% first call here converts the sweep results into structs
+% res.iterations = reshape([res.iterations{:}], size(res.iterations));
+
+% this unraveling seems to work for fsweep and tsweep
+res = unravel_res(res);
+
+keyboard
+%temp = [res.iterations{:}];
+%temp = reshape([temp{:}], size(temp));
+%res.iterations = temp;
 
 % where to save the results
 % res_dir = get_pat_dir(train_pat, 'patclass');
@@ -91,9 +101,14 @@ stat = init_stat(stat_name, stat_file, train_pat.name);
 stat.params = params;
 
 % save the results to disk
+if ~exist(res_dir,'dir')
+  mkdir(res_dir);
+end
 save(stat.file, 'res');
 
 % add the stat object to the output pat object
+train_pat = setobj(train_pat, 'stat', stat);
+
 subj = setobj(subj, 'pat', train_pat);
 
 
@@ -108,4 +123,47 @@ res = apply_by_group(@traintest, {test_pattern}, ...
                      params.sweep_cell, ...
                      {train_pattern, test_targs, train_targs, params}, ...
                      'uniform_output', false);
+
+
+function res = unravel_res(res)
+%
+%
+%
+
+outer_loop_size = size(res.iterations);
+inner_loop_size = size(res.iterations{1,1,1,1});
+% pad if necessary
+if length(outer_loop_size) < 4
+  outer_loop_size(end+1:4) = 1;
+end
+
+if length(inner_loop_size) < 4
+  inner_loop_size(end+1:4) = 1;
+end
+
+struct_size = [outer_loop_size, inner_loop_size];
+
+for a = 1:outer_loop_size(1)
+  for b = 1:outer_loop_size(2)
+    for c = 1:outer_loop_size(3)
+      for d = 1:outer_loop_size(4)
+
+	for e = 1:inner_loop_size(1)
+	  for f = 1:inner_loop_size(2)
+	    for g = 1:inner_loop_size(3)
+	      for h = 1:inner_loop_size(4)
+	
+		temp(a,b,c,d,e,f,g,h) = res.iterations{a,b,c,d}{e,f,g,h};
+		
+	      end
+	    end
+	  end
+	end
+	
+      end
+    end
+  end
+end
+
+res.iterations = temp;
 
