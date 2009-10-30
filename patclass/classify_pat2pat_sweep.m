@@ -1,5 +1,6 @@
 function subj = classify_pat2pat_sweep(subj, train_pat_name, ...
-                                       test_pat_name, stat_name, in_params)
+                                       test_pat_name, stat_name, ...
+				       res_dir, params)
 % CLASSIFY_PAT2PAT_SWEEP
 %
 % INPUTS:
@@ -15,6 +16,8 @@ function subj = classify_pat2pat_sweep(subj, train_pat_name, ...
 %                    
 %    stat_name - where to attach the results, will be attached to
 %                the pat object.
+%
+%    res_dir - where to save the output of this function
 %
 %    params - fields include:
 %             iter_cell - controls the slicing.  See docstring for
@@ -45,15 +48,15 @@ test_targs = create_targets(test_events, 'category');
 train_pattern = get_mat(train_pat);
 test_pattern = get_mat(test_pat);
 
-params.penalty = 10;
-params.f_perfmet = @perfmet_perm;
-params.perfmet_args{1} = {'scramble_type', 'targs'};
+def.penalty = 10;
+def.f_perfmet = @perfmet_perm;
+def.perfmet_args{1} = {'scramble_type', 'targs'};
 % default is to slice over frequency dimension
-params.iter_cell = {{},{},{},{'iter'}};
+def.iter_cell = {{},{},{},{'iter'}};
 % default is no sweeping
-params.sweep_cell = {{},{},{},{}};
+def.sweep_cell = {{},{},{},{}};
 
-params = combineStructs(in_params, params);
+params = combineStructs(params, def);
 
 % the outer level of slicing
 res.iterations = apply_by_group(@sweep_wrapper, ...
@@ -66,7 +69,7 @@ res.iterations = apply_by_group(@sweep_wrapper, ...
 res.iterations = reshape([res.iterations{:}], size(res.iterations));
 
 % where to save the results
-res_dir = get_pat_dir(train_pat, 'patclass');
+% res_dir = get_pat_dir(train_pat, 'patclass');
 filename = sprintf('%s_%s_%s.mat', ...
                    train_pat.name, stat_name, train_pat.source);
 stat_file = fullfile(res_dir, filename);
