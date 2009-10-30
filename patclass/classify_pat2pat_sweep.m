@@ -85,7 +85,6 @@ res.iterations = apply_by_group(@sweep_wrapper, ...
 % this unraveling seems to work for fsweep and tsweep
 res = unravel_res(res);
 
-keyboard
 %temp = [res.iterations{:}];
 %temp = reshape([temp{:}], size(temp));
 %res.iterations = temp;
