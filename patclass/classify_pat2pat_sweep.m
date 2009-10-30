@@ -28,8 +28,11 @@ function subj = classify_pat2pat_sweep(subj, train_pat_name, ...
 %             penalty
 %             f_perfmet
 %             perfmet_args
-%
-%
+%             chan_group_names - if this exists, then the script
+%                                will create channel groups based
+%                                on these names and the specified chan_field
+%             chan_field - creates channel groups based on
+%                          information in this field.
 %
 
 % get the pat objects
@@ -48,6 +51,8 @@ test_targs = create_targets(test_events, 'category');
 train_pattern = get_mat(train_pat);
 test_pattern = get_mat(test_pat);
 
+
+
 def.penalty = 10;
 def.f_perfmet = @perfmet_perm;
 def.perfmet_args{1} = {'scramble_type', 'targs'};
@@ -57,6 +62,13 @@ def.iter_cell = {{},{},{},{'iter'}};
 def.sweep_cell = {{},{},{},{}};
 
 params = combineStructs(params, def);
+
+% set up channel groups
+if isfield(param, 'chan_group_names') & isfield(param,'chan_field')
+  cgroups = create_groups_from_labels(subj, ...
+				      param.chan_field, param.chan_group_names);
+  params.iter_cell{2} = cgroups;
+end
 
 % the outer level of slicing
 res.iterations = apply_by_group(@sweep_wrapper, ...
