@@ -1,4 +1,4 @@
-hfunction data = pat2fieldtrip(pat)
+function data = pat2fieldtrip(pat)
 %PAT2FIELDTRIP   Convert a pat object to fieldtrip format.
 %
 %  data = pat2fieldtrip(pat)
