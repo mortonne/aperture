@@ -1,7 +1,7 @@
 function files = pat_topoplot(pat, fig_name, params, res_dir)
 %PAT_TOPOPLOT   Make topoplots and print them to disk.
 %
-%  files = pat_topoplot(pat,fig_name,params,res_dir)
+%  files = pat_topoplot(pat, fig_name, params, res_dir)
 %
 %  Create a topographical plot for each [event X time X frequency] in a
 %  pattern.  Requires EEGLAB for the plotting functions, as well as a
