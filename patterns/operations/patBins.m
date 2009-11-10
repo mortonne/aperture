@@ -185,6 +185,7 @@ function [ev, bins] = event_bins(ev, bin_defs, labels)
 
   % save the events to the new ev object
   ev = set_mat(ev, events2);
+  ev.modified = true;
 %endfunction
 
 function [chan, bins] = chan_bins(chan, bin_defs, labels)

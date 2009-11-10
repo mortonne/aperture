@@ -49,8 +49,10 @@ function ev = modify_events(ev, params, ev_name, res_dir)
 %   subj = apply_to_ev(subj, old_ev, @modify_events, {params, new_ev});
 
 % input checks
-if ~exist('ev', 'var')
+if ~exist('ev', 'var') || ~isstruct(ev)
   error('You must pass an events object.')
+elseif isempty(ev)
+  error('The input ev object is empty.')
 end
 if ~isfield(ev, 'modified')
   ev.modified = false;
@@ -67,43 +69,61 @@ if ~exist('res_dir', 'var')
   res_dir = get_ev_dir(ev);
 end
 
+% set default for whether to overwrite existing events
+ev_loc = get_obj_loc(ev);
+if strcmp(ev_loc, 'ws')
+  defaults.overwrite = true;
+else
+  defaults.overwrite = false;
+end
+
 % default parameters
 params = structDefaults(params, ...
-                        'overwrite',       false, ...
-                        'eventFilter',     '',    ...
-                        'replace_eegfile', {},    ...
-                        'ev_mod_fcn',      [],    ...
+                        'overwrite',       defaults.overwrite, ...
+                        'eventFilter',     '',                 ...
+                        'replace_eegfile', {},                 ...
+                        'ev_mod_fcn',      [],                 ...
                         'ev_mod_inputs',   {});
 
-fprintf('modifying events structure "%s"...\n', ev.name)
+fprintf('modifying events structure "%s"...', ev.name)
 
-% if the ev_name is different, save events to a new file
-if ~strcmp(ev.name, ev_name)
-  saveas = true;
-  ev.name = ev_name;
-  ev_file = fullfile(res_dir, objfilename('events', ev.name, ev.source));
-else
-  saveas = false;
-  ev_file = ev.file;
-end
-
-% if the file exists and we're not overwriting, return
-ev_loc = get_obj_loc(ev);
-if strcmp(ev_loc, 'hd') && ~params.overwrite && exist(ev_file, 'file')
-  fprintf('events %s exist. Skipping...\n', ev.name)
-  return
-end
-
-% load the events structure
+% make sure the events are not empty
 events = get_mat(ev);
-
 if isempty(events)
   fprintf('events are empty.  Skipping...\n')
   return
 end
 
-% update the events file
-ev.file = ev_file;
+% if the ev_name is different, save events to a new file
+if ~strcmp(ev.name, ev_name)
+  saveas = true;
+
+  % set the new file and check it
+  ev_file = fullfile(res_dir, objfilename('events', ev.name, ev.source));
+  if strcmp(ev_loc, 'hd') && ~params.overwrite && exist(ev_file, 'file')
+    fprintf('events %s exist in new file. Skipping...\n', ev_name)
+  end
+
+  % everything checks out; we can make modifications
+  if ~exist(res_dir, 'dir')
+    mkdir(res_dir);
+  end
+
+  % update the ev object
+  ev.name = ev_name;
+  ev.file = ev_file;
+else
+  saveas = false;
+  
+  % if the events exist and we're not overwriting, return
+  if ~params.overwrite && exist_mat(ev)
+    fprintf('events %s exist. Skipping...\n', ev.name)
+    return
+  end
+end
+
+% load the events structure
+ev.modified = true;
 
 % run strrep on the eegfile of each event
 if ~isempty(params.replace_eegfile)
@@ -119,7 +139,14 @@ if ~isempty(params.ev_mod_fcn)
   events = params.ev_mod_fcn(events, params.ev_mod_inputs{:});
 end
 
-% save
+% update the ev object
+if saveas
+  ev.name = ev_name;
+  ev.file = ev_file;
+end
+ev.modified = true;
+
+% save the new events
 ev = set_mat(ev, events, ev_loc);
 if strcmp(ev_loc, 'hd')
   if saveas
@@ -129,9 +156,8 @@ if strcmp(ev_loc, 'hd')
   end
 else
   if saveas
-    fprintf('stored as "%s".\n', ev_name)
+    fprintf('returning as "%s".\n', ev_name)
   else
-    fprintf('done.\n')
+    fprintf('updated.\n')
   end
-  ev.modified = true;
 end

@@ -33,6 +33,9 @@ if ~exist('loc', 'var')
     loc = 'hd';
   end
 end
+if ~isfield(obj, 'modified')
+  obj.modified = false;
+end
 
 objtype = get_obj_type(obj);
 
@@ -51,11 +54,11 @@ switch loc
   end
   eval([objtype '=mat;']);
   save(obj.file, objtype)
+  obj.modified = false;
   
  case 'ws'
-  % just add it to the mat field, and mark the object as modified
+  % just add it to the mat field
   obj.mat = mat;
-  obj.modified = true;
   
  otherwise
   error('loc must be either "hd" or "ws".')

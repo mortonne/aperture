@@ -11,29 +11,36 @@ function obj = move_obj_to_workspace(obj, overwrite)
 %              Default: false
 %
 %  OUTPUTS:
-%        obj:  the object, with the "mat" field set to the loaded matrix.
+%        obj:  the object, with the "mat" field set to the loaded
+%              matrix.
 
 % input checks
 if ~exist('obj','var') || ~isstruct(obj)
   error('You must pass an object.')
-elseif ~isfield(obj, 'file') || isempty(obj.file)
-  error('obj must have a "file" field.')
 end
 if ~exist('overwrite','var')
   overwrite = false;
 end
 
-if ~overwrite && isfield(obj, 'mat') && ~isempty(obj.mat)
-  % nothing to do
+% check if the object exists anywhere
+objtype = get_obj_type(obj);
+objname = get_obj_name(obj);
+if ~exist_mat(obj)
+  error('%s object ''%s'' does not have a mat to be loaded.', objtype, objname)
+end
+
+% check where the object is currently
+loc = get_obj_loc(obj);
+
+if strcmp(loc, 'ws') && ~overwrite
+  % we're not going to overwrite from file, so just return
   return
 end
 
-% load the object (assumed to have the same name as objtype)
-objtype = get_obj_type(obj);
-load(obj.file, objtype);
-
-% set to the mat field
-obj.mat = eval(objtype);
+% load the mat from disk and add it to obj
+mat = get_mat(obj, 'hd');
+obj = set_mat(obj, mat, 'ws');
 
 % just loaded it, so it can't be modified
 obj.modified = false;
+
