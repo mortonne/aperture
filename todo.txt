@@ -1,6 +1,6 @@
 == Project Management ==
  * SVN or GIT?
- * README need an update!  Change to give basic installation instructions, point to online documenation
+ * README needs an update!  Change to give basic installation instructions, point to online documenation
  * make documentation public-viewable
  * system for reporting bugs/requesting features
  * more specialized tutorials, e.g. artifact removal, binning.
@@ -16,6 +16,7 @@
   * parameter names - chanFilter vs. chanbins vs. eog_channels
   * remove "basic" directory, move all "obj" functions to one directory
   * unit tests?
+  * should objects be saved with their mats, for ease of reloading them if the references in exp get lost?  Or even the whole branch (exp.subj.pat), so they can be remerged using merge_exps.
  * should we switch over to using propval instead of structDefaults?  Allows use of either struct or property-value pairs.  Prop-val pairs may not be suitable for some functions, but it still wouldn't hurt to use propval.  Also, should there be checks for unused params?  Might help prevent beginning users from making errors.
  * check feasibility of cross-experiment analyses (e.g. running Per's SME-serial position interaction analysis on all LTP FR experiments)
   * possibility: expand merge_exps.m, add 'experiment' field to each subj (or session) - could also add functions for running analyses at the session level
