@@ -3,12 +3,23 @@ function pat = modify_pattern(pat, params, pat_name, res_dir)
 %
 %  pat = modify_pattern(pat, params, pat_name, res_dir)
 %
-%  Use this function to modify existing patterns. You can either save the
-%  new pattern under a different name and/or file, or overwrite the old
-%  one.
+%  Use this function to modify existing patterns. You can either save
+%  the new pattern under a different name, or overwrite the old one.  To
+%  save under a new name, set pat_name to the new name.  The output pat
+%  object will have that name.  
 %
-%  Operations are run in this order: 1) filtering, 2) binning, 3) principle
-%  components analysis, 4) saving out in slices
+%  By default, modified patterns will be saved in a subdirectory of the
+%  parent of the main directory of the input pattern.  The new pattern's
+%  main directory will be named pat_name.
+%
+%  If input pat is saved to disk, the new pattern will be saved in a
+%  new file in [res_dir]/patterns.  If events are modified, and they are
+%  saved on disk, the modified events will be saved in
+%  [res_dir]/events.  In case the events are used by other objects, they
+%  will be saved to a new file even if pat_name doesn't change.
+%
+%  Operations are run in this order: 1) filtering, 2) binning,
+%  3) principle components analysis, 4) saving out in slices.
 %
 %  INPUTS:
 %       pat:  a pattern object.
@@ -23,8 +34,14 @@ function pat = modify_pattern(pat, params, pat_name, res_dir)
 %       pat:  a modified pattern object, named pat_name.
 %
 %  PARAMS:
+%  All fields are optional.  Defaults are shown in parentheses.
+%   overwrite - if true, existing patterns will be overwritten.  (false
+%               if pattern is stored on disk, true if pattern is stored
+%               in workspace)
+%
 %  Filtering
-%   eventFilter - input to filterStruct; used to filter the events dimension
+%   eventFilter - input to filterStruct; used to filter the events
+%                 dimension
 %   chanFilter  - filter for the channels dimension
 %   chan_filter - filter that uses filter_struct instead of filterStruct
 %   timeFilter  - filter for the time dimension
@@ -34,36 +51,36 @@ function pat = modify_pattern(pat, params, pat_name, res_dir)
 %   excludeBadChans - if true, channels whose numbers are listed in
 %                     fileparts(events.eegfile)/bad_chan.txt
 %                     will be excluded for the relevant events
-%   blinkthresh     - events where fast-slow running average of the difference
-%                     between the EOG channels crosses this threshold are
-%                     excluded (see find_eog_artifacts).
+%   blinkthresh     - events where fast-slow running average of the
+%                     difference between the EOG channels crosses this
+%                     threshold are excluded (see find_eog_artifacts).
 %   eog_channels    - channel number or pair of channels to use in blink
 %                     detection
-%   absThresh       - if any value in an event crosses this this threshold
-%                     (either positive or negative), the event will be
-%                     excluded for that channel
+%   absThresh       - if any value in an event crosses this this
+%                     threshold (either positive or negative), the event
+%                     will be excluded for that channel
 %
 %  Binning
-%   eventbins      - input to make_event_bins (for backwards compatibility,
-%                    field can also be named "field".)
+%   eventbins      - input to make_event_bins (for backwards
+%                    compatibility, field can also be named "field".)
 %   eventbinlabels - cell array of strings, with one cell per bin. Gives
 %                    a label for each event bin, which appears in the
 %                    'label' field of the modified events structure
 %   chanbins       - 
 %   chanbinlabels  - cell array of strings
-%   MSbins         - [N bins X 2] array, where MSbins(Y,1) gives the start
-%                    of bin Y in milliseconds, and MSbins(Y,2) gives the
-%                    end of the bin
+%   MSbins         - [N bins X 2] array, where MSbins(Y,1) gives the
+%                    start of bin Y in milliseconds, and MSbins(Y,2)
+%                    gives the end of the bin
 %   MSbinlabels    - cell array of strings
-%   freqbins       - bins in Hz for the frequency dimension, specified in 
-%                    the same format as MS bins
+%   freqbins       - bins in Hz for the frequency dimension, specified
+%                    in the same format as MS bins
 %   freqbinlabels  - cell array of string labels
 %
 %  PCA
 %   nComp - number of principal components to extract
 %
 %  Z-Transform
-%   ztrans           - if true, z-transform within each channel and 
+%   ztrans           - if true, z-transform within each channel and
 %                      frequency
 %   ztrans_eventbins - optional; specifies event bins to z-transform
 %                      within separately
@@ -82,80 +99,106 @@ function pat = modify_pattern(pat, params, pat_name, res_dir)
 %   pat = modify_pattern(pat, params);
 
 % input checks
-if ~exist('pat','var')
+if ~exist('pat', 'var') || ~isstruct(pat)
   error('You must pass a pattern object.')
-elseif ~isstruct(pat)
-  error('pat must be a structure.')
 elseif isempty(pat)
   error('The input pat object is empty.')
 end
 if ~isfield(pat, 'modified')
   pat.modified = false;
 end
-if ~exist('params','var')
+if ~exist('params', 'var')
   params = struct;
 end
-if ~exist('pat_name','var') | isempty(pat_name)
+if ~exist('pat_name', 'var') | isempty(pat_name)
   % default to overwriting the existing pattern
   pat_name = pat.name;
 end
-if ~exist('res_dir','var') || isempty(res_dir)
+if ~exist('res_dir', 'var') || isempty(res_dir)
+  % default to parallel directory to input pattern, named pat_name
+  % if pat.file is a relative path, this may fail
   pat_dir = get_pat_dir(pat);
   res_dir = fullfile(fileparts(pat_dir), pat_name);
 end
 
+% get the location of the input pat; this will set whether the new
+% pattern is saved to workspace or hard drive
+pat_loc = get_obj_loc(pat);
+ev_loc = get_obj_loc(pat.dim.ev);
+
+% set default for whether to overwrite existing pattern
+if strcmp(pat_loc, 'ws')
+  defaults.overwrite = true;
+else
+  defaults.overwrite = false;
+end
+
 % default parameters
+user_params = params;
 params = structDefaults(params, ...
-                        'nComp',           [], ...
-                        'badChanFiles',    {},  ...
-                        'blinkthresh',     [], ...
-                        'eog_channels',    {[25 127], [8 126]}, ...
-                        'eog_buffer',      200, ...
-                        'blinkopt',        [.5, .5, .975, .025], ...
-                        'absThresh',       [], ...
-                        'kthresh',         [],  ...
-                        'min_samp',        [], ...
-                        'ztrans',          0,  ...
-                        'ztrans_eventbins', 'overall', ...
-                        'overwrite',       0,  ...
-                        'lock',            0,  ...
-                        'splitDim',        [], ...
-                        'savePat',         1);
+                        'nComp',            [],                   ...
+                        'badChanFiles',     {},                   ...
+                        'blinkthresh',      [],                   ...
+                        'eog_channels',     {[25 127], [8 126]},  ...
+                        'eog_buffer',       200,                  ...
+                        'blinkopt',         [.5, .5, .975, .025], ...
+                        'absThresh',        [],                   ...
+                        'kthresh',          [],                   ...
+                        'min_samp',         [],                   ...
+                        'ztrans',           false,                ...
+                        'ztrans_eventbins', 'overall',            ...
+                        'splitDim',         [],                   ...
+                        'overwrite',        defaults.overwrite);
 
 fprintf('modifying pattern %s...', pat.name)
 
-% if the pat_name is different, save the pattern to a new file
+% before modifying the pat object, make sure files, etc. are OK
 if ~strcmp(pat.name, pat_name)
   saveas = true;
-  pat.name = pat_name;
+  
+  % use "patterns" subdirectory of res_dir
   pat_dir = fullfile(res_dir, 'patterns');
   pat_file = fullfile(pat_dir, ...
-                      objfilename('pattern', pat.name, pat.source));
-  if ~exist(pat_dir,'dir')
+                      objfilename('pattern', pat_name, pat.source));
+  
+  % check to see if there's already a pattern there that we don't want
+  % to overwrite
+  if strcmp(pat_loc, 'hd') && ~params.overwrite && exist(pat_file, 'file')
+    fprintf('pattern %s exists in new file. Skipping...\n', pat_name)
+    return
+  end
+  
+  % make sure the parent directory exists
+  if ~exist(pat_dir, 'dir')
     mkdir(pat_dir);
   end
 else
   saveas = false;
-  pat_file = pat.file;
+  
+  % should we overwrite this pattern?  Regardless of hd or ws
+  if ~params.overwrite && exist_mat(pat)
+    fprintf('pattern %s exists. Skipping...\n', pat.name)
+    return
+  end
 end
 
-% if the file exists and we're not overwriting, return
-pat_loc = get_obj_loc(pat);
-if strcmp(pat_loc, 'hd') && ~params.overwrite && exist(pat_file,'file')
-  fprintf('pattern %s exists. Skipping...\n', pat.name)
-  return
-end
-
-% get the pattern and corresponding events
+% for ease of passing things around, temporarily move the mats to the
+% workspace, if they aren't already
 pat = move_obj_to_workspace(pat);
 pat.dim.ev = move_obj_to_workspace(pat.dim.ev);
 
-% update the pattern object
-pat.file = pat_file;
-pat.params = combineStructs(params, pat.params);
+% update params
+pat.params = combineStructs(user_params, pat.params);
 
-% make requested modifications
+% make requested modifications; pattern and events may be modified in
+% the workspace
 pat = pattern_ops(pat, params);
+
+if saveas
+  % change the name and point to the new file
+  pat.name = pat_name;
+  pat.file = pat_file;
+end
 
 % if event have been modified, change the filepath. We don't want to
 % overwrite any source events that might be used for other patterns, 
@@ -163,7 +206,14 @@ pat = pattern_ops(pat, params);
 % pat_name as before.
 if pat.dim.ev.modified
   events_dir = get_pat_dir(pat, 'events');
-  pat.dim.ev.file = fullfile(events_dir, objfilename('events', pat.name, pat.source));
+  pat.dim.ev.file = fullfile(events_dir, objfilename('events', ...
+                                                    pat.name, pat.source));
+end
+
+% either move unmodified events back to disk, or save modified events
+% to their new file
+if strcmp(ev_loc, 'hd')
+  pat.dim.ev = move_obj_to_hd(pat.dim.ev);
 end
 
 % save the pattern where we found it
@@ -181,12 +231,17 @@ if strcmp(pat_loc, 'hd')
   end
 else
   % already should be in pat.mat
-  pat.modified = true;
   pat.dim.splitdim = [];
+  
+  if saveas
+    fprintf('returning as "%s".\n', pat.name)
+  else
+    fprintf('updated.\n')
+  end
 end
 
-
 function pat = pattern_ops(pat, params)
+
   % apply filtering
   [pat, inds] = patFilt(pat, params);
   pat.mat = pat.mat(inds{:});
@@ -242,34 +297,18 @@ function pat = pattern_ops(pat, params)
     %        length(find(bad_events)), length(bad_events))
   end
 
+  mask = false(pat_size);
+  
   % reject event-channels that have any values above a given threshold
   if params.absThresh
-    % get a logical indicating events/channels that have at least 
-    % one bad sample
-    bad_samples = abs(pat.mat)>params.absThresh;
-    bad_event_chans = any(reshape(bad_samples, pat_size(1), pat_size(2), prod(pat_size(3:end))), 3);
-
-    % mark the bad events/channels
-    isbad = repmat(bad_event_chans, [1 1 pat_size(3:end)]);
-    pat.mat(isbad) = NaN;
-
-    % check the results
-    fprintf('Threw out %d event-channels out of %d with abs. val. greater than %d.\n', ...
-            nnz(bad_event_chans), numel(bad_event_chans), params.absThresh)
-
-    % get channels that are bad for all events
-    bad_chans = find(all(bad_event_chans,1));
-    if ~isempty(bad_chans)
-      emsg = ['channels excluded: ' sprintf('%d ', pat.dim.chan(bad_chans).label)];
-      warning(emsg)
-    end
+    mask = mask | reject_threshold(pat.mat, params.absThresh);
   end
 
   % reject event-channel-freqs with high kurtosis
   if params.kthresh
-    mask = reject_kurtosis(pat.mat, params.kthresh);
-    pat.mat(mask) = NaN;
+    mask = mask | reject_kurtosis(pat.mat, params.kthresh);
   end
+  pat.mat(mask) = NaN;
 
   % Z-TRANSFORM
   if params.ztrans
@@ -295,4 +334,6 @@ function pat = pattern_ops(pat, params)
     pat.dim.coeff = fullfile(get_pat_dir(pat, 'patterns'), filename);
     save(pat.dim.coeff, 'coeff');
   end
+  
+  pat.modified = true;
 %endfunction

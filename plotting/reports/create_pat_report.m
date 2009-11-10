@@ -139,7 +139,7 @@ function [y,dim_order] = fix_dim(x,dim1,n_dims)
 
 function labels = get_dim_labels(dim, dim_name)
   if strcmp(dim_name, 'ev')
-    dim.ev = load_events(dim.ev);
+    dim.ev = get_mat(dim.ev);
     if ~isfield(dim.ev, 'label')
       error('events must contain a "label" field.')
     end

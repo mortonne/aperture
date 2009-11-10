@@ -58,22 +58,23 @@ inds = repmat({':'},1,4);
 if ~isempty(params.eventFilter)
   % load
   events = get_mat(pat.dim.ev);
-	
-	% filter
-	inds{1} = inStruct(events, params.eventFilter);
-	events = events(inds{1});
-	pat.dim.ev = set_mat(pat.dim.ev, events);
+  
+  % filter
+  inds{1} = inStruct(events, params.eventFilter);
+  events = events(inds{1});
+  pat.dim.ev = set_mat(pat.dim.ev, events);
+  pat.dim.ev.modified = true;
 end
 
 % channels
 % old way of filtering
 if ~isempty(params.chanFilter)
   if ischar(params.chanFilter)
-	  inds{2} = inStruct(pat.dim.chan, params.chanFilter);
-	else
-	  inds{2} = find(ismember([pat.dim.chan.number], params.chanFilter));
+    inds{2} = inStruct(pat.dim.chan, params.chanFilter);
+  else
+    inds{2} = find(ismember([pat.dim.chan.number], params.chanFilter));
   end
-	pat.dim.chan = pat.dim.chan(inds{2});
+  pat.dim.chan = pat.dim.chan(inds{2});
 end
 % experimental new way
 if ~isempty(params.chan_filter)
@@ -87,14 +88,14 @@ end
 
 % time
 if ~isempty(params.timeFilter)
-	inds{3} = inStruct(pat.dim.time, params.timeFilter);
-	pat.dim.time = pat.dim.time(inds{3});
+  inds{3} = inStruct(pat.dim.time, params.timeFilter);
+  pat.dim.time = pat.dim.time(inds{3});
 end
 
 % frequency
 if ~isempty(params.freqFilter)
   inds{4} = inStruct(pat.dim.freq, params.freqFilter);
-	pat.dim.freq = pat.dim.freq(inds{4});
+  pat.dim.freq = pat.dim.freq(inds{4});
 end
 
 % check the dimensions
@@ -106,5 +107,5 @@ if any(~psize)
     [i,j,name] = read_dim_input(dim_number);
     msg = [msg sprintf('%s dimension filtered into oblivion.\n', name)];
   end
-	error('eeg_ana:patFilt:EmptyPattern', msg);
+  error('eeg_ana:patFilt:EmptyPattern', msg);
 end

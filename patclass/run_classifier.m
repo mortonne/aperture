@@ -1,12 +1,33 @@
 function [class,err,posterior] = run_classifier(trainpat,trainreg,testpat,testreg,classifier,params)
 %RUN_CLASSIFIER   Train and test a classifier using standard data formats.
 % 
-%run_classifier(trainpat, trainreg, testpat, testreg)
+%  [class, err, posterior] = run_classifier(trainpat, trainreg, testpat, testreg)
 %
-% patterns should be observations X variables.
-% regressors should be vectors the same length as observations.
+%  INPUTS:
+%    trainpat:  [observations X variables] matrix to train on.
 %
+%    trainreg:  vector of condition labels for each observation in 
+%               trainpat.
+%
+%     testpat:  [observations X variables] matrix to test.
+%
+%     testreg:  vector of condition labels for each observation in 
+%               testpat.
+%
+%  classifier:  string indicating the type of classifier to use.
+%
+%      params:  structure giving options for running the classifier.
+%
+%  OUTPUTS:
+%       class:  vector giving the classifier guess for each observation.
+%
+%         err:  an estimate of the misclassification error rate based on
+%               the training data.
+%
+%   posterior:  [observations X conditions] matrix of classifier outputs
+%               for each condition.
 
+% input checks
 if ~exist('classifier', 'var')
 	classifier = 'bp_netlab';
 end

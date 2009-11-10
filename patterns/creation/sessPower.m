@@ -78,12 +78,12 @@ warning('off', 'eeg_ana:patBinAllNaNs')
 % input checks
 if ~exist('pat','var')
   error('You must pass a pat object.')
-  elseif ~exist('events','var') || ~isstruct(events)
+elseif ~exist('events','var') || ~isstruct(events)
   error('You must pass an events structure.')
 end
 if ~exist('base_events','var') || isempty(base_events)
   base_events = events;
-  elseif ~isstruct(base_events)
+elseif ~isstruct(base_events)
   error('base_events must be a structure.')
 end
 if ~exist('bins','var')
@@ -104,10 +104,11 @@ params = structDefaults(pat.params, ...
                         'ztransform',      true,     ...
                         'logtransform',    false,    ...
                         'artWindow',       500,      ...
-                        'precision',       'double');
+                        'precision',       'single');
 
 % initialize the pattern for this session
-pattern = NaN(length(events), length(params.channels), length(pat.dim.time), length(pat.dim.freq));
+pattern = NaN(length(events), length(params.channels), ...
+              length(pat.dim.time), length(pat.dim.freq), params.precision);
 
 % load bad channel info for these events
 if params.excludeBadChans
@@ -123,29 +124,29 @@ fprintf('Channels: ')
 for c=1:length(params.channels)
   % get the current channel number
   channel = params.channels(c);
-	fprintf('%d ', channel);
+  fprintf('%d ', channel);
 
   % if z-transforming, get baseline stats for this sess, channel
-	if params.ztransform
-	  base_power = get_power(base_events, channel, base_params);
+  if params.ztransform
+    base_power = get_power(base_events, channel, base_params);
     [base_mean, base_std] = baseline_stats(base_power);
-	end
+  end
 
-	% get power, remove artifacts, do binning of time and frequency
-	for e=1:length(events)
-	  % get power for this event in [time X frequency] form
-	  power = permute(get_power(events(e), channel, params), [2 3 1]);
+  % get power, remove artifacts, do binning of time and frequency
+  for e=1:length(events)
+    % get power for this event in [time X frequency] form
+    power = permute(get_power(events(e), channel, params), [2 3 1]);
 
     % z-transform
-		if params.ztransform
-	    for f=1:size(power,2)
-				power(:,f) = (power(:,f) - base_mean(f)) / base_std(f);
-			end
-		end
+    if params.ztransform
+      for f=1:size(power,2)
+        power(:,f) = (power(:,f) - base_mean(f)) / base_std(f);
+      end
+    end
 
-		% bin time and frequency, and add the power of this eventXchannel
-		pattern(e,c,:,:) = patMeans(power, bins(3:4));
-	end
+    % bin time and frequency, and add the power of this eventXchannel
+    pattern(e,c,:,:) = patMeans(power, bins(3:4));
+  end
 end
 
 % bin channels
@@ -172,31 +173,11 @@ function power = get_power(events, channel, params)
   % input checks
   if ~exist('events','var')
     error('You must pass an events structure.')
-    elseif ~exist('channel','var') || ~isnumeric(channel)
+  elseif ~exist('channel','var') || ~isnumeric(channel)
     error('You must indicate the number of the channel to use.')
-    elseif ~exist('params','var') || ~isstruct(params)
+  elseif ~exist('params','var') || ~isstruct(params)
     error('You must pass a params structure.')
   end
-
-  %{
-  % old implementation
-  
-  % calculate power from raw voltage for a set of frequencies
-  power = getphasepow(channel, ...
-                      events, ...
-                      params.durationMS, ...
-                      params.offsetMS, ...
-                      params.bufferMS, ... 
-                      'freqs', params.freqs, ... 
-                      'filtfreq', params.filtfreq, ... 
-                      'filttype', params.filttype, ...
-	                    'filtorder', params.filtorder, ... 
-	                    'kthresh', params.kthresh, ...
-	                    'width', params.width, ...
-	                    'resampledRate', params.resampledRate, ...
-	                    'downsample', params.downsample, ...
-	                    'powonly');
-  %}
 
   % using version in eeg_toolbox/branches/unstable...
   % calculate power from raw voltage for a set of frequencies
@@ -205,22 +186,22 @@ function power = get_power(events, channel, params)
   p.resampledrate = params.resampledRate;
   power = getphasepow(events, channel, params.freqs, params.durationMS, params.offsetMS, p);
 
-	% sanity check the power values
-	if any(power(:)<0)
-	  error('sessPower: getphasepow returned negative power values.')
-	  elseif isempty(power)
-	  error('sessPower: getphasepow returned an empty array.')
-	end
-	
-	% change the order of dimensions to [events X time X frequency]
+  % sanity check the power values
+  if any(power(:) < 0)
+    error('sessPower: getphasepow returned negative power values.')
+  elseif isempty(power)
+    error('sessPower: getphasepow returned an empty array.')
+  end
+  
+  % change the order of dimensions to [events X time X frequency]
   power = permute(power, [1 3 2]);
-	
-	% log transform if desired
-	if params.logtransform
-	  % if any values are exactly 0, make them eps
-	  power(power==0) = eps(0);
-	  % log transform
-	  power = log10(power);
+  
+  % log transform if desired
+  if params.logtransform
+    % if any values are exactly 0, make them eps
+    power(power==0) = eps(0);
+    % log transform
+    power = log10(power);
   end
   
   % remove blink artifacts
@@ -228,22 +209,23 @@ function power = get_power(events, channel, params)
     % get the final sample rate
     if ~isempty(params.downsample)
       final_rate = params.downsample;
-      else
+    else
       final_rate = params.resampledRate;
     end
 
     % get time bins in MS for each element of time dim for artifact marking
-    time_bins = make_bins(1000/final_rate, params.offsetMS, params.offsetMS+params.durationMS);
+    time_bins = make_bins(1000 / final_rate, params.offsetMS, ...
+                          params.offsetMS + params.durationMS);
     
     % remove bad event-time points
-	  isart = markArtifacts(events, time_bins, params.artWindow);
-	  isart = repmat(isart, [1 1 size(power,3)]);
-	  power(isart) = NaN;
+    isart = markArtifacts(events, time_bins, params.artWindow);
+    isart = repmat(isart, [1 1 size(power,3)]);
+    power(isart) = NaN;
   end
 
   % remove events where this channel was labeled "bad"
   if params.excludeBadChans
-	  bad_events = mark_bad_chans(channel, params.bad_chans, params.event_ind);
+    bad_events = mark_bad_chans(channel, params.bad_chans, params.event_ind);
     power(bad_events,:,:) = NaN;
   end
 %endfunction
@@ -267,13 +249,13 @@ function [base_mean, base_std] = baseline_stats(base_power)
   base_std = NaN(1,size(base_power,3));
   
   % get baseline stats
-	for f=1:size(base_power,3)
-	  % power just for this frequency
-	  freq_base_pow = base_power(:,:,f);
-	  
+  for f=1:size(base_power,3)
+    % power just for this frequency
+    freq_base_pow = base_power(:,:,f);
+    
     % get mean and std dev across events for each sample,
-		% then average across samples
-		base_mean(f) = nanmean(nanmean(freq_base_pow,1));
-		base_std(f) = nanmean(nanstd(freq_base_pow,1));
-	end
+    % then average across samples
+    base_mean(f) = nanmean(nanmean(freq_base_pow,1));
+    base_std(f) = nanmean(nanstd(freq_base_pow,1));
+  end
 %endfunction

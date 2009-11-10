@@ -84,7 +84,7 @@ pc = init_pc(pc_name, pc_file, params);
 
 % get the training pattern (assumed to have only one time bin)
 trainpatall = load_pattern(pat1, params);
-events = load_events(pat1.dim.ev);
+events = get_mat(pat1.dim.ev);
 if ndims(trainpatall)>2
   % make into obsXvars matrix
   patsize = size(trainpatall);
@@ -101,7 +101,7 @@ trainreg.vals = unique(trainreg.vec);
 
 % get testing pattern
 testpatall = load_pattern(pat2, params);
-events = load_events(pat2.dim.ev);
+events = get_mat(pat2.dim.ev);
 
 % get the testing regressor
 testreg.vec = make_event_bins(events, params.regressor);
@@ -113,21 +113,29 @@ if params.scramble
 end
 
 fprintf('running %s classifier...', params.classifier)
-nTests = size(testpatall,3);
-nObs = size(testpatall,1);
-nCats = length(testreg.vals);
+%nTests = size(testpatall,3);
+%nObs = size(testpatall,1);
+%nCats = length(testreg.vals);
+
+[nObs, nCats, nTime, nFreq] = size(testpatall);
 
 % initialize
+pcorr = NaN(nTime, nFreq);
+class = NaN(nObs, nTime, nFreq);
+posterior = NaN(nObs, nCats, nTime, nFreq);
+%{
 pcorr = NaN(1,nTests);
 class = NaN(nTests,nObs);
 posterior = NaN(nTests,nObs,nCats);
+%}
 fprintf('\nPercent Correct:\n')
 
 % step through time bins of the test pattern
-for t=1:size(testpatall,3)
-  fprintf('%s:\t', pat2.dim.time(t).label)
+for t=1:nTime
+  for f=1:nFreq
+  %fprintf('%s:\t', pat2.dim.time(t).label)
 
-  testpat = testpatall(:,:,t,:);
+  testpat = testpatall(:,:,t,f);
   if ndims(testpat)>2
     % make into obsXvars matrix
     patsize = size(testpat);
@@ -152,22 +160,32 @@ for t=1:size(testpatall,3)
 
   try
     % run classification algorithms
+    %{
     [class(t,:),err,posterior(t,:,:)] = run_classifier(trainpat,trainreg.vec,testpat,testreg.vec,params.classifier,params);
+    %}
+    [class(:,t,f), err, posterior(:,:,t,f)] = run_classifier(trainpat, ...
+                                                             trainreg.vec, ...
+                                                             testpat, ...
+                                                             testreg.vec, ...
+                                                             params.classifier, ...
+                                                             params);
   catch
     warning('Error in run_classifier.')
     continue
   end
 
   % check the performance
-  pcorr(t) = sum(testreg.vec==class(t,:))/length(testreg.vec);
-  fprintf('%.4f\n', pcorr(t))
+  pcorr(t,f) = sum(testreg.vec==class(:,t,f))/length(testreg.vec);
+  fprintf('%.4f\n', pcorr(t,f))
 end
-meanpcorr = nanmean(pcorr);
+end
+%meanpcorr = nanmean(pcorr);
 
 % for cross-fn consistency, saving testreg.vec as testreg
 testreg = testreg.vec;
 
-save(pc.file, 'class', 'pcorr', 'meanpcorr', 'posterior','testreg');
+%save(pc.file, 'class', 'pcorr', 'meanpcorr', 'posterior','testreg');
+save(pc.file, 'class', 'pcorr', 'posterior','testreg');
 
 % add pc to pat2
 pat2 = setobj(pat2, 'pc', pc);

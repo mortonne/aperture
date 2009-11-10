@@ -56,7 +56,7 @@ stat = init_stat(statname, statfile, params);
 
 % load pattern and events
 pattern = load_pattern(pat, params);
-events = load_events(pat.dim.ev);
+events = get_mat(pat.dim.ev);
 
 % make the regressors
 group = cell(1, length(params.fields));

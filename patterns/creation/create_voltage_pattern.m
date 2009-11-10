@@ -28,6 +28,8 @@ function subj = create_voltage_pattern(subj, pat_name, params, res_dir)
 %                     events ({})
 %   eventFilter     - input to filterStruct which designates which events to 
 %                     include in the pattern ('')
+%   eventbins       - 
+%   eventbinlabels  - 
 %   kthresh         - kurtosis threshold; scalar indicating the maximum 
 %                     allowable kurtosis for an event before it is excluded 
 %                     (5)
@@ -36,6 +38,8 @@ function subj = create_voltage_pattern(subj, pat_name, params, res_dir)
 %   chanFilter      - used to choose which channels to include in the pattern. 
 %                     Can a string to pass into filterStruct, or an array of 
 %                     channel numbers to include ('')
+%   chanbins        - 
+%   chanbinlabels   - 
 %
 %  Time
 %   resampledRate   - rate to resample to (500)
@@ -44,6 +48,8 @@ function subj = create_voltage_pattern(subj, pat_name, params, res_dir)
 %   durationMS      - duration in milliseconds of each epoch (2200)
 %   relativeMS      - range of times relative to the start of each event to 
 %                     use for baseline subtraction ([-200 0])
+%   MSbins          - 
+%   MSbinlabels     - 
 %
 %  Filtering
 %   filttype        - type of filter to use (see buttfilt) ('stop')

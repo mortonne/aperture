@@ -71,7 +71,7 @@ nfact = length(event_bins);
 group = cell(1,nfact);
 
 % load the events for this pattern
-events = load_events(pat.dim.ev);
+events = get_mat(pat.dim.ev);
 
 % make the regressors
 for i=1:length(event_bins)
@@ -127,6 +127,7 @@ for c=1:psize(2)
       X = squeeze(pattern(:,1,t,f));
       [samp_p, samp_statistic] = fcn_handle(X, group, fcn_inputs{:});
 
+      %{
       % check if we can determine the sign of the effect
       temp = fix_regressors(group);
       for i=1:length(temp)
@@ -135,7 +136,9 @@ for c=1:psize(2)
         if length(vals)==2
           samp_p(i) = samp_p(i)*sign(nanmean(X(reg==vals(2))) - nanmean(X(reg==vals(1))));
         end
+        keyboard
       end
+      %}
       
       % add to the larger matrices
       %p(:,c,t,f) = samp_p;

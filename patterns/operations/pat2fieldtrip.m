@@ -17,23 +17,19 @@ for i=1:length(chan)
 end
 
 % sample rate
-if ~isempty(pat.params.downsample)
-  data.fsample = pat.params.downsample;
-  else
-  data.fsample = pat.params.resampledRate;
-end
+data.fsample = get_pat_samplerate(pat);
 
 % load the pattern
 pattern = load_pattern(pat);
 
 % fieldtrip can't handle NaNs...for now, just hack them out
-if any(isnan(pattern(:)))
-  pat_mean = nanmean(pattern(:));
-  num_nans = sum(isnan(pattern(:)));
+%if any(isnan(pattern(:)))
+%  pat_mean = nanmean(pattern(:));
+%  num_nans = sum(isnan(pattern(:)));
 
-  fprintf('%d NaNs found...replacing with overall mean (%.4f).\n', num_nans, pat_mean)
-  pattern(isnan(pattern)) = pat_mean;
-end
+%  fprintf('%d NaNs found...replacing with overall mean (%.4f).\n', num_nans, pat_mean)
+%  pattern(isnan(pattern)) = pat_mean;
+%end
 
 % initialize fieldtrip vars
 n_trials = size(pattern,1);

@@ -32,7 +32,7 @@ end
 % initialize the new pattern
 filename = sprintf('pattern_%s_ga.mat', pat_name);
 pat_file = fullfile(res_dir, filename);
-pat = init_pat(pat_name, pat_file, 'multiple_subjects', subj_pat.params, subj_pat.dim);
+pat = init_pat(pat_name, pat_file, 'GrandAverage', subj_pat.params, subj_pat.dim);
 
 % get filenames for all subject patterns
 for s=1:length(subj)

@@ -4,27 +4,34 @@ function h = plot_erp(data, time, params)
 %  h = plot_erp(data, time, params)
 %
 %  INPUTS:
-%     data:  array of voltage values to plot. Each row will be
-%            plotted as a separate line.
+%     data:  array of voltage values to plot. If data is a matrix, each
+%            row will be plotted as a separate line.
 %
 %     time:  time values corresponding to each column of data.
 %
-%   params:  a structure specifying options for plotting. See
-%            below.
+%   params:  a structure specifying options for plotting. See below.
 %
 %  OUTPUTS:
 %        h:  vector of handles for each line plotted.
 %
 %  PARAMS:
-%   time_units - units of the time axis. Default: 'ms'
-%   volt_units - units of the voltage axis. Default: 'uV'
-%   colors     - cell array indicating the order of colors to use 
-%                for the lines
-%   y_lim      - limits of the voltage axis; [min,max]
+%  All fields are optional.  Default values are shown in parentheses.
+%   x_lim      - limits of the time axis in [min, max] form
+%   time_units - units of the time axis. ('ms')
+%   x_label    - label for the x-axis. ('Time (time_units)' if time
+%                vector given, otherwise 'Time (samples)')
+%   y_lim      - limits of the voltage axis in [min, max] form
+%   volt_units - units of the voltage axis. ('\muV')
+%   y_label    - label for the y-axis. ('Voltage (volt_units)')
+%   colors     - cell array indicating the order of colors to use for
+%                the lines. ({})
 %   mark       - boolean vector indicating samples to be marked
-%                (e.g., significant samples). Shading will be put
-%                just below the plot
-%   fill_color - [1 X 3] array giving the color to use for marks
+%                (e.g., significant samples). Shading will be put just
+%                below the plot. ([])
+%   fill_color - [1 X 3] array giving the color to use for marks.
+%                ([.8 .8 .8])
+%
+%  See also pat_erp.
 
 % input checks
 if ~exist('data','var')
@@ -44,18 +51,26 @@ params = structDefaults(params, ...
                         'colors',           {},       ...
                         'x_lim',            [],       ...
                         'y_lim',            [],       ...
+                        'x_label',          '',       ...
                         'y_label',          '',       ...
                         'mark',             [],       ...
                         'fill_color',       [.8 .8 .8]);
 
 publishfig
 
-% x-axis
+% x-axis values
 if ~isempty(time)
   x = time;
-  xlabel(sprintf('Time (%s)', params.time_units))
 else
   x = 1:size(data,2);
+end
+
+% x-axis label
+if ~isempty(params.x_label)
+  xlabel(params.x_label)
+elseif ~isempty(time)
+  xlabel(sprintf('Time (%s)', params.time_units))
+else
   xlabel('Time (samples)')
 end
 
@@ -127,10 +142,10 @@ plot(get(gca,'XLim'), [0 0], '--k');
 plot([0 0], y_lim, '--k');
 hold off
 
-function shade_regions(x,mark,y_lim,fill_color)
+function shade_regions(x, mark, y_lim, fill_color)
   %SHADE_REGIONS   Shade in multiple rectangles.
   %
-  %  shade_regions(x,mark,y_lim,fill_color)
+  %  shade_regions(x, mark, y_lim, fill_color)
   %
   %  INPUTS:
   %           x:  vector of x values.

@@ -3,6 +3,9 @@ function obj = move_obj_to_hd(obj, overwrite)
 %
 %  obj = move_obj_to_hd(obj, overwrite)
 %
+%  Save obj.mat in obj.file as a variable named objtype.  The object's
+%  mat is removed, and obj.modified is set to false.
+%
 %  INPUTS:
 %        obj:  an object.
 %
@@ -12,33 +15,28 @@ function obj = move_obj_to_hd(obj, overwrite)
 %        obj:  the object.
 
 % input checks
-if ~exist('obj','var') || ~isstruct(obj)
+if ~exist('obj', 'var') || ~isstruct(obj)
   error('You must pass an object.')
 elseif ~isfield(obj, 'mat') || isempty(obj.mat)
   error('obj must have a "mat" field.')
 elseif ~isfield(obj, 'file') || isempty(obj.file)
   error('obj must have a "file" field.')
 end
-if ~exist('overwrite','var')
+if ~exist('overwrite', 'var')
   overwrite = true;
 end
 
 % check if the file already exists
-if ~overwrite && exist(obj.file,'file')
+if ~overwrite && exist(obj.file, 'file')
   error('File already exists: %s', obj.file)
-  return
 end
 
-% get the name of the variable to save
-objtype = get_obj_type(obj);
-
-% assign the variable that name
-eval([objtype '=obj.mat;']);
-
-% save
-save(obj.file, objtype);
+% get the matrix
+mat = get_mat(obj);
 
 % remove the matrix from the object
 obj = remove_mat(obj);
 
-obj.modified = false;
+% save to disk
+obj = set_mat(obj, mat, 'hd');
+

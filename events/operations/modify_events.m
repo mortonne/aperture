@@ -6,45 +6,41 @@ function ev = modify_events(ev, params, ev_name, res_dir)
 %  INPUTS:
 %       ev:  an events object.
 %
-%   params:  a structure specifying options for modifying the
-%            events structure. See below.
+%   params:  a structure specifying options for modifying the events
+%            structure. See below.
 %
-%  ev_name:  string identifier for the new events structure. If
-%            this is not specified, the same as ev.name, or empty, 
-%            the old events will be replaced. default: ev.name
+%  ev_name:  string identifier for the new events structure.  If empty
+%            or not specified, the name will not be changed.
 %
-%  res_dir:  the new events will be saved in:
-%             [res_dir]/events/[ev_name].mat
-%            default: fileparts(fileparts(ev.file))
+%  res_dir:  directory where the new events structure will be saved.
+%            Default: get_ev_dir(ev)
 %
 %  OUTPUTS:
 %       ev:  a modified events object.
 %
-%   events:  the modified events structure.
-%
 %  PARAMS:
+%  overwrite       - boolean indicating whether existing events
+%                    structures should be overwritten. (false)
 %  eventFilter     - string to be passed into filterStruct to filter
-%                    the events structure. default: '' (no filtering)
+%                    the events structure. ('')
 %  replace_eegfile - cell array of strings. Each row specifies one
 %                    string replacement to run on events.eegfile, e.g.
 %                     strrep(eegfile, replace_eegfile{r,1}, ...
 %                             replace_eegfile{r,2})
 %                    is run for each row. Useful for fixing references
-%                    to EEG data.
+%                    to EEG data. ({})
 %  ev_mod_fcn      - handle to a function of the form:
-%                     [events, ...] = ev_mod_fcn(events, ...)
-%  ev_mod_inputs   - cell array of additional inputs to ev_mod_fcn.
-%
-%  NOTES:
-%   The 'eventFilter' and 'replace_eegfile' options are included for
-%   convenience; the same functionality can be achieved using the 'evmodfcn'
-%   and 'evmodinput' fields.
+%                     [events, ...] = fcn(events, ...)
+%                    Set this option to use a custom function to modify
+%                    the events structure.
+%  ev_mod_inputs   - cell array of additional inputs to ev_mod_fcn. ({})
 %
 %  EXAMPLES:
 %   % filter an events structure and overwrite the old events
-%   ev = getobj(exp.subj(1), 'ev', 'my_events');
+%   params = [];
 %   params.eventFilter = 'strcmp(type, ''WORD'')';
-%   [ev, events] = modify_events(ev, params);
+%   params.overwrite = true;
+%   ev = modify_events(ev, params);
 %
 %   % run an arbitrary function to modify events for all subjects
 %   old_ev = 'events'; % name of the ev object to modify
@@ -53,54 +49,81 @@ function ev = modify_events(ev, params, ev_name, res_dir)
 %   subj = apply_to_ev(subj, old_ev, @modify_events, {params, new_ev});
 
 % input checks
-if ~exist('ev','var')
+if ~exist('ev', 'var') || ~isstruct(ev)
   error('You must pass an events object.')
+elseif isempty(ev)
+  error('The input ev object is empty.')
 end
 if ~isfield(ev, 'modified')
   ev.modified = false;
 end
-if ~exist('params','var')
+if ~exist('params', 'var')
   params = struct;
 end
-if ~exist('ev_name','var') || isempty(ev_name)
+if ~exist('ev_name', 'var') || isempty(ev_name)
   ev_name = ev.name;
+elseif ~ischar(ev_name)
+  error('ev_name must be a string.')
 end
-if ~exist('res_dir','var')
-  res_dir = get_ev_dir(ev, ev_name);
+if ~exist('res_dir', 'var')
+  res_dir = get_ev_dir(ev);
+end
+
+% set default for whether to overwrite existing events
+ev_loc = get_obj_loc(ev);
+if strcmp(ev_loc, 'ws')
+  defaults.overwrite = true;
+else
+  defaults.overwrite = false;
 end
 
 % default parameters
 params = structDefaults(params, ...
-                        'overwrite', false, ...
-                        'eventFilter','', ...
-                        'replace_eegfile',{}, ...
-                        'ev_mod_fcn',[], ...
-                        'ev_mod_inputs',{});
+                        'overwrite',       defaults.overwrite, ...
+                        'eventFilter',     '',                 ...
+                        'replace_eegfile', {},                 ...
+                        'ev_mod_fcn',      [],                 ...
+                        'ev_mod_inputs',   {});
 
-fprintf('modifying events structure "%s"...\n', ev.name)
+fprintf('modifying events structure "%s"...', ev.name)
+
+% make sure the events are not empty
+events = get_mat(ev);
+if isempty(events)
+  fprintf('events are empty.  Skipping...\n')
+  return
+end
 
 % if the ev_name is different, save events to a new file
 if ~strcmp(ev.name, ev_name)
   saveas = true;
+
+  % set the new file and check it
+  ev_file = fullfile(res_dir, objfilename('events', ev.name, ev.source));
+  if strcmp(ev_loc, 'hd') && ~params.overwrite && exist(ev_file, 'file')
+    fprintf('events %s exist in new file. Skipping...\n', ev_name)
+  end
+
+  % everything checks out; we can make modifications
+  if ~exist(res_dir, 'dir')
+    mkdir(res_dir);
+  end
+
+  % update the ev object
   ev.name = ev_name;
-  ev_file = fullfile(res_dir, sprintf('%s_%s.mat', ev.name, ev.source));
+  ev.file = ev_file;
 else
   saveas = false;
-  ev_file = ev.file;
-end
-
-% if the file exists and we're not overwriting, return
-ev_loc = get_obj_loc(ev);
-if strcmp(ev_loc, 'hd') && ~params.overwrite && exist(ev_file, 'file')
-  fprintf('events %s exist. Skipping...\n', ev.name)
-  return
+  
+  % if the events exist and we're not overwriting, return
+  if ~params.overwrite && exist_mat(ev)
+    fprintf('events %s exist. Skipping...\n', ev.name)
+    return
+  end
 end
 
 % load the events structure
-events = get_mat(ev);
-
-% update the events file
-ev.file = ev_file;
+ev.modified = true;
 
 % run strrep on the eegfile of each event
 if ~isempty(params.replace_eegfile)
@@ -116,8 +139,15 @@ if ~isempty(params.ev_mod_fcn)
   events = params.ev_mod_fcn(events, params.ev_mod_inputs{:});
 end
 
-% save
-ev = set_mat(ev, events);
+% update the ev object
+if saveas
+  ev.name = ev_name;
+  ev.file = ev_file;
+end
+ev.modified = true;
+
+% save the new events
+ev = set_mat(ev, events, ev_loc);
 if strcmp(ev_loc, 'hd')
   if saveas
     fprintf('saved as "%s".\n', ev_name)
@@ -125,5 +155,9 @@ if strcmp(ev_loc, 'hd')
     fprintf('saved.\n')
   end
 else
-  ev.modified = true;
+  if saveas
+    fprintf('returning as "%s".\n', ev_name)
+  else
+    fprintf('updated.\n')
+  end
 end

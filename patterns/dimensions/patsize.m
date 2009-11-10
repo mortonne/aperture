@@ -1,28 +1,33 @@
-function D = patsize(dim_info,dim)
+function D = patsize(dim_info, dim)
 %PATSIZE   Get the size of a pattern from its dim structure.
 %
 %  D = patsize(dim_info, dim)
 %
 %  INPUTS:
-%  dim_info:  structure containing information about the
-%             dimensions of a pattern. Created by
-%             create_pattern.
+%  dim_info:  structure containing information about the dimensions of a
+%             pattern.
 %
-%       dim:  optional; the dimension to return. If omitted,
-%             an array with the size of each dimension is
-%             returned. Can be either the number of a
-%             dimension in the pattern matrix, or the name
-%             of one the dimensions ('ev','chan','time','freq').
+%       dim:  optional; the dimension to return. If omitted, an array
+%             with the size of each dimension is returned. Can be either
+%             the number of a dimension in the pattern matrix, or the
+%             name of one the dimensions ('ev','chan','time','freq').
 %
 %  OUTPUTS:
-%         D:  an array with the size of the pattern.
+%         D:  an array with the size of the requested dimension(s).
 
 % input checks
 if ~exist('dim_info','var') || ~isstruct(dim_info)
   error('You must pass a dim structure.')
+elseif ~all(ismember({'ev', 'chan', 'time', 'freq'}, ...
+                     fieldnames(dim_info)))
+  error('dim_info must have "ev", "chan", "time", and "freq" fields.')
+elseif ~isfield(dim_info.ev, 'len') || isempty(dim_info.ev.len)
+  error('Events dimension length is undefined.')
 end
 if ~exist('dim','var')
   dim = [];
+elseif ~(ischar(dim) || isscalar(dim))
+  error('Dim must only specify one dimension.')
 end
 
 % mapping between fields and dimension numbers
@@ -33,6 +38,6 @@ D(4) = length(dim_info.freq);
 
 % return the requested dimension size
 if ~isempty(dim)
-  [name,number] = read_dim_input(dim);
+  [name, number] = read_dim_input(dim);
   D = D(number);
 end
