@@ -22,12 +22,12 @@ function pat_dir = get_pat_dir(pat, subdir)
 %   report_dir = get_pat_dir(pat, 'reports');
 
 % input checks
-if ~exist('pat','var') || ~isstruct(pat)
+if ~exist('pat', 'var') || ~isstruct(pat)
   error('You must pass a pattern object.')
-elseif ~isfield(pat,'file')
+elseif ~isfield(pat, 'file')
   error('pat must have a "file" field.')
 end
-if ~exist('subdir','var')
+if ~exist('subdir', 'var')
   subdir = '';
 end
 
@@ -38,15 +38,24 @@ else
   pat_file = pat.file;
 end
 
+% get the standard main directory for the pattern
 main_dir = fileparts(fileparts(pat_file));
-if ~exist(main_dir,'dir')
+
+% fix the path if it is relative; assuming that we don't want to use
+% filepaths relative to the search path
+if ~ismember(filesep, main_dir)
+  main_dir = fullfile('.', main_dir);
+end
+
+% make sure the main directory exists
+if ~isempty(main_dir) && ~exist(main_dir, 'dir')
   mkdir(main_dir);
 end
 
 % get the requested directory
 pat_dir = fullfile(main_dir, subdir);
 
-% make sure it exists
-if ~exist(pat_dir,'dir')
+% make sure the subdirectory exists
+if ~isempty(pat_dir) && ~exist(pat_dir, 'dir')
   mkdir(pat_dir)
 end
