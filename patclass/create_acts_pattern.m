@@ -45,9 +45,9 @@ for c=1:new_pat_size(2)
       
       for i=1:res_size(1)
         iter_res = res.iterations(i,c,t,f);
-        %corr = iter_res.acts(logical(iter_res.targs));
-        %pattern(iter_res.test_idx,c,t,f) = corr;
-        pattern(iter_res.test_idx,c,t,f) = iter_res.perf;
+        corr = iter_res.acts(logical(iter_res.targs));
+        pattern(iter_res.test_idx,c,t,f) = corr;
+        %pattern(iter_res.test_idx,c,t,f) = iter_res.perf;
       end
       
     end
