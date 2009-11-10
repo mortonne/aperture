@@ -1,4 +1,4 @@
-function pattern = load_pattern(pat,params)
+function pattern = load_pattern(pat, params)
 %LOAD_PATTERN   Load a pattern from a pat object.
 %
 %  pattern = load_pattern(pat, params)
@@ -63,13 +63,4 @@ elseif isfield(pat, 'mat') && ~isempty(pat.mat)
   pattern = pat.mat;
 else % there is just one file; load it up
   load(pat.file);
-end
-
-% sanity check the loaded pattern
-psize = patsize(pat.dim);
-if isempty(pattern)
-  error('pattern %s is empty.', pat.name)
-elseif isempty(params.patnum) && any(psize(1:ndims(pattern))~=size(pattern))
-  warning('eeg_ana:load_pattern:badPatSize', ...
-          'size of pattern %s does not match the dim structure.', pat.name)
 end
