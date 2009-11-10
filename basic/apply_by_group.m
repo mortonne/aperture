@@ -1,42 +1,43 @@
 function x = apply_by_group(f, matrices, iter_cell, constant_in, varargin)
-%APPLY_BY_GROUP   Iterate over groups of indices to matrices,
-%   applying a function.
+%APPLY_BY_GROUP   Apply a function to index groups of matrices.
 %
 %  x = apply_by_group(f, matrices, iter_cell, constant_in, varargin)
 %
 %  INPUTS:
-%             f:  handle to a function to apply to each slice.  Output
-%                 must be a scalar.
+%            f:  handle to a function to apply to each slice.  Output
+%                must be a scalar.
 %
-%      matrices:  cell array of matrices.  Each must have the same size
-%                 along each iter_dim.  Other dimensions can be
-%                 different.
+%     matrices:  cell array of matrices.  Each must have the same size
+%                along each iter_dim.  Other dimensions can be
+%                different.
 %
-%     iter_cell:  cell array of groups to iterate over, indicating
-%                 the groups to be iterated over.  Number of cells
-%                 must match the number of dimensions in matrices.
-%                 If a cell is empty, this dimension is not
-%                 iterated over (all values are passed into the
-%                 function).  If a cell has subcells of indices,
-%                 then these correspond to the groups that will be
-%                 iterated over.  If the cell has the string 'iter' in
-%                 it, then every element in this dimension will be
-%                 iterated over. 
+%    iter_cell:  cell array of groups to iterate over, indicating
+%                the groups to be iterated over.  Number of cells must
+%                match the number of dimensions in matrices. If a cell
+%                is empty, this dimension is not iterated over (all
+%                values are passed into the function).  If a cell has
+%                subcells of indices, then these correspond to the
+%                groups that will be iterated over.  If the cell has
+%                the string 'iter' in it, then every element in this
+%                dimension will be iterated over. 
 %
-%   constant_in:  cell array of additional inputs to f, after all slices.
-%                 These inputs are the same regardless of what slice is
-%                 being processed.
+%  constant_in:  cell array of additional inputs to f, after all
+%                slices. These inputs are the same regardless of what
+%                slice is being processed.
 %
 %  OUTPUTS:
-%             x:  matrix of output values.  All empty dimensions in
-%                 iter_cell will be singleton.
+%            x:  array of output values.  All empty dimensions in
+%                iter_cell will be singleton.
 %
 %  ARGS:
 %  Optional additional arguments passed in as parameter, value pairs:
-%   uniform_output  - if true, output will be an array; if false, output
-%                     will be a cell array (true)
+%   uniform_output - if true, output will be an array; if false, output
+%                    will be a cell array (true)
 %
-
+%  EXAMPLE:
+%   % get sums over arbitrary groups of columns in a matrix
+%   a = magic(4);
+%   x = apply_by_group(@sum, {a}, {'iter', {1:2, 2:4, 3}});
 
 % input checks
 if ~exist('f', 'var') || ~isa(f, 'function_handle')
@@ -47,6 +48,9 @@ elseif isempty(iter_cell)
   error('iter_cell cannot be empty.')
 elseif ~exist('matrices', 'var') || isempty(matrices)
   error('You must pass a cell array of matrices.')
+end
+if isscalar(iter_cell)
+  iter_cell = [iter_cell {{}}];
 end
 if ~exist('constant_in', 'var')
   constant_in = {};
@@ -59,50 +63,42 @@ if ~iscell(constant_in)
 end
 
 % throw an error if a cell in iter_cell has a string other than iter
-for i = 1:length(iter_cell)
-  for j = 1:length(iter_cell{i})
-    if isstr(iter_cell{i}{j})
-      if ~strcmp(iter_cell{i}{j},'iter')
-	error('string inputs in cells can only be ''iter''');
-      end
-    end
-  end
+if any(cellfun(@(x)iscellstr(x) && ~all(strcmp(x, 'iter')), iter_cell))
+  error('string inputs in cells can only be ''iter''.')
+elseif any(cellfun(@(x)~(isvector(x) || isempty(x)), iter_cell))
+  error('each cell in iter_cell must either be empty or contain a vector.')
 end
 
 defaults.uniform_output = true;
 params = propval(varargin, defaults);
 
-% get the size of the output matrix.
-% all dimensions with a corresponding empty cell will be singleton,
-% ndims for the output is the 
+% get dimensions of the input matrices that will be iterated over
+% all dimensions with a corresponding empty cell will be singleton
+iter_dims = find(~cellfun('isempty', iter_cell));
+
+% get the size of the output matrix; ndims for the output is the 
 % highest iter dimension or 2, whichever is higher
-
+out_dim_sizes = ones(1, max([iter_dims 2]));
 for i = 1:length(iter_cell)
-  %keyboard
   if isempty(iter_cell{i})
+    % all indices will be passed in at once, and this dimension will be
+    % collapsed
     out_dim_sizes(i) = 1;
-    % iter_cell{i} = {1:size(matrices{1},i)};
     iter_cell{i} = {':'};
-  elseif strcmp(iter_cell{i},'iter')
-    out_dim_sizes(i) = size(matrices{1},i);
-    iter_cell{i} = num2cell(1:size(matrices{1},i));
-    %keyboard
+  elseif strcmp(iter_cell{i}, 'iter')
+    % each element will be passed in separately, and will appear in
+    % the output
+    dim_size = unique(cellfun('size', matrices, i));
+    if ~isscalar(dim_size)
+      error('Sizes of matrices are mismatched along dimension %d.', i)
+    end
+    out_dim_sizes(i) = dim_size;
+    iter_cell{i} = num2cell(1:dim_size);
   else
-    out_dim_sizes(i) = size(iter_cell{i},2);
+    % each output element will correspond to a group of indices
+    out_dim_sizes(i) = length(iter_cell{i});
   end
-%keyboard
 end
-
-% these dimensions of the input matrices will be iterated over
-iter_dims = find(~cellfun('isempty',iter_cell));
-%
-%for dim=iter_dim
-%  iter_dim_sizes = unique(cellfun('size', matrices, dim));
-%  if length(iter_dim_sizes) > 1
-%    error('Sizes of matrices are mismatched along dimension %d', dim)
-%  end
-%  out_dim_sizes(dim) = iter_dim_sizes;
-%end
 
 % initialize the output matrix
 if params.uniform_output
@@ -116,7 +112,6 @@ max_in_dim = max(cellfun(@ndims, matrices));
 i = repmat({':'}, 1, max_in_dim);
 
 n = 1;
-%keyboard
 % run the function on each slice with dark recursive magic
 x = eval_dim(matrices, x, i, n, iter_cell, iter_dims, ...
 	     out_dim_sizes, f, constant_in);
@@ -136,7 +131,7 @@ function out_matrix = eval_dim(in_matrices, out_matrix, i, n, ...
   for j=1:s(dim)
     % update the index
     i{dim} = j;
-    %keyboard
+
     if dim < max(iter_dims)
       % call recursively, using the next iter_dim
       out_matrix = eval_dim(in_matrices, out_matrix, i, n + 1, ...
