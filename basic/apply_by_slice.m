@@ -4,28 +4,28 @@ function x = apply_by_slice(f, matrices, iter_dims, constant_in, varargin)
 %  x = apply_by_slice(f, matrices, iter_dims, constant_in, varargin)
 %
 %  INPUTS:
-%             f:  handle to a function to apply to each slice.  Output
-%                 must be a scalar.
+%            f:  handle to a function to apply to each slice.  Output
+%                must be a scalar.
 %
-%      matrices:  cell array of matrices.  Each must have the same size
-%                 along each iter_dim.  Other dimensions can be
-%                 different.
+%     matrices:  cell array of matrices.  Each must have the same size
+%                along each iter_dim.  Other dimensions can be
+%                different.
 %
-%     iter_dims:  array of dimension numbers, indicating the dimensions
-%                 to be iterated over.
+%    iter_dims:  array of dimension numbers, indicating the dimensions
+%                to be iterated over.
 %
-%   constant_in:  cell array of additional inputs to f, after all slices.
-%                 These inputs are the same regardless of what slice is
-%                 being processed.
+%  constant_in:  cell array of additional inputs to f, after all slices.
+%                These inputs are the same regardless of what slice is
+%                being processed.
 %
 %  OUTPUTS:
-%             x:  matrix of output values.  All dimensions not listed in
-%                 iter_dims will be singleton.
+%            x:  matrix of output values.  All dimensions not listed in
+%                iter_dims will be singleton.
 %
 %  ARGS:
 %  Optional additional arguments passed in as parameter, value pairs:
-%   uniform_output  - if true, output will be an array; if false, output
-%                     will be a cell array (true)
+%   uniform_output - if true, output will be an array; if false, output
+%                    will be a cell array (true)
 %
 %  EXAMPLES:
 %   a = magic(3);
