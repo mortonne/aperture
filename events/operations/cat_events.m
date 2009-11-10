@@ -33,6 +33,8 @@ if ~exist('source', 'var')
 end
 if ~exist('res_dir', 'var')
   res_dir = get_ev_dir(evs(1));
+elseif ~exist(res_dir, 'dir')
+  mkdir(res_dir);
 end
 
 % print status
