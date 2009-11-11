@@ -55,6 +55,9 @@ end
 if ~exist('subj','var')
   error('You must pass a subj object.')
 end
+if ~isfield(params,'save_to_disk')
+  params.save_to_disk = true;
+end
 
 % parse parameters
 params = structDefaults(params, ...
@@ -111,4 +114,6 @@ for s=1:length(exp.subj)
 end
 
 % update the exp object
-exp = update_exp(exp);
+if params.save_to_disk
+  exp = update_exp(exp);
+end
