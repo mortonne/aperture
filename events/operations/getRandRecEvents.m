@@ -64,10 +64,10 @@ end
 
 % sanity checks!
 types = unique({events.type});
-if ~ismember(recWordField, types)
+if ~ismember('REC_START', types)
   error('No recall period start events (type=REC_START) found.')
 elseif ~ismember(recWordField, types)
-  error('No word recall events (type=REC_WORD) found.')
+  error('No word recall events (type=%s) found.', params.recWordField)
 end
 
 % some defaults
@@ -122,7 +122,8 @@ for l = 1:length(lists)
   list_ind = [allWord_events.session]==sessions(l) & ...
              [allWord_events.(listfield)]==lists(l);
   if ~any(list_ind)
-    fprintf('No recall events. Skipping...')
+    fprintf('No recall events in session %d, trial %d. Skipping...', ...
+            sessions(l), lists(l))
     continue
   end
   listEvents = allWord_events(list_ind);
@@ -210,7 +211,8 @@ for l = 1:length(lists)
 
     % make sure there are still ones avail
     if isempty(avail)
-      fprintf('Warning: Not enough free space for random recalls.\n');
+      fprintf('Warning: Only enough free space for %d random recalls.\n', ...
+              e - 1);
       break
     end
 
@@ -257,10 +259,10 @@ for e = 1:length(word_events)
       %    if e>1 & sum(inStruct(word_events(1:(e-1)),'itemno==varargin{1} & session==varargin{2} & list==varargin{3}',word_events(e).itemno, word_events(e).session, word_events(e).list))>0
       % is a repeat in the current list
       allRep_events = [allRep_events word_events(e)];
-      else
+    else
       % is first correct recall of that item in the list
       allRec_events = [allRec_events word_events(e)];
-    end      
+    end
   end
 end
 allRec_events = replicateField(allRec_events,'type',recWordField);
