@@ -26,20 +26,21 @@ function h = plot_tfr(data, freq, time, params)
 %   colormap   - colormap to use for mapping z-values to colors ([])
 
 % input checks
-if ~exist('data','var')
+if ~exist('data', 'var')
   error('You must pass a matrix of values to plot.')
 end
-if ~exist('freq','var')
+if ~exist('freq', 'var')
   freq = [];
-  elseif length(freq)~=size(data,1)
+elseif length(freq)~=size(data,1)
   error('Frequencies vector should have the same length as the number of rows in the data matrix.')
 end
-if ~exist('time','var')
+if ~exist('time', 'var')
   time = [];
-  elseif length(time)~=size(data,2)
-  error('Time vector should have the same length as the number of columns in the data matrix.')
+elseif length(time)~=size(data,2)
+  error(['Time vector should have the same length as the number of ' ...
+         'columns in the data matrix.'])
 end
-if ~exist('params','var')
+if ~exist('params', 'var')
   params = [];
 end
 
@@ -47,11 +48,16 @@ end
 params = structDefaults(params, ...
                         'freq_units', 'Hz',  ...
                         'time_units', 'ms',  ...
+                        'ms2s',       false, ...
                         'map_limits',   [],    ...
                         'colorbar',   true, ...
                         'colormap',   []);
 
 % set the axes
+if params.ms2s
+  time = time / 1000;
+end
+
 x = time;
 y = log10(freq);
 
@@ -70,7 +76,7 @@ axis xy
 % x-axis
 if ~isempty(time)
   xlabel(sprintf('Time (%s)', params.time_units))
-  else
+else
   xlabel('Time')
   set(gca, 'XTick', [], 'XTickLabel', [])
 end
@@ -82,7 +88,7 @@ p2 = 2.^(0:10);
 if ~isempty(freq)
   yp2 = p2(p2>=min(freq) & p2<=max(freq));
   ylabel(sprintf('Frequency (%s)', params.freq_units))
-  else
+else
   yp2 = [];
   ylabel('Frequency')
 end
