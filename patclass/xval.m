@@ -82,6 +82,7 @@ if ndims(pattern)>2
 end
 
 pattern = remove_nans(pattern);
+pattern = rescale(pattern);
 
 n_iter = length(sel_vals);
 n_perfs = length(params.f_perfmet);
@@ -134,6 +135,7 @@ for i=1:n_iter
     fprintf('\n')
   end
 end
+fprintf('TOTAL: %.2f', nanmean([res.iterations.perf]))
 
 if n_perfs==1
   fprintf('\n')
