@@ -1,7 +1,7 @@
-function files = plot_class_perf(pat, fig_name, stat_name, params, res_dir)
+function pat = plot_class_perf(pat, fig_name, stat_name, params, res_dir)
 %PLOT_CLASS_PERF   Make plots of classifier performance.
 %
-%  files = plot_class_perf(pat, fig_name, stat_name, params, res_dir)
+%  pat = plot_class_perf(pat, fig_name, stat_name, params, res_dir)
 %
 %  INPUTS:
 %        pat:  a pattern object run through classify_pat.
@@ -18,7 +18,7 @@ function files = plot_class_perf(pat, fig_name, stat_name, params, res_dir)
 %              reports/figs directory.
 %
 %  OUTPUTS:
-%      files:  cell array of paths to printed figures.
+%        pat:  pattern object with an added fig object.
 %
 %  PARAMS:
 %   print_input      - input to print to use when printing figures.
@@ -100,4 +100,7 @@ for c=1:size(perf,2)
   % print this figure
   print(gcf, params.print_input{:}, files{1,c})
 end
+
+fig = init_fig(fig_name, files, pat.name);
+pat = setobj(pat, 'fig', fig);
 
