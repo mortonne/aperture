@@ -12,7 +12,6 @@ function pattern = sessVoltage(pat,events,base_events,bins)
 %     'bufferMS'
 %     'kthresh'
 %     'ztransform'
-%     'artWindow'
 %
 %   See also create_pattern, sessPower.
 %
@@ -35,7 +34,6 @@ params = structDefaults(pat.params, ...
                         'ztransform',      false,    ...
                         'baseOffsetMS',    -200,     ...
                         'baseDurationMS',  200,      ...
-                        'lock',            false,    ...
                         'overwrite',       false,    ...
                         'updateOnly',      false);
 if ~isfield(params, 'baseEventFilter')
@@ -118,14 +116,12 @@ for c=1:length(params.channels)
     if params.ztransform
       this_eeg = (this_eeg - base_mean)/base_std;
     end
-    
-    %{
+
     if ~isempty(params.artWindow)
-      % remove blink artifacts
-      art = markArtifacts(events(e), timebins, params.artWindow);
-      this_eeg(art) = NaN;
+      warning('artWindow option has been removed.')
     end
     
+    %{    
     if params.excludeBadChans
       % remove bad channels
       isbad = mark_bad_chans(params.channels(c), bad_chans, event_ind(e));

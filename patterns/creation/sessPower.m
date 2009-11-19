@@ -103,7 +103,6 @@ params = structDefaults(pat.params, ...
                         'kthresh',         [],        ...
                         'ztransform',      true,     ...
                         'logtransform',    false,    ...
-                        'artWindow',       500,      ...
                         'precision',       'single');
 
 % initialize the pattern for this session
@@ -206,21 +205,7 @@ function power = get_power(events, channel, params)
   
   % remove blink artifacts
   if ~isempty(params.artWindow)
-    % get the final sample rate
-    if ~isempty(params.downsample)
-      final_rate = params.downsample;
-    else
-      final_rate = params.resampledRate;
-    end
-
-    % get time bins in MS for each element of time dim for artifact marking
-    time_bins = make_bins(1000 / final_rate, params.offsetMS, ...
-                          params.offsetMS + params.durationMS);
-    
-    % remove bad event-time points
-    isart = markArtifacts(events, time_bins, params.artWindow);
-    isart = repmat(isart, [1 1 size(power,3)]);
-    power(isart) = NaN;
+    warning('artWindow option has been removed.')
   end
 
   % remove events where this channel was labeled "bad"
