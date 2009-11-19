@@ -18,7 +18,9 @@ function exp = init_exp(experiment, varargin)
 %             recordingType - the type of brain data collected
 %             resDir        - directory where results will be saved
 %             file          - path to the MAT-file where this exp
-%                             structure will be saved
+%                             structure will be saved.  If not
+%                             specified, this will default to
+%                             resDir/exp.mat.
 %             useLock       - if true, exp.file will be locked during
 %                             loading and saving. Useful for running
 %                             distributed jobs that modify exp
