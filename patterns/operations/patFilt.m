@@ -17,7 +17,8 @@ function [pat,inds] = patFilt(pat,params)
 %
 %  PARAMS:
 %   eventFilter - string to be input to filterStruct to filter events
-%   chanFilter  - string filter for channels
+%   chanFilter  - string filter for channels, or array of channel
+%                 numbers to include
 %   timeFilter  - string filter for time
 %   freqFilter  - string filter for frequency
 %

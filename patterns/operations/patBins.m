@@ -46,8 +46,6 @@ if ~exist('pat','var') || ~isstruct(pat)
 end
 if ~exist('params','var')
   params = struct;
-elseif ~isstruct(params)
-  error('params must be a structure.')
 end
 if ~isfield(pat.dim.ev, 'modified')
   pat.dim.ev.modified = false;
@@ -60,15 +58,16 @@ if isfield(params, 'field')
 end
 
 % default parameters
-params = structDefaults(params, ...
-                        'eventbins',      [],  ...
-                        'eventbinlabels', {},  ...
-                        'chanbins',       [],  ...
-                        'chanbinlabels',  {},  ...
-                        'MSbins',         [],  ...
-                        'MSbinlabels',    {},  ...
-                        'freqbins',       [],  ...
-                        'freqbinlabels',  {});
+defaults.eventbins = [];
+defaults.eventbinlabels = {};
+defaults.chanbins = [];
+defaults.chanbinlabels = {};
+defaults.MSbins = [];
+defaults.MSbinlabels = {};
+defaults.freqbins = [];
+defaults.freqbinlabels = {};
+
+[params, unused] = propval(params, defaults);
 
 % initialize
 bins = cell(1,4);
