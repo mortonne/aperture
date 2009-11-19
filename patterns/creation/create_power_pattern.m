@@ -33,7 +33,6 @@ function subj = create_power_pattern(subj, pat_name, params, res_dir)
 %   kthresh         - kurtosis threshold; scalar indicating the maximum 
 %                     allowable kurtosis for an event before it is excluded 
 %                     (5)
-%   artWindow       - 
 %   absThresh       - 
 %   width           - 
 %   logtransform    - 
@@ -45,7 +44,6 @@ function subj = create_power_pattern(subj, pat_name, params, res_dir)
 %                     channel numbers to include ('')
 %   chanbins        - 
 %   chanbinlabels   - 
-%   excludeBadChans - 
 %
 %  Time
 %   resampledRate   - rate to resample to (500)
@@ -72,10 +70,6 @@ function subj = create_power_pattern(subj, pat_name, params, res_dir)
 %   baseDurationMS  - duration of each baseline event epoch (200)
 %
 %  File Management
-%   lock            - if true, the pattern's file will be locked during 
-%                     pattern creation, and unlock when the program finishes.
-%                     Useful for processing multiple subjects in parallel on a
-%                     cluster. (false)
 %   overwrite       - if true, existing pattern files will be overwritten 
 %                     (false)
 %   updateOnly      - if true, the pattern will not be created, but a pattern
@@ -85,17 +79,17 @@ function subj = create_power_pattern(subj, pat_name, params, res_dir)
 %   See also create_voltage_pattern.
 
 % input checks
-if ~exist('subj','var') || ~isstruct(subj)
+if ~exist('subj', 'var') || ~isstruct(subj)
   error('You must pass a subject object.')
-elseif length(subj)>1
+elseif length(subj) > 1
   error('You must pass only one subject.')
 end
-if ~exist('params','var')
+if ~exist('params', 'var')
   params = struct;
 elseif ~isstruct(params)
   error('params must be a structure.')
 end
-if ~exist('pat_name','var')
+if ~exist('pat_name', 'var')
   pat_name = 'power_pattern';
 elseif ~ischar(pat_name)
   error('pat_name must be a string.')
