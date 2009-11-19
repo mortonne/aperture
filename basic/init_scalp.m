@@ -1,5 +1,9 @@
 function exp = init_scalp(subj, resDir, experiment, elecLocsFile)
 %INIT_SCALP   Prepare a scalp EEG experiment for analysis.
+%
+% *** DEPRECATED ***
+% Instead, use init_exp and import_channels.
+%
 %   EXP = INIT_SCALP(SUBJ,RESDIR,EXPERIMENT,ELECLOCSFILE) creates an 
 %   EXP struct containing the information in the subject structure 
 %   SUBJ, and saves EXP in RESDIR/exp.mat.  The optional EXPERIMENT 
