@@ -43,11 +43,7 @@ elseif strcmp(loc, 'hd')
   end
   
   % load the matrix
-  if strcmp(objtype, 'pattern')
-    mat = load_pattern(obj);
-  else
-    mat = getfield(load(obj.file, objtype), objtype);
-  end
+  mat = getfield(load(obj.file, objtype), objtype);
 else
   error('Unknown location type: %s', loc)
 end
