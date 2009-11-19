@@ -99,9 +99,10 @@ if ~strcmp(ev.name, ev_name)
   saveas = true;
 
   % set the new file and check it
-  ev_file = fullfile(res_dir, objfilename('events', ev.name, ev.source));
+  ev_file = fullfile(res_dir, objfilename('events', ev_name, ev.source));
   if strcmp(ev_loc, 'hd') && ~params.overwrite && exist(ev_file, 'file')
-    fprintf('events %s exist in new file. Skipping...\n', ev_name)
+    fprintf('events "%s" exist in new file. Skipping...\n', ev_name)
+    return
   end
 
   % everything checks out; we can make modifications
@@ -117,7 +118,7 @@ else
   
   % if the events exist and we're not overwriting, return
   if ~params.overwrite && exist_mat(ev)
-    fprintf('events %s exist. Skipping...\n', ev.name)
+    fprintf('events "%s" exist. Skipping...\n', ev.name)
     return
   end
 end

@@ -164,7 +164,7 @@ if ~strcmp(pat.name, pat_name)
   % check to see if there's already a pattern there that we don't want
   % to overwrite
   if strcmp(pat_loc, 'hd') && ~params.overwrite && exist(pat_file, 'file')
-    fprintf('pattern %s exists in new file. Skipping...\n', pat_name)
+    fprintf('pattern "%s" exists in new file. Skipping...\n', pat_name)
     return
   end
   
@@ -177,7 +177,7 @@ else
   
   % should we overwrite this pattern?  Regardless of hd or ws
   if ~params.overwrite && exist_mat(pat)
-    fprintf('pattern %s exists. Skipping...\n', pat.name)
+    fprintf('pattern "%s" exists. Skipping...\n', pat.name)
     return
   end
 end
