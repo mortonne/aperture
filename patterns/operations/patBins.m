@@ -41,10 +41,10 @@ function [pat, bins] = patBins(pat, params)
 %  See also make_bins, patMeans, modify_pattern, patFilt.
 
 % input checks
-if ~exist('pat','var') || ~isstruct(pat)
+if ~exist('pat', 'var') || ~isstruct(pat)
   error('You must pass a pattern object.')
 end
-if ~exist('params','var')
+if ~exist('params', 'var')
   params = struct;
 end
 if ~isfield(pat.dim.ev, 'modified')
@@ -70,45 +70,46 @@ defaults.freqbinlabels = {};
 [params, unused] = propval(params, defaults);
 
 % initialize
-bins = cell(1,4);
+bins = cell(1, 4);
 
 % events
 if ~isempty(params.eventbins)
   % load events
-  ev = move_obj_to_workspace(pat.dim.ev);
-  [pat.dim.ev, bins{1}] = event_bins(ev, params.eventbins, ...
-                                     params.eventbinlabels);
+  events = get_mat(pat.dim.ev);
+  [events, bins{1}] = event_bins(events, params.eventbins, ...
+                                 params.eventbinlabels);
+  
+  % save the events to the new ev object
+  pat.dim.ev = set_mat(pat.dim.ev, events, 'ws');
+  pat.dim.ev.modified = true;
 end
 
 % channels
 if ~isempty(params.chanbins)
-  [pat.dim.chan, bins{2}] = chan_bins(pat.dim.chan, ...
-                                      params.chanbins, ...
+  [pat.dim.chan, bins{2}] = chan_bins(pat.dim.chan, params.chanbins, ...
                                       params.chanbinlabels);
 end
 
 % time
 if ~isempty(params.MSbins)
-  [pat.dim.time, bins{3}] = time_bins(pat.dim.time, ...
-                                      params.MSbins, ...
+  [pat.dim.time, bins{3}] = time_bins(pat.dim.time, params.MSbins, ...
                                       params.MSbinlabels);
 end
 
 % frequency
 if ~isempty(params.freqbins)
-  [pat.dim.freq, bins{4}] = freq_bins(pat.dim.freq, ...
-                                      params.freqbins, ...
+  [pat.dim.freq, bins{4}] = freq_bins(pat.dim.freq, params.freqbins, ...
                                       params.freqbinlabels);
 end
 
 % check the dimensions
 psize = patsize(pat.dim);
 if any(~psize)
-	error('A dimension of pattern %s was binned into oblivion.', pat.name);
+  error('A dimension of pattern %s was binned into oblivion.', pat.name);
 end
 
 
-function [ev, bins] = event_bins(ev, bin_defs, labels)
+function [events2, bins] = event_bins(events1, bin_defs, labels)
   %EVENT_BINS   Apply bins to an events dimension.
   %
   %  [ev, bins] = event_bins(ev, bin_defs, labels)
@@ -130,17 +131,16 @@ function [ev, bins] = event_bins(ev, bin_defs, labels)
   %             contains indices for the events in that bin.
 
   % input checks
-  if ~exist('ev','var')
-    error('You must pass an ev object.')
-  elseif ~exist('bin_defs','var')
+  if ~exist('events1', 'var') || ~isstruct(events1)
+    error('You must pass an event structure.')
+  elseif ~exist('bin_defs', 'var')
     error('You must define the bins.')
   end
-  if ~exist('labels','var')
+  if ~exist('labels', 'var')
     labels = {};
   end
 
   % load the events
-  events1 = get_mat(ev);
   fnames = fieldnames(events1);
   
   % generate a new events field, one value per bin
@@ -181,10 +181,6 @@ function [ev, bins] = event_bins(ev, bin_defs, labels)
       end
     end  
   end
-
-  % save the events to the new ev object
-  ev = set_mat(ev, events2);
-  ev.modified = true;
 %endfunction
 
 function [chan, bins] = chan_bins(chan, bin_defs, labels)
@@ -229,7 +225,11 @@ function [chan, bins] = chan_bins(chan, bin_defs, labels)
   % get numbers and regions from the old channels struct
   c = bin_defs;
   numbers = [chan.number];
-  regions = {chan.region};
+  if ~isfield(chan, 'region')
+    regions = repmat({''}, size(chan));
+  else
+    regions = {chan.region};
+  end
   if length(numbers)>length(chan) || length(regions)>length(chan)
     error('Some channels have multiple channel numbers or regions associated with them. Perhaps you have already binned the channels dimension once.')
   end
@@ -272,7 +272,7 @@ function [chan, bins] = chan_bins(chan, bin_defs, labels)
   end
 %endfunction
 
-function [time, bins] = time_bins(time, bin_defs, labels)
+function [time2, bins] = time_bins(time1, bin_defs, labels)
   %TIME_BINS   Apply binning to a time dimension.
   %
   %  [time, bins] = time_bins(time, bin_defs, labels)
@@ -291,7 +291,7 @@ function [time, bins] = time_bins(time, bin_defs, labels)
   %             that bin.
 
   % input checks
-  if ~exist('time','var') || ~isstruct(time)
+  if ~exist('time1','var') || ~isstruct(time1)
     error('You must pass a time structure to bin.')
   elseif ~exist('bin_defs','var')
     error('You must pass bin definitions.')
@@ -304,36 +304,34 @@ function [time, bins] = time_bins(time, bin_defs, labels)
     error('labels must be the same length as bin_defs.')
   end
 
-  avgs = [time.avg];
-  for i=1:size(bin_defs,1)
-    % find the time bins that fall in this range
-    bin_range = bin_defs(i,:);
-    bins{i} = find(avgs >= bin_range(1) & ...
-                   avgs < bin_range(2));
-    
-    % save the original start and end samples from this bin
+  % get the indices corresponding to each bin
+  bins = apply_bins([time1.avg], bin_defs);
+  
+  % create the new time structure
+  time2 = struct('MSvals', cell(size(bins)), 'avg', [], 'label', '');
+  for i=1:length(bins)
+    % min and max vals for this bin
     if ~isempty(bins{i})
-      start_val = time(bins{i}(1)).MSvals(1);
-      end_val = time(bins{i}(end)).MSvals(end);
-      bin_vals{i} = [start_val end_val];
+      start_val = time1(bins{i}(1)).MSvals(1);
+      last_val = time1(bins{i}(end)).MSvals(end);
+      time2(i).MSvals = [start_val last_val];
     else
-      bin_vals{i} = NaN(1,2);
+      time2(i).MSvals = NaN(1, 2);
     end
-    bin_avgs{i} = mean(bin_vals{i});
+    
+    % average for this bin
+    time2(i).avg = nanmean(time2(i).MSvals);
   end
-
-  % make the new structure
-  time = struct('avg', bin_avgs, 'MSvals', bin_vals);
 
   % update the labels
   if isempty(labels)
     f = @(x)sprintf('%d to %d ms', x(1), x(end));
-    labels = cellfun(f, {time.MSvals}, 'UniformOutput', false);
+    labels = cellfun(f, {time2.MSvals}, 'UniformOutput', false);
   end
-  [time.label] = labels{:};
+  [time2.label] = labels{:};
 %endfunction
 
-function [freq, bins] = freq_bins(freq, bin_defs, labels)
+function [freq2, bins] = freq_bins(freq1, bin_defs, labels)
   %FREQ_BINS   Apply binning to a frequency dimension.
   %
   %  [freq, bins] = freq_bins(freq, bin_defs, labels)
@@ -352,7 +350,7 @@ function [freq, bins] = freq_bins(freq, bin_defs, labels)
   %             that bin.
 
   % input checks
-  if ~exist('freq','var') || ~isstruct(freq)
+  if ~exist('freq1','var') || ~isstruct(freq1)
     error('You must pass a freq structure to bin.')
   elseif ~exist('bin_defs','var')
     error('You must pass bin definitions.')
@@ -365,31 +363,29 @@ function [freq, bins] = freq_bins(freq, bin_defs, labels)
     error('labels must be the same length as bin_defs.')
   end
 
-  avgs = [freq.avg];
-  for i=1:size(bin_defs,1)
-    % find the freq bins that fall in this range
-    bin_range = bin_defs(i,:);
-    bins{i} = find(avgs >= bin_range(1) & ...
-                   avgs < bin_range(2));
-    
-    % save the original start and end samples from this bin
+  % get the indices corresponding to each bin
+  bins = apply_bins([freq1.avg], bin_defs);
+  
+  % create the new time structure
+  freq2 = struct('vals', cell(size(bins)), 'avg', [], 'label', '');
+  for i=1:length(bins)
+    % min and max vals for this bin
     if ~isempty(bins{i})
-      start_val = freq(bins{i}(1)).vals(1);
-      end_val = freq(bins{i}(end)).vals(end);
-      bin_vals{i} = [start_val end_val];
+      start_val = freq1(bins{i}(1)).vals(1);
+      last_val = freq1(bins{i}(end)).vals(end);
+      freq2(i).vals = [start_val last_val];
     else
-      bin_vals{i} = NaN(1,2);
+      freq2(i).vals = NaN(1, 2);
     end
-    bin_avgs{i} = mean(bin_vals{i});
+    
+    % average for this bin
+    freq2(i).avg = nanmean(freq2(i).vals);
   end
-
-  % make the new structure
-  freq = struct('avg', bin_avgs, 'vals', bin_vals);
-
+  
   % update the labels
   if isempty(labels)
     f = @(x)sprintf('%d to %d Hz', round(x(1)), round(x(end)));
-    labels = cellfun(f, {freq.vals}, 'UniformOutput', false);
+    labels = cellfun(f, {freq2.vals}, 'UniformOutput', false);
   end
-  [freq.label] = labels{:};
+  [freq2.label] = labels{:};
 %endfunction
