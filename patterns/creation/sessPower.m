@@ -1,25 +1,26 @@
-function pattern = sessPower(pat, events, base_events, bins)
-%SESSPOWER   Create a power pattern for one session.
+function [pattern, params] = sessPower(events, channels, params, ...
+                                       base_events, bins)
+%SESSPOWER   Create a pattern of oscillatory power for one session.
 %
-%  pattern = sessPower(pat, events, base_events, bins)
+%  [pattern, params] = sessPower(events, channels, params, base_events, bins)
 %
-%  Power is calculated using Morlet wavelets for all events in the event
-%  structure using getphasepow. The result is stored in a matrix called
-%  a "pattern."
+%  Calculate oscillatory power using Morlet wavelets for all events in
+%  an events structure.
 %
 %  Power is calculated for one session at a time because there is
 %  assumed to be variation in electrode position, impedance, etc. that
 %  changes between sessions. This variation can be dealt with by
-%  z-transforming within each session, channel, and frequency.
+%  z-transforming within each session, channel, and frequency by setting
+%  params.ztransform to true.
 %
 %  INPUTS:
-%          pat:  structure that holds metadata for a pattern (see
-%                create_pattern for details). The options in pat.params
-%                affect how the pattern is created, and pat.dim is used
-%                to initialize the pattern.
+%       events:  an events structure. Must have "eegfile" and
+%                "eegoffset" fields.
 %
-%       events:  an events structure. This should contain every event
-%                you want power for.
+%     channels:  vector of channel numbers to include in the pattern.
+%
+%       params:  structure giving options for creating the pattern.  See
+%                below.
 %
 %  base_events:  an events structure. If params.ztransform is true,
 %                These events will be used to calculate baseline power
@@ -36,92 +37,136 @@ function pattern = sessPower(pat, events, base_events, bins)
 %      pattern:  an [events X channel X time X frequency] matrix
 %                containing power values.
 %
-%  pat.params can contain the following fields to specify options for
-%  creating the pattern:
+%       params:  structure with the full set of options used to create
+%                the pattern.
 %
 %  PARAMS:
 %  Defaults are shown in parentheses.
-%  channels       - REQUIRED - channels to calculate power for.
-%  freqs          - REQUIRED - Frequencies (in Hz) at which to calculate
-%                   power.
-%  baseOffsetMS   - Time from the beginning of each baseline event to
-%                   calculate power. (-200)
-%  baseDurationMS - Duration of the baseline period for each baseline
-%                   event. (100)
-%  filttype       - Type of filter to use (see buttfilt). ('stop')
-%  filtfreq       - Frequency range for filter (see buttfilt). ([58 62])
-%  filtorder      - Order of filter (see buttfilt). (4)
-%  bufferMS       - Size of buffer to use when filtering (see buttfilt)
-%                   (1000)
-%  width          - Size of wavelets to use in power calculation
-%                   (see getphasepow). (6)
-%  precision      - precision of the returned values.
-%                   ['single' | {'double'}]
-%  absThresh      - absolute threshold: if voltage (relative to
-%                   baseline) of an event exceeds this value, power for
-%                   that event will be excluded (replaced with NaNs).
-%                   ([])
-%  kthresh        - Kurtosis threshold: if kurtosis of the raw voltage 
-%                   of any event exceeds this value, power for that
-%                   event will be excluded (replaced with NaNs). ([])
-%  ztransform     - Logical specifying whether to z-transform the power.
-%                   (false)
-%  logtransform   - Logical specifying whether to log-transform the
-%                   power. (false)
+%   freqs          - REQUIRED - Frequencies (in Hz) at which to
+%                    calculate power.
+%   offsetMS       - time in milliseconds before each event to start the
+%                    pattern. (-400)
+%   durationMS     - duration in milliseconds of each epoch. (2400)
+%   resampledRate  - samplerate (in Hz) to resample voltage before
+%                    calculating power. ([])
+%   downsample     - samplerate (in Hz) to downsample oscillatory
+%                    power. ([])
+%   filttype       - type of filter to use (see buttfilt). ('stop')
+%   filtfreq       - frequency range for filter (see buttfilt).
+%                    ([58 62])
+%   filtorder      - order of filter (see buttfilt). (4)
+%   bufferMS       - size of buffer to use when filtering (see
+%                    buttfilt). (1000)
+%   width          - width (in wavenumbers) of the Morlet wavelets to
+%                    use for calculating oscillatory power. (6)
+%   absThresh      - absolute threshold: if voltage (relative to
+%                    baseline) of an event exceeds this value, power for
+%                    that event will be excluded (replaced with NaNs).
+%                    ([])
+%   kthresh        - kurtosis threshold: if kurtosis of the raw voltage 
+%                    of any event exceeds this value, power for that
+%                    event will be excluded (replaced with NaNs). ([])
+%   logtransform   - logical; if true, power will be log-transformed.
+%                    (true)
+%   ztransform     - logical specifying whether to z-transform the
+%                    power within each channel and frequency. (true)
+%   baseOffsetMS   - Time from the beginning of each baseline event to
+%                    calculate power. (-400)
+%   baseDurationMS - Duration of the baseline period for each baseline
+%                    event. (200)
+%   precision      - precision of the returned values.
+%                    ['single' | {'double'}]
+%   verbose        - if true, more status will be printed. (false)
 %
-%  See also create_pattern, sessVoltage.
-
-warning('off', 'eeg_ana:patBinAllNaNs')
+%  See also create_power_pattern, sessVoltage.
 
 % input checks
-if ~exist('pat', 'var')
-  error('You must pass a pat object.')
-elseif ~exist('events', 'var') || ~isstruct(events)
+if ~exist('events', 'var') || ~isstruct(events)
   error('You must pass an events structure.')
+elseif ~exist('channels', 'var') || ~isnumeric(channels)
+  error('You must specify channels at which to calculate voltage.')
 end
-if ~exist('base_events', 'var') || isempty(base_events)
-  base_events = events;
-elseif ~isstruct(base_events)
-  error('base_events must be a structure.')
+if ~exist('params', 'var') || isempty(params)
+  params = struct;
 end
 if ~exist('bins', 'var')
-  bins = cell(1,4);
+  bins = cell(1, 4);
 end
-
-% set defaults for pattern creation
-params = structDefaults(pat.params, ...
-                        'baseOffsetMS',    -200,     ...
-                        'baseDurationMS',  100,      ...
-                        'filttype',        'stop',   ...
-                        'filtfreq',        [58 62],  ...
-                        'filtorder',       4,        ...
-                        'bufferMS',        1000,     ...
-                        'width',           6,        ...
-                        'absThresh',       [],       ...
-                        'kthresh',         [],       ...
-                        'ztransform',      false,    ...
-                        'logtransform',    false,    ...
-                        'precision',       'single');
-
 if ~isfield(params, 'freqs') || isempty(params.freqs)
   error('You must specify frequencies at which to calculate power.')
-elseif ~isfield(params, 'channels') || isempty(params.channels)
-  error('You must specify channels at which to calculate power.')
 end
 
-% initialize the pattern for this session
-pattern = NaN(length(events), length(params.channels), ...
-              length(pat.dim.time), length(pat.dim.freq), params.precision);
+% default parameters
+defaults.freqs = [];
+defaults.offsetMS = -400;
+defaults.durationMS = 2400;
+defaults.resampledRate = [];
+defaults.downsample = [];
+defaults.filttype = 'stop';
+defaults.filtfreq = [58 62];
+defaults.filtorder = 4;
+defaults.bufferMS = 1000;
+defaults.width = 6;
+defaults.precision = 'double';
+defaults.absThresh = [];
+defaults.kthresh = [];
+defaults.logtransform = true;
+defaults.ztransform = true;
+defaults.baseOffsetMS = -400;
+defaults.baseDurationMS = 200;
+defaults.verbose = false;
+
+[params, unused] = propval(params, defaults);
+
+if params.verbose
+  fprintf('parameters are:\n\n')
+  disp(params)
+end
 
 % set parameters for the baseline period
-base_params = params;
-base_params.durationMS = params.baseDurationMS;
-base_params.offsetMS = params.baseOffsetMS;
+if params.ztransform
+  if ~exist('base_events', 'var') || isempty(base_events)
+    base_events = events;
+  elseif ~isstruct(base_events)
+    error('base_events must be a structure.')
+  end
 
-fprintf('Channels: ')
-for c=1:length(params.channels)
+  % translate to standard names
+  base_params = params;
+  base_params.offsetMS = params.baseOffsetMS;
+  base_params.durationMS = params.baseDurationMS;
+end
+
+% figure out what the final samplerate will be
+if ~isempty(params.downsample)
+  final_samplerate = params.downsample;
+elseif ~isempty(params.resampledRate)
+  final_samplerate = params.resampledRate;
+else
+  % it's just the minimum samplerate
+  final_samplerate = unique(get_events_samplerate(events));
+  if length(final_samplerate) > 1
+    final_samplerate = min(final_samplerate);
+    params.resampledRate = final_samplerate;
+    fprintf(['Events contain multiple samplerates. ' ...
+             'Resampling to %d Hz...\n'], params.resampledRate)
+  end
+end
+duration_samp = ms2samp(params.durationMS, final_samplerate);
+
+% initialize the pattern for this session
+start_size = [length(events), length(channels), ...
+              duration_samp, length(params.freqs)];
+end_size = cellfun(@length, bins);
+empty_bins = end_size==0;
+end_size(empty_bins) = start_size(empty_bins);
+pattern = NaN(end_size(1), start_size(2), end_size(3), end_size(4), ...
+              params.precision);
+
+fprintf('channels: ')
+for c=1:length(channels)
   % get the current channel number
-  channel = params.channels(c);
+  channel = channels(c);
   fprintf('%d ', channel);
 
   % if z-transforming, get baseline stats for this sess, channel
@@ -130,22 +175,23 @@ for c=1:length(params.channels)
     [base_mean, base_std] = baseline_stats(base_power);
   end
 
-  % get power, remove artifacts, do binning of time and frequency
-  for e=1:length(events)
-    % get power for this event in [time X frequency] form
-    power = permute(get_power(events(e), channel, params), [2 3 1]);
-
-    % z-transform
-    if params.ztransform
-      for f=1:size(power,2)
-        power(:,f) = (power(:,f) - base_mean(f)) / base_std(f);
-      end
+  % get [events X time X frequency] power
+  power = get_power(events, channel, params);
+  
+  % normalize within this session, channel, and frequency
+  if params.ztransform
+    for f=1:size(power, 3)
+      power(:,:,f) = (power(:,:,f) - base_mean(f)) / base_std(f);
     end
-
-    % bin time and frequency, and add the power of this eventXchannel
-    pattern(e,c,:,:) = patMeans(power, bins(3:4));
   end
+  
+  % apply event, time, and frequency binning
+  power = patMeans(power, [bins(1) bins(3:4)]);
+  
+  % add this channel to the pattern
+  pattern(:,c,:,:) = power;
 end
+fprintf('\n')
 
 % bin channels
 bins([1 3:4]) = {[]};
@@ -155,7 +201,7 @@ pattern = patMeans(pattern, bins);
 function power = get_power(events, channel, params)
   %GET_POWER   Get power values for a set of events.
   %
-  %  power = get_power(events, params)
+  %  power = get_power(events, channel, params)
   %
   %  INPUTS:
   %   events:  an events structure.
@@ -183,7 +229,7 @@ function power = get_power(events, channel, params)
   p.absthresh = params.absThresh;
   p.resampledrate = params.resampledRate;
   power = getphasepow(events, channel, params.freqs, params.durationMS, ...
-                      params.offsetMS, p);
+                      params.offsetMS, p, p.verbose);
 
   % sanity check the power values
   if any(power(:) < 0)
@@ -218,17 +264,17 @@ function [base_mean, base_std] = baseline_stats(base_power)
   %    base_std:  [1 X frequency] vector of standard deviations.
   
   % initialize
-  base_mean = NaN(1,size(base_power,3));
-  base_std = NaN(1,size(base_power,3));
+  base_mean = NaN(1, size(base_power, 3));
+  base_std = NaN(1, size(base_power, 3));
   
   % get baseline stats
-  for f=1:size(base_power,3)
+  for f=1:size(base_power, 3)
     % power just for this frequency
     freq_base_pow = base_power(:,:,f);
     
     % get mean and std dev across events for each sample,
     % then average across samples
-    base_mean(f) = nanmean(nanmean(freq_base_pow,1));
-    base_std(f) = nanmean(nanstd(freq_base_pow,1));
+    base_mean(f) = nanmean(nanmean(freq_base_pow, 1));
+    base_std(f) = nanmean(nanstd(freq_base_pow, 1));
   end
 %endfunction
