@@ -34,16 +34,16 @@ function pattern = patMeans(pattern, bins, min_samp)
 %   See also modify_pattern, patBins, patFilt.
 
 % input checks
-if ~exist('pattern','var')
+if ~exist('pattern', 'var')
   error('You must pass an array to be binned.')
 elseif ~isnumeric(pattern)
   error('pattern must be a numeric array.')
-elseif ~exist('bins','var')
+elseif ~exist('bins', 'var')
   error('You must specify bins to use.')
 elseif ~iscell(bins)
   error('bins must be a cell array.')
 end
-if ~exist('min_samp','var')
+if ~exist('min_samp', 'var')
   min_samp = [];
 end
 
@@ -53,60 +53,60 @@ ONE_CELL = {1 1 1 1};
 
 % bin one dimension at a time
 for i=1:length(bins)
-	% if the cell corresponding to this dimension is empty, skip
-	if isempty(bins{i})
-		continue
-	end
+  % if the cell corresponding to this dimension is empty, skip
+  if isempty(bins{i})
+    continue
+  end
 
-	% size of the pattern this iteration
-	old_size = size(pattern);
-	
-	% get cell array with the size of each dimension
-	new_size = ONE_CELL; % default each dimension to being singleton
-	for j=1:length(old_size)
-		new_size{j} = old_size(j);
-	end
-	
-	% update the size of this dimension to what it will
-	% be after binning
-	new_size{i} = length(bins{i});
+  % size of the pattern this iteration
+  old_size = size(pattern);
+  
+  % get cell array with the size of each dimension
+  new_size = ONE_CELL; % default each dimension to being singleton
+  for j=1:length(old_size)
+    new_size{j} = old_size(j);
+  end
+  
+  % update the size of this dimension to what it will
+  % be after binning
+  new_size{i} = length(bins{i});
 
   % initialize the var that will hold this mean as it's being
   % created
-	temp = NaN(new_size{:});
-	
-	for j=1:length(bins{i})
-	  % check this bin
-		if isempty(bins{i}{j})
-			warning('eeg_ana:patBinEmpty', 'Warning: Empty Bin in Dimension %d.\n', i);
-		end
-		
-		% get reference for everything going into the bin
-		bin_ind = ALL_CELL;
-		bin_ind{i} = bins{i}{j};
-
-		% do the average along dimension i
-		x = pattern(bin_ind{:});
-		if length(find(~isnan(x(:))))/numel(x) < min_samp
-		  % leave this bin as NaNs
-		  fprintf('rm %d,%d ', i,j)
-		  continue
-		end
-
-	  avg = nanmean(x,i);
-	  if all(isnan(avg(:)))
-	    warning('eeg_ana:patBinAllNaNs', 'Bin %d of dimension %d contains all NaNs.', j, i)
+  temp = NaN(new_size{:}, class(pattern));
+  
+  for j=1:length(bins{i})
+    % check this bin
+    if isempty(bins{i}{j})
+      warning('eeg_ana:patBinEmpty', 'Warning: Empty Bin in Dimension %d.\n', i);
     end
-	  
-	  % get reference for this bin after averaging
-		ind = ALL_CELL;
-		ind{i} = j;
-	  
-	  % place this average in the new array
-		temp(ind{:}) = avg;
-	end
-	
-	% this dimension is finished; update the pattern, and we're
-	% ready to bin the next dimension
-	pattern = temp;
+    
+    % get reference for everything going into the bin
+    bin_ind = ALL_CELL;
+    bin_ind{i} = bins{i}{j};
+
+    % do the average along dimension i
+    x = pattern(bin_ind{:});
+    if length(find(~isnan(x(:))))/numel(x) < min_samp
+      % leave this bin as NaNs
+      fprintf('rm %d,%d ', i,j)
+      continue
+    end
+
+    avg = nanmean(x,i);
+    if all(isnan(avg(:)))
+      warning('eeg_ana:patBinAllNaNs', 'Bin %d of dimension %d contains all NaNs.', j, i)
+    end
+    
+    % get reference for this bin after averaging
+    ind = ALL_CELL;
+    ind{i} = j;
+    
+    % place this average in the new array
+    temp(ind{:}) = avg;
+  end
+  
+  % this dimension is finished; update the pattern, and we're
+  % ready to bin the next dimension
+  pattern = temp;
 end
