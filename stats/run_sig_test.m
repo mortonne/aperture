@@ -42,6 +42,11 @@ statistic = NaN(1,length(group));
 n_obs = length(X);
 good = ~isnan(X);
 
+if ~any(good)
+  fprintf('Data is all NaNs; cannot test significance.\n')
+  return
+end
+
 % remove bad observations
 if ~strcmp(test,'pttest')
   % if this is a paired test, we'll need to make sure both
