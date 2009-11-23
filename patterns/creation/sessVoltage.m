@@ -140,7 +140,7 @@ end
 duration_samp = ms2samp(params.durationMS, final_samplerate);
 
 % initialize the pattern for this session
-start_size = [length(events), length(channels), duration_samp];
+start_size = [length(events), length(channels), duration_samp, 1];
 end_size = cellfun(@length, bins);
 empty_bins = end_size==0;
 end_size(empty_bins) = start_size(empty_bins);
