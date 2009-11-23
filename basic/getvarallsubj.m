@@ -44,20 +44,20 @@ function varargout = getvarallsubj(subj,path,var_names,dim,file_number)
 %  grabbing part, and have this function just take in a vector of objects.
 
 % input checks
-if ~exist('subj','var')
+if ~exist('subj', 'var')
   error('You must pass a subj structure.')
-  elseif ~isstruct(subj)
+elseif ~isstruct(subj)
   error('subj must be a structure.')
-  elseif ~isfield(subj,'id')
+elseif ~isfield(subj, 'id')
   error('subj must have an id field.')
 end
-if ~exist('path','var')
+if ~exist('path', 'var')
   path = {};
 end
-if ~exist('dim','var')
+if ~exist('dim', 'var')
   dim = 1;
 end
-if ~exist('var_names','var')
+if ~exist('var_names', 'var')
   error('You must specify which variables you want to load.')
 end
 if ~iscell(var_names)
@@ -66,13 +66,13 @@ end
 if ~(length(dim)==1 || length(dim)==length(var_names))
   error('dim must either be a scalar or the same length as var_names')
 end
-if ~exist('file_number','var')
+if ~exist('file_number', 'var')
   file_number = [];
 end
 
 if length(dim)==1
   % use the same dimension to concatenate all variables
-  dim = repmat(dim,1,length(var_names));
+  dim = repmat(dim, 1, length(var_names));
 end
 
 fprintf('exporting from subjects...\n')
@@ -83,26 +83,31 @@ for s=1:length(subj)
   fprintf('%s ', subj(s).id)
 
   % get the object for this subject
-  obj = getobj(subj(s), path{:});
-
-  if isempty(obj)
+  try
+    obj = getobj(subj(s), path{:});
+  catch
     % we couldn't find an object corresponding to that path
     fprintf('Warning: object %s not found.', path{end})
     continue
   end
 
+  try
+    obj_type = get_obj_type(obj);
+  catch
+    obj_type = '';
+  end
+  
   if ~isempty(file_number)
     if ~iscell(obj.file)
       error('file_number only makes sense if obj.file is a cell array.')
     end
     % load the specified variables for this file
     temp = load(obj.file{file_number}, var_names{:});
+  elseif ~isempty(obj_type) && isscalar(var_names) && ...
+         strcmp(var_names, obj_type)
+    temp.(obj_type) = get_mat(obj);
   elseif iscell(obj.file)
-    if strcmp(get_obj_type, 'pattern')
-      temp.pattern = load_pattern(obj);
-    else
-      error('obj.file is a cell array. You must specify a file_number.')
-    end
+    error('obj.file is a cell array. You must specify a file_number.')
   else
     % only one file; load the specified variables
     temp = load(obj.file, var_names{:});
