@@ -1,7 +1,7 @@
-function files = pat_erp(pat, fig_name, params, res_dir)
+function pat = pat_erp(pat, fig_name, params, res_dir)
 %PAT_ERP   Make event-related potential plots and print them to disk.
 %
-%  files = pat_erp(pat, fig_name, params, res_dir)
+%  pat = pat_erp(pat, fig_name, params, res_dir)
 %
 %  Create a plot for each [event X channel X frequency] in a pattern.
 %  Typically used for plotting ERPs, but can also be used for plotting
@@ -19,7 +19,7 @@ function files = pat_erp(pat, fig_name, params, res_dir)
 %                 reports/figs directory.
 %
 %  OUTPUTS:
-%         files:  cell array of paths to printed figures.
+%           pat:  pat object with an added fig object.
 %
 %  PARAMS:
 %  All fields are optional.  Default values are shown in parentheses.
@@ -56,7 +56,7 @@ function files = pat_erp(pat, fig_name, params, res_dir)
 %   % save information about the plots in a fig object
 %   pat_name = 'my_pattern';
 %   fig_name = 'erp';
-%   subj = apply_to_pat(subj, pat_name, @create_fig, {fig_name, @pat_erp});
+%   subj = apply_to_pat(subj, pat_name, @pat_erp, {fig_name});
 %
 %  See also create_fig, create_pat_report, pat_topoplot.
 
@@ -101,14 +101,14 @@ pattern = get_mat(pat);
 
 if ~isempty(params.event_bins)
   % create bins using inputs accepted by make_event_bins
-  [pat, bins] = patBins(pat, struct('eventbins', params.event_bins));
+  [pat_mod, bins] = patBins(pat, struct('eventbins', params.event_bins));
   
   % do the averaging within each bin
   pattern = patMeans(pattern, bins);
 end
 
 % set axis information
-x = [pat.dim.time.avg]; % for each time bin, use the mean value
+x = get_dim_vals(pat.dim, 'time');
 
 if ~isempty(params.stat_name)
   % get the stat object
@@ -185,3 +185,7 @@ for i=1:num_events
   end
 end
 fprintf('\n')
+
+% create a new fig object
+fig = init_fig(fig_name, files, pat.name);
+pat = setobj(pat, 'fig', fig);

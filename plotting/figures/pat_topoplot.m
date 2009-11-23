@@ -1,7 +1,7 @@
-function files = pat_topoplot(pat, fig_name, params, res_dir)
+function pat = pat_topoplot(pat, fig_name, params, res_dir)
 %PAT_TOPOPLOT   Make topoplots and print them to disk.
 %
-%  files = pat_topoplot(pat, fig_name, params, res_dir)
+%  pat = pat_topoplot(pat, fig_name, params, res_dir)
 %
 %  Create a topographical plot for each [event X time X frequency] in a
 %  pattern.  Requires EEGLAB for the plotting functions, as well as a
@@ -20,7 +20,7 @@ function files = pat_topoplot(pat, fig_name, params, res_dir)
 %                 reports/figs directory.
 %
 %  OUTPUTS:
-%         files:  cell array of paths to printed figures.
+%           pat:  pat object with an added fig object.
 %
 %  PARAMS:
 %  Values to Plot
@@ -86,6 +86,8 @@ if ~exist('pat','var') || ~isstruct(pat)
 end
 if ~exist('fig_name','var')
   fig_name = 'topo';
+elseif ~ischar(fig_name)
+  error('fig_name must be a string.')
 end
 if ~exist('params','var')
   params = struct;
@@ -104,29 +106,30 @@ if ~exist(res_dir,'dir')
 end
 
 % set default parameters
-params = structDefaults(params, ...
-                        'plot_type',        'topo',                     ...
-                        'chan_locs',        '~/eeg/HCGSN128.loc',       ...
-                        'splinefile',       '~/eeg/HCGSN128.spl',       ...
-                        'views',            {[280 35],[80 35]},         ...
-                        'plot_input',       {},                         ...
-                        'map_limits',       [],                         ...
-                        'print_input',      {'-depsc'},                 ...
-                        'figure_prop',      {},                         ...
-                        'axis_prop',        {},                         ...
-                        'colorbar',         true,                       ...
-                        'plot_perimeter',   true,                      ...
-                        'event_bins',       '',                         ...
-                        'time_bins',        [],                         ...
-                        'freq_bins',        [],                         ...
-                        'diff',             false,                      ...
-                        'mult_fig_windows', 0,                          ...
-                        'stat_name',        '',                         ...
-                        'p_range',          [0.005 0.05],               ...
-                        'cap_type',         'HCGSN128',                 ...
-                        'correctm',         'fdr',                      ...
-                        'correctm_scale',   'all',                      ...
-                        'map_type',         '');
+defaults.plot_type = 'topo';
+defaults.chan_locs = '~/eeg/HCGSN128.loc';
+defaults.splinefile = '~/eeg/HCGSN128.spl';
+defaults.views = {[280 35], [80 35]};
+defaults.plot_input = {};
+defaults.map_limits = [];
+defaults.print_input = {'-depsc'};
+defaults.figure_prop = {};
+defaults.axis_prop = {};
+defaults.colorbar = true;
+defaults.plot_perimeter = true;
+defaults.event_bins = '';
+defaults.time_bins = [];
+defaults.freq_bins = [];
+defaults.diff = false;
+defaults.mult_fig_window = false;
+defaults.stat_name = '';
+defaults.p_range = [0.005 0.05];
+defaults.cap_type = 'HCGSN128';
+defaults.correctm = 'fdr';
+defaults.correctm_scale = 'all';
+defaults.map_type = '';
+
+params = propval(params, defaults);
 
 if length(params.views)~=2
   error('You must indicate exactly two viewpoints to plot.')
@@ -137,9 +140,10 @@ pattern = load_pattern(pat);
 
 if ~isempty(params.event_bins) || ~isempty(params.time_bins) || ~isempty(params.freq_bins)
   % create bins using inputs accepted by make_event_bins
-  p = struct('eventbins',    params.event_bins, ...
-             'MSbins',   params.time_bins,  ...
-             'freqbins', params.freq_bins);
+  p.eventbins = params.event_bins;
+  p.MSbins = params.time_bins;
+  p.freqbins = params.freq_bins;
+
   [pat, bins] = patBins(pat, p);
   % do the averaging within each bin
   pattern = patMeans(pattern, bins);
@@ -315,6 +319,10 @@ for e=1:size(pattern,1)
 end
 clf reset
 fprintf('\n')
+
+% create a new fig object
+fig = init_fig(fig_name, files, pat.name);
+pat = setobj(pat, 'fig', fig);
 
 function [z,map,map_limits] = prep_sig_map(p, p_range, correctm, map_type, verbose)
   if ~exist('map_type','var')

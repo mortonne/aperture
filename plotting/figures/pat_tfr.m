@@ -1,7 +1,7 @@
-function files = pat_tfr(pat,fig_name,params,res_dir)
+function pat = pat_tfr(pat,fig_name,params,res_dir)
 %PAT_TFR   Make time-frequency representation plots and print them to disk.
 %
-%  files = pat_tfr(pat, fig_name, params, res_dir)
+%  pat = pat_tfr(pat, fig_name, params, res_dir)
 %
 %  INPUTS:
 %           pat:  a pat object containing the pattern to be plotted.
@@ -15,7 +15,7 @@ function files = pat_tfr(pat,fig_name,params,res_dir)
 %                 reports/figs directory.
 %
 %  OUTPUTS:
-%         files:  cell array of paths to printed figures.
+%           pat:  pat object with an added fig object.
 %
 %  PARAMS:
 %  Values to plot
@@ -36,6 +36,10 @@ function files = pat_tfr(pat,fig_name,params,res_dir)
 %   correctm         - method to use to correct for multiple comparisions:
 %                      [ {none} | fdr | bonferroni ]
 %  Plotting options
+%   plot_mult_events - applies only if either time or frequency
+%                      dimension is singleton. If true, all events will
+%                      be plotted on one axis. Otherwise, each event
+%                      will be plotted on a separate figure. (true)
 %   map_limits       - limits for the z-axis of each plot: [z-min,z-max].
 %                      Default: -(absolute maximum) to (absolute maximum)
 %   print_input      - input to print to use when printing figures.
@@ -72,7 +76,7 @@ params = structDefaults(params, ...
                         'map_limits',       [],       ...
                         'print_input',      {'-depsc'}, ...
                         'event_bins',       '',       ...
-                        'plot_mult_events', false,    ...                        
+                        'plot_mult_events', true,     ...                        
                         'diff',             false,    ...
                         'mult_fig_windows', false,    ...
                         'stat_name',        '',       ...
@@ -135,13 +139,13 @@ else
 end
 
 % set axis information
-time = [pat.dim.time.avg];
-freq = [pat.dim.freq.avg];
+time = get_dim_vals(pat.dim, 'time');
+freq = get_dim_vals(pat.dim, 'freq');
 
 t_sing = length(time) < 2;
 f_sing = length(freq) < 2;
 
-if params.plot_mult_events
+if (t_sing || f_sing) && params.plot_mult_events
   num_events = 1;
 else
   num_events = size(pattern,1);
@@ -159,7 +163,7 @@ for i=1:num_events
   for c=1:size(pattern,2)
     fprintf('%d ', n)
 
-    if params.plot_mult_events
+    if (t_sing || f_sing) && params.plot_mult_events
       e = ':';
     else
       e = i;
@@ -200,3 +204,7 @@ for i=1:num_events
   end
 end
 fprintf('\n')
+
+% create a new fig object
+fig = init_fig(fig_name, files, pat.name);
+pat = setobj(pat, 'fig', fig);
