@@ -1,5 +1,5 @@
-function new_pat = create_acts_pattern(pat, stat_name, new_pat_name, params, ...
-                                       res_dir)
+function new_pat = create_acts_pattern(pat, stat_name, new_pat_name, ...
+                                       params, res_dir)
 %CREATE_ACTS_PATTERN   Create a pattern from classifier outputs.
 %
 %  new_pat = create_acts_pattern(pat, stat_name, new_pat_name, params, res_dir)
@@ -28,9 +28,9 @@ function new_pat = create_acts_pattern(pat, stat_name, new_pat_name, params, ...
 %       new_pat:  the new pattern object.
 %
 %  PARAMS:
-%   stat_type - ['acts' {'correct'}]
+%   stat_type - ['acts' | 'guess' | {'correct'}]
 %   dim       - 2
-%   precision - 'single'
+%   precision - [{'single'} | 'double']
 
 % input checks
 if ~exist('params', 'var')
@@ -122,6 +122,10 @@ function acts = get_acts(res, params)
       % for each event, get whether the classifier guessed correctly
       perfmet = perfmet_maxclass(iter_res.acts, iter_res.targs);
       mat = perfmet.corrects;
+    elseif strcmp(params.stat_type, 'guess')
+      % for each event, get the unit that was maximally active
+      perfmet = perfmet_maxclass(iter_res.acts, iter_res.targs);
+      mat = perfmet.guesses;
     end
 
     acts(iter_res.test_idx) = mat;
