@@ -19,30 +19,27 @@ function pat = classify_pat(pat, params, stat_name, res_dir)
 %        pat:  modified pattern object with an added stat object.
 %
 %  PARAMS:
-%   regressor  - REQUIRED - input to make_event_bins; used to create the
-%                regressor for classification.
-%   selector   - REQUIRED - input to make_event_bins; used to create
-%                indices for cross-validation.
-%   classifier - string indicating the type of classifier to use.  See
-%                run_classifier for available classifiers and options.
-%                ('classify')
-%   scramble   - boolean; if true, the regressor will be scrambled before
-%                classification.  Useful for debugging.  (false)
-%   overwrite  - if true, existing pc files will be overwritten. (true)
-%   iter_dims  - vector of which dimensions the classification
-%                should iterate over.  If empty, all features of the
-%                pattern will be used in one classification run. ([])
-%
-%  EXAMPLE:
-%   % classify based on subsequent memory
-%   params = [];
-%   params.regressor = 'recalled';
-%
-%   % cross-validate at the level of trials
-%   params.selector = 'trial';
-%
-%   % run, and save results in a pc object name "sme"
-%   pat = classify_pat(pat, params, 'sme');
+%  Defaults are shown in parentheses.
+%   regressor    - REQUIRED - input to make_event_bins; used to create
+%                  the regressor for classification.
+%   selector     - REQUIRED - input to make_event_bins; used to create
+%                  indices for cross-validation.
+%   iter_dims    - vector of which dimensions the classification
+%                  should iterate over.  If empty, all features of the
+%                  pattern will be used in one classification run. ([])
+%   f_train      - function handle for a training function.
+%                  (@train_logreg)
+%   train_args   - struct with options for f_train. (struct)
+%   f_test       - function handle for a testing function.
+%                  (@test_logreg)
+%   f_perfmet    - function handle for a function that calculates
+%                  classifier performance. Can also pass a cell array
+%                  of function handles, and all performance metrics will
+%                  be calculated. ({@perfmet_maxclass})
+%   perfmet_args - cell array of additional arguments to f_perfmet
+%                  function(s). ({struct})
+%   overwrite    - if true, if the stat file already exists, it will be
+%                  overwritten. (true)
 
 % input checks
 if ~exist('pat','var') || ~isstruct(pat)
@@ -58,19 +55,17 @@ if ~exist('stat_name', 'var')
   stat_name = 'patclass';
 end
 if ~exist('res_dir', 'var')
-  res_dir = get_pat_dir(pat, 'patclass');
+  res_dir = get_pat_dir(pat, 'stat');
 end
 
-params = structDefaults(params, ...
-                        'classifier', 'classify', ...
-                        'iter_dims',  [],         ...
-                        'scramble',   0,          ...
-                        'lock',       0,          ...
-                        'overwrite',  1);
+% default params
+defaults.iter_dims = [];
+defaults.overwrite = true;
+
+params = propval(params, defaults, 'strict', false);
 
 % set where the results will be saved
-filename = sprintf('%s_%s_%s.mat', pat.name, stat_name, pat.source);
-stat_file = fullfile(res_dir, filename);
+stat_file = fullfile(res_dir, objfilename('stat', stat_name, pat.source));
 
 % check the output file
 if ~params.overwrite && exist(stat_file, 'file')
@@ -81,7 +76,7 @@ end
 stat = init_stat(stat_name, stat_file, pat.name, params);
 
 % load the pattern and corresponding events
-pattern = load_pattern(pat, params);
+pattern = get_mat(pat);
 events = get_mat(pat.dim.ev);
 
 % get the regressor to use for classification
@@ -102,7 +97,7 @@ end
 if isempty(params.iter_dims)
   % use all features for classification
   res = xval(pattern, selector, targets, params);
-  
+
   % put the iterations on the first dimension
   res.iterations = res.iterations';
 else

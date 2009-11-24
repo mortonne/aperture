@@ -1,7 +1,7 @@
-function res = xval(pattern, selector, targets, params)
+function res = xval(pattern, selector, targets, varargin)
 %XVAL   Use cross-validation to test a classifier.
 %
-%  res = xval(pattern, selector, targets, params)
+%  res = xval(pattern, selector, targets, ...)
 %
 %  INPUTS:
 %   pattern:  An [observations X variables] matrix of data to be
@@ -16,14 +16,12 @@ function res = xval(pattern, selector, targets, params)
 %   targets:  An [observations X conditions] matrix giving the condition
 %             corresponding to each observation.
 %
-%    params:  Structure whose fields give options for classifying the
-%             data.  See below.
-%
 %  OUTPUTS:
 %       res:  Structure with results of the classification for each
 %             iteration.
 %
 %  PARAMS:
+%  Options can be set using property, value pairs or a structure.
 %   f_train      - function handle for training a classifier
 %   train_args   - args to be passed into f_train
 %   f_test       - function handle a classifier
@@ -45,15 +43,14 @@ elseif ~exist('targets', 'var') || ~isnumeric(targets)
 elseif length(targets) ~= size(pattern, 1)
   error('Different number of observations in pattern and targets vector.')
 end
-if ~exist('params', 'var')
-  params = []
-end
 
-params = structDefaults(params,                   ...
-                        'f_train', @train_logreg, ...
-                        'train_args',   struct,   ...
-                        'f_test',  @test_logreg,  ...
-                        'f_perfmet', {@perfmet_maxclass});
+% default params
+defaults.f_train = @train_logreg;
+defaults.train_args = struct;
+defaults.f_test = @test_logreg;
+defaults.f_perfmet = {@perfmet_maxclass};
+[params, unused] = propval(varargin, defaults);
+
 if ~iscell(params.f_perfmet)
   params.f_perfmet = {params.f_perfmet};
 end
@@ -77,7 +74,7 @@ f_test = params.f_test;
 
 % flatten all dimensions > 2 into one vector
 patsize = size(pattern);
-if ndims(pattern)>2
+if ndims(pattern) > 2
   pattern = reshape(pattern, [patsize(1) prod(patsize(2:end))]);
 end
 
@@ -90,13 +87,13 @@ store_perfs = NaN(n_iter, n_perfs);
 for i=1:n_iter
   
   % find the observations to train and test on
-  train_idx = selector ~= sel_vals(i);
-  test_idx = selector == sel_vals(i);
   unused_idx = isnan(selector);
+  train_idx = ~unused_idx & (selector ~= sel_vals(i));
+  test_idx = selector == sel_vals(i);
   
   % train
   scratchpad = f_train(pattern(train_idx,:)', targets(train_idx,:)', params.train_args{:});
-  
+
   % test
   test_targets = targets(test_idx,:)';
   [acts, scratchpad] = f_test(pattern(test_idx,:)', test_targets, scratchpad);
