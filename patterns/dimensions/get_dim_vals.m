@@ -27,10 +27,17 @@ end
 dim_name = read_dim_input(dim_id);
 
 switch dim_name
- case {'ev', 'chan'}
+ case {'ev'}
   % these dimensions don't really have numeric values; just return the
   % indices
   vals = 1:patsize(dim_info, dim_id);
+ case {'chan'}
+  % return the channel number
+  dim = get_dim(dim_info, dim_name);
+  if ~isfield(dim, 'number')
+    error('Channel dimension must contain a "number" field.')
+  end
+  vals = [dim.number];
  case {'time', 'freq'}
   dim = get_dim(dim_info, dim_name);
   if ~isfield(dim, 'avg')
