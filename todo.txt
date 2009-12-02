@@ -1,6 +1,6 @@
 == Project Management ==
  * SVN or GIT?
- * README needs an update!  Change to give basic installation instructions, point to online documenation
+ * README needs an update!  Change to give basic installation instructions, point to online documentation
  * make documentation public-viewable
  * system for reporting bugs/requesting features
  * more specialized tutorials, e.g. artifact removal, binning.
@@ -15,36 +15,33 @@
   * input - getobjallsubj takes "path" while getobj takes varargin
   * parameter names - chanFilter vs. chanbins vs. eog_channels
   * remove "basic" directory, move all "obj" functions to one directory
-  * unit tests?
+  * expand unit tests; pattern modification operations especially important
   * should objects be saved with their mats, for ease of reloading them if the references in exp get lost?  Or even the whole branch (exp.subj.pat), so they can be remerged using merge_exps.
- * should we switch over to using propval instead of structDefaults?  Allows use of either struct or property-value pairs.  Prop-val pairs may not be suitable for some functions, but it still wouldn't hurt to use propval.  Also, should there be checks for unused params?  Might help prevent beginning users from making errors.
+ *  finish switching functions over to using propval instead of structDefaults.
  * check feasibility of cross-experiment analyses (e.g. running Per's SME-serial position interaction analysis on all LTP FR experiments)
   * possibility: expand merge_exps.m, add 'experiment' field to each subj (or session) - could also add functions for running analyses at the session level
 
 == Basic ==
  * make an init_subj function; currently get_sessdirs is the only programmatic way to make a subj structure
- * remove init_scalp and init_iEEG, add scripts for adding channel information to existing subjects
+ * remove init_scalp and init_iEEG, expand import_channels
 
 == Events ==
  * generalized scripts for events -> data -> events (import/export from beh_toolbox)
 
 == Patclass ==
  * integrate load_pattern features into get_mat, replace load_pattern with get_mat in all toolbox functions
- * refine and test patclass_dev features
- * more classifiers, general section to give access to all MVPA functions
- * ANOVA feature selection - see if there is anything we can take from MVPA
+ * refine and test patclass_dev features (test cleaned-up version of classify_pat2pat_sweep, consider using it to replace classify_pat2pat)
+* ANOVA feature selection - see if there is anything we can take from MVPA
 
 == Patterns ==
- * re-evaluate pattern creation; are there ways to simplify the process?
+ * deal with modify_pattern's feature bloat; can gut modify_pattern, and use it as just an interface to deal with file management. Then other scripts can call modify_pattern, passing in a function handle of the form pat = function(pat, ...)
  * import advances in EOG artifact detection (individual grid searches)
- * fix updating of params in modify_pattern; currently replaces some params with their defaults in modify_pattern
  * support for continuous patterns - one event, many time bins?  How is events information stored?
- * generalize dimension objects, give option for any dimension to be saved to disk to free up memory
+ * generalize dimension objects, give option for any dimension to be saved to disk to free up memory (need to expand use of get_dim)
 
 == Plotting ==
- * fix calling signature of pat_* plotting functions.  The user shouldn't have to worry about create_fig.  Switching the signature may be tricky, since there is no way to ensure backwards compatibility.
- * consider beefing up plot_events.  it's unique and potentially very useful.
- * support for making brain plots
+* consider beefing up plot_events.  it's unique and potentially very useful.
+* support for making brain plots
 
 == Stats ==
  * re-evaluate design of statistics function.
