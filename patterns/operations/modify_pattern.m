@@ -170,9 +170,10 @@ defaults.ztrans = false;
 defaults.ztrans_eventbins = 'overall';
 defaults.splitDim = [];
 
-% default parameters
-user_params = params;
+% update the pattern's params
+user_params = merge_structs(params, pat.params);
 params = propval(params, defaults);
+user_params = merge_structs(user_params, params);
 
 fprintf('modifying pattern %s...', pat.name)
 
