@@ -37,7 +37,13 @@ function pat = modify_pattern(pat, params, pat_name, res_dir)
 %  All fields are optional.  Defaults are shown in parentheses.
 %   overwrite - if true, existing patterns will be overwritten.  (false
 %               if pattern is stored on disk, true if pattern is stored
-%               in workspace)
+%               in workspace or if save_mats is false)
+%   save_mats - if true, and input mats are saved on disk, modified mats
+%               will be saved to disk. If false, the modified mats will
+%               be stored in the workspace, and can subsequently be
+%               moved to disk using move_obj_to_hd. This option is
+%               useful if you want to make a quick change without
+%               modifying a saved pattern. (true)
 %
 %  Filtering
 %   eventFilter - input to filterStruct; used to filter the events
@@ -56,6 +62,8 @@ function pat = modify_pattern(pat, params, pat_name, res_dir)
 %                     threshold are excluded (see find_eog_artifacts).
 %   eog_channels    - channel number or pair of channels to use in blink
 %                     detection
+%   eog_buffer      - 
+%   blinkopt        - 
 %   absThresh       - if any value in an event crosses this this
 %                     threshold (either positive or negative), the event
 %                     will be excluded for that channel
@@ -121,34 +129,50 @@ if ~exist('res_dir', 'var') || isempty(res_dir)
   res_dir = fullfile(fileparts(pat_dir), pat_name);
 end
 
-% get the location of the input pat; this will set whether the new
-% pattern is saved to workspace or hard drive
+% get the location of the input pat; this will set the default of
+% whether the new pattern is saved to workspace or hard drive
 pat_loc = get_obj_loc(pat);
 ev_loc = get_obj_loc(pat.dim.ev);
 
 % set default for whether to overwrite existing pattern
-if strcmp(pat_loc, 'ws')
+if strcmp(pat_loc, 'ws') || (isfield(params, 'save_mats') && ~params.save_mats)
   defaults.overwrite = true;
 else
   defaults.overwrite = false;
 end
 
+% set default params
+defaults.save_mats = true;
+defaults.eventFilter = '';
+defaults.chanFilter = '';
+defaults.chan_filter = '';
+defaults.timeFilter = '';
+defaults.freqFilter = '';
+defaults.excludeBadChans = false;
+defaults.badChanFiles = {};
+defaults.blinkthresh = [];
+defaults.eog_channels = {[25 127], [8 126]};
+defaults.eog_buffer = 200;
+defaults.blinkopt = [.5 .5 .975 .025];
+defaults.absThresh = [];
+defaults.kthresh = [];
+defaults.eventbins = [];
+defaults.eventbinlabels = {};
+defaults.chanbins = [];
+defaults.chanbinlabels = {};
+defaults.MSbins = [];
+defaults.MSbinlabels = {};
+defaults.freqbins = [];
+defaults.freqbinlabels = {};
+defaults.nComp = [];
+defaults.min_samp = [];
+defaults.ztrans = false;
+defaults.ztrans_eventbins = 'overall';
+defaults.splitDim = [];
+
 % default parameters
 user_params = params;
-params = structDefaults(params, ...
-                        'nComp',            [],                   ...
-                        'badChanFiles',     {},                   ...
-                        'blinkthresh',      [],                   ...
-                        'eog_channels',     {[25 127], [8 126]},  ...
-                        'eog_buffer',       200,                  ...
-                        'blinkopt',         [.5, .5, .975, .025], ...
-                        'absThresh',        [],                   ...
-                        'kthresh',          [],                   ...
-                        'min_samp',         [],                   ...
-                        'ztrans',           false,                ...
-                        'ztrans_eventbins', 'overall',            ...
-                        'splitDim',         [],                   ...
-                        'overwrite',        defaults.overwrite);
+params = propval(params, defaults);
 
 fprintf('modifying pattern %s...', pat.name)
 
@@ -203,7 +227,8 @@ end
 % if event have been modified, change the filepath. We don't want to
 % overwrite any source events that might be used for other patterns, 
 % etc., so we'll change the path even if we are using the same 
-% pat_name as before.
+% pat_name as before. Even if we're not saving, we'll change the file
+% in case events are saved to disk later.
 if pat.dim.ev.modified
   events_dir = get_pat_dir(pat, 'events');
   pat.dim.ev.file = fullfile(events_dir, objfilename('events', ...
@@ -212,12 +237,12 @@ end
 
 % either move unmodified events back to disk, or save modified events
 % to their new file
-if strcmp(ev_loc, 'hd')
+if params.save_mats && strcmp(ev_loc, 'hd')
   pat.dim.ev = move_obj_to_hd(pat.dim.ev);
 end
 
 % save the pattern where we found it
-if strcmp(pat_loc, 'hd')
+if params.save_mats && strcmp(pat_loc, 'hd')
   pat = move_obj_to_hd(pat);
   
   if ~isempty(params.splitDim)

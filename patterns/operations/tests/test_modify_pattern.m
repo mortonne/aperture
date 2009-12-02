@@ -99,6 +99,36 @@ classdef test_modify_pattern < mlunit.test_case
       delete(pat.dim.ev.file);
     end
     
+    function self = test_hd_no_save(self)
+      % save the pattern to disk
+      pat = self.pat;
+      pat.file = self.pat_file;
+      pat = set_mat(pat, self.pattern);
+      
+      % save events to disk
+      ev = self.ev;
+      ev.file = self.ev_file;
+      ev = set_mat(ev, self.event);
+      pat.dim.ev = ev;
+      
+      % modify without saving
+      params = struct('eventFilter', 'strcmp(type, ''test'')', ...
+                      'save_mats', false);
+      pat = modify_pattern(pat, params);
+      
+      % check locations
+      mlunit.assert(strcmp(get_obj_loc(pat), 'ws'), 'pat on hd.');
+      mlunit.assert(strcmp(get_obj_loc(pat.dim.ev), 'ws'), 'ev on hd.');
+      
+      % check files
+      mlunit.assert(~strcmp(self.ev_file, pat.dim.ev.file), ...
+                    'ev pointing to old file.');
+      
+      % check modified labels
+      mlunit.assert(pat.modified, 'pat not modified.');
+      mlunit.assert(pat.dim.ev.modified, 'ev not modified.');
+    end
+    
     function self = test_ws_overwrite(self)
       % add events and pattern to the workspace
       pat = set_mat(self.pat, self.pattern);
