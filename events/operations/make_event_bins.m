@@ -80,6 +80,9 @@ elseif isfield(events, bins)
 elseif strcmp(bins, 'overall')
   % lump all events together
   labels = ones(1, length(events));
+  
+elseif ischar(bins) && ~isfield(events, bins)
+  error('Field does not exist in events: %s.', bins)
 
 elseif isnumeric(bins)
   % randomly divide up the events
