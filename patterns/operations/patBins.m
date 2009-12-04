@@ -250,6 +250,8 @@ function [chan, bins] = chan_bins(chan, bin_defs, labels)
     elseif ischar(c{i})
       % filter string
       bins{i} = find(inStruct(chan, c{i}));
+    else
+      error('Invalid channel bins input.')
     end
     bin_numbers{i} = numbers(bins{i});
     uniq_regions = unique(regions(bins{i}));
