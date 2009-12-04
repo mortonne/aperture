@@ -1,7 +1,29 @@
 function h = image_sorted(data, index, x, varargin)
 %IMAGE_SORTED   Sort and plot a matrix as an image.
 %
-%  h = image_sorted(data, index, x, varargin)
+%  h = image_sorted(data, index, x, ...)
+%
+%  INPUTS:
+%     data:  numeric array containing values to be plotted.
+%
+%    index:  vector of indices for sorting the rows of data before
+%            plotting.
+%
+%        x:  values for the x-axis.
+%
+%  OUTPUTS:
+%        h:  handle to the image graphics.
+%
+%  PARAMS:
+%  May be specified using a structure or parameter, value pairs.
+%  Defaults are shown in parentheses.
+%   plot_index - logical specifying whether to plot the index on top of
+%                the image. (true)
+%   x_label    - string label for the x-axis. ('Time (ms)')
+%   y_label    - string label for the y-axis. ('Trial')
+%   map_limits - limits for the colormap. ([])
+%   colormap   - colormap to use for plotting images. ([])
+%   colorbar   - logical; if true, a colorbar will be shown. (true)
 
 % input checks
 if ~exist('x', 'var')
