@@ -26,11 +26,6 @@ function pat = pat_topoplot(pat, fig_name, params, res_dir)
 %  Values to Plot
 %   event_bins     - input to make_event_bins; can be used to average
 %                    over events before plotting. ('')
-%   time_bins      - [nbins X 2] array specifying time bins.
-%                    time_bins(i,:) gives the range of ms values for
-%                    bin i. ([])
-%   freq_bins      - [nbins X 2] array specifying frequency bins in Hz.
-%                    ([])
 %   diff           - if true, the difference between events will be
 %                    plotted. (false)
 %   stat_name      - name of a stat object attached to pat. If
@@ -118,8 +113,6 @@ defaults.axis_prop = {};
 defaults.colorbar = true;
 defaults.plot_perimeter = true;
 defaults.event_bins = '';
-defaults.time_bins = [];
-defaults.freq_bins = [];
 defaults.diff = false;
 defaults.mult_fig_window = false;
 defaults.stat_name = '';
@@ -135,21 +128,16 @@ if length(params.views)~=2
   error('You must indicate exactly two viewpoints to plot.')
 end
 
-% load the pattern
-pattern = load_pattern(pat);
-
-if ~isempty(params.event_bins) || ~isempty(params.time_bins) || ~isempty(params.freq_bins)
+if ~isempty(params.event_bins)
   % create bins using inputs accepted by make_event_bins
+  p = [];
   p.eventbins = params.event_bins;
-  p.MSbins = params.time_bins;
-  p.freqbins = params.freq_bins;
-
-  [pat, bins] = patBins(pat, p);
-  % do the averaging within each bin
-  pattern = patMeans(pattern, bins);
+  p.save_mats = false;
+  pattern = get_mat(modify_pattern(pat, p));
+else
+  pattern = get_mat(pat);
 end
 
-pat_size = patsize(pat.dim);
 if ~isempty(params.stat_name)
   % load the p-values
   stat = getobj(pat, 'stat', params.stat_name);
@@ -240,7 +228,8 @@ for e=1:size(pattern,1)
           x(:) = 1;
           topoplot(x, params.chan_locs, 'colormap',[1 1 1], params.plot_input{:});
         else
-          topoplot(x, params.chan_locs, 'maplimits', map_limits, params.plot_input{:});
+          topoplot(x, params.chan_locs, 'maplimits', map_limits, ...
+                   params.plot_input{:});
         end
         if params.colorbar
           colorbar('FontSize', 16)
@@ -317,7 +306,7 @@ for e=1:size(pattern,1)
     end
   end
 end
-clf reset
+%clf reset
 fprintf('\n')
 
 % create a new fig object
