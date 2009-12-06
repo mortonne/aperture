@@ -1,18 +1,16 @@
-function varargout = getvarallsubj(subj,path,var_names,dim,file_number)
+function varargout = getvarallsubj(subj, obj_path, var_names, dim, varargin)
 %GETVARALLSUBJ   Load a variable from an object from multiple subjects.
 %
-%  varargout = getvarallsubj(subj, path, var_names, dim, file_number)
+%  varargout = getvarallsubj(subj, obj_path, var_names, dim, ...)
 %
 %  Many objects on an exp structure have a "file" field that gives the
 %  path to a MAT-file that holds data. This function is designed to
 %  export such data into matrices that contain data for all subjects.
 %
-%  Each variable loaded must be either an array or a cell array.
-%
 %  INPUTS:
-%       subj:  a structure representing each subject in an experiment. 
+%       subj:  a structure representing each subject in an experiment.
 %
-%       path:  cell array giving the path to an object on each subj
+%   obj_path:  cell array giving the path to an object on each subj
 %              structure in exp. Form must be:
 %               {t1,n1,...}
 %              where t1 is an object type (e.g. 'pat', 'stat'),
@@ -26,33 +24,27 @@ function varargout = getvarallsubj(subj,path,var_names,dim,file_number)
 %              scalar is passed, it will be used for all variables. 
 %              By default, all variables will be concatenated by rows.
 %
-%  file_number:  integer specifying which file to load, if obj.file
-%                is a cell array.
-%
 %  OUTPUTS:
 %  varargout:  each output is a matrix of one requested variable,
-%              concatenated across subjects along the specified dimension.
-%              Output order will be the same as in varnames.
+%              concatenated across subjects along the specified
+%              dimension. Output order will be the same as in varnames.
+%
+%  PARAMS:
+%   file_number    - integer specifying which file to load, if obj.file
+%                    is a cell array. ([])
 %
 %  EXAMPLES:
 %   % to export the variable named "pcorr" saved in the MAT-file in
-%   % exp.subj.pat.pc.file for a given pat and pc:
-%   pcorr = getvarallsubj(exp.subj,{'pat','my_pat_name','pc','my_pc_name'},'pcorr');
-%
-%  NOTES:
-%  NWM: Now that we have getobjallsubj, we might want to strip out the object
-%  grabbing part, and have this function just take in a vector of objects.
+%   % a stat object:
+%   obj_path = {'pat', 'my_pat_name', 'stat', 'my_stat_name'};
+%   pcorr = getvarallsubj(exp.subj, obj_path, {'pcorr'});
 
 % input checks
-if ~exist('subj', 'var')
+if ~exist('subj', 'var') || ~isstruct(subj)
   error('You must pass a subj structure.')
-elseif ~isstruct(subj)
-  error('subj must be a structure.')
-elseif ~isfield(subj, 'id')
-  error('subj must have an id field.')
 end
-if ~exist('path', 'var')
-  path = {};
+if ~exist('obj_path', 'var')
+  obj_path = {};
 end
 if ~exist('dim', 'var')
   dim = 1;
@@ -66,30 +58,24 @@ end
 if ~(length(dim)==1 || length(dim)==length(var_names))
   error('dim must either be a scalar or the same length as var_names')
 end
-if ~exist('file_number', 'var')
-  file_number = [];
-end
+
+% process options
+defaults.file_number = [];
+
+params = propval(varargin, defaults);
 
 if length(dim)==1
   % use the same dimension to concatenate all variables
   dim = repmat(dim, 1, length(var_names));
 end
 
-fprintf('exporting from subjects...\n')
+% export the objects from the subj vector
+objs = getobjallsubj(subj, obj_path);
 
-% first make a subjects X variables cell array
+% make a [subjects X variables] cell array
 var_cell = cell(length(subj), length(var_names));
-for s=1:length(subj)
-  fprintf('%s ', subj(s).id)
-
-  % get the object for this subject
-  try
-    obj = getobj(subj(s), path{:});
-  catch
-    % we couldn't find an object corresponding to that path
-    fprintf('Warning: object %s not found.', path{end})
-    continue
-  end
+for s=1:length(objs)
+  obj = objs(s);
 
   try
     obj_type = get_obj_type(obj);
@@ -97,17 +83,19 @@ for s=1:length(subj)
     obj_type = '';
   end
   
-  if ~isempty(file_number)
+  if ~isempty(params.file_number)
+    % loading one of multiple files
     if ~iscell(obj.file)
-      error('file_number only makes sense if obj.file is a cell array.')
+      error('params.file_number only makes sense if obj.file is a cell array.')
     end
     % load the specified variables for this file
-    temp = load(obj.file{file_number}, var_names{:});
-  elseif ~isempty(obj_type) && isscalar(var_names) && ...
-         strcmp(var_names, obj_type)
-    temp.(obj_type) = get_mat(obj);
+    temp = load(obj.file{params.file_number}, var_names{:});
   elseif iscell(obj.file)
     error('obj.file is a cell array. You must specify a file_number.')
+  elseif ~isempty(obj_type) && isscalar(var_names) && ...
+         strcmp(var_names, obj_type)
+    % loading a mat from an object
+    temp.(obj_type) = get_mat(obj);
   else
     % only one file; load the specified variables
     temp = load(obj.file, var_names{:});
@@ -123,22 +111,21 @@ for s=1:length(subj)
     % get the variable corresponding to this var_name
     variable = temp.(var_names{v});
 
-    % see if this is a supported variable
-    if ~(isnumeric(variable) || iscell(variable))
-      error('Variable %s is not an array.')
-    end
-
     % add to the cell array
     var_cell{s,v} = temp.(var_names{v});
   end
 end
-fprintf('\n')
 
 % concatenate each variable and add to the outputs
-varargout = cell(1,length(var_names));
-for v=1:size(var_cell,2)
+varargout = cell(1, length(var_names));
+for v=1:size(var_cell, 2)
   % concatenate this variable across subjects
-  for s=1:size(var_cell,1)
-    varargout{v} = cat(dim(v), varargout{v}, var_cell{s,v});
+  for s=1:size(var_cell, 1)
+    variable = var_cell{s,v};
+    if isnumeric(variable) || islogical(variable)
+      varargout{v} = cat(dim(v), varargout{v}, variable);
+    else
+      varargout{v} = cat(dim(v), varargout{v}, {variable});
+    end
   end
 end
