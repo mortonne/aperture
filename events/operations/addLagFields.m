@@ -1,7 +1,7 @@
-function events = addLagFields(events, param)
+function events = addLagFields(events, varargin)
 %ADDLAGFIELDS   Add subsequent-clustering related fields to events.
 %
-%  events = addLagFields(events, param)
+%  events = addLagFields(events, ...)
 %
 %  Use this function to add information to recall events about
 %  transitions to and from each recalled item.
@@ -13,43 +13,37 @@ function events = addLagFields(events, param)
 %
 %  INPUTS:
 %   events:  an events structure. Required fields:
-%             'session'   session number
-%
-%             'trial'     trial number
-%
-%             'type'      string indicating the type of event. Must
-%                         include WORD and REC_WORD.
-%
-%             'mstime'    OPTIONAL: experiment time in milliseconds. 
-%                         Used to make sure events are in the correct
-%                         order.
-%
-%    param:  structure specifying options. See below.
+%             session - session number
+%             trial   - trial number
+%             type    - string indicating the type of event. Must
+%                       include WORD and REC_WORD.
+%             mstime  - OPTIONAL: experiment time in milliseconds. Used
+%                       to make sure events are in the correct order.
 %
 %  OUTPUTS:
 %   events:  events structure with new fields:
-%             prelag - lag to the word recalled before this one
-%             postlag - lag to the word recalled next
+%             prelag    - lag to the word recalled before this one
+%             postlag   - lag to the word recalled next
 %             outputpos - output position during recall, counting
 %                         only REC_WORD events.
 %
 %  PARAMS:
-%     itemstr:  value of the 'type' field for item presentations
-%               default: 'WORD'
-%
-%  trialfield:  name of the field that contains the trial number
-%               default: 'trial'
+%  May be specified using either a structure or parameter, value pairs.
+%  Defaults are shown in parentheses.
+%   itemstr    - value of the 'type' field for item presentations.
+%                ('WORD')
+%   trialfield - name of the field that contains the trial number.
+%                ('trial')
 
 % input checks
-if ~exist('events','var')
+if ~exist('events','var') || ~isstruct(events)
   error('You must pass an events structure.')
-  elseif ~isstruct(events)
-  error('Events must be a structure.')
 end
-if ~exist('param', 'var')
-	param = struct();
-end
-param = structDefaults(param, 'itemstr','WORD', 'trialfield','trial');
+
+% process options
+defaults.itemstr = 'WORD';
+defaults.trialfield = 'trial';
+params = propval(varargin, defaults);
 
 % initialize the new fields
 [events.prelag] = deal(NaN);
@@ -63,22 +57,24 @@ for session=sessions
   sess_ev = events([events.session]==session);
 
   % trial numbers
-  lists = unique([sess_ev.(param.trialfield)]);
+  lists = unique([sess_ev.(params.trialfield)]);
   lists = lists(lists>=0 & lists<100);
   for list=lists
     % get a logical vector that is true for this list's events
-    list_mask = [events.session]==session & [events.(param.trialfield)]==list;
+    list_mask = [events.session]==session & [events.(params.trialfield)]==list;
     
     % get indices within the entire events structure for study and recall
     % events for this list
-    study_ind = find(list_mask & strcmp({events.type}, param.itemstr));
+    study_ind = find(list_mask & strcmp({events.type}, params.itemstr));
     rec_ind = find(list_mask & strcmp({events.type}, 'REC_WORD'));
 
     % we need both study and recall events
     if isempty(study_ind)
-      error('No study items found for list %d.', list);
-      elseif isempty(rec_ind)
-      error('No recall items found for list %d.', list);
+      warning('No study items found for list %d.', list);
+      continue
+    elseif isempty(rec_ind)
+      warning('No recall items found for list %d.', list);
+      continue
     end
 
     % get the events
