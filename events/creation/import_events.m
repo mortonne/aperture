@@ -1,7 +1,7 @@
-function subj = import_events(subj, res_dir, ev_name, params)
+function subj = import_events(subj, res_dir, ev_name, varargin)
 %IMPORT_EVENTS   Import events information for a subject.
 %
-%  subj = import_events(subj, res_dir, ev_name, params)
+%  subj = import_events(subj, res_dir, ev_name, ...)
 %
 %  Use this function to import events information for a subject. It
 %  concatenates events for all sessions of a subject, saves them, and
@@ -15,23 +15,21 @@ function subj = import_events(subj, res_dir, ev_name, params)
 %  ev_name:  string identifier for the created ev object.
 %            default: 'events'
 %
-%   params:  structure that sets options for importing events.
-%            See below.
-%
 %  OUTPUTS:
 %     subj:  subject structure with an added ev object.
 %
 %  PARAMS:
-%  All fields are optional.  Defaults are shown in parentheses.
-%  events_file  - path (relative to each session directory in subj) to
-%                 the MAT-file where each events structure to be
-%                 imported is saved. ('events.mat')
-%  event_filter - string to be passed into filterStruct to filter the
-%                 events structure before it is imported. ('')
-%  check_eeg    - if true, a check will be run on the eegfile field of
-%                 each events structure; if the eegfile field is
-%                 missing, prep_egi_data2 will be run on the session
-%                 in an attempt to align the events. (false)
+%  May be specified either using a structure or parameter, value pairs.
+%  Defaults are shown in parentheses.
+%   events_file  - path (relative to each session directory in subj) to
+%                  the MAT-file where each events structure to be
+%                  imported is saved. ('events.mat')
+%   event_filter - string to be passed into filterStruct to filter the
+%                  events structure before it is imported. ('')
+%   check_eeg    - if true, a check will be run on the eegfile field of
+%                  each events structure; if the eegfile field is
+%                  missing, prep_egi_data2 will be run on the session
+%                  in an attempt to align the events. (false)
 %
 %  See also create_events.
 
@@ -44,15 +42,13 @@ end
 if ~exist('ev_name', 'var')
   ev_name = 'events';
 end
-if ~exist('params', 'var')
-  params = [];
-end
 
-% default parameters
-params = structDefaults(params, ...
-                        'events_file',  'events.mat', ...
-                        'event_filter', '',           ...
-                        'check_eeg',    false);
+% process options
+defaults.events_file = 'events.mat';
+defaults.event_filter = '';
+defaults.check_eeg = false;
+
+params = propval(varargin, defaults);
 
 if length(subj.sess) > 1
   fprintf('concatenating session events...')
@@ -76,7 +72,7 @@ for sess=subj.sess
   sess_events = getfield(load(sess_events_file, 'events'), 'events');
 
   % fill in eeg fields if they are missing
-  if params.check_eeg && ( ~isfield(events,'eegfile') || all(cellfun(@isempty,{events.eegfile})) )
+  if params.check_eeg && ( ~isfield(sess_events,'eegfile') || all(cellfun(@isempty,{sess_events.eegfile})) )
     try
       % try to fix it one more time;
       % force alignment to run again
