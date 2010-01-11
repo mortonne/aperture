@@ -1,51 +1,55 @@
-function pat = grand_average(subj, pat_name, res_dir)
+function pat = grand_average(subj, pat_name, varargin)
 %GRAND_AVERAGE   Calculate an average across patterns from multiple subjects.
 %
-%  pat = grand_average(subj, pat_name, res_dir)
+%  pat = grand_average(subj, pat_name, ...)
 %
 %  INPUTS:
-%      subj:  vector structure holding information about subjects. Each must
-%             contain a pat object named pat_name.
+%      subj:  vector structure holding information about subjects. Each
+%             must contain a pat object named pat_name.
 %
 %  pat_name:  name of the pattern to concatenate across subjects.
 %
-%   res_dir:  directory in which to save the new pattern. Default is the same
-%             directory the first subject's pattern is saved in.
-%
 %  OUTPUTS:
-%       pat:  
+%       pat:  new pattern object.
+%
+%  PARAMS:
+%   save_mat - if true, the new pattern will be saved to disk. (true)
+%   res_dir  - directory to save the new pattern. (same as subj(1)'s
+%              pattern's res_dir)
 
-if ~exist('pat_name','var')
+% input checks
+if ~exist('pat_name', 'var')
   error('You must specify the name of the patterns you want to concatenate.')
-  elseif ~exist('subj','var')
+elseif ~exist('subj', 'var')
   error('You must pass a subj structure.')
-  elseif ~isstruct(subj)
+elseif ~isstruct(subj)
   error('subj must be a structure.')
 end
 
 % get info from the first subject
 subj_pat = getobj(subj(1), 'pat', pat_name);
-if ~exist('res_dir','var')
-  res_dir = get_pat_dir(subj_pat, 'patterns');
-end
+defaults.save_mat = true;
+defaults.res_dir = get_pat_dir(subj_pat, 'patterns');
+params = propval(varargin, defaults);
 
 % initialize the new pattern
-filename = sprintf('pattern_%s_ga.mat', pat_name);
-pat_file = fullfile(res_dir, filename);
-pat = init_pat(pat_name, pat_file, 'GrandAverage', subj_pat.params, subj_pat.dim);
-
-% get filenames for all subject patterns
-for s=1:length(subj)
-	subj_pat = getobj(subj(s), 'pat', pat_name);
-	subj_files{s} = subj_pat.file;
-end
+pat_file = fullfile(params.res_dir, objfilename('pattern', pat_name, 'ga'));
+pat = init_pat(pat_name, pat_file, 'GrandAverage', subj_pat.params, ...
+               subj_pat.dim);
 
 % load and concatenate all subject patterns
 fprintf('calculating grand average for pattern %s...', pat_name)
 pattern = getvarallsubj(subj, {'pat', pat_name}, 'pattern', 5);
 
 % average across subjects
-pattern = nanmean(pattern,5);
-save(pat.file, 'pattern');
+pattern = nanmean(pattern, 5);
+
+% save the new pattern
+if params.save_mat
+  pat = set_mat(pat, pattern, 'hd');
+else
+  pat = set_mat(pat, pattern, 'ws');
+end
 
 pat.dim.splitdim = [];
+
