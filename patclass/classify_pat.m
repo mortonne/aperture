@@ -59,6 +59,7 @@ if ~exist('res_dir', 'var')
 end
 
 % default params
+defaults.regressor = '';
 defaults.iter_dims = [];
 defaults.overwrite = true;
 
@@ -77,16 +78,10 @@ stat = init_stat(stat_name, stat_file, pat.name, params);
 
 % load the pattern and corresponding events
 pattern = get_mat(pat);
-events = get_mat(pat.dim.ev);
+events = get_dim(pat, 'ev');
 
 % get the regressor to use for classification
-targ_vec = make_event_bins(events, params.regressor);
-conds = unique(targ_vec(~isnan(targ_vec)));
-targets = zeros(length(events), length(conds));
-for i=1:length(conds)
-  cond_match = targ_vec == conds(i);
-  targets(:, i) = cond_match;
-end
+targets = create_targets(events, params.regressor);
 
 % get the selector
 selector = make_event_bins(events, params.selector);
