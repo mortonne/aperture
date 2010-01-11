@@ -75,6 +75,11 @@ params = propval(varargin, defaults);
 % get dimensions of the input matrices that will be iterated over
 % all dimensions with a corresponding empty cell will be singleton
 iter_dims = find(~cellfun('isempty', iter_cell));
+if isempty(iter_dims)
+  % if passing whole matrices in, just iterate over first dimension,
+  % which will be singleton
+  iter_dims = 1;
+end
 
 % get the size of the output matrix; ndims for the output is the 
 % highest iter dimension or 2, whichever is higher
