@@ -1,27 +1,31 @@
-function res = traintest(testpattern, trainpattern, testtargets, traintargets, params)
+function res = traintest(testpattern, trainpattern, testtargets, ...
+                         traintargets, varargin)
 %TRAINTEST   Train a classifier on one pattern, test it on a second.
 %
-%  res = traintest(testpattern, trainpattern, testtargets, ...
-%                  traintargets, params)
+%  res = traintest(testpattern, trainpattern, testtargets, traintargets, ...)
 %
 %  INPUTS:
-%   trainpattern:  An [observations X variables] matrix of data to
-%              train a classifier with.
+%  trainpattern:  An [observations X variables] matrix of data to
+%                 train a classifier with.
 %
 %   testpattern:  An [obs X var] matrix of data to test the classifier.
 %
-%   traintargets:  An [observations X conditions] matrix giving the condition
-%              corresponding to each observation.
+%  traintargets:  An [observations X conditions] matrix giving the
+%                 condition corresponding to each observation.
 %
 %   testtargets:  Ditto.
-%
-%     params:  Structure whose fields give options for classifying the
-%              data.  See below.
 %
 %  OUTPUTS:
 %       res:  Structure with results of the classification for each
 %             iteration.
-
+%  PARAMS:
+%  Options can be set using property, value pairs or a structure.
+%   f_train      - function handle for training a classifier
+%   train_args   - args to be passed into f_train
+%   f_test       - function handle a classifier
+%   f_perfmet    - function handle for calculating performance
+%   perfmet_args - cell array of addition arguments for the perfmet
+%                  function
 
 if isempty(testpattern)
   res.perf = NaN;
@@ -39,7 +43,7 @@ if isempty(testpattern)
   res.perfmet.scratchpad = [];
   res.perfmet.perm_perf = NaN;
   res.perfmet.function_name = '';
-  return;
+  return
 end
 
 % input checks
@@ -59,15 +63,12 @@ end
 
 % check to make sure that pattern1 and pattern2 have same
 % dimensions > 2
+defaults.f_train = @train_logreg;
+defaults.train_args = struct('penalty', 10);
+defaults.f_test = @test_logreg;
+defaults.f_perfmet = {@perfmet_maxclass};
+[params, unused] = propval(varargin, defaults);
 
-if ~exist('params', 'var')
-  params = []
-end
-
-params = structDefaults(params,                   ...
-                        'f_train', @train_logreg, ...
-                        'f_test',  @test_logreg,  ...
-                        'f_perfmet', {@perfmet_maxclass});
 if ~iscell(params.f_perfmet)
   params.f_perfmet = {params.f_perfmet};
 end
@@ -75,20 +76,16 @@ if ~isfield(params, 'perfmet_args')
   params.perfmet_args = cell(1, length(params.f_perfmet));
   params.perfmet_args{:} = deal(struct);
 end
-
-% get the selector value for each iteration
-%sel_vals = unique(selector);
-%sel_vals = sel_vals(~isnan(sel_vals));
-%if length(sel_vals) < 2
-%  error('Selector must have at least two unique non-NaN values.')
-%end
+if isstruct(params.train_args)
+  params.train_args = {params.train_args};
+end
 
 f_train = params.f_train;
 f_test = params.f_test;
 
 % flatten all dimensions > 2 into one vector
 patsize = size(trainpattern);
-if ndims(trainpattern)>2
+if ndims(trainpattern) > 2
   trainpattern = reshape(trainpattern, [patsize(1) prod(patsize(2:end))]);
 end
 
@@ -97,22 +94,15 @@ if ndims(testpattern)>2
   testpattern = reshape(testpattern, [patsize(1) prod(patsize(2:end))]);
 end
 
-
+% deal with missing data
 trainpattern = remove_nans(trainpattern);
 testpattern = remove_nans(testpattern);
 
-%n_iter = length(sel_vals);
 n_perfs = length(params.f_perfmet);
 store_perfs = NaN(n_perfs);
-  
-% find the observations to train and test on
-%train_idx = selector ~= sel_vals(i);
-%test_idx = selector == sel_vals(i);
-%unused_idx = isnan(selector);
 
 % train
-%scratchpad = f_train(trainpattern(train_idx,:)', traintargets(train_idx,:)', params);
-scratchpad = f_train(trainpattern', traintargets', params);  
+scratchpad = f_train(trainpattern', traintargets', params.train_args{:});  
 
 % test
 testtargets = testtargets';
@@ -145,7 +135,6 @@ fprintf('%.2f\t', res.perf)
 if n_perfs > 1
   fprintf('\n')
 end
-
 
 if n_perfs==1
   fprintf('\n')
