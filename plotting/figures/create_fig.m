@@ -1,65 +1,86 @@
-function obj = create_fig(obj,fig_name,fcn_handle,fcn_inputs)
-%CREATE_FIG   Create figures from information in an object.
+function fig = create_fig(h, fig_name, res_dir, varargin)
+%CREATE_FIG   Create a figure object.
 %
-%  obj = create_fig(obj, fig_name, fcn_handle, fcn_inputs)
-%
-%  This function provides a way to make plots from an object and keep
-%  track of the figure files in a "fig" object. fig objects can then
-%  be passed into report-creation functions to make PDFs of many figures.
+%  fig = create_fig(h, fig_name, res_dir, ...)
 %
 %  INPUTS:
-%         obj:  a structure that contains information that can be used
-%               to make a plot.
+%         h:  handle or vector of handles to figure object(s).
 %
-%    fig_name:  string identifier for the new fig object; this will
-%               become fig.name. Default is "figure".
+%  fig_name:  string identifier of the fig object to be created.
 %
-%  fcn_handle:  a function that takes obj as its first input, fig_name
-%               as its second input, and returns a cell array of paths 
-%               to printed figures (e.g. {figure1.eps, figure2.eps, ...}).
-%                
-%  fcn_inputs:  additional inputs to fcn_handle after obj and fig_name.
+%   res_dir:  path to the directory to save the figure(s). Default is
+%             the current directory.
 %
 %  OUTPUTS:
-%         obj:  same as the input obj, but with a fig object added.
-%               fig is a structure with fields:
-%                'name'    string identifier
-%                'file'    cell array of paths to saved figures
-%                'source'  same as obj.name
+%       fig:  new fig object, with references to the printed figures.
 %
-%  EXAMPLE:
-%   % create a new pattern named volt
-%   subj = create_pattern(subj, @sessVoltage, struct, 'volt');
+%  PARAMS:
+%   source      - source of the figures (e.g., an object name). ('')
+%   subject     - identifier of the subject that the figures correspond
+%                 to. ('')
+%   print_input - cell array of inputs to print, to be used when
+%                 printing figures. ({'-depsc'})
+%   file_ext    - desired file extension of the printed figures. ('eps')
 %
-%   % get the pat object
-%   pat = getobj(subj,'pat','volt');
-%
-%   % plot all events
-%   pat = create_fig(pat, 'erp', @pat_erp, {});
+%  NOTES:
+%   create_fig only works well for individual figures and small groups
+%   of figures. If you need to store many figures in one fig object,
+%   call print and init_fig directly. 
 
-if ~exist('fig_name','var')
+% input checks
+if ~exist('h', 'var') || isempty(h)
+  h = gcf;
+end
+if ~exist('fig_name','var') || isempty(fig_name)
   fig_name = 'figure';
 end
-if ~exist('fcn_inputs','var')
-  fcn_inputs = {};
-elseif ~iscell(fcn_inputs)
-  error('fcn_inputs must be a cell array.')
-elseif ~exist('fcn_handle','var')
-  error('You must specify a figure-creation script.')
-elseif ~isa(fcn_handle,'function_handle')
-  error('fcn_handle must be a function handle.')
-elseif ~exist('obj','var')
-  error('You must pass a source object for creating the figures.')
-elseif ~isstruct(obj)
-  error('obj must be a structure.')
+if ~exist('res_dir', 'var')
+  res_dir = '.';
+elseif ~ismember(res_dir(1), {'/', '.', '~'})
+  res_dir = ['./' res_dir];
+end
+if ~exist(res_dir, 'dir')
+  mkdir(res_dir)
 end
 
-% run the figure creation script, which should return a cell array
-% of paths to saved figures
-files = fcn_handle(obj, fig_name, fcn_inputs{:});
+% set params
+defaults.source = '';
+defaults.subject = '';
+defaults.print_input = {'-depsc'};
+defaults.file_ext = 'eps';
+
+params = propval(varargin, defaults);
+
+% define the basename of the figure files
+inputs = {fig_name, params.source, params.subject};
+inputs = inputs(~cellfun(@isempty, inputs));
+switch length(inputs)
+ case 1
+  base_name = sprintf('%s', inputs{:});
+ case 2
+  base_name = sprintf('%s_%s', inputs{:});
+ case 3
+  base_name = sprintf('%s_%s_%s', inputs{:});
+end
+
+% print the figures
+files = cell(1, length(h));
+if isscalar(h)
+  files{1} = fullfile(res_dir, sprintf('%s.%s', base_name, params.file_ext));
+  print(h, files{1}, params.print_input{:});
+else
+  % each figure is identified by its position in h
+  for i=1:length(files)
+    files{i} = fullfile(res_dir, sprintf('%s-%d.%s', base_name, i, ...
+                                         params.file_ext));
+    print(h(i), files{i}, params.print_input{:});
+  end
+end
 
 % create a new fig object
-fig = init_fig(fig_name, files, obj.name);
-
-% add fig to obj
-obj = setobj(obj, 'fig', fig);
+if isempty(params.source) && ~isempty(params.subject)
+  source = params.subject;
+else
+  source = params.source;
+end
+fig = init_fig(fig_name, files, source);
