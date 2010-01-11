@@ -61,7 +61,6 @@ end
 
 % process options
 defaults.file_number = [];
-
 params = propval(varargin, defaults);
 
 if length(dim)==1
@@ -72,17 +71,17 @@ end
 % export the objects from the subj vector
 objs = getobjallsubj(subj, obj_path);
 
-% make a [subjects X variables] cell array
-var_cell = cell(length(subj), length(var_names));
-for s=1:length(objs)
-  obj = objs(s);
-
+% initialize output
+varargout = cell(1, length(var_names));
+for obj=objs
+  % use obj type to determine how to load the variables
   try
     obj_type = get_obj_type(obj);
   catch
     obj_type = '';
   end
-  
+
+  % load the variables
   if ~isempty(params.file_number)
     % loading one of multiple files
     if ~iscell(obj.file)
@@ -90,12 +89,15 @@ for s=1:length(objs)
     end
     % load the specified variables for this file
     temp = load(obj.file{params.file_number}, var_names{:});
+    
   elseif iscell(obj.file)
     error('obj.file is a cell array. You must specify a file_number.')
+    
   elseif ~isempty(obj_type) && isscalar(var_names) && ...
          strcmp(var_names, obj_type)
     % loading a mat from an object
     temp.(obj_type) = get_mat(obj);
+    
   else
     % only one file; load the specified variables
     temp = load(obj.file, var_names{:});
@@ -110,18 +112,8 @@ for s=1:length(objs)
     
     % get the variable corresponding to this var_name
     variable = temp.(var_names{v});
-
-    % add to the cell array
-    var_cell{s,v} = temp.(var_names{v});
-  end
-end
-
-% concatenate each variable and add to the outputs
-varargout = cell(1, length(var_names));
-for v=1:size(var_cell, 2)
-  % concatenate this variable across subjects
-  for s=1:size(var_cell, 1)
-    variable = var_cell{s,v};
+    
+    % add to the outputs
     if isnumeric(variable) || islogical(variable)
       varargout{v} = cat(dim(v), varargout{v}, variable);
     else
@@ -129,3 +121,4 @@ for v=1:size(var_cell, 2)
     end
   end
 end
+
