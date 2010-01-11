@@ -15,14 +15,6 @@ if ~isnumeric(X)
   error('Input must be a matrix.')
 end
 
-%{
-% NWM: not sure why I took this out.
-goodind = find(sum(~isnan(mat)));
-
-% remove vars that are all nans
-mat = mat(:,goodind);
-%}
-
 % get mean for all observations of each variable
 var_means = nanmean(X);
 
