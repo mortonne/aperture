@@ -1,192 +1,207 @@
-function subj = classify_pat2pat(subj, params, pc_name, res_dir)
-%CLASSIFY_PAT2PAT   Classify a pattern by training on another pattern.
+function subj = classify_pat2pat_sweep(subj, train_pat_name, ...
+                                       test_pat_name, stat_name, ...
+				       res_dir, varargin)
+%CLASSIFY_PAT2PAT_SWEEP   Train a classifier on one pattern and test on another.
 %
-%  subj = classify_pat2pat(subj, params, pc_name, res_dir)
+%  subj = classify_pat2pat_sweep(subj, train_pat_name,
+%                                test_pat_name, stat_name, res_dir, ...)
+%
+%  Train a classifier on a pattern and test on another pattern. For each
+%  dimension of the patterns there are possibilities:
+%   1) iterate over all values, training and testing on each element.
+%      The sizes of the patterns along the dimension must match.
+%   2) same as (1), but iterate over groups, rather than individual
+%      elements. Classification will be done for each group, and all
+%      elements in the group will be features of the pattern. Patterns
+%      must have the same number of groups along the dimension.
+%   3) train and test on all values of the dimension, using all values
+%      as features in the patterns. The sizes of the patterns along
+%      the dimension must match.
+%  params.iter_cell specifies how to iterate over both the train and
+%  test patterns. If params.sweep_cell is specified, additional
+%  partitioning will be done to the test pattern.
 %
 %  INPUTS:
-%            subj:  a subject structure.
+%            subj:  a subject object.
 %
-%          params:  structure with fields that specify options for
-%                   running the classification.  See below.
+%  train_pat_name:  the name of a training pattern, attached to the
+%                   subject object.
 %
-%         pc_name:  string identifier to use for the new "pc" object.
-%                   Default: 'patclass'
+%   test_pat_name:  the name of a test pattern, attached to the subject
+%                   object.
 %
-%         res_dir:  path to the directory where results will be saved.
-%                   Default is the "patclass" directory of the test
-%                   pattern.
+%       stat_name:  name of the stat object that will be created to hold
+%                   results of the analysis.
+%
+%         res_dir:  directory where results will be saved.  If empty or
+%                   not specified, results will be saved in the
+%                   pattern's stats directory.
 %
 %  OUTPUTS:
-%            subj:  subject structure with an added "pc" object.
+%            subj:  modified subject object with an added stat object
+%                   that contains the results of the analysis.
 %
 %  PARAMS:
-%   trainpatname - REQUIRED. string identifier of the pattern to use
-%                  to train the classifier
-%   testpatname  - REQUIRED. string identifier of the pattern to test 
-%                  the classifier on
-%   regressor    - REQUIRED. specifies how to make the regressor. See
-%                  make_event_bins for valid inputs
-%   classifier   - string name of the classifier to use (default:
-%                  'classify').  See run_classifiers
-%   scramble     - if true, the regressor will be scrambled before
-%                  classification.  Useful for debugging. Default:
-%                  false
+%  These options may be specified using parameter, value pairs or by
+%  passing a structure. Defaults are shown in parentheses.
+%   regressor    - REQUIRED - input to make_event_bins; used to create
+%                  the regressor for classification.
+%   iter_cell    - determines which dimensions to iterate over for both
+%                  training and testing. See apply_by_group for details.
+%                  Default is to train on all features of the training
+%                  pattern at once and test on all features of the
+%                  testing pattern. May also input a params struct to be
+%                  passed into patBins to create grouped dimensions.
+%                  ({[],[],[],[]})
+%   sweep_cell   - determines which dimension to iterate over for
+%                  testing only. See apply_by_group (iter_cell) for
+%                  details. Default is to test on the same dimensions
+%                  as the training pattern. In this case, all dimensions
+%                  of the train and test patterns must match. May also
+%                  input a params struct to be passed into patBins to
+%                  create a grouped dimension. ({[],[],[],[]})
+%   f_train      - function handle for a training function.
+%                  (@train_logreg)
+%   train_args   - struct with options for f_train. (struct)
+%   f_test       - function handle for a testing function.
+%                  (@test_logreg)
+%   f_perfmet    - function handle for a function that calculates
+%                  classifier performance. Can also pass a cell array
+%                  of function handles, and all performance metrics will
+%                  be calculated. ({@perfmet_maxclass})
+%   perfmet_args - cell array of additional arguments to f_perfmet
+%                  function(s). ({struct})
+%   overwrite    - if true, if the stat file already exists, it will be
+%                  overwritten. (true)
 
 % input checks
-if ~exist('subj','var') || ~isstruct(subj)
+if ~exist('subj', 'var') || ~isstruct(subj)
   error('You must pass a subject object.')
-elseif length(subj)>1
-  error('subj must only contain one subject. Use apply_to_subj to run multiple subjects.')
-elseif ~exist('params','var') || ~isstruct(params)
-  error('You must pass a params structure.')
-elseif ~isfield(params, 'trainpatname')
-	error('You must specify a training pattern in params.')
-elseif ~isfield(params, 'testpatname')
-	error('You must specify a test pattern in params.')
-elseif ~isfield(params, 'regressor')
-	error('You must specify a regressor in params.')
+elseif ~exist('train_pat_name', 'var') || ~ischar(train_pat_name)
+  error('You must give the name of a training pattern.')
+elseif ~exist('test_pat_name', 'var') || ~ischar(test_pat_name)
+  error('You must give the name of a test pattern.')
 end
-if ~exist('pc_name', 'var')
-	pc_name = 'patclass';
+if ~exist('stat_name', 'var')
+  stat_name = 'patclass';
 end
 
-params = structDefaults(params, ...
-                        'classifier', 'classify', ...
-                        'nComp',      [],         ...
-                        'scramble',   false,      ...
-                        'lock',       false,      ...
-                        'overwrite',  true,       ...
-                        'select_test',true);
+% set default params
+defaults.regressor = '';
+defaults.iter_cell = cell(1, 4);
+defaults.sweep_cell = cell(1, 4);
+defaults.overwrite = true;
+params = propval(varargin, defaults, 'strict', false);
 
-pat1 = getobj(subj, 'pat', params.trainpatname);
-pat2 = getobj(subj, 'pat', params.testpatname);
-if isempty(pat1) | isempty(pat2)
-  error('Pattern missing.')
+if isempty(params.regressor)
+  error('You must specify a regressor in params.')
 end
 
-if ~exist('res_dir', 'var')
-  res_dir = get_pat_dir(pat2, 'patclass');
-end
-
-rand('twister',sum(100*clock))
+% get the pat objects
+train_pat = getobj(subj, 'pat', train_pat_name);
+test_pat = getobj(subj, 'pat', test_pat_name);
 
 % set where the results will be saved
-filename = sprintf('%s_%s_%s.mat', pat2.name, pc_name, pat2.source);
-pc_file = fullfile(res_dir, filename);
+if ~exist('res_dir', 'var') || isempty(res_dir)
+  res_dir = get_pat_dir(test_pat, 'stat');
+end
+stat_file = fullfile(res_dir, objfilename(train_pat.name, stat_name, ...
+                                          train_pat.source));
 
 % check the output file
-if ~params.overwrite && exist(pc_file, 'file')
+if ~params.overwrite && exist(stat_file, 'file')
   return
 end
 
-% initialize the pc object
-pc = init_pc(pc_name, pc_file, params);
-
-% get the training pattern (assumed to have only one time bin)
-trainpatall = load_pattern(pat1, params);
-events = get_mat(pat1.dim.ev);
-if ndims(trainpatall)>2
-  % make into obsXvars matrix
-  patsize = size(trainpatall);
-  trainpatall = reshape(trainpatall, [patsize(1) prod(patsize(2:end))]);
+if isstruct(params.iter_cell)
+  % make bins using the train pattern (shouldn't matter which we use)
+  [temp, bins] = patBins(train_pat, params.iter_cell);
+  params.iter_cell(~isempty(bins)) = bins(~isempty(bins));
+end
+if isstruct(params.sweep_cell)
+  % make bins from the test pattern
+  [temp, bins] = patBins(test_pat, params.sweep_cell);
+  params.sweep_cell(~isempty(bins)) = bins(~isempty(bins));
 end
 
-% replace bad observations with the mean for that var
-trainpatall = remove_nans(trainpatall);
-trainbadvar = find(all(isnan(trainpatall)));
+% one can save extra information in params, like the set of
+% groupnames that were used to make a set of channel groups.
+stat = init_stat(stat_name, stat_file, train_pat.source, params);
 
-% get the training regressor
-trainreg.vec = make_event_bins(events, params.regressor);
-trainreg.vals = unique(trainreg.vec);
+% get events for both patterns
+train_events = get_dim(train_pat.dim, 'ev');
+test_events = get_dim(test_pat.dim, 'ev');
 
-% get testing pattern
-testpatall = load_pattern(pat2, params);
-events = get_mat(pat2.dim.ev);
+% the correct answers for classification
+train_targs = create_targets(train_events, params.regressor);
+test_targs = create_targets(test_events, params.regressor);
 
-% get the testing regressor
-testreg.vec = make_event_bins(events, params.regressor);
-testreg.vals = unique(testreg.vec);
+% load the patterns themselves
+train_pattern = get_mat(train_pat);
+test_pattern = get_mat(test_pat);
 
-if params.scramble
-  trainreg.vec = trainreg.vec(randperm(length(trainreg.vec)));
-  testreg.vec = testreg.vec(randperm(length(testreg.vec)));
+% the outer level of slicing
+res.iterations = apply_by_group(@sweep_wrapper, ...
+                                {train_pattern, test_pattern}, ...
+                                params.iter_cell, ...
+                                {train_targs, test_targs, params}, ...
+                                'uniform_output', false);
+
+% this unraveling seems to work for fsweep and tsweep
+res = unravel_res(res);
+
+% save the results to disk
+save(stat.file, 'res');
+
+% add the stat object to the output pat object
+subj = setobj(subj, 'pat', test_pat_name, 'stat', stat);
+
+function res = sweep_wrapper(train_pattern, test_pattern, ...
+                             train_targs, test_targs, params);
+% SWEEP_WRAPPER
+%
+%
+
+% the inner level of sweeping
+res = apply_by_group(@traintest, {test_pattern}, ...
+                     params.sweep_cell, ...
+                     {train_pattern, test_targs, train_targs, params}, ...
+                     'uniform_output', false);
+
+
+function res = unravel_res(res)
+%UNRAVEL_RES   Reformat res to be a structure array.
+%
+%  res = unravel_res(res)
+
+N_DIMS = 4;
+
+% get size of outer cell array and inner cell arrays
+outer_loop_size = size(res.iterations);
+inner_loop_size = size(res.iterations{1});
+
+% pad if necessary
+if length(outer_loop_size) < N_DIMS
+  outer_loop_size(end+1:N_DIMS) = 1;
+end
+if length(inner_loop_size) < N_DIMS
+  inner_loop_size(end+1:N_DIMS) = 1;
 end
 
-fprintf('running %s classifier...', params.classifier)
-%nTests = size(testpatall,3);
-%nObs = size(testpatall,1);
-%nCats = length(testreg.vals);
+% initialize the output
+f = fieldnames(res.iterations{1}{1});
+s = cell2struct(cell(1, length(f)), f, 2);
+temp = repmat(s, [outer_loop_size inner_loop_size]);
 
-[nObs, nCats, nTime, nFreq] = size(testpatall);
-
-% initialize
-pcorr = NaN(nTime, nFreq);
-class = NaN(nObs, nTime, nFreq);
-posterior = NaN(nObs, nCats, nTime, nFreq);
-%{
-pcorr = NaN(1,nTests);
-class = NaN(nTests,nObs);
-posterior = NaN(nTests,nObs,nCats);
-%}
-fprintf('\nPercent Correct:\n')
-
-% step through time bins of the test pattern
-for t=1:nTime
-  for f=1:nFreq
-  %fprintf('%s:\t', pat2.dim.time(t).label)
-
-  testpat = testpatall(:,:,t,f);
-  if ndims(testpat)>2
-    % make into obsXvars matrix
-    patsize = size(testpat);
-    testpat = reshape(testpat, [patsize(1) prod(patsize(2:end))]);
+% unravel
+outer_sub = cell(1, N_DIMS);
+inner_sub = cell(1, N_DIMS);
+for i=1:prod(outer_loop_size)
+  for j=1:prod(inner_loop_size)
+    [outer_sub{:}] = ind2sub(outer_loop_size, i);
+    [inner_sub{:}] = ind2sub(inner_loop_size, j);
+    temp(outer_sub{:}, inner_sub{:}) = res.iterations{i}{j};
   end
-  testpat = remove_nans(testpat);
-  testbadvar = find(all(isnan(testpat)));
-
-  % check if PCA was done on the training pattern (will bad vars crash this?)
-  if isfield(pat1.dim,'coeff') && ~isempty(pat1.dim.coeff)
-    %load(pat1.dim.coeff);
-    % apply the same transformation to the test pattern
-
-  end
-
-  trainpat = trainpatall;
-
-  % remove variables that were all NaNs for either train or test
-  toRemove = union(trainbadvar,testbadvar);
-  trainpat(:,toRemove) = [];
-  testpat(:,toRemove) = [];
-
-  try
-    % run classification algorithms
-    %{
-    [class(t,:),err,posterior(t,:,:)] = run_classifier(trainpat,trainreg.vec,testpat,testreg.vec,params.classifier,params);
-    %}
-    [class(:,t,f), err, posterior(:,:,t,f)] = run_classifier(trainpat, ...
-                                                             trainreg.vec, ...
-                                                             testpat, ...
-                                                             testreg.vec, ...
-                                                             params.classifier, ...
-                                                             params);
-  catch
-    warning('Error in run_classifier.')
-    continue
-  end
-
-  % check the performance
-  pcorr(t,f) = sum(testreg.vec==class(:,t,f))/length(testreg.vec);
-  fprintf('%.4f\n', pcorr(t,f))
 end
-end
-%meanpcorr = nanmean(pcorr);
+res.iterations = temp;
 
-% for cross-fn consistency, saving testreg.vec as testreg
-testreg = testreg.vec;
-
-%save(pc.file, 'class', 'pcorr', 'meanpcorr', 'posterior','testreg');
-save(pc.file, 'class', 'pcorr', 'posterior','testreg');
-
-% add pc to pat2
-pat2 = setobj(pat2, 'pc', pc);
-subj = setobj(subj, 'pat', pat2);
