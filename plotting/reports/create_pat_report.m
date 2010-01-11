@@ -134,6 +134,12 @@ function [y,dim_order] = fix_dim(x,dim1,n_dims)
   % non-singleton dimensions, then singleton
   dim_order = [dim1 d sing];
 
+  if max(dim_order) > length(dim_order)
+    all_dim = 1:max(dim_order);
+    to_add = all_dim(~ismember(all_dim, dim_order));
+    dim_order = [dim_order to_add];
+  end
+  
   y = permute(x, dim_order);
 %endfunction
 
