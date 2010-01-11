@@ -83,17 +83,14 @@ params = structDefaults(params, ...
                         'alpha_range',          [0.005 0.05], ...
                         'correctm',         '');
 
-% load the pattern
-pattern = load_pattern(pat);
-
 if ~isempty(params.event_bins)
   % create bins using inputs accepted by make_event_bins
   p = [];
-  p.field = params.event_bins;
-  [pat, bins] = patBins(pat, p);
-  
-  % do the averaging within each bin
-  pattern = patMeans(pattern, bins);
+  p.eventbins = params.event_bins;
+  p.save_mats = false;
+  pattern = get_mat(modify_pattern(pat, p));
+else
+  pattern = get_mat(pat);
 end
 
 if ~isempty(params.stat_name)

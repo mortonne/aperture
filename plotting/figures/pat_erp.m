@@ -96,15 +96,14 @@ params = structDefaults(params, ...
                         'correctm',         '',       ...
                         'fill_color',       [.8 .8 .8]);
 
-% load the pattern
-pattern = get_mat(pat);
-
 if ~isempty(params.event_bins)
   % create bins using inputs accepted by make_event_bins
-  [pat_mod, bins] = patBins(pat, struct('eventbins', params.event_bins));
-  
-  % do the averaging within each bin
-  pattern = patMeans(pattern, bins);
+  p = [];
+  p.eventbins = params.event_bins;
+  p.save_mats = false;
+  pattern = get_mat(modify_pattern(pat, p));
+else
+  pattern = get_mat(pat);
 end
 
 % set axis information
