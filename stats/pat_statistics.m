@@ -47,22 +47,25 @@ function pat = pat_statistics(pat,event_bins,fcn_handle,fcn_inputs,stat_name,res
 %   pat = pat_statistics(pat, {'recalled'}, @run_sig_test, {'anovan'});
 
 % input checks
-if ~exist('pat','var')
+if ~exist('pat', 'var')
   error('You must pass a pat object.')
-elseif ~exist('event_bins','var')
+elseif ~exist('event_bins', 'var')
   error('You must pass a cell array of event bins.')
-elseif ~exist('fcn_handle','var')
+elseif ~exist('fcn_handle', 'var')
   fcn_handle = @run_sig_test;
 end
-if ~exist('fcn_inputs','var')
+if ~iscell(event_bins)
+  event_bins = {event_bins};
+end
+if ~exist('fcn_inputs', 'var')
   fcn_inputs = {};
 end
-if ~exist('stat_name','var')
+if ~exist('stat_name', 'var')
   stat_name = 'stat';
 end
-if ~exist('res_dir','var')
+if ~exist('res_dir', 'var')
   res_dir = get_pat_dir(pat, 'stats');
-elseif ~exist(res_dir,'dir')
+elseif ~exist(res_dir, 'dir')
   mkdir(res_dir);
 end
 
@@ -79,8 +82,7 @@ for i=1:length(event_bins)
 end
 
 % set the path to the MAT-file that will hold the results
-filename = sprintf('%s_%s.mat', pat.name, stat_name);
-stat_file = fullfile(res_dir, filename);
+stat_file = fullfile(res_dir, objfilename('stat', stat_name, pat.source));
 
 % initialize the stat object
 params.event_bins = event_bins;
@@ -127,18 +129,17 @@ for c=1:psize(2)
       X = squeeze(pattern(:,1,t,f));
       [samp_p, samp_statistic] = fcn_handle(X, group, fcn_inputs{:});
 
-      %{
       % check if we can determine the sign of the effect
-      temp = fix_regressors(group);
-      for i=1:length(temp)
-        reg = temp{i}(~isnan(temp{i}));
-        vals = unique(reg);
-        if length(vals)==2
-          samp_p(i) = samp_p(i)*sign(nanmean(X(reg==vals(2))) - nanmean(X(reg==vals(1))));
+      if ~any(samp_p < 0)
+        temp = fix_regressors(group);
+        for i=1:length(temp)
+          reg = temp{i}(~isnan(temp{i}));
+          vals = unique(reg);
+          if length(vals)==2
+            samp_p(i) = samp_p(i)*sign(nanmean(X(reg==vals(2))) - nanmean(X(reg==vals(1))));
+          end
         end
-        keyboard
       end
-      %}
       
       % add to the larger matrices
       %p(:,c,t,f) = samp_p;
