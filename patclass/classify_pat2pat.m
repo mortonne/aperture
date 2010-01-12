@@ -1,10 +1,6 @@
-function subj = classify_pat2pat_sweep(subj, train_pat_name, ...
-                                       test_pat_name, stat_name, ...
-				       res_dir, varargin)
-%CLASSIFY_PAT2PAT_SWEEP   Train a classifier on one pattern and test on another.
-%
-%  subj = classify_pat2pat_sweep(subj, train_pat_name,
-%                                test_pat_name, stat_name, res_dir, ...)
+function subj = classify_pat2pat(subj, train_pat_name, test_pat_name, ...
+                                 stat_name, varargin)
+%CLASSIFY_PAT2PAT   Train a classifier on one pattern and test on another.
 %
 %  Train a classifier on a pattern and test on another pattern. For each
 %  dimension of the patterns there are possibilities:
@@ -18,8 +14,21 @@ function subj = classify_pat2pat_sweep(subj, train_pat_name, ...
 %      as features in the patterns. The sizes of the patterns along
 %      the dimension must match.
 %  params.iter_cell specifies how to iterate over both the train and
-%  test patterns. If params.sweep_cell is specified, additional
-%  partitioning will be done to the test pattern.
+%  test patterns.
+%
+%  If params.sweep_cell is specified, additional partitioning will be
+%  done to the test pattern.  This will only work in cases where a
+%  dimension is singleton in the training pattern, and you want to sweep
+%  over that dimension in the test pattern.  You cannot, for example,
+%  iterate over the time bins of the training pattern, and for each of
+%  those training time bins, sweep over all testing time bins.  You must
+%  pick one training time bin (or average over multiple bins) first,
+%  and modify the training pattern before passing it to this function so
+%  there is only one training time bin.  Then you can train the
+%  classifier on the training pattern, and test on all the time bins of
+%  the test pattern.
+%
+%  subj = classify_pat2pat(subj, train_pat_name, test_pat_name, stat_name, ...)
 %
 %  INPUTS:
 %            subj:  a subject object.
@@ -32,10 +41,6 @@ function subj = classify_pat2pat_sweep(subj, train_pat_name, ...
 %
 %       stat_name:  name of the stat object that will be created to hold
 %                   results of the analysis.
-%
-%         res_dir:  directory where results will be saved.  If empty or
-%                   not specified, results will be saved in the
-%                   pattern's stats directory.
 %
 %  OUTPUTS:
 %            subj:  modified subject object with an added stat object
@@ -73,6 +78,9 @@ function subj = classify_pat2pat_sweep(subj, train_pat_name, ...
 %                  function(s). ({struct})
 %   overwrite    - if true, if the stat file already exists, it will be
 %                  overwritten. (true)
+%   res_dir      - directory in which to save the classification
+%                  results. Default is the test pattern's stats
+%                  directory
 
 % input checks
 if ~exist('subj', 'var') || ~isstruct(subj)
@@ -86,27 +94,25 @@ if ~exist('stat_name', 'var')
   stat_name = 'patclass';
 end
 
+% get the pat objects
+train_pat = getobj(subj, 'pat', train_pat_name);
+test_pat = getobj(subj, 'pat', test_pat_name);
+
 % set default params
 defaults.regressor = '';
 defaults.iter_cell = cell(1, 4);
 defaults.sweep_cell = cell(1, 4);
 defaults.overwrite = true;
+defaults.res_dir = get_pat_dir(test_pat, 'stat');
 params = propval(varargin, defaults, 'strict', false);
 
 if isempty(params.regressor)
   error('You must specify a regressor in params.')
 end
 
-% get the pat objects
-train_pat = getobj(subj, 'pat', train_pat_name);
-test_pat = getobj(subj, 'pat', test_pat_name);
-
 % set where the results will be saved
-if ~exist('res_dir', 'var') || isempty(res_dir)
-  res_dir = get_pat_dir(test_pat, 'stat');
-end
-stat_file = fullfile(res_dir, objfilename(train_pat.name, stat_name, ...
-                                          train_pat.source));
+stat_file = fullfile(params.res_dir, objfilename(train_pat.name, stat_name, ...
+                                                 train_pat.source));
 
 % check the output file
 if ~params.overwrite && exist(stat_file, 'file')
@@ -203,5 +209,33 @@ for i=1:prod(outer_loop_size)
     temp(outer_sub{:}, inner_sub{:}) = res.iterations{i}{j};
   end
 end
+
+% move inner to outer if we did any sweeping
+new_outer = NaN(1, N_DIMS);
+new_inner = NaN(1, N_DIMS);
+for i=1:N_DIMS
+  % size of inner and outer loops
+  out = outer_loop_size(i);
+  in = inner_loop_size(i);
+  
+  % index in the struct array
+  out_index = i;
+  in_index = i + N_DIMS;
+  
+  if out > 1 && in > 1
+    error(['Unexpected: both outer and inner size of dim %d is ' ...
+           'non-singleton.'], i)
+  elseif out > 1 || (out == 1 && in == 1)
+    % outer is non-singleton, inner is not; don't need to flip
+    new_outer(i) = out_index;
+    new_inner(i) = in_index;
+  elseif in > 1
+    % inner is non-singleton; need to flip with corresponding outer
+    new_outer(i) = in_index;
+    new_inner(i) = out_index;
+  end
+end
+temp = permute(temp, [new_outer new_inner]);
+
 res.iterations = temp;
 
