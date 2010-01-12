@@ -10,6 +10,7 @@
   * For right now, throwing in useful functions to whatever folder seems to fit. Should there be a top-level fork between eeg_ana and other toolbox functions to facilitate updates?  How do other software projects handle this?
 
 == General Issues ==
+ * move to having res_dir be a parameter, and not a main argument. This will often make params the last argument and open up easy support for parameter, value pair-style input of params.  Also will make it clear when there is an obvious default res_dir, and when the user should specify a res_dir.
  * improve consistency:
   * naming conventions - getobj vs. get_mat
   * input - getobjallsubj takes "path" while getobj takes varargin
