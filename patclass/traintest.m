@@ -29,6 +29,9 @@ function res = traintest(testpattern, trainpattern, testtargets, ...
 
 if isempty(testpattern)
   res.perf = NaN;
+  res.train_idx = [];
+  res.test_idx = [];
+  res.unused_idx = [];
   res.unknown_idx = [];
   res.targs = NaN;
   res.acts = NaN;
@@ -120,9 +123,10 @@ for p=1:n_perfs
 end
 
 % save data from this iteration in MVPA style
-%res.train_idx = train_idx;
-%res.test_idx = test_idx;
-%res.unused_idx = unused_idx;
+n_events = size(testpattern, 1);
+res.train_idx = false(n_events, 1);
+res.test_idx = true(n_events, 1);
+res.unused_idx = false(n_events, 1);
 res.unknown_idx = [];
 res.targs = testtargets;
 res.acts = acts;
