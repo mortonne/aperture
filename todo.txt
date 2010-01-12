@@ -45,12 +45,18 @@
 * support for making brain plots
 
 == Stats ==
- * re-evaluate design of statistics function.
+* re-evaluate design of statistics function.
   * compatability with apply_by_slice?
   * monolithic function with many params/possible outputs, or a function for each type of stat test?
   * what is the proper format for stat results?  What about n-way tests, interactions?  One object, or one for each effect?
   * fix sign test bug
- * support for stat printing in exp_disp
+ * proposal for compatibility with plotting functions
+  * move multiple comparisons correction to function that operates on stat objects
+  * save mask in an "h" variable
+  * plotting function loads stat, uses "h" and/or "statistic"
+  * 1) plot pattern 2) plot thresholded pattern 3) plot statistic 4) plot thresholded statistic
+  * t will already have sign, need to add sign to F
+* support for stat printing in exp_disp
  * bootstrapping/summed z
  * RMAOV
  * permutation test on subject significance
