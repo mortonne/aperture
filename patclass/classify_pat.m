@@ -78,7 +78,7 @@ stat = init_stat(stat_name, stat_file, pat.name, params);
 
 % load the pattern and corresponding events
 pattern = get_mat(pat);
-events = get_dim(pat, 'ev');
+events = get_dim(pat.dim, 'ev');
 
 % get the regressor to use for classification
 targets = create_targets(events, params.regressor);
