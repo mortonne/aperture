@@ -46,7 +46,7 @@ end
 
 % default params
 defaults.f_train = @train_logreg;
-defaults.train_args = struct;
+defaults.train_args = struct('penalty', 10);
 defaults.f_test = @test_logreg;
 defaults.f_perfmet = {@perfmet_maxclass};
 [params, unused] = propval(varargin, defaults);
@@ -92,7 +92,8 @@ for i=1:n_iter
   test_idx = selector == sel_vals(i);
   
   % train
-  scratchpad = f_train(pattern(train_idx,:)', targets(train_idx,:)', params.train_args{:});
+  scratchpad = f_train(pattern(train_idx,:)', targets(train_idx,:)', ...
+                       params.train_args{:});
 
   % test
   test_targets = targets(test_idx,:)';
