@@ -14,8 +14,8 @@ function pat = grand_average(subj, pat_name, varargin)
 %
 %  PARAMS:
 %   save_mat - if true, the new pattern will be saved to disk. (true)
-%   res_dir  - directory to save the new pattern. (same as subj(1)'s
-%              pattern's res_dir)
+%   res_dir  - directory to save the new pattern. Default is subj(1)'s
+%              pattern's res_dir
 
 % input checks
 if ~exist('pat_name', 'var')
