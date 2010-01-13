@@ -7,8 +7,7 @@ function [obj, ind] = getobj(s, varargin)
 %
 %         f:  name of a subfield of s containing a list of objects.
 %
-%  obj_name:  name of the object to get.  If not specified, the last
-%             object added will be returned.
+%  obj_name:  name of the object to get.
 %
 %  OUTPUTS:
 %       obj:  the specified object.
@@ -35,7 +34,7 @@ if ~exist('s','var') || ~isstruct(s)
   error('You must pass a structure.')
 elseif length(s) > 1
   error('Structure must be of length 1.')
-elseif length(varargin)<2
+elseif length(varargin) < 2
   error('Not enough input arguments.')
 end
 
@@ -57,27 +56,36 @@ objs = s.(f);
 % check the objects
 if ~isstruct(objs)
   error('Field "%s" does not contain a structure.', f);
-elseif any(arrayfun(@(x)(isempty(get_obj_name(x))), s.(f)))
-  error('Structure "%s" does not have an identifier field.', f)
 end
 
-% if name not specified, just get the last object
-if isempty(obj_name)
-  obj = objs(end);
-  ind = length(objs);
-  return
+% search for the matching object
+ind = [];
+for i=1:length(objs)
+  if strcmp(obj_name, get_obj_name(objs(i)))
+    ind = i;
+    break
+  end
 end
-
-% get the identifier field
-names = arrayfun(@get_obj_name, objs, 'UniformOutput', false);
-[tf, loc] = ismember(obj_name, names);
-ind = nonzeros(loc);
 
 if isempty(ind)
   error('Object %s not found.', obj_name)
-elseif length(ind)>1
-  error('More than one object found matching %s.', obj_name)
 end
+
+% % get the identifier field
+% names = arrayfun(@get_obj_name, objs, 'UniformOutput', false);
+% if all(cellfun(@isempty, names))
+%   error('Structure "%s" does not have an identifier field.', f)
+% end
+
+% % find the object with the name
+% [tf, loc] = ismember(obj_name, names);
+% ind = nonzeros(loc);
+
+% if isempty(ind)
+%   error('Object %s not found.', obj_name)
+% elseif length(ind) > 1
+%   error('More than one object found matching %s.', obj_name)
+% end
 
 % get the object
 obj = objs(ind);

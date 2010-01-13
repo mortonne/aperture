@@ -16,15 +16,12 @@ function D = patsize(dim_info, dim)
 %         D:  an array with the size of the requested dimension(s).
 
 % input checks
-if ~exist('dim_info','var') || ~isstruct(dim_info)
+if ~exist('dim_info', 'var') || ~isstruct(dim_info)
   error('You must pass a dim structure.')
-elseif ~all(ismember({'ev', 'chan', 'time', 'freq'}, ...
-                     fieldnames(dim_info)))
-  error('dim_info must have "ev", "chan", "time", and "freq" fields.')
 elseif ~isfield(dim_info.ev, 'len') || isempty(dim_info.ev.len)
   error('Events dimension length is undefined.')
 end
-if ~exist('dim','var')
+if ~exist('dim', 'var')
   dim = [];
 elseif ~(ischar(dim) || isscalar(dim))
   error('Dim must only specify one dimension.')
