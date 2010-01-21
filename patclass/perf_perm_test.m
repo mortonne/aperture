@@ -57,39 +57,45 @@ stat = init_stat(stat_name, stat_file, source, params);
 save(stat.file, 'p')
 
 function p = perm_test(res)
-  % [subj X iter X chan X time X freq]
-  res = permute(res, [5 1 2 3 4]);
+  % res: [iter X chan X time X freq X subj]
+  % chan, time, and freq dimensions are singleton
+  % c:   [subj X iter X field]
+  c = permute(struct2cell(res), [6 2 1 3 4 5]);
+  f = fieldnames(res);
+  
+  % get actual performance as [subj X iter]
+  perf = cell2num(c(:,:,strcmp('perf', f)));
+  
+  % get a structure of perfmets for each subject and iteration
+  all_perfmet_cell = cell2num(c(:,:,strcmp('perfmet', f)));
+  perfmet = cell2num(all_perfmet_cell); % assuming one perfmet
 
-  n_subj = size(res,1);
-  n_iter = size(res,2);
-  
-  % get actual performance [subj X 1]
-  perf = reshape([res.perf], [n_subj n_iter]);
-  perf = nanmean(nanmean(perf));
-  
-  % get permuted performance
-  temp = [res.perfmet];
-  temp = [temp{:}];
-  if n_iter==1
-    % get rid of NaN structs
-    % fails for multiple iterations
-    for i=1:length(temp)
-      rem_these(i) = isnan(temp(i).perm_perf(1));
+  % get permuted performance as [subj X iter X perm]
+  n_subj = size(perfmet, 1);
+  n_iter = size(perfmet, 2);
+  n_perm = length(perfmet(1).perm_perf);
+  perm_perf = NaN(n_subj, n_iter, n_perm);
+  for i=1:n_subj
+    for j=1:n_iter
+      % performance values for all permutations
+      % may be NaN scalar if classification was not run for this bin
+      x = perfmet(i,j).perm_perf;
+      
+      if ~isnan(x)
+        perm_perf(i,j,:) = x;
+      end
     end
-    temp(rem_these) = [];
-    n_subj = size(temp,2);
   end
-  n_perms = length(temp(1).perm_perf);
-  temp = reshape([temp.perm_perf], [n_perms, n_subj n_iter]);
-
-  % average over iterations and subjects
-  perm_perf = nanmean(nanmean(temp, 3), 2);
-
-  val = sort(perm_perf);
   
-  p = (n_perms - nnz(perf > val)) / n_perms;
+  % average over subjects and iterations
+  obs_perf = nanmean(nanmean(perf));
+  rand_perf = squeeze(nanmean(nanmean(perm_perf, 1), 2));
+
+  % get the fraction of random performance values greater than or
+  % equal to the observed value
+  p = nnz(rand_perf >= obs_perf) / n_perm;
   if p==0
-    p = 1 / n_perms;
+    p = 1 / n_perm;
   end
 %endfunction
 
