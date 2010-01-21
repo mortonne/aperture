@@ -79,7 +79,7 @@ for s=1:length(exp.subj)
   if ~exist(jacksheet,'file')
     error('jacksheet not found: %s\n', jacksheet)
   end
-  c = textscan(fopen(jacksheet,'r'), '%d%s');
+  c = textscan(fopen(jacksheet,'r'), '%d%s%*[^\n]');
   [channels, regions] = deal(c{:});
   
   % get a list of "good" channel numbers
