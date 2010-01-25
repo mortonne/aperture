@@ -35,6 +35,7 @@
 * ANOVA feature selection - see if there is anything we can take from MVPA
 
 == Patterns ==
+ * full support for ':' and 'iter' options in patBins
  * deal with modify_pattern's feature bloat; can gut modify_pattern, and use it as just an interface to deal with file management. Then other scripts can call modify_pattern, passing in a function handle of the form pat = function(pat, ...)
  * import advances in EOG artifact detection (individual grid searches)
  * support for continuous patterns - one event, many time bins?  How is events information stored?
