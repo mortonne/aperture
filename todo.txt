@@ -39,24 +39,31 @@
  * import advances in EOG artifact detection (individual grid searches)
  * support for continuous patterns - one event, many time bins?  How is events information stored?
  * generalize dimension objects, give option for any dimension to be saved to disk to free up memory (need to expand use of get_dim)
+ * move to using EEGLAB-style chan structs
+ * change "MSvals" and "vals" fields to "range". Then the only difference between time and freq dimensions will be the default labels
+ * also change "avg" field to "center"
 
 == Plotting ==
-* consider beefing up plot_events.  it's unique and potentially very useful.
-* support for making brain plots
+ * consider beefing up plot_events.  it's unique and potentially very useful.
+ * support for making brain plots
 
 == Stats ==
-* re-evaluate design of statistics function.
-  * compatability with apply_by_slice?
-  * monolithic function with many params/possible outputs, or a function for each type of stat test?
-  * what is the proper format for stat results?  What about n-way tests, interactions?  One object, or one for each effect?
-  * fix sign test bug
+ * should there be a monolithic function with many params/possible outputs, or a function for each type of stat test?
+  * multiple functions, with standard stat variables - easier to understand, write new stats
+ * what is the proper format for stat results?  What about n-way tests, interactions?
+  * can make one stat object for each effect; each stat object has overall stats of test, but standard vars (p, statistic, thresh, h) are for the effect only.
+  * this moves effects labels to a string identifier, rather than an easy-to-confuse index identifier
+  * ANOVA function has job of generating default labels
  * proposal for compatibility with plotting functions
-  * move multiple comparisons correction to function that operates on stat objects
-  * save mask in an "h" variable
-  * plotting function loads stat, uses "h" and/or "statistic"
-  * 1) plot pattern 2) plot thresholded pattern 3) plot statistic 4) plot thresholded statistic
-  * t will already have sign, need to add sign to F
-* support for stat printing in exp_disp
+  * move multiple comparisons correction, ect. to functions that operates on stat objects
+  * standard variable names: p, statistic, thresh, h
+  * can we have some sort of setter function for standard stat variables, or just rely on help pages to instruct user on creating a compatible stat object?
+  * thresh may be scalar or matrix (allows for levels of multiple comparisons correction within pattern)
+  * 1) plot pattern 2) plot pattern with markers 3) plot statistic 4) plot thresholded statistic
+  * color map is simply statistic, with values below thresh in white
+  * translating p to z, setting z* can be done outside of plotting function
+* settle "stat" vs. "stats" controversy
+ * support for stat printing in exp_disp
  * bootstrapping/summed z
  * RMAOV
  * permutation test on subject significance
