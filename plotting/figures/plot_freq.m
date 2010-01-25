@@ -130,8 +130,22 @@ set(gca, 'YLim',y_lim)
 p2 = 2.^(0:10);
 
 if ~isempty(freq)
-  inds = p2>=min(freq) & p2<=max(freq);
-  xp2 = p2(inds);
+  % find powers of two between plotted frequencies
+  minf = min(freq);
+  maxf = max(freq);
+  ticks = find(minf < p2 & p2 < maxf);
+  
+  % add powers of two that are close enough
+  low_midpoint = mean([p2(ticks(1)-1) p2(ticks(1))]);
+  if ticks(1)~=1 && minf < low_midpoint
+    ticks = [ticks(1) - 1 ticks];
+  end
+  high_midpoint = mean([p2(ticks(end)+1) p2(ticks(end))]);
+  if ticks(end)~=length(p2) && high_midpoint < maxf
+    ticks = [ticks ticks(end) + 1];
+  end
+  
+  xp2 = p2(ticks);
   xlabel(sprintf('Frequency (%s)', params.freq_units))
 else
   xp2 = [];
