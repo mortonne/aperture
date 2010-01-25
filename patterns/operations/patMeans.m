@@ -87,14 +87,14 @@ for i=1:length(bins)
 
     % do the average along dimension i
     x = pattern(bin_ind{:});
-    if length(find(~isnan(x(:))))/numel(x) < min_samp
+    if ~isempty(min_samp) && nnz(~isnan(x)) / numel(x) < min_samp
       % leave this bin as NaNs
-      fprintf('rm %d,%d ', i,j)
+      fprintf('rm %d:%d ', i,j)
       continue
     end
 
     avg = nanmean(x,i);
-    if all(isnan(avg(:)))
+    if nnz(isnan(avg))==numel(avg)
       warning('eeg_ana:patBinAllNaNs', 'Bin %d of dimension %d contains all NaNs.', j, i)
     end
     
