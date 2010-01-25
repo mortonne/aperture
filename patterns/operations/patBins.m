@@ -1,42 +1,58 @@
-function [pat, bins] = patBins(pat, params)
+function [pat, bins] = patBins(pat, varargin)
 %PATBINS   Apply bins to dimensions of a pat object.
 %
-%  [pat, bins] = patBins(pat, params)
+%  [pat, bins] = patBins(pat, ...)
 %
-%  Prepares a pattern for binning along one or more dimensions. The dim
-%  field is updated, but the pattern is not modified. Use patMeans to
-%  carry out the averaging within each bin.
+%  Bin dimensions of a pattern. Determines the indices of the pattern
+%  for each bin, and updates the dimension information in the pat
+%  object. The pattern matrix is not modified.
 %
 %  INPUTS:
 %      pat:  a pattern object.
 %
-%   params:  structure specifying options for binning the pattern.
-%            See below for options.
-%
 %  OUTPUTS:
 %      pat:  the modified pattern object.
 %
-%     bins:  a cell array with one cell for each dimension of the pattern.
-%            Each cell contains a cell array with one cell for each bin,
-%            which contains the indices in the pattern that correspond to
-%            the bin.
+%     bins:  a cell array with one cell for each dimension of the
+%            pattern. Each cell contains a cell array with one cell for
+%            each bin, which contains the indices in the pattern that
+%            correspond to the bin. If a dimension is not being binned,
+%            the cell for that dimension will be empty.
 %
 %  PARAMS:
-%   eventbins      - cell array specifying event bins. Each cell is input
-%                    to make_event_bins. For backwards compatibility, this
-%                    parameter can also be called 'field'
+%  Options may be specified using parameter, value pairs or a structure.
+%  Default values are shown in parentheses.
+%   eventbins      - cell array specifying event bins. Each cell is
+%                    input to make_event_bins to create indices. ([])
 %   eventbinlabels - cell array of strings giving a label for each event
-%                    bin
-%   chanbins       - cell array specifying channel bins. Each cell can be
-%                    a vector of channel numbers, a cell array of regions,
-%                    or a string to be passed into filterStruct
-%   chanbinlabels  - cell array of string labels for each channel bin
+%                    bin. ({})
+%   chanbins       - cell array specifying channel bins. Each cell can
+%                    be a vector of channel numbers, a cell array of
+%                    regions, or a string to be passed into
+%                    filterStruct. ([])
+%   chanbinlabels  - cell array of string labels for each channel bin.
+%                    ({})
 %   MSbins         - [nbins X 2] array specifying time bins. MSbins(i,:)
-%                    gives the range of millisecond values for bin i
-%   MSbinlabels    - cell array of string labels for each time bin
-%   freqbins       - [nbins X 2] array specifying frequency bins. 
-%                    freqbins(i,:) gives the range of frequencies for bin i
-%   freqbinlabels  - cell array of string labels for each frequency bin
+%                    gives the range of millisecond values for bin i.
+%                    ([])
+%   MSbinlabels    - cell array of string labels for each time bin. ({})
+%   freqbins       - [nbins X 2] array specifying frequency bins.
+%                    freqbins(i,:) gives the range of frequencies for
+%                    bin i. ([])
+%   freqbinlabels  - cell array of string labels for each frequency bin.
+%                    ({})
+%
+%  EXAMPLE:
+%   sample pattern with three sessions; want to get average for each
+%   session and average over 0-1000 ms
+%   >> patsize(pat.dim)
+%      253   129    90    18
+%   >> [pat, bins] = patBins(pat, 'eventbins', 'session', ...
+%                                 'MSbins', [0 1000]);
+%   >> patsize(pat.dim)
+%      3     129    1     18
+%   >> bins
+%      {1x3 cell}     []    {1x1 cell}     []
 %
 %  See also make_bins, patMeans, modify_pattern, patFilt.
 
@@ -44,17 +60,8 @@ function [pat, bins] = patBins(pat, params)
 if ~exist('pat', 'var') || ~isstruct(pat)
   error('You must pass a pattern object.')
 end
-if ~exist('params', 'var')
-  params = struct;
-end
 if ~isfield(pat.dim.ev, 'modified')
   pat.dim.ev.modified = false;
-end
-
-% backwards compatibility
-if isfield(params, 'field')
-  params.eventbins = params.field;
-  params = rmfield(params, 'field');
 end
 
 % default parameters
@@ -67,10 +74,25 @@ defaults.MSbinlabels = {};
 defaults.freqbins = [];
 defaults.freqbinlabels = {};
 
-[params, unused] = propval(params, defaults);
+[params, unused] = propval(varargin, defaults);
 
 % initialize
 bins = cell(1, 4);
+
+% translate : indexes to bin format
+all_bin_fields = {'eventbins' 'chanbins' 'MSbins' 'freqbins'};
+for i=1:length(all_bin_fields)
+  bin_input = params.(all_bin_fields{i});
+  if ischar(bin_input) && ismember(bin_input, {':', 'iter'})
+    switch bin_input
+     case ':'
+      bins{i} = {1:patsize(pat.dim, i)};
+     case 'iter'
+      bins{i} = num2cell(1:patsize(pat.dim, i));
+    end
+  end      
+  params.(all_bin_fields{i}) = [];
+end
 
 % events
 if ~isempty(params.eventbins)
