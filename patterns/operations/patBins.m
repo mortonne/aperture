@@ -90,8 +90,8 @@ for i=1:length(all_bin_fields)
      case 'iter'
       bins{i} = num2cell(1:patsize(pat.dim, i));
     end
+    params.(all_bin_fields{i}) = [];
   end      
-  params.(all_bin_fields{i}) = [];
 end
 
 % events
