@@ -42,6 +42,12 @@ function [pat, bins] = patBins(pat, varargin)
 %   freqbinlabels  - cell array of string labels for each frequency bin.
 %                    ({})
 %
+%  All *bins fields may also be set to:
+%   ':'    - place all indices of the dimension in one bin
+%   'iter' - place each index in its own bin
+%  NOTE: THE ':' and 'iter' OPTIONS WILL NOT GROUP THE PAT OBJECT, ONLY
+%        THE BINS. Support for modifying the pat will be added later.
+%
 %  EXAMPLE:
 %   sample pattern with three sessions; want to get average for each
 %   session and average over 0-1000 ms
