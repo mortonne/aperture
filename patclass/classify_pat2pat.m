@@ -3,7 +3,7 @@ function subj = classify_pat2pat(subj, train_pat_name, test_pat_name, ...
 %CLASSIFY_PAT2PAT   Train a classifier on one pattern and test on another.
 %
 %  Train a classifier on a pattern and test on another pattern. For each
-%  dimension of the patterns there are possibilities:
+%  dimension of the patterns (except events) there are possibilities:
 %   1) iterate over all values, training and testing on each element.
 %      The sizes of the patterns along the dimension must match.
 %   2) same as (1), but iterate over groups, rather than individual
@@ -15,6 +15,11 @@ function subj = classify_pat2pat(subj, train_pat_name, test_pat_name, ...
 %      the dimension must match.
 %  params.iter_cell specifies how to iterate over both the train and
 %  test patterns.
+%
+%  All events must be passed in (i.e. no iterating or grouping), but
+%  the events dimension is included in iter_cell for consistency, i.e.
+%  the channels dimension is iter_cell{2}, and iter_cell{1} must always
+%  be empty.
 %
 %  If params.sweep_cell is specified, additional partitioning will be
 %  done to the test pattern.  This will only work in cases where a
@@ -121,13 +126,16 @@ end
 
 if isstruct(params.iter_cell)
   % make bins using the train pattern (shouldn't matter which we use)
-  [temp, bins] = patBins(train_pat, params.iter_cell);
-  params.iter_cell(~isempty(bins)) = bins(~isempty(bins));
+  [temp, params.iter_cell] = patBins(train_pat, params.iter_cell);
 end
 if isstruct(params.sweep_cell)
   % make bins from the test pattern
-  [temp, bins] = patBins(test_pat, params.sweep_cell);
-  params.sweep_cell(~isempty(bins)) = bins(~isempty(bins));
+  [temp, params.sweep_cell] = patBins(test_pat, params.sweep_cell);
+end
+
+% make sure user isn't trying to group events
+if ~isempty(params.iter_cell{1}) || ~isempty(params.sweep_cell{1})
+  error('Iterating and grouping is not supported for the events dimension.')
 end
 
 % one can save extra information in params, like the set of
