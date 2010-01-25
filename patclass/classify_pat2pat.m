@@ -45,7 +45,7 @@ function subj = classify_pat2pat(subj, train_pat_name, test_pat_name, ...
 %                   object.
 %
 %       stat_name:  name of the stat object that will be created to hold
-%                   results of the analysis.
+%                   results of the analysis. Default: 'patclass'
 %
 %  OUTPUTS:
 %            subj:  modified subject object with an added stat object
@@ -85,7 +85,9 @@ function subj = classify_pat2pat(subj, train_pat_name, test_pat_name, ...
 %                  overwritten. (true)
 %   res_dir      - directory in which to save the classification
 %                  results. Default is the test pattern's stats
-%                  directory
+%                  directory.
+%
+%  See also classify_pat.
 
 % input checks
 if ~exist('subj', 'var') || ~isstruct(subj)
@@ -108,7 +110,7 @@ defaults.regressor = '';
 defaults.iter_cell = cell(1, 4);
 defaults.sweep_cell = cell(1, 4);
 defaults.overwrite = true;
-defaults.res_dir = get_pat_dir(test_pat, 'stat');
+defaults.res_dir = get_pat_dir(test_pat, 'stats');
 params = propval(varargin, defaults, 'strict', false);
 
 if isempty(params.regressor)
@@ -124,6 +126,7 @@ if ~params.overwrite && exist(stat_file, 'file')
   return
 end
 
+% dynamic grouping
 if isstruct(params.iter_cell)
   % make bins using the train pattern (shouldn't matter which we use)
   [temp, params.iter_cell] = patBins(train_pat, params.iter_cell);
