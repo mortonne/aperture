@@ -20,7 +20,10 @@ end
 id_width = 5;
 id = sprintf('%%%ii) %%s', id_width);
 
-fprintf('''%s'' experiment\n\n', exp.experiment)
+fprintf('%-17s%s\n', 'Experiment name', exp.experiment)
+fprintf('%-17s%s\n', 'Filename', exp.file)
+fprintf('%-17s%s\n', 'Last Saved', exp.lastUpdate)
+fprintf('\n')
 
 % print each requested object type
 for i=1:length(obj_types)
