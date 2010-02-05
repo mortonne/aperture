@@ -19,17 +19,14 @@ function pat = diff_pattern(pat, varargin)
 %   chans     - [1 X 2] array of channel numbers. Difference will be
 %               chans(1) - chans(2).
 %   chanlabels - currently unsupported
-%   save_as   - string identifier to name the modified pattern. If
-%               empty, the name will not change. ('')
-%   overwrite - if true, existing patterns will be overwritten. (false
-%               if pattern is stored on disk, true if pattern is stored
-%               in workspace or if save_mats is false)
 %   save_mats - if true, and input mats are saved on disk, modified mats
 %               will be saved to disk. If false, the modified mats will
 %               be stored in the workspace, and can subsequently be
-%               moved to disk using move_obj_to_hd. This option is
-%               useful if you want to make a quick change without
-%               modifying a saved pattern. (true)
+%               moved to disk using move_obj_to_hd. (true)
+%   overwrite - if true, existing patterns on disk will be overwritten.
+%               (false)
+%   save_as   - string identifier to name the modified pattern. If
+%               empty, the name will not change. ('')
 %   res_dir   - directory in which to save the modified pattern and
 %               events, if applicable. Default is a directory named
 %               pat_name on the same level as the input pat.
@@ -48,6 +45,8 @@ defaults.chanlabels = {};
 pat = mod_pattern(pat, @get_chandiffs, {params}, saveopts);
 
 function pat = get_chandiffs(pat, params)
+  pat = move_obj_to_workspace(pat);
+
   % find the channels
   channels = get_dim_vals(pat.dim, 'chan');
   chan_ind = [find(channels==params.chans(1)) find(channels==params.chans(2))];

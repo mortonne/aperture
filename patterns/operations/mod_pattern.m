@@ -32,17 +32,16 @@ function pat = mod_pattern(pat, f, f_inputs, varargin)
 %  PARAMS:
 %  These options may be specified using parameter, value pairs or by
 %  passing a structure. Defaults are shown in parentheses.
-%   save_as   - string identifier to name the modified pattern. If
-%               empty, the name will not change. ('')
-%   overwrite - if true, existing patterns will be overwritten. (false
-%               if pattern is stored on disk, true if pattern is stored
-%               in workspace or if save_mats is false)
 %   save_mats - if true, and input mats are saved on disk, modified mats
 %               will be saved to disk. If false, the modified mats will
 %               be stored in the workspace, and can subsequently be
 %               moved to disk using move_obj_to_hd. This option is
 %               useful if you want to make a quick change without
 %               modifying a saved pattern. (true)
+%   overwrite - if true, existing patterns on disk will be overwritten.
+%               (false)
+%   save_as   - string identifier to name the modified pattern. If
+%               empty, the name will not change. ('')
 %   res_dir   - directory in which to save the modified pattern and
 %               events, if applicable. Default is a directory named
 %               pat_name on the same level as the input pat.
@@ -64,22 +63,11 @@ if ~exist('f_inputs', 'var')
 end
 
 % set default params
-defaults.save_as = '';
 defaults.save_mats = true;
+defaults.overwrite = false;
+defaults.save_as = '';
 defaults.res_dir = '';
-params = propval(varargin, defaults, 'strict', false);
-
-% get the location of the input pat; this will set the default of
-% whether the new pattern is saved to workspace or hard drive
-pat_loc = get_obj_loc(pat);
-ev_loc = get_obj_loc(pat.dim.ev);
-
-if strcmp(pat_loc, 'ws') || ~params.save_mats
-  defaults.overwrite = true;
-else
-  defaults.overwrite = false;
-end
-params = propval(params, defaults);
+params = propval(varargin, defaults);
 
 fprintf('modifying pattern "%s"...', pat.name)
 
@@ -89,39 +77,28 @@ end
 
 % before modifying the pat object, make sure files, etc. are OK
 if ~isempty(params.save_as)
+  % set new save files, regardless of whether we're saving right now
   % set the default results directory
+  pat_name = params.save_as;
   if isempty(params.res_dir)
-    params.res_dir = fullfile(fileparts(get_pat_dir(pat)), params.save_as);
+    params.res_dir = fullfile(fileparts(get_pat_dir(pat)), pat_name);
   end
   
   % use "patterns" subdirectory of res_dir
   pat_dir = fullfile(params.res_dir, 'patterns');
   pat_file = fullfile(pat_dir, ...
-                      objfilename('pattern', params.save_as, pat.source));
-  
-  % check to see if there's already a pattern there that we don't want
-  % to overwrite
-  if strcmp(pat_loc, 'hd') && ~params.overwrite && exist(pat_file, 'file')
-    fprintf('pattern "%s" exists in new file. Skipping...\n', params.save_as)
-    return
-  end
-  
-  % make sure the parent directory exists
-  if ~exist(pat_dir, 'dir')
-    mkdir(pat_dir);
-  end
+                      objfilename('pattern', pat_name, pat.source));
 else
-  % should we overwrite this pattern?  Regardless of hd or ws
-  if ~params.overwrite && exist_mat(pat)
-    fprintf('pattern "%s" exists. Skipping...\n', pat.name)
-    return
-  end
+  pat_name = pat.name;
+  pat_file = pat.file;
 end
 
-% for ease of passing things around, temporarily move the mats to the
-% workspace, if they aren't already
-pat = move_obj_to_workspace(pat);
-pat.dim.ev = move_obj_to_workspace(pat.dim.ev);
+% check to see if there's already a pattern there that we don't want
+% to overwrite
+if params.save_mats && ~params.overwrite && exist(pat_file, 'file')
+  fprintf('pattern "%s" exists. Skipping...\n', pat_name)
+  return
+end
 
 % make requested modifications; pattern and events may be modified in
 % the workspace
@@ -129,29 +106,35 @@ pat = f(pat, f_inputs{:});
 
 if ~isempty(params.save_as)
   % change the name and point to the new file
-  pat.name = params.save_as;
+  pat.name = pat_name;
   pat.file = pat_file;
+  if ~exist(pat_dir, 'dir')
+    mkdir(pat_dir)
+  end
 end
 
-% if event have been modified, change the filepath. We don't want to
-% overwrite any source events that might be used for other patterns, 
-% etc., so we'll change the path even if we are using the same 
-% pat_name as before. Even if we're not saving, we'll change the file
-% in case events are saved to disk later.
 if pat.dim.ev.modified
+  % if event have been modified, change the filepath. We don't want to
+  % overwrite any source events that might be used for other patterns, 
+  % etc., so we'll change the path even if we are using the same 
+  % pat_name as before. Even if we're not saving, we'll change the file
+  % in case events are saved to disk later.
   events_dir = get_pat_dir(pat, 'events');
-  pat.dim.ev.file = fullfile(events_dir, objfilename('events', ...
-                                                    pat.name, pat.source));
+  ev_file = fullfile(events_dir, objfilename('events', pat.name, pat.source));
+  pat.dim.ev.file = ev_file;
+  
+  if params.save_mats
+    if ~params.overwrite && exist(ev_file, 'file')
+      pat.dim.ev.file = strrep(ev_file, '.mat', '_mod.mat');
+    end
+    
+    % save events to disk
+    pat.dim.ev = move_obj_to_hd(pat.dim.ev);
+  end
 end
 
-% either move unmodified events back to disk, or save modified events
-% to their new file
-if params.save_mats && strcmp(ev_loc, 'hd')
-  pat.dim.ev = move_obj_to_hd(pat.dim.ev);
-end
-
-% save the pattern where we found it
-if params.save_mats && strcmp(pat_loc, 'hd')
+if params.save_mats && strcmp(get_obj_loc(pat), 'ws')
+  % save the pattern
   pat = move_obj_to_hd(pat);
   if ~isempty(params.save_as)
     fprintf('saved as "%s".\n', pat.name)
@@ -159,7 +142,7 @@ if params.save_mats && strcmp(pat_loc, 'hd')
     fprintf('saved.\n')
   end
 else
-  % already should be in pat.mat
+  % nothing to do
   if ~isempty(params.save_as)
     fprintf('returning as "%s".\n', pat.name)
   else
