@@ -1,19 +1,18 @@
-function exp = update_exp(exp,backup_dir)
+function exp = update_exp(exp, log)
 %UPDATE_EXP   Save changes to the exp structure.
 %
-%  exp = update_exp(exp, backup_dir)
+%  exp = update_exp(exp, log)
 %
 %  INPUTS:
-%         exp:  an experiment structure. Must have 'resDir'
-%               and 'file' fields.
+%      exp:  an experiment structure. Must have 'resDir'
+%            and 'file' fields.
 %
-%  backup_dir:  path to the directory where a backup of the
-%               exp structure will be saved. Default:
-%               [exp.resDir]/'exp_bak'
+%      log:  optional string describing the changes made since the last
+%            version of exp.
 %
 %  OUTPUTS:
-%         exp:  the experiment structure, with the lastUpdate
-%               field updated.
+%      exp:  the experiment structure, with the lastUpdate
+%            field updated.
 
 % input checks
 if ~exist('exp','var') || ~isstruct(exp)
@@ -23,26 +22,16 @@ elseif ~isfield(exp, 'file')
 elseif ~isfield(exp, 'resDir')
   error('exp must have a "resDir" field.')
 end
-if ~exist('backup_dir','var')
-  backup_dir = fullfile(exp.resDir, 'exp_bak');
+if ~exist('log', 'var')
+  log = '';
 end
-if ~exist(backup_dir,'dir')
+
+backup_dir = fullfile(exp.resDir, 'exp_bak');
+if ~exist(backup_dir, 'dir')
   mkdir(backup_dir);
 end
 
 fprintf('update_exp: ');
-
-% if running on the cluster, take possession of exp first
-if ~isfield(exp, 'useLock')
-  exp.useLock = 1;
-end
-
-if exp.useLock
-  if ~lockFile(exp.file, 1);
-    error('locking timed out.')
-  end
-  fprintf('locked...');
-end
 
 timestamp = datestr(now, 'mm-dd-yy_HHMM');
 if exist(exp.file, 'file')
@@ -53,8 +42,11 @@ if exist(exp.file, 'file')
   fprintf('backed up in %s...', filename)
 else
   % exp hasn't been saved in exp.file before
-  if ~exist(exp.resDir,'dir')
+  if ~exist(exp.resDir, 'dir')
     error('Directory does not exist: %s', exp.resDir)
+  end
+  if isempty(log)
+    log = sprintf('creating %s experiment object', get_obj_name(exp));
   end
 end
 
@@ -62,7 +54,6 @@ end
 exp.lastUpdate = timestamp;
 
 % commit the new version of exp
-save(exp.file, 'exp');
-closeFile(exp.file);
+save(exp.file, 'exp', 'log');
 
 fprintf('saved.\n');
