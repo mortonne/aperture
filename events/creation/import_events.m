@@ -10,10 +10,10 @@ function subj = import_events(subj, res_dir, ev_name, varargin)
 %  INPUTS:
 %     subj:  a subject structure.
 %
-%  res_dir:  path to the directory where results will be saved.
+%  res_dir:  path to the directory where the subject's events structure
+%            will be saved.
 %
 %  ev_name:  string identifier for the created ev object.
-%            default: 'events'
 %
 %  OUTPUTS:
 %     subj:  subject structure with an added ev object.
@@ -38,9 +38,8 @@ if ~exist('subj', 'var')
   error('You must pass a subject structure.')
 elseif ~exist('res_dir', 'var')
   error('You must pass the path to the results directory.')
-end
-if ~exist('ev_name', 'var')
-  ev_name = 'events';
+elseif ~exist('ev_name', 'var')
+  error('You must specify a name for the events object.')
 end
 
 % process options
@@ -72,7 +71,9 @@ for sess=subj.sess
   sess_events = getfield(load(sess_events_file, 'events'), 'events');
 
   % fill in eeg fields if they are missing
-  if params.check_eeg && ( ~isfield(sess_events,'eegfile') || all(cellfun(@isempty,{sess_events.eegfile})) )
+  if params.check_eeg && ( ~isfield(sess_events,'eegfile') || ...
+                           ~isfield(sess_events,'artifactMS') || ...
+                           all(cellfun(@isempty,{sess_events.eegfile})) )
     try
       % try to fix it one more time;
       % force alignment to run again
