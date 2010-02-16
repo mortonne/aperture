@@ -1,7 +1,7 @@
-function h = plot_erp(data, time, params)
+function h = plot_erp(data, time, varargin)
 %PLOT_ERP   Plot an event-related potential.
 %
-%  h = plot_erp(data, time, params)
+%  h = plot_erp(data, time, ...)
 %
 %  INPUTS:
 %     data:  array of voltage values to plot. If data is a matrix, each
@@ -9,20 +9,20 @@ function h = plot_erp(data, time, params)
 %
 %     time:  time values corresponding to each column of data.
 %
-%   params:  a structure specifying options for plotting. See below.
-%
 %  OUTPUTS:
 %        h:  vector of handles for each line plotted.
 %
 %  PARAMS:
-%  All fields are optional.  Default values are shown in parentheses.
-%   x_lim      - limits of the time axis in [min, max] form
+%  These options may be specified using parameter, value pairs or by
+%  passing a structure. Defaults are shown in parentheses.
+%   x_lim      - limits of the time axis in [min, max] form. ([])
 %   time_units - units of the time axis. ('ms')
 %   x_label    - label for the x-axis. ('Time (time_units)' if time
 %                vector given, otherwise 'Time (samples)')
-%   y_lim      - limits of the voltage axis in [min, max] form
+%   y_lim      - limits of the voltage axis in [min, max] form. ([])
 %   volt_units - units of the voltage axis. ('\muV')
 %   y_label    - label for the y-axis. ('Voltage (volt_units)')
+%   plot_input - cell array of additional inputs to plot. ({})
 %   colors     - cell array indicating the order of colors to use for
 %                the lines. ({})
 %   mark       - boolean vector indicating samples to be marked
@@ -34,27 +34,25 @@ function h = plot_erp(data, time, params)
 %  See also pat_erp.
 
 % input checks
-if ~exist('data','var')
+if ~exist('data', 'var')
   error('You must pass a matrix of values to plot.')
 end
-if ~exist('time','var')
+if ~exist('time', 'var')
   time = [];
-end
-if ~exist('params','var')
-  params = [];
 end
 
 % set default parameters
-params = structDefaults(params, ...
-                        'time_units',       'ms',     ...
-                        'volt_units',       '\muV',   ...
-                        'colors',           {},       ...
-                        'x_lim',            [],       ...
-                        'y_lim',            [],       ...
-                        'x_label',          '',       ...
-                        'y_label',          '',       ...
-                        'mark',             [],       ...
-                        'fill_color',       [.8 .8 .8]);
+defaults.time_units = 'ms';
+defaults.volt_units = '\muV';
+defaults.colors = {};
+defaults.x_lim = [];
+defaults.y_lim = [];
+defaults.x_label = '';
+defaults.y_label = '';
+defaults.plot_input = {'LineWidth', 2};
+defaults.mark = [];
+defaults.fill_color = [.8 .8 .8];
+params = propval(varargin, defaults);
 
 publishfig
 
@@ -62,7 +60,7 @@ publishfig
 if ~isempty(time)
   x = time;
 else
-  x = 1:size(data,2);
+  x = 1:size(data, 2);
 end
 
 % x-axis label
@@ -104,8 +102,8 @@ if ~isempty(params.y_lim)
   y_lim = params.y_lim;
 else
   % buffer from top and bottom
-  buffer = (y_max-y_min)*0.2;
-  y_lim = [y_min-buffer y_max+buffer];
+  buffer = (y_max - y_min) * 0.2;
+  y_lim = [y_min - buffer y_max + buffer];
 end
 
 % mark samples
@@ -117,28 +115,28 @@ if ~isempty(params.mark)
     error('params.mark must be the same length as data.')
   end
   
-  offset = diff(y_lim)*0.07;
+  offset = diff(y_lim) * 0.07;
   bar_y = y_min - offset;
-  bar_y_lim = [(bar_y - offset/2) bar_y];
+  bar_y_lim = [(bar_y - offset / 2) bar_y];
   shade_regions(x, params.mark, bar_y_lim, params.fill_color);
 end
 
 % make the plot
-h = plot(x, data, 'LineWidth', 2);
+h = plot(x, data, params.plot_input{:});
 
 % change line colors from their defaults
 if ~isempty(params.colors)
   for i=1:length(h)
-    set(h(i), 'Color', params.colors{mod(i-1,length(params.colors))+1})
+    set(h(i), 'Color', params.colors{mod(i - 1, length(params.colors)) + 1})
   end
 end
 
 % set limits
-set(gca, 'YLimMode','manual')
-set(gca, 'XLim',x_lim, 'YLim',y_lim)
+set(gca, 'YLimMode', 'manual')
+set(gca, 'XLim', x_lim, 'YLim', y_lim)
 
 % plot axes
-plot(get(gca,'XLim'), [0 0], '--k');
+plot(get(gca, 'XLim'), [0 0], '--k');
 plot([0 0], y_lim, '--k');
 hold off
 
