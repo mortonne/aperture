@@ -111,6 +111,7 @@ defaults.iter_cell = cell(1, 4);
 defaults.sweep_cell = cell(1, 4);
 defaults.overwrite = true;
 defaults.res_dir = get_pat_dir(test_pat, 'stats');
+defaults.verbose = true;
 params = propval(varargin, defaults, 'strict', false);
 
 if isempty(params.regressor)
