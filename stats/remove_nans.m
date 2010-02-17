@@ -16,7 +16,7 @@ if ~isnumeric(X)
 end
 
 % get mean for all observations of each variable
-var_means = nanmean(X);
+var_means = nanmean(X, 1);
 
 % fix each variable
 Y = X;
