@@ -46,7 +46,7 @@ if ~exist('obj_names', 'var')
 end
 
 % set formatting
-defaults.col1_width = 30;
+defaults.col1_width = 33;
 defaults.id_f = '%6i) %s';
 params = propval(varargin, defaults);
 
