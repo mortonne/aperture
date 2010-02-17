@@ -82,7 +82,7 @@ defaults.save_mats = true;
 defaults.overwrite = false;
 defaults.save_as = '';
 defaults.res_dir = '';
-params = propval(varargin, defaults);
+params = propval(varargin, defaults, 'strict', false);
 
 fprintf('modifying pattern "%s"...', pat.name)
 
