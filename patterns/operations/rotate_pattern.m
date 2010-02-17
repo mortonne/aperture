@@ -44,7 +44,7 @@ load(stat.file);
 pat = getobj(subj, 'pat', pat_name);
 
 % make the new pattern
-pat = mod_pattern(pat, @rotate_pat, {res.coeff}, varargin);
+pat = mod_pattern(pat, @rotate_pat, {res.coeff}, varargin{:});
 
 % add the stats from the first pattern
 pat = setobj(pat, 'stat', stat);
