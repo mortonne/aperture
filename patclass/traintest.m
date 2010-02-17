@@ -5,15 +5,15 @@ function res = traintest(testpattern, trainpattern, testtargets, ...
 %  res = traintest(testpattern, trainpattern, testtargets, traintargets, ...)
 %
 %  INPUTS:
+%   testpattern:  An [obs X var] matrix of data to test the classifier.
+%
 %  trainpattern:  An [observations X variables] matrix of data to
 %                 train a classifier with.
 %
-%   testpattern:  An [obs X var] matrix of data to test the classifier.
+%   testtargets:  Ditto.
 %
 %  traintargets:  An [observations X conditions] matrix giving the
 %                 condition corresponding to each observation.
-%
-%   testtargets:  Ditto.
 %
 %  OUTPUTS:
 %       res:  Structure with results of the classification for each
@@ -26,6 +26,10 @@ function res = traintest(testpattern, trainpattern, testtargets, ...
 %   f_perfmet    - function handle for calculating performance
 %   perfmet_args - cell array of addition arguments for the perfmet
 %                  function
+%
+%  NOTES:
+%   The counterintuitive test, then train order of inputs is necessary
+%   for compatibility with apply_by_group.
 
 if isempty(testpattern)
   res.perf = NaN;
@@ -54,22 +58,28 @@ if ~exist('trainpattern', 'var') || ~isnumeric(trainpattern)
   error('You must pass training pattern matrix.')
 elseif ~exist('testpattern', 'var') || ~isnumeric(testpattern)
   error('You must pass a test pattern vector.')
-elseif ~exist('traintargets', 'var') || ~isnumeric(traintargets)
-  error('You must pass a train targets vector.')
-elseif ~exist('testtargets', 'var') || ~isnumeric(testtargets)
-  error('You must pass a test targets vector.')
-elseif length(traintargets) ~= size(trainpattern, 1)
-  error('Different number of observations in trainpattern and targets vector.')
-elseif length(testtargets) ~= size(testpattern, 1)
-  error('Different number of observations in testpattern and targets vector.')
+elseif ~exist('traintargets', 'var')
+  error('You must pass a train targets matrix.')
+elseif ~exist('testtargets', 'var')
+  error('You must pass a test targets matrix.')
+elseif size(traintargets, 1) ~= size(trainpattern, 1)
+  error('Different number of observations in trainpattern and targets matrix.')
+elseif size(testtargets, 1) ~= size(testpattern, 1)
+  error('Different number of observations in testpattern and targets matrix.')
 end
 
 % check to make sure that pattern1 and pattern2 have same
 % dimensions > 2
+defaults.feature_select = false;
+defaults.f_stat = @statmap_anova;
+defaults.stat_args = {};
+defaults.stat_thresh = 0.05;
 defaults.f_train = @train_logreg;
 defaults.train_args = struct('penalty', 10);
 defaults.f_test = @test_logreg;
 defaults.f_perfmet = {@perfmet_maxclass};
+defaults.save_scratchpad = true;
+defaults.verbose = false;
 [params, unused] = propval(varargin, defaults);
 
 if ~iscell(params.f_perfmet)
@@ -93,8 +103,17 @@ if ndims(trainpattern) > 2
 end
 
 patsize = size(testpattern);
-if ndims(testpattern)>2
+if ndims(testpattern) > 2
   testpattern = reshape(testpattern, [patsize(1) prod(patsize(2:end))]);
+end
+
+% optional feature selection
+if params.feature_select
+  p = params.f_stat(trainpattern, traintargets, params.stat_args{:});
+  mask = p < params.stat_thresh;
+  trainpattern = trainpattern(:,mask);
+  testpattern = testpattern(:,mask);
+  %fprintf('selecting %d of %d ', nnz(mask), prod(patsize(2:end)))
 end
 
 % deal with missing data
@@ -130,17 +149,20 @@ res.unused_idx = false(n_events, 1);
 res.unknown_idx = [];
 res.targs = testtargets;
 res.acts = acts;
-res.scratchpad = scratchpad;
+if params.save_scratchpad
+  res.scratchpad = scratchpad;
+end
 res.train_funct_name = func2str(f_train);
 res.test_funct_name = func2str(f_test);
 res.args = params;
 
-fprintf('%.2f\t', res.perf)
-if n_perfs > 1
-  fprintf('\n')
-end
+if params.verbose
+  fprintf('%.2f\t', res.perf)
+  if n_perfs > 1
+    fprintf('\n')
+  end
 
-if n_perfs==1
-  fprintf('\n')
+  if n_perfs==1
+    fprintf('\n')
+  end
 end
-
