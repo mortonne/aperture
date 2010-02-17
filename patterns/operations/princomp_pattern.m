@@ -1,5 +1,5 @@
 function pat = princomp_pattern(pat, varargin)
-%PRINCOMP_PATTERN   Get principle components of a pattern.
+%PRINCOMP_PATTERN   Get principal components of a pattern.
 %
 %  pat = princomp_pattern(pat, ...)
 %
@@ -12,7 +12,7 @@ function pat = princomp_pattern(pat, varargin)
 %  PARAMS:
 %  These options may be specified using parameter, value pairs or by
 %  passing a structure. Defaults are shown in parentheses.
-%   n_dims    - number of principle components to include in the
+%   n_dims    - number of principal components to include in the
 %               pattern. If not specified, all components will be
 %               returned. ([])
 %   sig_dims  - if true, only the components determined by Bartlett's
