@@ -45,7 +45,6 @@ defaults.chanlabels = {};
 pat = mod_pattern(pat, @get_chandiffs, {params}, saveopts);
 
 function pat = get_chandiffs(pat, params)
-  pat = move_obj_to_workspace(pat);
   pattern = get_mat(pat);
   
   s = patsize(pat.dim);
@@ -74,5 +73,5 @@ function pat = get_chandiffs(pat, params)
     chan_info(i) = struct('number', diff_chans, 'region', '', 'label', label);
   end
   pat.dim.chan = chan_info;
-  pat = set_mat(pat, new_pattern);
+  pat = set_mat(pat, new_pattern, 'ws');
 %endfunction

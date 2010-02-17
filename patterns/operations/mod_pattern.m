@@ -4,17 +4,22 @@ function pat = mod_pattern(pat, f, f_inputs, varargin)
 %  Use this function to modify existing patterns. You can either save
 %  the new pattern under a different name, or overwrite the old one.  To
 %  save under a new name, set save_as to the new name.  The output pat
-%  object will have that name.  
+%  object will have that name.
 %
 %  By default, modified patterns will be saved in a subdirectory of the
 %  parent of the main directory of the input pattern.  The new pattern's
 %  main directory will be named pat_name.
 %
-%  If input pat is saved to disk, the new pattern will be saved in a
-%  new file in [res_dir]/patterns.  If events are modified, and they are
-%  saved on disk, the modified events will be saved in
-%  [res_dir]/events.  In case the events are used by other objects, they
-%  will be saved to a new file even if pat_name doesn't change.
+%  If input pat is saved to disk, the new pattern will be saved in a new
+%  file in [res_dir]/patterns.  If events are modified, and they are
+%  saved on disk, the modified events will be saved in [res_dir]/events.
+%  In case the events are used by other objects, they will be saved to a
+%  new file even if pat_name doesn't change.
+%
+%  This function is designed to handle modifications to the pattern
+%  itself (and corresponding changes to the metadata in pat). If you
+%  just want to modify the pat object, without changing the pattern,
+%  using this function is probably not the way to go.
 %
 %  pat = mod_pattern(pat, f, f_inputs, ...)
 %
@@ -23,6 +28,7 @@ function pat = mod_pattern(pat, f, f_inputs, varargin)
 %
 %         f:  handle to a function of the form:
 %              pat = f(pat, ...)
+%             See notes below for more information.
 %
 %  f_inputs:  cell array of additional inputs to f.
 %
@@ -45,6 +51,15 @@ function pat = mod_pattern(pat, f, f_inputs, varargin)
 %   res_dir   - directory in which to save the modified pattern and
 %               events, if applicable. Default is a directory named
 %               pat_name on the same level as the input pat.
+%
+%  NOTES:
+%   It is assumed that the pattern will be saved in pat.mat (i.e., in
+%   the workspace) when pat is returned. Use pat = set_mat(pat, pattern,
+%   'ws'); to do this. (Otherwise, the pattern will be saved to disk
+%   inside f, defeating the purpose of using this file-management
+%   function). Also, any modified sub-structures of pat
+%   (e.g. pat.dim.ev) should be indicated by setting the 'modified'
+%   field to true.
 
 % input checks
 if ~exist('pat', 'var') || ~isstruct(pat)
@@ -103,6 +118,17 @@ end
 % make requested modifications; pattern and events may be modified in
 % the workspace
 pat = f(pat, f_inputs{:});
+
+% make sure that the pattern is stored in the workspace--if not, the
+% supplied f is doing something weird
+if ~strcmp(get_obj_loc(pat), 'ws')
+  error('pattern returned from %s should be stored in the workspace.', ...
+        func2str(f))
+end
+
+% assume that the pattern is modified (the function must mark events as
+% modified, if necessary)
+pat.modified = true;
 
 if ~isempty(params.save_as)
   % change the name and point to the new file
