@@ -1,34 +1,35 @@
-function objs = getobjallsubj(subj, path)
+function objs = getobjallsubj(subj, varargin)
 %GETOBJALLSUBJ   Get objects from multiple subjects.
 %
-%  objs = getobjallsubj(subj, path)
+%  objs = getobjallsubj(subj, ...)
 %
 %  INPUTS:
 %       subj:  a structure representing each subject in an experiment. 
 %
-%       path:  cell array giving the path to an object on each subj
-%              structure in exp. Form must be:
-%               {t1,n1,...}
-%              where t1 is an object type (e.g. 'pat', 'stat'),
-%              and n1 is the name of an object.
+%   varargin:  specifies the location of an object by obj_type, obj_name
+%              pairs.
 %
 %  OUTPUTS:
 %       objs:  an array of objects.
 %
 %  EXAMPLES:
 %   % to get a pat object named 'voltage' from every subject
-%   pats = getobjallsubj(subj, {'pat', 'voltage'});
+%   pats = getobjallsubj(subj, 'pat', 'voltage');
 
 % input checks
-if ~exist('subj','var')
+if ~exist('subj', 'var')
   error('You must pass a subj structure.')
 elseif ~isstruct(subj)
   error('subj must be a structure.')
-elseif ~isfield(subj,'id')
+elseif ~isfield(subj, 'id')
   error('subj must have an id field.')
 end
-if ~exist('path','var')
-  path = {};
+
+if ~isempty(varargin) && iscell(varargin{1})
+  % old input format
+  path = varargin{1};
+else
+  path = varargin;
 end
 
 %fprintf('exporting %s object %s from subjects...\n', path{end-1}, path{end})
