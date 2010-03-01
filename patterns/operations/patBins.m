@@ -199,15 +199,28 @@ function [events2, bins] = event_bins(events1, bin_defs, labels)
     
     % salvage fields that have the same value for this whole bin
     for j=1:length(fnames)
-      u_field = unique(getStructField(events1, fnames{j}));
-      if length(u_field)==1
-        if iscell(u_field)
-          events2(i).(fnames{j}) = u_field{1};
+      
+      % getStructField will return the field in an array (if numeric)
+      % or a cell array (if anything else)
+      field = getStructField(events1, fnames{j});
+      if ~(isnumeric(field) || iscellstr(field))
+        % incompatible with unique; must leave this field off
+        continue
+      end
+      
+      % see if we can include this field
+      uniq_field = unique(field);
+      if isscalar(uniq_field)
+        if iscell(uniq_field)
+          % grab the string from the cell
+          events2(i).(fnames{j}) = uniq_field{1};
         else
-          events2(i).(fnames{j}) = u_field;
+          % numeric scalar
+          events2(i).(fnames{j}) = uniq_field;
         end
       end
-    end  
+      
+    end
   end
 %endfunction
 
