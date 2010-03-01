@@ -1,6 +1,10 @@
 function pat = grand_average(subj, pat_name, varargin)
 %GRAND_AVERAGE   Calculate an average across patterns from multiple subjects.
 %
+%  Used to calculate an average across subjects for a given pattern
+%  type. The pattern indicated by pat_name must have the same dimensions
+%  for each subject.
+%
 %  pat = grand_average(subj, pat_name, ...)
 %
 %  INPUTS:
