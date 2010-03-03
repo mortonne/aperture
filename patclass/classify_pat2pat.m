@@ -130,10 +130,12 @@ end
 % dynamic grouping
 if isstruct(params.iter_cell)
   % make bins using the train pattern (shouldn't matter which we use)
+  params.iter_params = params.iter_cell;
   [temp, params.iter_cell] = patBins(train_pat, params.iter_cell);
 end
 if isstruct(params.sweep_cell)
   % make bins from the test pattern
+  params.sweep_params = params.sweep_cell;
   [temp, params.sweep_cell] = patBins(test_pat, params.sweep_cell);
 end
 

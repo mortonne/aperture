@@ -87,6 +87,20 @@ function pat = get_patclass_stats(pat, stat_name, params)
   all_dims = 2:4;
   sing_dims = all_dims(~ismember(all_dims, non_sing));
 
+  % fix dimensions that were binned during classification
+  bin_params = struct;
+  if isfield(stat.params, 'iter_params') && ~isempty(stat.params.iter_params)
+    bin_params = merge_structs(bin_params, stat.params.iter_params);
+  end
+  if isfield(stat.params, 'sweep_params') && ~isempty(stat.params.sweep_params)
+    bin_params = merge_structs(bin_params, stat.params.sweep_params);
+  end
+  if ~isempty(fieldnames(bin_params))
+    % use all bins used for iter or sweep (should not overlap)
+    temp = patBins(pat, bin_params);
+    pat.dim = temp.dim;
+  end
+  
   % collapse the dimensions that were collapsed during classification
   % (not including events)
   for d=sing_dims

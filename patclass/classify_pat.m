@@ -90,6 +90,7 @@ end
 
 % dynamic grouping
 if isstruct(params.iter_cell)
+  params.iter_params = params.iter_cell;
   [temp, params.iter_cell] = patBins(pat, params.iter_cell);
 end
 
