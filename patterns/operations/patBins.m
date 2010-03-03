@@ -202,7 +202,7 @@ function [events2, bins] = event_bins(events1, bin_defs, labels)
       
       % getStructField will return the field in an array (if numeric)
       % or a cell array (if anything else)
-      field = getStructField(events1, fnames{j});
+      field = getStructField(events1(bins{i}), fnames{j});
       if ~(isnumeric(field) || iscellstr(field))
         % incompatible with unique; must leave this field off
         continue
