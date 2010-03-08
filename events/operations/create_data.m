@@ -1,52 +1,50 @@
-function ev = create_data(ev, stat_name, params, res_dir)
+function ev = create_data(ev, stat_name, varargin)
 %CREATE_DATA   Create a data struct from an events struct.
 %
-%  ev = create_data(ev, stat_name, params, res_dir)
+%  ev = create_data(ev, stat_name, ...)
 %
 %  INPUTS:
 %         ev:  an events object.
 %
-%  stat_name:  name of the stat object to be created.
-%
-%     params:  structure with options for creating the data structure.
-%              See below.
-%
-%    res_dir:  path to the directory where the data structure will be
-%              saved.  Default is the "stat" subdirectory of the events.
+%  stat_name:  name of the stat object to be created. Default: 'data'
 %
 %  OUTPUTS:
 %         ev:  events object with an added stat object.
 %
 %  PARAMS:
-%  All fields are optional. Defaults are shown in parentheses.
+%  These options may be specified using parameter, value pairs or by
+%  passing a structure. Defaults are shown in parentheses.
 %   f         - handle to a function of the form:
-%                data = fcn_handle(events, ...)
+%                [data, ...] = fcn_handle(events, ...)
 %               (@FRdata)
 %   f_input   - cell array of additional inputs to f. ({})
 %   overwrite - if true, existing stat files will be overwritten. (true)
+%   res_dir   - directory in which to save the data structure. Default
+%               is the default stats directory for the ev object.
+%
+%  NOTES:
+%   Currently, it is necessary for the stat_name to be unique across all
+%   ev objects. In the future, directory structure will be changed so
+%   that, like with pattern functions, obj_names only have to be unique
+%   within the parent object.
 
 % input checks
-if ~exist('ev', 'var')
+if ~exist('ev', 'var') || ~isstruct(ev)
   error('You must pass an ev object.')
 end
 if ~exist('stat_name', 'var')
   stat_name = 'data';
-end
-if ~exist('params', 'var')
-  params = struct;
-end
-if ~exist('res_dir','var')
-  res_dir = get_ev_dir(ev, 'stats');
 end
 
 % process options
 defaults.f = @FRdata;
 defaults.f_input = {};
 defaults.overwrite = true;
-params = propval(params, defaults);
+defaults.res_dir = get_ev_dir(ev, 'stats');
+params = propval(varargin, defaults);
 
 % set the file where the data struct will be saved
-stat_file = fullfile(res_dir, objfilename('stat', stat_name, ev.source));
+stat_file = fullfile(params.res_dir, objfilename('stat', stat_name, ev.source));
 if ~params.overwrite && exist(stat_file, 'file')
   fprintf('data "%s" exists. Skipping...\n', stat_name)
   return
