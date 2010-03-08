@@ -1,73 +1,177 @@
 == Project Management ==
+
  * SVN or GIT?
- * README needs an update!  Change to give basic installation instructions, point to online documentation
+
+ * README needs an update!  Change to give basic installation instructions,
+   point to online documentation
+
  * make documentation public-viewable
+
  * system for reporting bugs/requesting features
+
  * more specialized tutorials, e.g. artifact removal, binning.
- * version management - procedures for testing new releases, when to create a new version branch, where/how to publish new versions for public use, etc.
+
+ * version management - procedures for testing new releases, when to create a
+   new version branch, where/how to publish new versions for public use, etc.
+
  * make clearer separation between core and EEG functions
+
  * compatibility with EEGLAB and fieldtrip
-  * For right now, throwing in useful functions to whatever folder seems to fit. Should there be a top-level fork between eeg_ana and other toolbox functions to facilitate updates?  How do other software projects handle this?
+
+  * For right now, throwing in useful functions to whatever folder seems to
+    fit. Should there be a top-level fork between eeg_ana and other toolbox
+    functions to facilitate updates?  How do other software projects handle
+    this?
 
 == General Issues ==
- * move to having res_dir be a parameter, and not a main argument. This will often make params the last argument and open up easy support for parameter, value pair-style input of params.  Also will make it clear when there is an obvious default res_dir, and when the user should specify a res_dir.
+
+ * change default directory structure for events.  Should be like the EEG
+   structure:
+
+   beh/[ev_name]/events
+                            stats
+                            figs
+
+   Where "ev_name" would be the name of an events object.  This organization
+   will guarantee uniqueness of sub-object filenames of ev objects.  The
+   general idea is to mirror the format of the exp structure, where each
+   object has a unique address, with a similar directory structure.
+   eeg=patterns, beh=events.  When we move to saved channel structures, there
+   can also be a top-level "chans" directory.  Technically, channels don't have
+   to be EEG (could be HR, GSR, etc.), so it's OK if chans is outside the eeg
+   directory.
+
+   Then the only difference between exp and the directory structure will be
+   that subjects are at the file-level, rather than the top-level.  This allows
+   for many fewer total directories, and makes browsing easier if you want to
+   see the results of an analysis for all subjects.
+
+* move to having res_dir be a parameter, and not a main argument. This will
+  often make params the last argument and open up easy support for parameter,
+  value pair-style input of params.  Also will make it clear when there is an
+  obvious default res_dir, and when the user should specify a res_dir.
+
  * improve consistency:
+
   * naming conventions - getobj vs. get_mat
+
   * input - getobjallsubj takes "path" while getobj takes varargin
+
   * parameter names - chanFilter vs. chanbins vs. eog_channels
-  * remove "basic" directory, move all "obj" functions to one directory
+
+  * remove "basic" directory, move all "obj" functions to a "core" directory
+
   * expand unit tests; pattern modification operations especially important
-  * should objects be saved with their mats, for ease of reloading them if the references in exp get lost?  Or even the whole branch (exp.subj.pat), so they can be remerged using merge_exps.
- *  finish switching functions over to using propval instead of structDefaults.
- * check feasibility of cross-experiment analyses (e.g. running Per's SME-serial position interaction analysis on all LTP FR experiments)
-  * possibility: expand merge_exps.m, add 'experiment' field to each subj (or session) - could also add functions for running analyses at the session level
+
+  * should objects be saved with their mats, for ease of reloading them if the
+    references in exp get lost?  Or even the whole branch (exp.subj.pat), so
+    they can be remerged using merge_exps.
+
+ * finish switching functions over to using propval instead of structDefaults.
+
+ * check feasibility of cross-experiment analyses (e.g. running Per's
+   SME-serial position interaction analysis on all LTP FR experiments)
+
+  * possibility: expand merge_exps.m, add 'experiment' field to each subj (or
+    session) - could also add functions for running analyses at the session
+    level
 
 == Basic ==
- * make an init_subj function; currently get_sessdirs is the only programmatic way to make a subj structure
+
+ * make an init_subj function; currently get_sessdirs is the only programmatic
+ way to make a subj structure
+
  * remove init_scalp and init_iEEG, expand import_channels
 
 == Events ==
- * generalized scripts for events -> data -> events (import/export from beh_toolbox)
+
+ * generalized scripts for events -> data -> events (import/export from
+   beh_toolbox)
 
 == Patclass ==
- * integrate load_pattern features into get_mat, replace load_pattern with get_mat in all toolbox functions
- * refine and test patclass_dev features (test cleaned-up version of classify_pat2pat_sweep, consider using it to replace classify_pat2pat)
-* ANOVA feature selection - see if there is anything we can take from MVPA
+
+ * integrate load_pattern features into get_mat, replace load_pattern with
+ get_mat in all toolbox functions
+
+ * expand feature selection capability
 
 == Patterns ==
+
  * full support for ':' and 'iter' options in patBins
- * deal with modify_pattern's feature bloat; can gut modify_pattern, and use it as just an interface to deal with file management. Then other scripts can call modify_pattern, passing in a function handle of the form pat = function(pat, ...)
+
+ * finish splitting up features of modify_pattern.  Artifact rejection
+   particularly important
+
  * import advances in EOG artifact detection (individual grid searches)
- * support for continuous patterns - one event, many time bins?  How is events information stored?
- * generalize dimension objects, give option for any dimension to be saved to disk to free up memory (need to expand use of get_dim)
+
+ * support for continuous patterns - one event, many time bins?  How is events
+   information stored?
+
+ * generalize dimension objects, give option for any dimension to be saved to
+   disk to free up memory (need to expand use of get_dim)
+
  * move to using EEGLAB-style chan structs
- * change "MSvals" and "vals" fields to "range". Then the only difference between time and freq dimensions will be the default labels
+
+ * change "MSvals" and "vals" fields to "range". Then the only difference
+   between time and freq dimensions will be the default labels
+
  * also change "avg" field to "center"
 
 == Plotting ==
+
  * consider beefing up plot_events.  it's unique and potentially very useful.
+
  * support for making brain plots
 
 == Stats ==
- * should there be a monolithic function with many params/possible outputs, or a function for each type of stat test?
-  * multiple functions, with standard stat variables - easier to understand, write new stats
- * what is the proper format for stat results?  What about n-way tests, interactions?
-  * can make one stat object for each effect; each stat object has overall stats of test, but standard vars (p, statistic, thresh, h) are for the effect only.
-  * this moves effects labels to a string identifier, rather than an easy-to-confuse index identifier
-  * ANOVA function has job of generating default labels
- * proposal for compatibility with plotting functions
-  * move multiple comparisons correction, ect. to functions that operates on stat objects
-  * standard variable names: p, statistic, thresh, h
-  * can we have some sort of setter function for standard stat variables, or just rely on help pages to instruct user on creating a compatible stat object?
-  * thresh may be scalar or matrix (allows for levels of multiple comparisons correction within pattern)
-  * 1) plot pattern 2) plot pattern with markers 3) plot statistic 4) plot thresholded statistic
-  * color map is simply statistic, with values below thresh in white
-  * translating p to z, setting z* can be done outside of plotting function
-* settle "stat" vs. "stats" controversy
- * support for stat printing in exp_disp
- * bootstrapping/summed z
- * RMAOV
- * permutation test on subject significance
- * cluster statistic
 
-== Utils ==
+ * should there be a monolithic function with many params/possible outputs, or
+ a function for each type of stat test?
+
+  * multiple functions, with standard stat variables - easier to understand,
+    write new stats
+
+ * what is the proper format for stat results?  What about n-way tests,
+   interactions?
+
+  * can make one stat object for each effect; each stat object has overall
+    stats of test, but standard vars (p, statistic, thresh, h) are for the
+    effect only.
+
+  * this moves effects labels to a string identifier, rather than an
+    easy-to-confuse index identifier
+
+  * ANOVA function has job of generating default labels
+
+ * proposal for compatibility with plotting functions
+
+  * move multiple comparisons correction, ect. to functions that operates on
+    stat objects
+
+  * standard variable names: p, statistic, thresh, h
+
+  * can we have some sort of setter function for standard stat variables, or
+    just rely on help pages to instruct user on creating a compatible stat
+    object?
+
+  * thresh may be scalar or matrix (allows for levels of multiple comparisons
+    correction within pattern)
+
+  * 1) plot pattern 2) plot pattern with markers 3) plot statistic 4) plot
+    thresholded statistic
+
+  * color map is simply statistic, with values below thresh in white
+
+  * translating p to z, setting z* can be done outside of plotting function
+
+* settle "stat" vs. "stats" controversy
+
+ * support for stat printing in exp_disp
+
+ * bootstrapping/summed z
+
+ * RMAOV; expand to N-way, support importing back into MATLAB
+
+ * permutation test on subject significance
+
+ * cluster statistic; integrate ZDC's functions
