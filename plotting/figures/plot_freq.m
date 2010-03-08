@@ -5,7 +5,7 @@ function h = plot_freq(data, freq, params)
 %
 %  INPUTS:
 %     data:  array of voltage values to plot. If data is a matrix, each
-%            row will be plotted as a separate line.
+%            column will be plotted as a separate line.
 %
 %     freq:  frequency values corresponding to each column of data.
 %
