@@ -71,7 +71,7 @@ fid = fopen(filename,'w');
 
 % preamble
 fprintf(fid,'\\documentclass{report}\n');
-fprintf(fid,'\\usepackage{graphicx,lscape,longtable,color}\n');
+fprintf(fid,'\\usepackage{graphicx,lscape,longtable,color,verbatim}\n');
 fprintf(fid,'\\setlength{\\oddsidemargin}{-0.5in}\n');
 fprintf(fid,'\\setlength{\\evensidemargin}{-0.5in}\n');
 fprintf(fid,'\\setlength{\\topmargin}{-0.25in}\n');
