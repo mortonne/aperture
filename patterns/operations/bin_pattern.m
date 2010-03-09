@@ -75,7 +75,7 @@ function pat = apply_pat_binning(pat, params)
   p = rmfield(p, {'timebins', 'timebinlabels'});
   
   % apply the bins to the pat object
-  [pat, bins] = patBins(pat, params);
+  [pat, bins] = patBins(pat, p);
   
   % average within bins in the pattern
   pattern = patMeans(pattern, bins);
