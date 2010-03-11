@@ -1,19 +1,19 @@
-function subj = import_events(subj, res_dir, ev_name, varargin)
+function subj = import_events(subj, ev_name, res_dir, varargin)
 %IMPORT_EVENTS   Import events information for a subject.
-%
-%  subj = import_events(subj, res_dir, ev_name, ...)
 %
 %  Use this function to import events information for a subject. It
 %  concatenates events for all sessions of a subject, saves them, and
 %  creates an ev object to hold metadata about the events.
 %
+%  subj = import_events(subj, ev_name, res_dir, ...)
+%
 %  INPUTS:
 %     subj:  a subject structure.
 %
-%  res_dir:  path to the directory where the subject's events structure
-%            will be saved.
-%
 %  ev_name:  string identifier for the created ev object.
+%
+%  res_dir:  path to the directory to save results. The events structure
+%            will be saved in [res_dir]/events.
 %
 %  OUTPUTS:
 %     subj:  subject structure with an added ev object.
@@ -24,6 +24,8 @@ function subj = import_events(subj, res_dir, ev_name, varargin)
 %   events_file  - path (relative to each session directory in subj) to
 %                  the MAT-file where each events structure to be
 %                  imported is saved. ('events.mat')
+%   sess_filter  - string to be passed into inStruct to determine which
+%                  sessions to include. ('')
 %   event_filter - string to be passed into filterStruct to filter the
 %                  events structure before it is imported. ('')
 %   check_eeg    - if true, a check will be run on the eegfile field of
@@ -36,6 +38,9 @@ function subj = import_events(subj, res_dir, ev_name, varargin)
 % input checks
 if ~exist('subj', 'var')
   error('You must pass a subject structure.')
+elseif length(subj) > 1
+  error(['May only pass one subject. Use apply_to_subj to process ' ...
+         'multiple subjects.'])
 elseif ~exist('res_dir', 'var')
   error('You must pass the path to the results directory.')
 elseif ~exist('ev_name', 'var')
@@ -44,18 +49,24 @@ end
 
 % process options
 defaults.events_file = 'events.mat';
+defaults.sess_filter = '';
 defaults.event_filter = '';
 defaults.check_eeg = false;
-
 params = propval(varargin, defaults);
 
 if length(subj.sess) > 1
   fprintf('concatenating session events...')
 end
 
-% concatenate all sessions
+% determine which sessions to run
+if ~isempty(params.sess_filter)
+  match = inStruct(subj.sess, params.sess_filter);
+else
+  match = true(size(subj.sess));
+end
+
 events = [];
-for sess=subj.sess
+for sess=subj.sess(match)
   if length(subj.sess) > 1
     fprintf('%d ', sess.number)
   end
@@ -125,20 +136,27 @@ for sess=subj.sess
   end
 
   % concatenate
-  events = [events(:); sess_events(:)]';
+  events = cat_structs(events, sess_events);
+  
+  % make sure we have a row vector
+  if size(events, 1) > 1
+    events = events';
+  end
 end
 if length(subj.sess) > 1
   fprintf('\n')
 end
 
 % create an ev object
-ev_file = fullfile(res_dir, objfilename('events', ev_name, subj.id));
+ev_dir = fullfile(res_dir, 'events');
+if ~exist(ev_dir, 'dir')
+  mkdir(ev_dir)
+end
+
+ev_file = fullfile(ev_dir, objfilename('events', ev_name, subj.id));
 ev = init_ev(ev_name, 'source', subj.id, 'file', ev_file);
 
 % save the new events
-if ~exist(res_dir,'dir')
-  mkdir(res_dir)
-end
 ev = set_mat(ev, events, 'hd');
 
 fprintf('ev object "%s" created.\n', ev_name)
