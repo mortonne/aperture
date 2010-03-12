@@ -1,52 +1,35 @@
-function ev = modify_events(ev, params, ev_name, res_dir)
+function ev = modify_events(ev, f, f_inputs, varargin)
 %MODIFY_EVENTS   Modify an existing events structure.
 %
-%  ev = modify_events(ev, params, ev_name, res_dir)
+%  ev = modify_events(ev, f, f_inputs, ...)
 %
 %  INPUTS:
-%       ev:  an events object.
+%        ev:  an events object.
 %
-%   params:  a structure specifying options for modifying the events
-%            structure. See below.
+%         f:  handle to a function of the form:
+%              ev = f(ev, ...)
 %
-%  ev_name:  string identifier for the new events structure.  If empty
-%            or not specified, the name will not be changed.
-%
-%  res_dir:  directory where the new events structure will be saved.
-%            Default: get_ev_dir(ev)
+%  f_inputs:  cell array of additional inputs to f.
 %
 %  OUTPUTS:
-%       ev:  a modified events object.
+%        ev:  a modified events object.
 %
 %  PARAMS:
-%  overwrite       - boolean indicating whether existing events
-%                    structures should be overwritten. (false)
-%  eventFilter     - string to be passed into filterStruct to filter
-%                    the events structure. ('')
-%  replace_eegfile - cell array of strings. Each row specifies one
-%                    string replacement to run on events.eegfile, e.g.
-%                     strrep(eegfile, replace_eegfile{r,1}, ...
-%                             replace_eegfile{r,2})
-%                    is run for each row. Useful for fixing references
-%                    to EEG data. ({})
-%  ev_mod_fcn      - handle to a function of the form:
-%                     [events, ...] = fcn(events, ...)
-%                    Set this option to use a custom function to modify
-%                    the events structure.
-%  ev_mod_inputs   - cell array of additional inputs to ev_mod_fcn. ({})
-%
-%  EXAMPLES:
-%   % filter an events structure and overwrite the old events
-%   params = [];
-%   params.eventFilter = 'strcmp(type, ''WORD'')';
-%   params.overwrite = true;
-%   ev = modify_events(ev, params);
-%
-%   % run an arbitrary function to modify events for all subjects
-%   old_ev = 'events'; % name of the ev object to modify
-%   new_ev = 'my_events'; % name to save the new events under
-%   params.ev_mod_fcn = @my_function;
-%   subj = apply_to_ev(subj, old_ev, @modify_events, {params, new_ev});
+%  These options may be specified using parameter, value pairs or by
+%  passing a structure. Defaults are shown in parentheses.
+%   save_mat  - if true, and input mats are saved on disk, modified mats
+%               will be saved to disk. If false, the modified mats will
+%               be stored in the workspace, and can subsequently be
+%               moved to disk using move_obj_to_hd. This option is
+%               useful if you want to make a quick change without
+%               modifying a saved pattern. (true)
+%   overwrite - if true, existing events on disk will be overwritten.
+%               (false)
+%   save_as   - string identifier to name the modified events. If
+%               empty, the name will not change. ('')
+%   res_dir   - directory in which to save the modified events. Default
+%               is a directory named ev_name on the same level as the
+%               input pat.
 
 % input checks
 if ~exist('ev', 'var') || ~isstruct(ev)
@@ -57,108 +40,79 @@ end
 if ~isfield(ev, 'modified')
   ev.modified = false;
 end
-if ~exist('params', 'var')
-  params = struct;
+if ~exist('f', 'var') || ~isa(f, 'function_handle')
+  error('You must pass a function handle.')
 end
-if ~exist('ev_name', 'var') || isempty(ev_name)
-  ev_name = ev.name;
-elseif ~ischar(ev_name)
-  error('ev_name must be a string.')
-end
-if ~exist('res_dir', 'var')
-  res_dir = get_ev_dir(ev);
+if ~exist('f_inputs', 'var')
+  f_inputs = {};
 end
 
-% set default for whether to overwrite existing events
-ev_loc = get_obj_loc(ev);
-if strcmp(ev_loc, 'ws')
-  defaults.overwrite = true;
+% set default params
+defaults.save_mat = true;
+defaults.overwrite = false;
+defaults.save_as = '';
+defaults.res_dir = '';
+params = propval(varargin, defaults, 'strict', false);
+
+fprintf('modifying "%s" events...', ev.name)
+
+if strcmp(params.save_as, ev.name)
+  params.save_as = '';
+end
+
+% before modifying the pat object, make sure files, etc. are OK
+if ~isempty(params.save_as)
+  % set new save files, regardless of whether we're saving right now
+  % set the default results directory
+  ev_name = params.save_as;
+  if isempty(params.res_dir)
+    params.res_dir = fullfile(fileparts(get_ev_dir(ev)), ev_name);
+  end
+  
+  % use "events" subdirectory of res_dir
+  ev_dir = fullfile(params.res_dir, 'events');
+  ev_file = fullfile(ev_dir, ...
+                     objfilename('events', ev_name, ev.source));
 else
-  defaults.overwrite = false;
+  ev_name = ev.name;
+  ev_file = ev.file;
 end
 
-% default parameters
-params = structDefaults(params, ...
-                        'overwrite',       defaults.overwrite, ...
-                        'eventFilter',     '',                 ...
-                        'replace_eegfile', {},                 ...
-                        'ev_mod_fcn',      [],                 ...
-                        'ev_mod_inputs',   {});
-
-fprintf('modifying events structure "%s"...', ev.name)
-
-% make sure the events are not empty
-events = get_mat(ev);
-if isempty(events)
-  fprintf('events are empty.  Skipping...\n')
+% check to see if there's already a pattern there that we don't want
+% to overwrite
+if params.save_mat && ~params.overwrite && exist(ev_file, 'file')
+  fprintf('"%s" events exist. Skipping...\n', ev_name)
   return
 end
 
-% if the ev_name is different, save events to a new file
-if ~strcmp(ev.name, ev_name)
-  saveas = true;
-
-  % set the new file and check it
-  ev_file = fullfile(res_dir, objfilename('events', ev_name, ev.source));
-  if strcmp(ev_loc, 'hd') && ~params.overwrite && exist(ev_file, 'file')
-    fprintf('events "%s" exist in new file. Skipping...\n', ev_name)
-    return
-  end
-
-  % everything checks out; we can make modifications
-  if ~exist(res_dir, 'dir')
-    mkdir(res_dir);
-  end
-
-  % update the ev object
-  ev.name = ev_name;
-  ev.file = ev_file;
-else
-  saveas = false;
-  
-  % if the events exist and we're not overwriting, return
-  if ~params.overwrite && exist_mat(ev)
-    fprintf('events "%s" exist. Skipping...\n', ev.name)
-    return
-  end
-end
-
-% load the events structure
+events = get_mat(ev);
+events = f(events, f_inputs{:});
 ev.modified = true;
 
-% run strrep on the eegfile of each event
-if ~isempty(params.replace_eegfile)
-  rep = params.replace_eegfile';
-  events = rep_eegfile(events, rep{:});
-end
-
-% filter the events structure
-events = filterStruct(events, params.eventFilter);
-
-% run a custom script to modify events
-if ~isempty(params.ev_mod_fcn)
-  events = params.ev_mod_fcn(events, params.ev_mod_inputs{:});
-end
-
-% update the ev object
-if saveas
+if ~isempty(params.save_as)
+  % change the name and point to the new file
   ev.name = ev_name;
   ev.file = ev_file;
+  if ~exist(ev_dir, 'dir')
+    mkdir(ev_dir)
+  end
 end
-ev.modified = true;
 
-% save the new events
-ev = set_mat(ev, events, ev_loc);
-if strcmp(ev_loc, 'hd')
-  if saveas
-    fprintf('saved as "%s".\n', ev_name)
+if params.save_mat
+  % save the pattern
+  ev = set_mat(ev, events, 'hd');
+  if ~isempty(params.save_as)
+    fprintf('saved as "%s".\n', ev.name)
   else
     fprintf('saved.\n')
   end
 else
-  if saveas
-    fprintf('returning as "%s".\n', ev_name)
+  % just save to workspace
+  ev = set_mat(ev, events, 'ws');  
+  if ~isempty(params.save_as)
+    fprintf('returning as "%s".\n', ev.name)
   else
     fprintf('updated.\n')
   end
 end
+
