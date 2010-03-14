@@ -17,19 +17,25 @@ function ev = modify_events(ev, f, f_inputs, varargin)
 %  PARAMS:
 %  These options may be specified using parameter, value pairs or by
 %  passing a structure. Defaults are shown in parentheses.
-%   save_mat  - if true, and input mats are saved on disk, modified mats
-%               will be saved to disk. If false, the modified mats will
-%               be stored in the workspace, and can subsequently be
-%               moved to disk using move_obj_to_hd. This option is
-%               useful if you want to make a quick change without
-%               modifying a saved pattern. (true)
-%   overwrite - if true, existing events on disk will be overwritten.
-%               (false)
-%   save_as   - string identifier to name the modified events. If
-%               empty, the name will not change. ('')
-%   res_dir   - directory in which to save the modified events. Default
-%               is a directory named ev_name on the same level as the
-%               input pat.
+%   event_filter - string for filterStruct to choose a subset of events
+%                  to pass to the function. The result will be merged
+%                  with all events. Any overlapping elements in the old
+%                  structure will be replaced with their equivalents
+%                  (based on the "eegfile" and "eegoffset" fields) in
+%                  the new structure. ('')
+%   save_mat     - if true, and input mats are saved on disk, modified
+%                  mats will be saved to disk. If false, the modified
+%                  mats will be stored in the workspace, and can
+%                  subsequently be moved to disk using move_obj_to_hd.
+%                  This option is useful if you want to make a quick
+%                  change without modifying a saved pattern. (true)
+%   overwrite    - if true, existing events on disk will be overwritten.
+%                  (false)
+%   save_as      - string identifier to name the modified events. If
+%                  empty, the name will not change. ('')
+%   res_dir      - directory in which to save the modified events.
+%                  Default is a directory named ev_name on the same
+%                  level as the input pat.
 
 % input checks
 if ~exist('ev', 'var') || ~isstruct(ev)
@@ -48,6 +54,7 @@ if ~exist('f_inputs', 'var')
 end
 
 % set default params
+defaults.event_filter = '';
 defaults.save_mat = true;
 defaults.overwrite = false;
 defaults.save_as = '';
@@ -86,8 +93,23 @@ if params.save_mat && ~params.overwrite && exist(ev_file, 'file')
 end
 
 events = get_mat(ev);
-events = f(events, f_inputs{:});
+if ~isempty(params.event_filter)
+  % run on a subset of events
+  sub_events = filterStruct(events, params.event_filter);
+  sub_len = length(sub_events);
+  sub_events = f(sub_events, f_inputs{:});
+
+  % merge back into the complete events structure
+  events = union_structs(sub_events, events, {'eegfile', 'eegoffset'});
+  
+  % in case merging messes up order
+  events = sort_events(events);
+else
+  events = f(events, f_inputs{:});
+end
+
 ev.modified = true;
+ev.len = length(events);
 
 if ~isempty(params.save_as)
   % change the name and point to the new file
