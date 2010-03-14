@@ -21,12 +21,12 @@ function events = rec_baseline_events(events, rec_duration, varargin)
 %  PARAMS:
 %   pre      - time before each vocalization event to exclude. (1000)
 %   post     - time after each vocalization onset to exclude. (1000)
-%   duration - duration of each random free epoch. (400)
+%   duration - duration of each random free epoch. (200)
 
 % options
 defaults.pre = 1000;
 defaults.post = 1000;
-defaults.duration = 400;
+defaults.duration = 200;
 params = propval(varargin, defaults);
 
 samplerate = GetRateAndFormat(events(1));
@@ -71,9 +71,16 @@ for session = sessions
     n_free = length(free);
     if n_free < n_trial_events
       fprintf('Warning: only found %d baseline epochs for %d recall events.\n', ...
-              n_free, n_rec_events)
+              n_free, n_trial_events)
     end
-    rand_free_times = sort(randsample(free, min([n_free n_trial_events])));
+    
+    if n_free == 0
+      continue
+    elseif n_free <= n_trial_events
+      rand_free_times = free;
+    else
+      rand_free_times = sort(randsample(free, n_trial_events));
+    end
     
     % use apply_event_bins to get fields that are the same throughout
     % the trial
