@@ -23,7 +23,7 @@ if ~exist('subdir', 'var')
   subdir = '';
 end
 
-main_dir = fileparts(ev.file);
+main_dir = fileparts(fileparts(ev.file));
 
 % fix the path if it is relative; assuming that we don't want to use
 % filepaths relative to the search path

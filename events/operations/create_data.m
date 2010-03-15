@@ -21,12 +21,6 @@ function ev = create_data(ev, stat_name, varargin)
 %   overwrite - if true, existing stat files will be overwritten. (true)
 %   res_dir   - directory in which to save the data structure. Default
 %               is the default stats directory for the ev object.
-%
-%  NOTES:
-%   Currently, it is necessary for the stat_name to be unique across all
-%   ev objects. In the future, directory structure will be changed so
-%   that, like with pattern functions, obj_names only have to be unique
-%   within the parent object.
 
 % input checks
 if ~exist('ev', 'var') || ~isstruct(ev)

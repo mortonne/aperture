@@ -11,9 +11,9 @@ function [ev, events] = cat_events(evs, ev_name, source, res_dir)
 %   source:  optional string that will set the 'source' field of the new
 %            ev object.  Default: 'multiple'
 %
-%  res_dir:  directory where the new events structure will be saved.
-%            Default is the parent directory of the first ev object's
-%            file.
+%  res_dir:  directory to save results. Events will be saved in
+%            [res_dir]/events. Default is the parent directory of the
+%            first ev object's file.
 %
 %  OUTPUTS:
 %       ev:  ev object with metadata for the new concatenated events
@@ -47,14 +47,14 @@ end
 
 % concatenate events
 events = [];
-for ev=evs
+for ev = evs
   fprintf('%s ', ev.source)
-  events = [events get_mat(ev)];
+  events = cat_structs(events, get_mat(ev));
 end
 fprintf('\n')
 
 % create the new ev object
-ev_file = fullfile(res_dir, objfilename('events', ev_name, source));
+ev_file = fullfile(res_dir, 'events', objfilename('events', ev_name, source));
 ev = init_ev(ev_name, 'source', source, 'file', ev_file);
 
 % save the events
