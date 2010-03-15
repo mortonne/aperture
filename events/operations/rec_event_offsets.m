@@ -1,7 +1,7 @@
-function events = rec_event_offsets(events, rec_duration, start_buffer)
+function events = rec_event_offsets(events, rec_duration, varargin)
 %REC_EVENT_OFFSETS   Add event offsets to recall events.
 %
-%  events = rec_event_offsets(events, rec_duration, start_buffer)
+%  events = rec_event_offsets(events, rec_duration, ...)
 %
 %  INPUTS:
 %        events:  an events structure. Assumed to have fields:
@@ -12,14 +12,16 @@ function events = rec_event_offsets(events, rec_duration, start_buffer)
 %  rec_duration:  duration of each recall period in ms. Must be the
 %                 same for all recall periods.
 %
-%  start_buffer:  buffer to add after each recall start event.
-%
 %  OUTPUTS:
 %        events:  events structure with added preoffset field.
+%
+%  PARAMS:
+%   start_buffer - buffer to add after each recall start event. (0)
+%   voc_duration - time to exclude after each vocalization. (1000)
 
-if nargin < 3
-  start_buffer = 0;
-end
+defaults.start_buffer = 0;
+defaults.voc_duration = 1000;
+params = propval(varargin, defaults);
 
 % make sure we have a row vector
 if size(events, 1) > 1
@@ -50,7 +52,8 @@ for rec_start = rec_starts
   voc_times = times(rec_ind);
   
   % find free time between events
-  offsets = free_offsets(voc_times, rec_start + start_buffer);
+  offsets = free_offsets(voc_times, params.voc_duration, ...
+                         rec_start + params.start_buffer);
   
   % add to new field
   c = num2cell(offsets);
