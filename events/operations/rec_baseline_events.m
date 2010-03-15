@@ -19,14 +19,17 @@ function events = rec_baseline_events(events, rec_duration, varargin)
 %        events:  events with added REC_BASE events.
 %
 %  PARAMS:
-%   pre      - time before each vocalization event to exclude. (1000)
-%   post     - time after each vocalization onset to exclude. (1000)
-%   duration - duration of each random free epoch. (200)
+%   pre          - time before each vocalization event to exclude.
+%                  (1000)
+%   post         - time after each vocalization onset to exclude. (1000)
+%   duration     - duration of each random free epoch. (200)
+%   start_buffer - buffer after start of recall period to exclude. (500)
 
 % options
 defaults.pre = 1000;
 defaults.post = 1000;
 defaults.duration = 200;
+defaults.start_buffer = 500;
 params = propval(varargin, defaults);
 
 % get the time of each event
@@ -62,8 +65,8 @@ for i = 1:length(rec_start_events)
   samplerate = GetRateAndFormat(rec_start_events(i));
   
   % find free time between events
-  p = rmfield(params, 'duration');
-  p.start = rec_start;
+  p = rmfield(params, {'duration', 'start_buffer'});
+  p.start = rec_start + params.start_buffer;
   p.finish = rec_start + rec_duration;
   free = free_epochs(voc_times, params.duration, p);
 
