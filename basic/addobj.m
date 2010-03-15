@@ -23,8 +23,6 @@ elseif ~exist('obj','var')
   error('You must pass an object to append.')
 elseif length(obj) > 1
   error('obj must be of length one.')
-elseif ~isempty(objs) && any(arrayfun(@(x)(isempty(get_obj_name(x))), objs))
-  error('objs must have an identifier field.')
 elseif ~isempty(obj) && isempty(get_obj_name(obj))
   error('obj must have an identifier field.')
 end
