@@ -30,6 +30,12 @@ function epoch_times = free_epochs(times, duration, varargin)
 %  epoch_times =
 %   9    11   NaN
 %   4    10    12
+%
+%  >> params = struct('pre', 2, 'post', 1, 'start', 3, 'finish', 18);
+%  >> epoch_times = free_epochs(times, 2, params)
+%  epoch_times =
+%   9    11    16
+%   4    10    12
 
 % set options
 defaults.pre = 0;

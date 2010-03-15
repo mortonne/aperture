@@ -35,6 +35,10 @@ end
 
 [n_trials, n_recalls] = size(times);
 offsets = NaN(n_trials, n_recalls);
+if isempty(offsets)
+  return
+end
+
 for i=1:n_trials
   % get IRTs for all valid times
   mask = times(i,:) > 0;

@@ -43,6 +43,10 @@ for rec_start = rec_starts
   % times of all events during this recall period (assuming they are
   % disruptive events of some type, not suitable for baseline)
   rec_ind = rec_start < times & times <= rec_start + rec_duration;
+  if ~any(rec_ind)
+    continue
+  end
+  
   voc_times = times(rec_ind);
   
   % find free time between events
