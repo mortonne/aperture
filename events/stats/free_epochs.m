@@ -53,11 +53,21 @@ for i = 1:n_trials
     % start has no duration, so pre=post 
     pre_times = [params.start pre_times];
     post_times = [params.start post_times];
+    
+    % exclude events that finish before the start time
+    before_start = post_times < params.start;
+    pre_times = pre_times(~before_start);
+    post_times = post_times(~before_start);
   end
   if ~isempty(params.finish)
     % finish has no duration, so pre=post 
     pre_times = [pre_times params.finish];
     post_times = [post_times params.finish];
+    
+    % exclude events that begin after the finish time
+    after_finish = pre_times > params.finish;
+    pre_times = pre_times(~after_finish);
+    post_times = post_times(~after_finish);
   end
   
   % get length of each interval
@@ -75,6 +85,11 @@ for i = 1:n_trials
     % find all start times matching criteria
     interval_epoch_times = start:duration:finish;
     trial_epoch_times = [trial_epoch_times interval_epoch_times];
+  end
+
+  % so row index keeps meaning, even if no free periods this trial
+  if isempty(trial_epoch_times)
+    trial_epoch_times = NaN;
   end
   
   epoch_times = padcat(1, NaN, epoch_times, trial_epoch_times);
