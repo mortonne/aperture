@@ -63,7 +63,7 @@ if ~isempty(params.eventFilter)
   % filter
   inds{1} = inStruct(events, params.eventFilter);
   events = events(inds{1});
-  pat.dim.ev = set_mat(pat.dim.ev, events);
+  pat.dim.ev = set_mat(pat.dim.ev, events, 'ws');
   pat.dim.ev.modified = true;
 end
 
