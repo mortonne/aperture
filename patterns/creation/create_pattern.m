@@ -103,7 +103,7 @@ defaults.updateOnly = false;
 
 params = propval(params, defaults, 'strict', false);
 
-if ~isfield(params, 'baseEventFilter')
+if isempty(params.baseEventFilter)
   params.baseEventFilter = params.eventFilter;
 end
 
