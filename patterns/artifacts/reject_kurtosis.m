@@ -1,7 +1,7 @@
 function [mask, kurt] = reject_kurtosis(pattern, thresh, varargin)
 %REJECT_KURTOSIS   Reject samples of a pattern based on kurtosis.
 %
-%  [mask, kurt] = reject_kurtosis(pattern, thresh, args)
+%  [mask, kurt] = reject_kurtosis(pattern, thresh, ...)
 %
 %  INPUTS:
 %   pattern:  [events X channels X time X freq] matrix.
@@ -15,17 +15,18 @@ function [mask, kurt] = reject_kurtosis(pattern, thresh, varargin)
 %
 %  kurtosis:  corresponding kurtosis values.
 %
-%  ARGS:
-%  verbose - if true, more information will be printed. (true)
+%  PARAMS:
+%   verbose - if true, more information will be printed. (true)
 
 % input checks
 if ~exist('pattern', 'var') || ~isnumeric(pattern)
   error('You must pass a pattern matrix.')
 end
-if ~exist('thresh','var')
+if ~exist('thresh', 'var')
   thresh = 5;
 end
 
+% options
 defaults.verbose = true;
 params = propval(varargin, defaults);
 
@@ -37,13 +38,15 @@ mask = kurt > thresh;
 
 if params.verbose
   if ndims(pattern)==4
-    fprintf(['Threw out %d event-channel-freqs ' ...
-            'out of %d with kurtosis greater than %d.\n'], ...
-            nnz(mask), numel(mask), thresh)
+    fprintf(['Removed %d event-channel-freqs ' ...
+            'of %d (%.f%%) with kurtosis > %d. (m=%.4f s=%.4f)\n'], ...
+            nnz(mask), numel(mask), (nnz(mask) / numel(mask)) * 100, ...
+            thresh, mean(kurt(:)), std(kurt(:)))
   else
-    fprintf(['Threw out %d event-channels ' ...
-            'out of %d with kurtosis greater than %d.\n'], ...
-            nnz(mask), numel(mask), thresh)
+    fprintf(['Removed %d event-channels ' ...
+            'of %d (%.f%%) with kurtosis > %d. (m=%.4f s=%.4f)\n'], ...
+            nnz(mask), numel(mask), (nnz(mask) / numel(mask)) * 100, ...
+            thresh, mean(kurt(:)), std(kurt(:)))
   end
 end
 
