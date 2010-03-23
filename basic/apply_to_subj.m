@@ -102,20 +102,28 @@ elseif dist==2
   tic
   new_subj = [];
   parfor i=1:length(subj)
-    fprintf('%s\n', get_obj_name(subj(i)))
+    if length(subj) > 1
+      fprintf('%s\n', get_obj_name(subj(i)))
+    end
     new_subj = [new_subj fcn_handle(subj(i), fcn_inputs{:})];
   end
   subj = new_subj;
-  fprintf('apply_to_subj: finished: %.2f seconds.\n', toc);
+  if length(subj) > 1
+    fprintf('apply_to_subj: finished: %.2f seconds.\n', toc);
+  end
 else
   % run the function on each element of the subject vector
   tic
   for i=1:length(subj)
     this_subj = subj(i);
-    fprintf('%s\n', get_obj_name(this_subj))
+    if length(subj) > 1
+      fprintf('%s\n', get_obj_name(this_subj))
+    end
     % pass this subject as input to the function
     % and modify the subject vector
     subj = addobj(subj, fcn_handle(this_subj, fcn_inputs{:}));
   end
-  fprintf('apply_to_subj: finished: %.2f seconds.\n', toc);
+  if length(subj) > 1
+    fprintf('apply_to_subj: finished: %.2f seconds.\n', toc);
+  end
 end
