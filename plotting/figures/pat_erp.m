@@ -1,11 +1,11 @@
 function pat = pat_erp(pat, fig_name, params, res_dir)
 %PAT_ERP   Make event-related potential plots and print them to disk.
 %
-%  pat = pat_erp(pat, fig_name, params, res_dir)
-%
 %  Create a plot for each [event X channel X frequency] in a pattern.
 %  Typically used for plotting ERPs, but can also be used for plotting
 %  other values that vary over time.
+%
+%  pat = pat_erp(pat, fig_name, params, res_dir)
 %
 %  INPUTS:
 %           pat:  pat object containing the pattern to be plotted.
@@ -24,7 +24,6 @@ function pat = pat_erp(pat, fig_name, params, res_dir)
 %  PARAMS:
 %  All fields are optional.  Default values are shown in parentheses.
 %  Also see plot_erp for more plotting params.
-%  Values to plot
 %   event_bins       - input to make_event_bins; can be used to average
 %                      over events before plotting. ('')
 %   stat_name        - name of a stat object attached to pat. If
@@ -35,7 +34,6 @@ function pat = pat_erp(pat, fig_name, params, res_dir)
 %                      significance. (0.05)
 %   correctm         - method to use to correct for multiple
 %                      comparisions. [{none} | fdr | bonferroni]
-%  Plotting options
 %   plot_mult_events - if true, all events will be plotted on one axis.
 %                      Otherwise, each event will be plotted on a
 %                      separate figure. (true)
@@ -45,11 +43,6 @@ function pat = pat_erp(pat, fig_name, params, res_dir)
 %                      points. ([.8 .8 .8])
 %   mult_fig_windows - if true, each figure will be plotted in a
 %                      separate window. (false)
-%   colors           - cell array of strings indicating colors to use
-%                      for plotting ERPs. colors{i} will be used for
-%                      plotting pattern(i,:,:). ({})
-%   y_lim            - if specified, y-limit for all figures will be set
-%                      to this. ([])
 %
 %  EXAMPLES:
 %   % make ERPs for each channel in my_pattern for all subjects, and
@@ -58,7 +51,7 @@ function pat = pat_erp(pat, fig_name, params, res_dir)
 %   fig_name = 'erp';
 %   subj = apply_to_pat(subj, pat_name, @pat_erp, {fig_name});
 %
-%  See also create_fig, create_pat_report, pat_topoplot.
+%  See also create_pat_report, pat_topoplot.
 
 % input checks
 if ~exist('pat','var') || ~isstruct(pat)
@@ -83,26 +76,23 @@ if ~exist(res_dir,'dir');
   mkdir(res_dir)
 end
 
-% set default parameters
-params = structDefaults(params, ...
-                        'print_input',      {'-depsc'}, ...
-                        'event_bins',       '',       ...
-                        'plot_mult_events', true,     ...
-                        'mult_fig_windows', 0,        ...
-                        'colors',           {},       ...
-                        'y_lim',            [],       ...
-                        'stat_name',        '',       ...
-                        'alpha',            0.05,     ...
-                        'correctm',         '',       ...
-                        'fill_color',       [.8 .8 .8]);
+% options
+defaults.print_input = {'-depsc'};
+defaults.event_bins = '';
+defaults.plot_mult_events = true;
+defaults.mult_fig_windows = false;
+defaults.stat_name = '';
+defaults.alpha = 0.05;
+defaults.correctm = '';
+[params, plot_params] = propval(params, defaults);
 
 if ~isempty(params.event_bins)
-  % create bins using inputs accepted by make_event_bins
-  p = [];
-  p.eventbins = params.event_bins;
-  p.save_mats = false;
-  pattern = get_mat(modify_pattern(pat, p));
+  % apply binning (don't modify the pat object, even in the workspace)
+  pattern = get_mat(bin_pattern(pat, ...
+                                'eventbins', params.event_bins, ...
+                                'save_mats', false));
 else
+  % just get the pattern
   pattern = get_mat(pat);
 end
 
@@ -167,7 +157,7 @@ for i=1:num_events
       end
 
       % make the plot
-      plot_erp(erp, x, params);
+      plot_erp(erp, x, plot_params);
 
       % generate the filename
       if ndims(pattern)==4
