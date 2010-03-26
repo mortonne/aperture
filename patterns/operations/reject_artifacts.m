@@ -18,6 +18,9 @@ function pat = reject_artifacts(pat, varargin)
 %                exceeding this value, the event will be excluded. ([])
 %   verbose    - if true, information about excluded samples will be
 %                displayed. (false)
+%   reject     - string identifying whether you want to reject
+%                artifacts ('bad') or non-artifact trials ('good')
+%                default is ('bad')
 %   save_mats  - if true, and input mats are saved on disk, modified
 %                mats will be saved to disk. If false, the modified mats
 %                will be stored in the workspace, and can subsequently
@@ -34,6 +37,7 @@ function pat = reject_artifacts(pat, varargin)
 defaults.abs_thresh = [];
 defaults.k_thresh = [];
 defaults.verbose = false;
+defaults.reject = 'bad';
 [params, save_opts] = propval(varargin, defaults);
 
 pat = mod_pattern(pat, @run_reject, {params}, save_opts);
@@ -59,8 +63,18 @@ function pat = run_reject(pat, params)
     bad = bad | reject_threshold(pattern, params.abs_thresh, ...
                                  'verbose', params.verbose);
   end
-
-  % nan out bad samples
-  pattern(bad) = NaN;
+  
+  switch params.reject
+   case 'bad'
+    % nan out bad samples
+    pattern(bad) = NaN;
+   case 'good'
+    % nan out good samples
+    pattern(~bad) = NaN;
+   otherwise
+    %some invalid value
+    error('please choose either ''bad'' or ''good'' for params.reject')
+  end
+  
   pat = set_mat(pat, pattern, 'ws');
 %endfunction
