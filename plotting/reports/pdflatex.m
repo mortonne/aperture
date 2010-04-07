@@ -40,14 +40,14 @@ fprintf('compiling %s...', latex_file)
 
 switch compile_method
   case 'latexdvipdf'
-  compile(latex_file, 'latex');
+  compile(latex_file, 'latex -interaction=nonstopmode');
   
   % make a PDF
   command = sprintf('dvipdf %s', latex_file);
   unix(command);
   
   case 'pdflatex'
-  compile(latex_file, 'pdflatex');
+  compile(latex_file, 'pdflatex -interaction nonstopmode');
   
   otherwise
   error('Unknown compiling method: %s', compile_method)
@@ -77,7 +77,7 @@ function compile(latex_file, compile_command, max_tries)
   while run && tries < max_tries
     % run the command
     command = sprintf('%s %s | grep "Rerun LaTeX"', compile_command, latex_file);
-    [s,w] = unix(command);
+    [~,w] = unix(command);
 
     if isempty(w) % success!
       run = false;
