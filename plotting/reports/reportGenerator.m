@@ -142,9 +142,12 @@ end
 
 fprintf(fid,'\\end{document}');
 
+
 if ~isempty(strfind([contentStruct.figureName],'.eps'))
+    fprintf('compiling with latexdvipdf.m');
     pdf_file = pdflatex(outputFilename,'latexdvipdf');
 else
+    fprintf('compiling with pdflatex.m');
     pdf_file = pdflatex(outputFilename,'pdflatex');
 end
     
