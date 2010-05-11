@@ -100,6 +100,10 @@ fprintf(fid,'\\begin{document}\n');
 fprintf(fid,'\n');
 
 for s = 1:length(contentStruct)
+    if s > 1
+        fprintf(fid,'\\newpage\n');
+    end
+    
     if ~isempty(contentStruct(s).docTitle)
         fprintf(fid,'\\begin{center}\\section*{%s}\n',contentStruct(1).docTitle);
         fprintf(fid,'\\end{center}\n');
