@@ -83,6 +83,7 @@ fid = fopen(outputFilename,'w');
 
 fprintf(fid,'\\documentclass[11pt]{article}\n');
 %fprintf(fid,'\\usepackage{apacite}\n');
+fprintf(fid,'\\usepackage{float}\n');
 fprintf(fid,'\\usepackage{pxfonts}\n');
 fprintf(fid,'\\usepackage{color}\n');
 fprintf(fid,'\\usepackage{soul}\n');
@@ -100,10 +101,7 @@ fprintf(fid,'\\begin{document}\n');
 fprintf(fid,'\n');
 
 for s = 1:length(contentStruct)
-    if s > 1
-        fprintf(fid,'\\newpage\n');
-    end
-    
+   
     if ~isempty(contentStruct(s).docTitle)
         fprintf(fid,'\\begin{center}\\section*{%s}\n',contentStruct(1).docTitle);
         fprintf(fid,'\\end{center}\n');
@@ -128,7 +126,7 @@ for s = 1:length(contentStruct)
             contentStruct(s).figureWidth = defaultFigWidth;
         end
 
-        fprintf(fid,'\\begin{figure}[h!]\n');
+        fprintf(fid,'\\begin{figure}[H]\n');
         fprintf(fid,'\\begin{center}\n');
         fprintf(fid,'\\includegraphics[width=%4.2fin]{%s}\n',contentStruct(s).figureWidth,contentStruct(s).figureName);
         fprintf(fid,'\\caption{%s}\n',contentStruct(s).figureCaption);
