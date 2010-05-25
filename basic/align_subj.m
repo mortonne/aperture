@@ -19,8 +19,8 @@ function align_subj(subj, varargin)
 %   pulse_ext - file extension for the pulse files, to be appended to
 %               the EEG fileroot for each session. May contain wildcards
 %               (*). ('*.sync.txt')
-%   pulse_dir - directory where pulse files are stored. Default is the
-%               parent directory of the first session's EEG file.
+%   pulse_dir - directory where pulse files are stored, relative to
+%               subj.dir. ('eeg.noreref')
 %
 %  EXAMPLE:
 %   % path to directory with behavioral data
@@ -54,7 +54,7 @@ end
 % options
 defaults.eventfile = 'events.mat';
 defaults.pulse_ext = '*.sync.txt';
-defaults.pulse_dir = fileparts(subj.sess(1).eegfile);
+defaults.pulse_dir = 'eeg.noreref';
 params = propval(varargin, defaults);
 
 for sess=subj.sess
@@ -79,14 +79,15 @@ for sess=subj.sess
     [pathstr, basename] = fileparts(eegfiles{i});
 
     % get the EEG sync pulse file
-    pulse_path = fullfile(params.pulse_dir, [basename params.pulse_ext]);
+    pulse_path = fullfile(subj.dir, params.pulse_dir, ...
+                          [basename params.pulse_ext]);
     temp = dir(pulse_path);
     if length(temp) == 0
       error('No EEG sync pulse files found that match: %s', pulse_path)
     elseif length(temp) > 1
       error('Multiple EEG sync pulse files found that match: %s', pulse_path)
     end
-    eegsyncfiles{i} = fullfile(params.pulse_dir, temp.name);
+    eegsyncfiles{i} = fullfile(subj.dir, params.pulse_dir, temp.name);
 
     % for runAlign, make eegfile point to a specific channel
     eegfiles{i} = [eegfiles{i} '.001'];
@@ -105,7 +106,7 @@ for sess=subj.sess
   
   % get the samplerate
   samplerate = GetRateAndFormat(fileparts(eegfiles{1}));
-  
+
   % run the alignment
   runAlign(samplerate, {behsyncfile}, eegsyncfiles, eegfiles, {eventfile}, ...
            'mstime', 0, 0);

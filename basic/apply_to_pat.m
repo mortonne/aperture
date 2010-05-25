@@ -45,6 +45,19 @@ if ~exist('dist','var')
   dist = false;
 end
 
-% apply_to_subj_obj does all the work
-subj = apply_to_subj_obj(subj, {'pat', pat_name}, fcn_handle, fcn_inputs, dist);
+if strcmp(pat_name(end), '*')
+  % find all patterns that begin with the input name
+  pats = [subj.pat];
+  pat_names = unique({pats.name});
+  match = strmatch(pat_name(1:end-1), pat_names);
+  pat_names = pat_names(match);
+else
+  pat_names = {pat_name};
+end
+
+for i=1:length(pat_names)
+  % apply_to_subj_obj does all the work
+  subj = apply_to_subj_obj(subj, {'pat', pat_names{i}}, fcn_handle, ...
+                           fcn_inputs, dist);
+end
 
