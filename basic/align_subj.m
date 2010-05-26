@@ -1,7 +1,7 @@
-function align_subj(subj, varargin)
+function subj = align_subj(subj, varargin)
 %ALIGN_SUBJ   Align a subject's events to EEG data.
 %
-%  align_subj(subj, ...)
+%  subj = align_subj(subj, ...)
 %
 %  INPUTS:
 %    subj:  a subject structure, where each sess subfield has the
@@ -10,6 +10,10 @@ function align_subj(subj, varargin)
 %            eegfile - path to the EEG files, including the filename,
 %                      without the .XXX suffix that indicates the
 %                      channel
+%
+%  OUTPUTS:
+%     subj:  the subject structure, unmodified. This is only output for
+%            purposes of compatibility with apply_to_subj.
 %
 %  PARAMS:
 %  These options may be specified using parameter, value pairs or by
