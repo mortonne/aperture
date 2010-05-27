@@ -79,7 +79,7 @@ for i = 1:length(rec_start_events)
   % find free time between events
   p = rmfield(params, {'duration', 'start_buffer'});
   p.start = rec_start + params.start_buffer;
-  p.finish = rec_start + rec_duration;
+  p.finish = rec_start + rec_duration(i);
   free = free_epochs(voc_times, params.duration, p);
 
   % for a proper baseline, we want the sample to be the same size as
