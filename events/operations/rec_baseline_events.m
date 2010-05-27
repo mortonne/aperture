@@ -12,8 +12,9 @@ function events = rec_baseline_events(events, rec_duration, varargin)
 %                  eegoffset - sample number in the EEG file
 %                  eegfile   - path to the EEG file
 %
-%  rec_duration:  duration of each recall period in ms. Must be the
-%                 same for all recall periods.
+%  rec_duration:  duration of each recall period in ms. May be a scalar
+%                 (if all durations are the same) or a vector of length
+%                 number of recall periods (if durations vary)
 %
 %  OUTPUTS:
 %        events:  events with added REC_BASE events.
@@ -44,6 +45,11 @@ end
 % get recall period start times
 rec_start_events = events(strcmp({events.type}, 'REC_START'));
 
+% NWM: attempt to deal with multiple recall durations
+if isscalar(rec_duration)
+  rec_duration = repmat(rec_duration, length(rec_start_events), 1);
+end
+
 base_events = [];
 for i = 1:length(rec_start_events)
   rec_start = rec_start_events(i).mstime;
@@ -51,7 +57,9 @@ for i = 1:length(rec_start_events)
   
   % times of all events during this recall period (assuming they are
   % disruptive events of some type, not suitable for baseline)
-  rec_ind = rec_start < times & times <= rec_start + rec_duration;
+  %rec_ind = rec_start < times & times <= rec_start + rec_duration;
+  % NWM: attempt to deal with multiple recall durations
+  rec_ind = rec_start < times & times <= rec_start + rec_duration(i);
   if ~any(rec_ind)
     continue
   end
