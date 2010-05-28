@@ -14,6 +14,9 @@ if ~exist('subj', 'var') || ~isstruct(subj)
 elseif ~isscalar(subj)
   error('Only one subject at a time.')
 end
-  
-subj.chan = struct('number', num2cell(1:n_chans), 'label', '');
+
+for i=1:n_chans
+  subj.chan(i).number = i;
+  subj.chan(i).label = sprintf('%d', i);
+end
 
