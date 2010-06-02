@@ -37,7 +37,7 @@ function subj = create_events(subj, fcn_handle, fcn_input, varargin)
 %                  given session, if any of the files are newer than
 %                  agethresh days, or if eventsfile doesn't exist, new
 %                  events will be created and saved. Paths may contain
-%                  wildcards "*". ({'session.log', '*.par'})
+%                  wildcards "*". ({'session.log', '*.par', '*.ann'})
 %   age_thresh   - threshold for determining if a session's data have
 %                  been modified recently. If any files in input_files
 %                  have been modified within the past age_thresh days,
@@ -72,7 +72,7 @@ end
 % set options
 defaults.data_dir = '';
 defaults.output_file = 'events.mat';
-defaults.input_files = {'session.log', '*.par'};
+defaults.input_files = {'session.log', '*.par', '*.ann'};
 defaults.age_thresh = .8;
 defaults.overwrite = true;
 defaults.force = false;
@@ -101,13 +101,14 @@ for sess = subj.sess(match)
     % get file i/o information
     if ~isempty(params.input_files)
       infiles_new = filecheck(params.input_files, params.age_thresh);
-      if ~infiles_new
+      if ~infiles_new && exist(params.output_file, 'file')
+        % no modified input files, and output file already exists
         continue
       end
     end
   end
 
-  fprintf('creating events for %s-%d using %s...', ...
+  fprintf('creating events for %s-%d using %s...\n', ...
           subj.id, sess.number, func2str(fcn_handle))
 
   % directory that the function will get input from
@@ -142,10 +143,10 @@ function update = filecheck(files, agethresh)
   for i=1:length(files)
     d = dir(files{i});
     if length(d)==0
-      return
+      continue
     end
-    for i=1:length(d)
-      age = now - datenum(d(i).date);
+    for j=1:length(d)
+      age = now - datenum(d(j).date);
       if age < agethresh
         update = 1;
         return
