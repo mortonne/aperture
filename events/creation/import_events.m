@@ -30,7 +30,7 @@ function subj = import_events(subj, ev_name, res_dir, varargin)
 %                  events structure before it is imported. ('')
 %   check_eeg    - if true, a check will be run on the eegfile field of
 %                  each events structure; if the eegfile field is
-%                  missing, prep_egi_data2 will be run on the session
+%                  missing, prep_egi_data will be run on the session
 %                  in an attempt to align the events. (false)
 %
 %  See also create_events.
@@ -88,7 +88,7 @@ for sess=subj.sess(match)
     try
       % try to fix it one more time;
       % force alignment to run again
-      prep_egi_data2(subj.id, sess.dir, ...
+      prep_egi_data(subj.id, sess.dir, ...
                      'eventfiles', {sess_events_file}, ...
                      'steps_to_run', {'align'});
       
@@ -120,7 +120,7 @@ for sess=subj.sess(match)
        otherwise
         % just print the error output
         warning('eeg_ana:post_process_subj:SessError', ...
-                'prep_egi_data2 threw an error for %s:\n %s', ...
+                'prep_egi_data threw an error for %s:\n %s', ...
                 sess.dir, getReport(err))
       end
 
