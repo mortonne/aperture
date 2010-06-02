@@ -1,68 +1,35 @@
-function [ev,status] = blink_stats(ev, params)
-%BLINK_STATS   Get information from an events struct about artifacts.
-%   EV = BLINK_STATS(EV,PARAMS) loads the events from EV and calculates
-%   statistics having to do with artifacts.  The returned EV has a new
-%   field, "blinks," that gives the percentage of events with artifacts.
+function blink_freq = blink_stats(events, window_start, window_end)
+%BLINK_STATS   Calculate statistics on blinking during an experiment.
 %
-%   Params:
-%     'eventFilter' Filter to apply to the events before calculating
-%                   blink percentage
-%     'windowEnd'   Can either be a scalar denoting a time in milliseconds
-%                   after each event to look for artifacts, or a string
-%                   containing the name of a field that has a millisecond
-%                   value for each event
+%  blink_freq = blink_stats(events, window_start, window_end)
 %
-%   Example:
-%    To only count blinks that happened before the partcipant reacted:
-%    ev = blink_stats(ev,struct('windowEnd','rt'));
+%  INPUTS:
+%        events:  an events structure. Must be aligned and have an
+%                 artifactMS field (created by addArtifacts).
 %
+%  window_start:  time in ms relative to the onset of each event to
+%                 count artifacts. Value must be positive.
+%                 Alternatively, may be a string name of a field in
+%                 events containing numeric values.
+%
+%    window_end:  time in ms or string name of a field of events.
+%
+%  OUTPUTS:
+%    blink_freq:  fraction of events containing artifacts.
 
-if ~exist('params', 'var')
-  params = [];
+% input checks
+if ~isfield(events, 'artifactMS')
+  error('events must have an artifactMS field. Run addArtifacts.')
 end
 
-params = structDefaults(params, 'eventFilter','', 'windowEnd',2000, 'verbose',0);
-status = 0;
-
-events = loadEvents(ev.file);
-
-% run filter if specified
-events = filterStruct(events, params.eventFilter);
-
-if isempty(events)
-  error('Events struct is empty after filtering with: ''%s''', params.eventFilter)
-  err = 1;
-  return
+art = [events.artifactMS];
+if ischar(window_start)
+  window_start = [events.(window_start)];
+end
+if ischar(window_end)
+  window_end = [events.(window_end)];
 end
 
-fprintf('calculating blink stats...')
-sessions = unique(getStructField(events, 'session'));
-ev.blinks = NaN(length(sessions),1);
-for n=1:length(sessions)
-  sess_events = filterStruct(events, 'session==varargin{1}', sessions(n));
+blink = window_start < art & art <= window_end;
+blink_freq = nnz(blink) / length(blink);
 
-  art = getStructField(sess_events, 'artifactMS');
-  if all(isnan(art))
-    fprintf('Warning: session %d events have no artifact info. Skipping...\n',sessions(n));
-    continue
-  end
-
-  if isstr(params.windowEnd)
-    % use a dynamic window (reaction time, for example)
-    windEnd = getStructField(sess_events, params.windowEnd);
-    art_ev = sum(art>0 & art<windEnd);
-    else
-    % get number of events with artifacts from 1ms to (windowEnd)ms
-    art_ev = sum(art>0 & art<params.windowEnd);
-  end
-  percent_art = art_ev/length(sess_events);
-
-  if params.verbose
-    % print percentage
-    fprintf('\nSession %d\t%.4f', sessions(n), percent_art);
-  end
-
-  % add to the ev object
-  ev.blinks(n) = percent_art;
-end
-fprintf('done.\n')
