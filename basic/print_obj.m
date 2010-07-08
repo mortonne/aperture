@@ -137,6 +137,8 @@ function obj_size = get_obj_size(subobj, obj_type, obj_name)
       obj_sizes(i,1) = length(obj.sess);
       if isfield(obj, 'chan')
         obj_sizes(i,2) = length(obj.chan);
+      elseif isfield(obj, 'nvoxels')
+        obj_sizes(i,2) = obj.nvoxels;
       end
     end
   end
