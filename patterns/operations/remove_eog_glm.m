@@ -1,27 +1,47 @@
 function subj = remove_eog_glm(subj, stat_name, pat_name, H_pat_name, ...
-                       V_pat_name,stat_res_dir,link_func)
-
-%remove_eog_glm   remove stuff (eye stuff) [bad eye stuff]
+                               V_pat_name, varargin)
+%REMOVE_EOG_GLM   Fit EOG data to a pattern using a GLM.
 %
-%  subj = remove_eog_glm(subj, stat_name, pat_name, H_pat_name, V_pat_name,
-%                stat_res_dir,link_func)
-%
+%  subj = remove_eog_glm(subj, stat_name, pat_name, H_pat_name, V_pat_name, ...)
 %  
 %  INPUTS:
-%      subj:  a subject structure.
-%      stat_name:  what do you want to name the stat
-%                  object. ['GLM_HV_EOG']
-%      pat_name:  the name of the pattern
-%                 object. ['zfiltered_wblinks']
-%      H_pat_name: the name of the H_eog_pat object ['H_EOG']
-%      V_pat_name: the name of the V_eog_pat object ['V_EOG']
-%      stat_res_dir: the folder in which you want to save the stat
+%        subj:  a subject structure.
+%
+%   stat_name:  name of the stat object to create that will hold the
+%               results of the GLM.
+%
+%    pat_name:  name of the pattern object to fit. Each channel will be
+%               fit separately to the horizontal and vertical EOG
+%               regressors.
+%
+%  H_pat_name:  name of a pattern containing measurements of horizontal
+%               eye movements.
+%
+%  V_pat_name:  name of a pattern containing measurements of horizontal
+%               eye movements.
 %
 %  OUTPUTS:
-%      subj:  a subject structure with the glm stat object added
+%        subj:  the subject structure with the GLM stat object added.
 %
+%  PARAMS:
+%  These options may be specified using parameter, value pairs or by
+%  passing a structure. Defaults are shown in parentheses.
+%   distr      - distribution to use for the GLM. ('normal')
+%   link       - link function to use in place of the canonical link;
+%                see glmfit. ('')
+%   glm_inputs - cell array of additional inputs to glmfit. ({})
+%   overwrite  - if true, if the stat file already exists, it will be
+%                overwritten. (true)
+%   res_dir    - directory in which to save the GLM results. Default is
+%                the pattern's stats directory.
 
-% input checks need to be added
+% options
+defaults.distr = 'normal';
+defaults.link = '';
+defaults.glm_inputs = {};
+defaults.overwrite = true;
+defaults.res_dir = get_pat_dir(pat, 'stats');
+params = propval(varargin, defaults);
 
 %get the pat objects
 pat = getobj(subj, 'pat', pat_name);
@@ -77,8 +97,14 @@ V_session_pattern = repmat(V_session_vec, [1, 1, time_size]);
 %if stat obj exists
 %stat = getobj(pat, 'stat', stat_name);
 %else
-stat_file = fullfile(stat_res_dir, objfilename('stat', stat_name, ...
-                                               subj.id));
+stat_file = fullfile(params.res_dir, ...
+                     objfilename('stat', stat_name, subj.id));
+
+% check the output file
+if ~params.overwrite && exist(stat_file, 'file')
+  return
+end
+
 stat = init_stat(stat_name, stat_file, subj.id);
 %end
 
@@ -152,7 +178,10 @@ for c = 1:length(subj.chan)
   %b contains the slope and x-intercept for the line of best fit
   % stats contains the p-values and t-stats for the regressor
   % coefficients
-  [b, dev, stats] = glmfit(x, ev_vec, 'normal', 'link', link_func);
+  if ~isempty(params.link)
+    params.glm_inputs = {params.glm_inputs{:}, 'link', params.link};
+  end
+  [b, dev, stats] = glmfit(x, ev_vec, params.distr, params.glm_inputs{:});
   
   warn = lastwarn;
   if length(warn) > 0
