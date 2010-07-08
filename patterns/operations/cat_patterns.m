@@ -106,10 +106,7 @@ if strcmp(dim_name, 'ev')
   end
   dim.ev.file = fullfile(ev_dir, ...
                          sprintf('events_%s_%s.mat', pat_name, source));
-  save(dim.ev.file, 'events')
-  if isfield(dim.ev,'mat')
-    dim.ev.mat = events;
-  end
+  dim.ev = set_mat(dim.ev, events, 'hd');
   
   % update the ev object
   dim.ev.source = source;
