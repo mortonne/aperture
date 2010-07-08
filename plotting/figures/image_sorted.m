@@ -1,15 +1,15 @@
-function h = image_sorted(data, index, x, varargin)
+function h = image_sorted(data, x, index, varargin)
 %IMAGE_SORTED   Sort and plot a matrix as an image.
 %
-%  h = image_sorted(data, index, x, ...)
+%  h = image_sorted(data, x, index, ...)
 %
 %  INPUTS:
 %     data:  numeric array containing values to be plotted.
 %
+%        x:  values for the x-axis.
+%
 %    index:  vector of indices for sorting the rows of data before
 %            plotting.
-%
-%        x:  values for the x-axis.
 %
 %  OUTPUTS:
 %        h:  handle to the image graphics.
@@ -29,22 +29,26 @@ function h = image_sorted(data, index, x, varargin)
 if ~exist('x', 'var')
   x = 1:size(data, 2);
 end
+if ~exist('index', 'var')
+  index = 1:size(data, 1);
+  defaults.plot_index = false;
+else
+  defaults.plot_index = true;  
+end
 y = 1:size(data, 1);
 
-defaults.plot_index = true;
+% options
 defaults.x_label = 'Time (ms)';
 defaults.y_label = 'Trial';
 defaults.map_limits = [];
 defaults.colormap = [];
 defaults.colorbar = true;
-
 params = propval(varargin, defaults);
 
 [index_sorted, ind] = sort(index);
 
 data = data(ind, :);
 
-clf
 if ~isempty(params.map_limits)
   h(1) = imagesc(x, y, data, params.map_limits);
 else
@@ -74,4 +78,5 @@ set(gca, 'LineWidth', 2)
 if exist('publishfig')==2
   publishfig
 end
+axis xy
 
