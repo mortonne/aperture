@@ -16,11 +16,14 @@ function pat = reject_artifacts(pat, varargin)
 %                crosses this value, the event will be excluded. ([])
 %   k_thresh   - if an event's distribution over time has a value
 %                exceeding this value, the event will be excluded. ([])
+%   bad_chans  - if true, will find bad channels. (false)
+%   veog_chans - vertical eye movement channels. ({[25 127],[8 126]})
+%   heog_chans - horizontal eye movement channels. ([8 25])
 %   verbose    - if true, information about excluded samples will be
 %                displayed. (false)
 %   reject     - string identifying whether you want to reject
-%                artifacts ('bad') or non-artifact trials ('good')
-%                default is ('bad')
+%                artifacts ('bad') or non-artifact trials ('good').
+%                ('bad')
 %   save_mats  - if true, and input mats are saved on disk, modified
 %                mats will be saved to disk. If false, the modified mats
 %                will be stored in the workspace, and can subsequently
@@ -36,6 +39,9 @@ function pat = reject_artifacts(pat, varargin)
 % options
 defaults.abs_thresh = [];
 defaults.k_thresh = [];
+defaults.bad_chans = false;
+defaults.veog_chans = {[25 127], [8 126]};
+defaults.heog_chans = [8 25];
 defaults.verbose = false;
 defaults.reject = 'bad';
 [params, save_opts] = propval(varargin, defaults);
@@ -62,6 +68,16 @@ function pat = run_reject(pat, params)
   if ~isempty(params.abs_thresh)
     bad = bad | reject_threshold(pattern, params.abs_thresh, ...
                                  'verbose', params.verbose);
+  end
+
+  % channels with poor contact
+  if params.bad_chans
+    events = get_dim(pat.dim, 'ev');
+    channels = get_dim_vals(pat.dim, 'chan');
+    mask = bad_channels(events, channels, params.heog_chans, ...
+                        params.veog_chans);
+    mask = repmat(mask, [1 1 size(pattern,3) size(pattern,4)]);
+    bad = bad | mask;
   end
   
   switch params.reject
