@@ -40,9 +40,14 @@ defaults.print_input = {'-depsc'};
 params = propval(varargin, defaults);
 
 % set y-lim convenience param
+time = get_dim_vals(pat.dim, 'time');
+x_lim = [min(time) max(time)];
 if ~isempty(params.y_lim)
-  params.plot_input = [params.plot_input {'ylim', params.y_lim}];
+  limits = [x_lim params.y_lim];
+else
+  limits = [x_lim 0 0];
 end
+params.plot_input = [params.plot_input {'limits', limits}];
 
 % prep the output directory
 if isempty(params.res_dir)
@@ -78,7 +83,8 @@ for i=1:n_freq
   
   % create the filename for this plot
   if n_freq > 1
-    filename = sprintf('%s_f%d.pdf', base_filename);
+    freq_label = lower(strrep(pat.dim.freq(i).label, ' ', '-'));
+    filename = sprintf('%s_%s.pdf', base_filename, freq_label);
   else
     filename = sprintf('%s.pdf', base_filename);
   end
