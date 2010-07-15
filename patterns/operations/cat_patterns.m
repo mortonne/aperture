@@ -1,29 +1,49 @@
-function pat = cat_patterns(pats, dimension, pat_name, res_dir)
+function pat = cat_patterns(pats, dimension, varargin)
 %CAT_PATTERNS   Concatenate a set of patterns.
 %
-%  pat = cat_patterns(pats, dimension, pat_name, res_dir)
+%  pat = cat_patterns(pats, dimension, ...)
 %
 %  INPUTS:
 %       pats:  a vector of pat objects.
 %
-%  dimension:  dimension along which to concatenate the patterns.
-%              Can be either a string specifying the name of the 
-%              dimension (can be: 'ev', 'chan', 'time', 'freq'), 
-%              or an integer corresponding to the dimension in the 
-%              actual matrix.
-%
-%   pat_name:  string identifier for the new pattern.
-%
-%    res_dir:  directory where the new pattern will be saved.  If not
-%              specified, the main directory of the first pattern will
-%              be used.
+%  dimension:  dimension along which to concatenate the patterns. Can be
+%              either a string specifying the name of the dimension (can
+%              be: 'ev', 'chan', 'time', 'freq'), or an integer
+%              corresponding to the dimension in the pattern matrix.
 %
 %  OUTPUTS:
 %        pat:  pat object with metadata for the new concatenated
 %              pattern.
+%
+%  PARAMS:
+%  These options may be specified using parameter, value pairs or by
+%  passing a structure. Defaults are shown in parentheses.
+%   save_mats - if true, mats associated with the new pattern will
+%               be saved to disk. If false, modified mats will be stored
+%               in the workspace, and can subsequently be moved to disk
+%               using move_obj_to_hd. (true)
+%   save_as   - name of the concatenated pattern. If all patterns have
+%               the same name, defaults to that name; otherwise, the
+%               default name is 'cat_pattern'.
+%   res_dir   - path to the directory in which to save the new pattern.
+%               Default is the same directory as the first pattern in
+%               pats.
 
 % use the first pattern to set defaults
 def_pat = pats(1);
+pats_name = unique({pats.name});
+if length(pats_name) == 1
+  default_pat_name = pats_name{:};
+else
+  default_pat_name = 'cat_pattern';
+end
+
+% options
+defaults.save_mats = true;
+defaults.save_as = default_pat_name;
+defaults.res_dir = get_pat_dir(def_pat);
+params = propval(varargin, defaults);
+pat_name = params.save_as;
 
 % input checks
 if ~exist('pats', 'var')
@@ -32,39 +52,37 @@ end
 if ~exist('dimension', 'var')
   dimension = 2;
 end
-if ~exist('pat_name', 'var')
-  if length(unique({pats.name}))==1
-    pat_name = def_pat.name;
-  else
-    pat_name = 'cat_pattern';
-  end
-end
-if ~exist('res_dir', 'var')
-  res_dir = get_pat_dir(def_pat);
-end
 
 % parse the dimension input
-[dim_name, dim_number] = read_dim_input(dimension);
+try
+  [dim_name, dim_number] = read_dim_input(dimension);
+catch
+  if isnumeric(dimension)
+    % non-standard dimension; cannot track metadata, but can still
+    % concatenate the matrix
+    dim_name = '';
+    dim_number = dimension;
+  else
+    error('Invalid dimension.')
+  end
+end
 
 % print status
-pats_name = unique({pats.name});
-if length(pats_name)==1
-  fprintf('concatenating %s patterns along %s dimension...\n', pats_name{1}, dim_name)
+if length(pats_name) == 1
+  fprintf('concatenating "%s" patterns along %s dimension...\n', ...
+          pats_name{:}, dim_name)
 else
   fprintf('concatenating patterns along %s dimension...\n', dim_name)
 end
 
-% get the dimension sizes of each pattern
-n_dims = 4;
-pat_sizes = NaN(length(pats), n_dims);
+% make sure the non-cat dimensions match
+pat_sizes = cell(1, length(pats));
 for i=1:length(pats)
-  pat_sizes(i,:) = patsize(pats(i).dim);
+  full_size = patsize(pats(i).dim);
+  pat_sizes{i} = full_size(~ismember(1:length(full_size), dim_number));
 end
-% make sure the other dimensions match up
-for j=1:n_dims
-  if dim_number~=j && any(pat_sizes(2:end,j)~=pat_sizes(1,j))
-    error('dimension %d does not match for all patterns.', j)
-  end
+if ~isequal(pat_sizes{:})
+  error('pattern dimensions do not match.')
 end
 
 % get a source identifier to set filenames
@@ -72,7 +90,13 @@ source = unique({pats.source});
 if length(source) > 1
   source = 'multiple';
 else
-  source = source{1};
+  source = source{:};
+end
+
+if params.save_mats
+  loc = 'hd';
+else
+  loc = 'ws';
 end
 
 % concatenate the dim structure
@@ -83,62 +107,57 @@ if strcmp(dim_name, 'ev')
   events = [];
   for i=1:length(pats)
     fprintf('%s ', pats(i).source)
-    pat_ev = get_mat(pats(i).dim.ev);
-    if ~isempty(events)
-      % remove any fields that aren't in both
-      f1 = fieldnames(events);
-      f2 = fieldnames(pat_ev);
-      
-      f2rm = setdiff(f1, f2);
-      events = rmfield(events, f2rm);
-      
-      f2rm = setdiff(f2, f1);
-      pat_ev = rmfield(pat_ev, f2rm);
-    end
-    events = [events pat_ev];
+    pat_events = get_mat(pats(i).dim.ev);
+    events = cat_structs(events, pat_events);
   end
   fprintf('\n')
 
   % save the concatenated events
-  ev_dir = fullfile(res_dir, 'events');
+  ev_dir = fullfile(params.res_dir, 'events');
   if ~exist(ev_dir)
     mkdir(ev_dir);
   end
   dim.ev.file = fullfile(ev_dir, ...
-                         sprintf('events_%s_%s.mat', pat_name, source));
-  dim.ev = set_mat(dim.ev, events, 'hd');
+                         objfilename('events', pat_name, source));
+  dim.ev = set_mat(dim.ev, events, loc);
+  if strcmp(loc, 'ws')
+    dim.ev.modified = true;
+  end
   
   % update the ev object
   dim.ev.source = source;
   dim.ev.len = length(events);
-  
-else
-  % we can just concatenate
+elseif ~isempty(dim_name)
+  % for non-events dimensions, assume fields are the same and use
+  % standard concatenation
   dims = [pats.dim];
   dim.(dim_name) = [dims.(dim_name)];
 end
 
 % set the directory to save the pattern
-pat_dir = fullfile(res_dir, 'patterns');
+pat_dir = fullfile(params.res_dir, 'patterns');
 if ~exist(pat_dir)
   mkdir(pat_dir)
 end
 
 % concatenate the pattern
 fprintf('patterns...')
-% load the whole pattern at once
 pattern = [];
 for i=1:length(pats)
   fprintf('%s ', pats(i).source)
-  pattern = cat(dim_number, pattern, load_pattern(pats(i)));
+  pattern = cat(dim_number, pattern, get_mat(pats(i)));
 end
 fprintf('\n')
 
-% save the new pattern
-pat_file = fullfile(pat_dir, ...
-                    sprintf('pattern_%s_%s.mat', pat_name, source));
-save(pat_file, 'pattern')
-
 % create the new pat object
+pat_file = fullfile(pat_dir, ...
+                    objfilename('pattern', pat_name, source));
 pat = init_pat(pat_name, pat_file, source, def_pat.params, dim);
 fprintf('pattern "%s" created.\n', pat_name)
+
+% save the new pattern
+pat = set_mat(pat, pattern, loc);
+if strcmp(loc, 'ws')
+  pat.modified = true;
+end
+
