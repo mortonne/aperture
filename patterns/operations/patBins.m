@@ -191,44 +191,16 @@ function [events2, bins] = event_bins(events1, bin_defs, labels)
       labels = num2cell(vals);
     end
   end
-  events2 = struct('label', labels);
-  
+
+  events2 = [];
   for i=1:length(vals)
-    % get indices for this bin
     bins{i} = find(ismember(vec, vals(i)));
     
     % salvage fields that have the same value for this whole bin
-    for j=1:length(fnames)
-      fname = fnames{j};
-      
-      % getStructField will return the field in an array (if numeric)
-      % or a cell array (if anything else)
-      field = getStructField(events1(bins{i}), fname);
-      if ~(isnumeric(field) || iscellstr(field))
-        % incompatible with unique; must leave this field off
-        continue
-      end
-      
-      % see if we can include this field
-      uniq_field = unique(field);
-      if isscalar(uniq_field)
-        % initialize the field if necessary
-        if ~isfield(events2, fname)
-          empty = cell(1, length(events2));
-          [events2.(fname)] = empty{:};
-        end
-        
-        if iscell(uniq_field)
-          % grab the string from the cell
-          events2(i).(fname) = uniq_field{1};
-        else
-          % numeric scalar
-          events2(i).(fname) = uniq_field;
-        end
-      end
-      
-    end
+    bin_event = collapse_struct(events1(bins{i}));
+    events2 = cat_structs(events2, bin_event);
   end
+  [events2.label] = labels{:};
 %endfunction
 
 function [chan, bins] = chan_bins(chan, bin_defs, labels)
