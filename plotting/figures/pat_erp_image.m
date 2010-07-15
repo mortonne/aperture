@@ -1,4 +1,4 @@
-function pat = pat_erp_image(pat, channels)
+function pat = pat_erp_image(pat, channels, varargin)
 %PAT_ERP_IMAGE   Plot an image of all events in a pattern.
 %
 %  pat = pat_erp_image(pat)
@@ -6,6 +6,9 @@ function pat = pat_erp_image(pat, channels)
 %  NOTES:
 %   Currently doesn't save out any figures, and isn't well suited for
 %   patterns with multiple channels.
+
+defaults.map_limits = [];
+params = propval(varargin, defaults);
 
 pattern = get_mat(pat);
 time = get_dim_vals(pat.dim, 'time');
@@ -20,6 +23,7 @@ end
 chan_inds = find(match);
 n_chans = length(chan_inds);
 
+z_lim = params.map_limits;
 for i=chan_inds
   clf
   hold on
@@ -29,8 +33,10 @@ for i=chan_inds
     error('each channel must only have two dimensions.')
   end
   
-  absmax = max(abs(data(:)));
-  z_lim = [-absmax absmax];
+  if isempty(params.map_limits)
+    absmax = max(abs(data(:)));
+    z_lim = [-absmax absmax];
+  end
   
   subplot('position', [0.175 0.275 0.75 0.65]);
   h = image_sorted(data, time, 1:size(data,1), ...
