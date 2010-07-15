@@ -1,4 +1,4 @@
-function pat = cat_patterns(pats,dimension,pat_name,res_dir)
+function pat = cat_patterns(pats, dimension, pat_name, res_dir)
 %CAT_PATTERNS   Concatenate a set of patterns.
 %
 %  pat = cat_patterns(pats, dimension, pat_name, res_dir)
@@ -26,20 +26,20 @@ function pat = cat_patterns(pats,dimension,pat_name,res_dir)
 def_pat = pats(1);
 
 % input checks
-if ~exist('pats','var')
+if ~exist('pats', 'var')
   error('You must pass a vector of pat objects.')
 end
-if ~exist('dimension','var')
+if ~exist('dimension', 'var')
   dimension = 2;
 end
-if ~exist('pat_name','var')
+if ~exist('pat_name', 'var')
   if length(unique({pats.name}))==1
     pat_name = def_pat.name;
   else
     pat_name = 'cat_pattern';
   end
 end
-if ~exist('res_dir','var')
+if ~exist('res_dir', 'var')
   res_dir = get_pat_dir(def_pat);
 end
 
@@ -50,7 +50,7 @@ end
 pats_name = unique({pats.name});
 if length(pats_name)==1
   fprintf('concatenating %s patterns along %s dimension...\n', pats_name{1}, dim_name)
-  else
+else
   fprintf('concatenating patterns along %s dimension...\n', dim_name)
 end
 
@@ -112,7 +112,7 @@ if strcmp(dim_name, 'ev')
   dim.ev.source = source;
   dim.ev.len = length(events);
   
-  else
+else
   % we can just concatenate
   dims = [pats.dim];
   dim.(dim_name) = [dims.(dim_name)];
@@ -126,43 +126,18 @@ end
 
 % concatenate the pattern
 fprintf('patterns...')
-if ~isfield(dim,'splitdim') || isempty(dim.splitdim) || dim.splitdim==dim_number
-  % load the whole pattern at once
-  pattern = [];
-  for i=1:length(pats)
-    fprintf('%s ', pats(i).source)
-    pattern = cat(dim_number, pattern, load_pattern(pats(i)));
-  end
-  fprintf('\n')
-  
-  % save the new pattern
-  pat_file = fullfile(pat_dir, ...
-                      sprintf('pattern_%s_%s.mat', pat_name, source));
-  save(pat_file, 'pattern')
-  
-else
-  % we have slices
-  split_dim_name = read_dim_input(dim.splitdim);
-  split_dim = def_pat.dim.(split_dim_name);
-  pat_fileroot = sprintf('pattern_%s_%s', pat_name, source);
-  
-  fprintf('loading patterns split along %s dimension...', split_dim_name)
-  for i=1:length(split_dim)
-    % initialize this slice
-    pattern = [];
-    params = struct('patnum',i);
-    
-    % concatenate slices from all patterns
-    for j=1:length(pats)
-      pattern = cat(dim_number, pattern, load_pattern(pats(j), params));
-    end
-    
-    % save
-    filename = sprintf('%s_%s%s.mat',pat_fileroot,split_dim_name,split_dim(i).label);
-    pat_file{i} = fullfile(pat_dir,filename);
-    save(pat_file{i}, 'pattern')
-  end
+% load the whole pattern at once
+pattern = [];
+for i=1:length(pats)
+  fprintf('%s ', pats(i).source)
+  pattern = cat(dim_number, pattern, load_pattern(pats(i)));
 end
+fprintf('\n')
+
+% save the new pattern
+pat_file = fullfile(pat_dir, ...
+                    sprintf('pattern_%s_%s.mat', pat_name, source));
+save(pat_file, 'pattern')
 
 % create the new pat object
 pat = init_pat(pat_name, pat_file, source, def_pat.params, dim);
