@@ -1,13 +1,10 @@
-function [pat,inds] = patFilt(pat,params)
+function [pat, inds] = patFilt(pat, varargin)
 %PATFILT   Filter the dimensions of a pat object.
 %
-%  [pat, inds] = patFilt(pat, params)
+%  [pat, inds] = patFilt(pat, ...)
 %
 %  INPUTS:
 %      pat:  a pattern object.
-%
-%   params:  structure specifying options for filtering the pattern.
-%            See below for options.
 %
 %  OUTPUTS:
 %      pat:  the modified pattern object.
@@ -16,6 +13,8 @@ function [pat,inds] = patFilt(pat,params)
 %            pattern and carry out the filtering.
 %
 %  PARAMS:
+%  These options may be specified using parameter, value pairs or by
+%  passing a structure. Defaults are shown in parentheses.
 %   eventFilter - string to be input to filterStruct to filter events
 %   chanFilter  - string filter for channels, or array of channel
 %                 numbers to include
@@ -28,32 +27,32 @@ function [pat,inds] = patFilt(pat,params)
 %   [pat, inds] = patFilt(pat, params);
 %
 %   % filter the pattern matrix
-%   pattern = load_pattern(pat);
+%   pattern = get_mat(pat);
 %   pattern = pattern(inds{:});
 %
-%  See also modify_pattern, patBins, patMeans.
+%  See also filter_pattern.
 
 % input checks
-if ~exist('pat','var') || ~isstruct(pat)
+if ~exist('pat', 'var') || ~isstruct(pat)
   error('You must input a pat object.')
 end
-if ~exist('params','var')
+if ~exist('params', 'var')
   params = struct;
 end
 if ~isfield(pat.dim.ev, 'modified')
   pat.dim.ev.modified = false;
 end
 
-% default parameters
-params = structDefaults(params, ...
-                        'eventFilter', '', ...
-                        'chanFilter',  '',  ...
-                        'chan_filter', [],  ...
-                        'timeFilter',  '',  ...
-                        'freqFilter',  '');
+% options
+defaults.eventFilter = '';
+defaults.chanFilter = '';
+defaults.chan_filter = [];
+defaults.timeFilter = '';
+defaults.freqFilter = '';
+[params, unused] = propval(varargin, defaults);
 
 % initialize
-inds = repmat({':'},1,4);
+inds = repmat({':'}, 1, 4);
 
 % events
 if ~isempty(params.eventFilter)
@@ -105,8 +104,9 @@ if any(~psize)
   bad_dims = find(~psize);
   msg = '';
   for dim_number=bad_dims
-    [i,j,name] = read_dim_input(dim_number);
+    [i, j, name] = read_dim_input(dim_number);
     msg = [msg sprintf('%s dimension filtered into oblivion.\n', name)];
   end
   error('eeg_ana:patFilt:EmptyPattern', msg);
 end
+

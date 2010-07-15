@@ -1,5 +1,5 @@
 function pat = filter_pattern(pat, varargin)
-%FILTER_PATTERN   Average over bins of a pattern.
+%FILTER_PATTERN   Get a subset of a pattern.
 %
 %  pat = filter_pattern(pat, ...)
 %
