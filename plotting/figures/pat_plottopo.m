@@ -15,12 +15,16 @@ function pat = pat_plottopo(pat, fig_name, varargin)
 %  PARAMS:
 %  These options may be specified using parameter, value pairs or by
 %  passing a structure. Defaults are shown in parentheses.
-%   event_bins
-%   chan_locs
-%   y_lim
-%   plot_input
-%   res_dir
-%   print_input
+%   event_bins   - input to make_event_bins to average over events
+%                  before plotting. ('')
+%   event_labels - cell array of strings with labels for each event/
+%                  event_bin. ({})
+%   chan_locs    - path to a readlocs-compatible electrode locations
+%                  file. ('~/eeg/HCGSN128.loc')
+%   y_lim        - y-limits to use for each subplot. ([])
+%   plot_input   - cell array of additional inputs to plot_topo. ({})
+%   res_dir      - directory in which to save the figure(s). Default
+%                  is: [main_pat_dir]/reports/figs
 
 % input checks
 if ~exist('pat', 'var') || ~isstruct(pat)
@@ -32,11 +36,11 @@ end
 
 % options
 defaults.event_bins = '';
+defaults.event_labels = {};
 defaults.y_lim = [];
 defaults.chan_locs = '~/eeg/HCGSN128.loc';
 defaults.plot_input = {};
 defaults.res_dir = '';
-defaults.print_input = {'-depsc'};
 params = propval(varargin, defaults);
 
 % set y-lim convenience param
@@ -72,14 +76,21 @@ n_freq = size(pattern, 4);
 files = cell(1, 1, 1, n_freq);
 base_filename = sprintf('%s_%s_%s', pat.name, fig_name, pat.source);
 
+% add legend input
+if length(params.event_labels) > 1
+  params.plot_input = [params.plot_input ...
+                      'legend', {params.event_labels}, ...
+                      'showleg', 'on'];
+end
+
 eloc = readlocs(params.chan_locs);
 for i=1:n_freq
   clf
   
   % get data for this frequency in [channels X time X events] order
   data = permute(pattern(:,:,:,i), [2 3 1 4]);
-  plottopo(data, 'chanlocs', eloc, 'ydir', 1, ...
-           params.plot_input{:});
+  plot_topo(data, 'chanlocs', eloc, 'ydir', 1, ...
+            params.plot_input{:});
   
   % create the filename for this plot
   if n_freq > 1
