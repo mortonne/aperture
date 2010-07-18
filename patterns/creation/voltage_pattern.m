@@ -4,7 +4,8 @@ function [pattern, params] = voltage_pattern(events, channels, varargin)
 %  [pattern, params] = voltage_pattern(events, channels, ...)
 %
 %  INPUTS:
-%    events:  an events structure.
+%    events:  an events structure. Must have "eegfile" and "eegoffset"
+%             fields.
 %
 %  channels:  vector of channel numbers to include in the pattern.
 %
@@ -19,7 +20,7 @@ function [pattern, params] = voltage_pattern(events, channels, varargin)
 %  passing a structure. Defaults are shown in parentheses.
 %   offsetMS      - time in milliseconds before each event to start the
 %                   pattern. (-200)
-%   durationMS    - durationMS in milliseconds of each epoch. (2200)
+%   durationMS    - duration in milliseconds of each epoch. (2200)
 %   relativeMS    - period in milliseconds to use for calculating the
 %                   average to be subtracted for each event. ([-200 0])
 %   resampledRate - samplerate (in Hz) to resample to. ([])
@@ -29,6 +30,9 @@ function [pattern, params] = voltage_pattern(events, channels, varargin)
 %   bufferMS      - size of bufferMS to use when filtering (see
 %                   buttfilt). (1000)
 %   precision     - precision of the returned values. ('double')
+%   verbose       - if true, more status will be printed. (false)
+%
+%  See also create_voltage_pattern.
 
 % options
 defaults.offsetMS = -200;
@@ -40,7 +44,13 @@ defaults.filtfreq = 40;
 defaults.filtorder = 4;
 defaults.bufferMS = 1000;
 defaults.precision = 'double';
+defaults.verbose = false;
 [params, unused] = propval(varargin, defaults);
+
+if params.verbose
+  fprintf('parameters are:\n\n')
+  disp(params)
+end
 
 if isempty(params.resampledRate)
   % if not resampling, we'll need to know the samplerate of the data
@@ -55,12 +65,12 @@ if isempty(params.resampledRate)
 else
   final_samplerate = params.resampledRate;
 end
-n_samp = ms2samp(params.durationMS, final_samplerate);
+n_samps = ms2samp(params.durationMS, final_samplerate);
 
 % initialize the pattern matrix
 n_events = length(events);
 n_chans = length(channels);
-pattern = NaN(n_events, n_chans, n_samp, params.precision);
+pattern = NaN(n_events, n_chans, n_samps, params.precision);
 
 fprintf('channels: ')
 for i=1:n_chans
