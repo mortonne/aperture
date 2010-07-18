@@ -36,9 +36,6 @@ function subj = create_pattern(subj, fcn_handle, params, pat_name, res_dir)
 %                     eegfile field in events. ({})
 %   eventFilter     - input to filterStruct which designates which
 %                     events to include in the pattern. ('')
-%   baseEventFilter - input to filterStruct; designates which events to
-%                     include in calculating a baseline for
-%                     z-transforming. (eventFilter)
 %   chanFilter      - used to choose which channels to include in the
 %                     pattern. Can be a string to pass into
 %                     filterStruct, or an array of channel numbers to
@@ -90,7 +87,6 @@ end
 defaults.evname = '';
 defaults.replace_eegfile = {};
 defaults.eventFilter = '';
-defaults.baseEventFilter = '';
 defaults.chanFilter = '';
 defaults.offsetMS = -200;
 defaults.durationMS = 2200;
@@ -100,12 +96,7 @@ defaults.freqs = [];
 defaults.precision = 'double';
 defaults.overwrite = false;
 defaults.updateOnly = false;
-
 params = propval(params, defaults, 'strict', false);
-
-if isempty(params.baseEventFilter)
-  params.baseEventFilter = params.eventFilter;
-end
 
 % print status
 if ~params.updateOnly
@@ -131,12 +122,6 @@ end
 % events dimension
 ev = getobj(subj, 'ev', params.evname);
 ev = move_obj_to_workspace(ev);
-% fix the EEG file field if needed
-if ~isempty(params.replace_eegfile)
-  temp = params.replace_eegfile';
-  ev.mat = rep_eegfile(ev.mat, temp{:});
-end
-base_events = filterStruct(ev.mat, params.baseEventFilter);
 
 % get channel info from the subject
 chan = get_dim(subj, 'chan');
@@ -148,18 +133,18 @@ else
   if isempty(params.resampledRate)
     % if not resampling, we'll need to know the samplerate of the data
     % so we can initialize the pattern.
-    eegfiles = unique({ev.mat.eegfile});
-    samplerates = cellfun(@(x)GetRateAndFormat(fileparts(x)), eegfiles);
-    if length(unique(samplerates)) > 1
+    samplerates = unique(get_events_samplerate(ev.mat));
+    if length(samplerates) > 1
       params.resampledRate = min(samplerates);
       fprintf(['events contain multiple samplerates. ' ...
-               'Resampling to %d Hz...\n'], params.resampledRate)
+               'Resampling to %.f Hz...\n'], params.resampledRate)
     else
       params.resampledRate = unique(samplerates);
     end
   end
   step_size = fix(1000 / params.resampledRate);
 end
+
 % millisecond values for the final pattern
 end_ms = params.offsetMS + params.durationMS - step_size;
 ms_values = params.offsetMS:step_size:end_ms;
@@ -183,14 +168,14 @@ catch err
   end
 end
 
-% get updated events and channels before doing binning
-src_events = get_mat(pat.dim.ev);
+% get filtered events and channels for pattern creation
+events = get_mat(pat.dim.ev);
+% fix the EEG file field if needed
+if ~isempty(params.replace_eegfile)
+  temp = params.replace_eegfile';
+  events = rep_eegfile(events, temp{:});
+end
 channels = get_dim_vals(pat.dim, 'chan');
-
-% get the information we'll need later to create bins, and update
-% pat.dim. to conserve memory, we'll do the actual binning as we
-% accumulate the pattern.
-[pat, bins] = patBins(pat, params);
 
 % finalize events for the pattern
 if pat.dim.ev.modified
@@ -207,32 +192,9 @@ if params.updateOnly
   return
 end
 
-% initialize this subject's pattern before event binning
-pat_size = patsize(pat.dim);
-pattern = NaN([length(src_events), pat_size(2:end)], params.precision);
-
-% don't bin over events until we have all sessions
-event_bins = bins(1);
-bins(1) = {[]};
-
-% create a pattern for each session in the events structure
-for session=unique([src_events.session])
-  fprintf('processing %s session %d...\n', subj.id, session)
-
-  % get the events and baseline events we need
-  sess_ind = [src_events.session]==session;
-  sess_events = src_events(sess_ind);
-  sess_base_events = base_events([base_events.session]==session);
-
-  % make the pattern for this session
-  [pattern(sess_ind,:,:,:), p] = fcn_handle(sess_events, channels, params, ...
-                                            sess_base_events, bins);
-end
-pat.params = combineStructs(params, p);
-
-% channels, time, and frequency should already be binned. 
-% now we have all events and can bin across them.
-pattern = patMeans(pattern, event_bins);
+% create the pattern
+[pattern, total_params] = fcn_handle(events, channels, params);
+pat.params = combineStructs(params, total_params);
 
 % save the pattern
 pat = set_mat(pat, pattern, 'hd');

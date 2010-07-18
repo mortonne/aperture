@@ -6,7 +6,7 @@ function subj = create_power_pattern(subj, pat_name, params, res_dir)
 %  INPUTS:
 %      subj:  a subject object. See get_sessdirs.
 %
-%  pat_name:  string identifier for the pattern. Default: 'power'
+%  pat_name:  string identifier for the pattern.
 %
 %    params:  structure that specifies options for pattern creation. See
 %             below for options.
@@ -21,8 +21,7 @@ function subj = create_power_pattern(subj, pat_name, params, res_dir)
 %
 %  PARAMS:
 %  Defaults are shown in parentheses.
-%   evname          - name of the events object to use. If empty, the
-%                     last events added will be used. ('')
+%   evname          - REQUIRED - name of the events object to use.
 %   replace_eegfile - [N X 2] cell array, where each row contains two
 %                     strings to be passed into strrep, to change the
 %                     eegfile field in events. ({})
@@ -58,17 +57,7 @@ function subj = create_power_pattern(subj, pat_name, params, res_dir)
 %                     event will be excluded (replaced with NaNs). ([])
 %   logtransform    - logical; if true, power will be log-transformed.
 %                     (true)
-%   ztransform      - logical specifying whether to z-transform the
-%                     power within each channel and frequency. (true)
-%   baseEventFilter - input to filterStruct; designates which events to
-%                     include for calculating the baseline 
-%                     (eventFilter)
-%   baseOffsetMS    - Time from the beginning of each baseline event to
-%                     calculate power. (-400)
-%   baseDurationMS  - Duration of the baseline period for each baseline
-%                     event. (200)
-%   precision       - precision of the returned values.
-%                     ['single' | {'double'}]
+%   precision       - precision of the returned values. ('double')
 %   overwrite       - if true, existing pattern files will be
 %                     overwritten (false)
 %   updateOnly      - if true, the pattern will not be created, but a
@@ -76,7 +65,7 @@ function subj = create_power_pattern(subj, pat_name, params, res_dir)
 %                     subject object. (false)
 %   verbose         - if true, more status will be printed. (false)
 %
-%   See also create_voltage_pattern.
+%  See also create_voltage_pattern.
 
 % input checks
 if ~exist('subj', 'var') || ~isstruct(subj)
@@ -101,10 +90,9 @@ elseif ~ischar(res_dir)
 end
 
 % to overwrite defaults that overlap between create_pattern
-% and sessPower
+% and power_pattern
 defaults.offsetMS = -400;
 defaults.durationMS = 2400;
-
 params = propval(params, defaults, 'strict', false);
 
-subj = create_pattern(subj, @sessPower, params, pat_name, res_dir);
+subj = create_pattern(subj, @power_pattern, params, pat_name, res_dir);

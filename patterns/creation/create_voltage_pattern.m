@@ -6,7 +6,7 @@ function subj = create_voltage_pattern(subj, pat_name, params, res_dir)
 %  INPUTS:
 %      subj:  subject object. See get_sessdirs.
 %
-%  pat_name:  string identifier for the pattern. Default: 'voltage'
+%  pat_name:  string identifier for the pattern.
 %
 %    params:  structure that specifies options for pattern creation. See
 %             below for options.
@@ -20,9 +20,8 @@ function subj = create_voltage_pattern(subj, pat_name, params, res_dir)
 %             pat_name added.
 %
 %  PARAMS:
-%  All fields are optional. Defaults are shown in parentheses.
-%   evname          - name of the events object to use. If empty, the
-%                     last events added will be used. ('')
+%  Defaults are shown in parentheses.
+%   evname          - REQUIRED - name of the events object to use.
 %   replace_eegfile - [N X 2] cell array, where each row contains two
 %                     strings to be passed into strrep, to change the
 %                     eegfile field in events. ({})
@@ -43,20 +42,7 @@ function subj = create_voltage_pattern(subj, pat_name, params, res_dir)
 %   filtorder       - order of filter (see buttfilt). (4)
 %   bufferMS        - size of buffer to use when filtering (see buttfilt)
 %                     (1000)
-%   ztransform      - logical; if true, voltage will be z-transformed
-%                     relative to the baseline for that session/channel
-%                     (false)
-%   baseEventFilter - input to filterStruct; designates which events to
-%                     include for calculating the baseline 
-%                     (eventFilter)
-%   baseOffsetMS    - time from the beginning of each baseline event to
-%                     calculate voltage. (relativeMS(1))
-%   baseDurationMS  - duration of the baseline period for each baseline
-%                     event. (diff(relativeMS))
-%   baseRelativeMS  - period to use for baseline subtraction for the
-%                     baseline period. (relativeMS)
-%   precision       - precision of the returned values.
-%                     ['single' | {'double'}]
+%   precision       - precision of the returned values. ('double')
 %   overwrite       - if true, existing pattern files will be
 %                     overwritten (false)
 %   updateOnly      - if true, the pattern will not be created, but a
@@ -88,6 +74,6 @@ elseif ~ischar(res_dir)
   error('res_dir must be a string.')
 end
 
-% sessVoltage and create_pattern will set our default parameters;
-% just run it
-subj = create_pattern(subj, @sessVoltage, params, pat_name, res_dir);
+% create_pattern and voltage_pattern will set the default params
+subj = create_pattern(subj, @voltage_pattern, params, pat_name, res_dir);
+
