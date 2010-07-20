@@ -15,7 +15,7 @@ function output = RMAOV2(data, group)
 
 % get temporary files to write to
 tempdir = '~/.Rtemp';
-infile = tempname(tempdir);
+infile = fullfile(tempdir, 'temp.txt');
 outfile = tempname(tempdir);
 
 % fix regressors to standard format
