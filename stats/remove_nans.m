@@ -9,7 +9,8 @@ function Y = remove_nans(X)
 %  OUTPUTS:
 %       Y:  X, with NaNs replaced with the mean for that variable across
 %           all available observations. If a given variable has no
-%           observations, that variable will remain all NaNs.
+%           observations, that variable will be replaced with the mean
+%           of observation across variables.
 
 if ~isnumeric(X)
   error('Input must be a matrix.')
@@ -26,4 +27,15 @@ for i=1:size(X,2)
   
   % set all missing observations to the mean for this variable
   Y(bad_obs,i) = var_means(i);
+end
+
+% if any variables are completely missing, use mean of other
+% variables
+a = all(isnan(X));
+if any(a)
+  Y(:,a) = nanmean(X, 2);
+end
+
+if nnz(isnan(Y)) > 0
+  error('Could not remove all NaNs from X.')
 end
