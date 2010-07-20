@@ -9,8 +9,8 @@ function pat = pat_plottopo(pat, fig_name, varargin)
 %  fig_name:  string identifier for the new figure object.
 %
 %  OUTPUTS:
-%      pat:  pattern object with an added figure object containing
-%            information about the created figure(s).
+%       pat:  pattern object with an added figure object containing
+%             information about the created figure(s).
 %
 %  PARAMS:
 %  These options may be specified using parameter, value pairs or by

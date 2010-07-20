@@ -19,12 +19,24 @@ function pat = pat_erp_image(pat, fig_name, varargin)
 %  These options may be specified using parameter, value pairs or by
 %  passing a structure. Defaults are shown in parentheses.
 %   event_index - defines indices to use when sorting events. May be:
-%                     char:  indices taken from a field in events.
-%                  numeric:  vector to use as indices.
-%                       []:  indices are 1:length(events).
-%                 default is [].
+%                     char - indices taken from a field in events.
+%                  numeric - vector to use as indices.
+%                       [] - indices are 1:length(events). (default)
 %   plot_index  - if true, index will be plotted on the image. Default
 %                 is true if event_index is specified, otherwise false.
+%   exclude     - use to exclude samples before or after the index
+%                 (the index contains ms values). May be:
+%                   'before' - only samples after the index are
+%                              included in the ERP.
+%                    'after' - only samples before the index are included.
+%                      'all' - events are excluded if index falls within
+%                              exclude_limits.
+%                  'inc_all' - events are included only if index falls
+%                              within exclude_limits.
+%                     'none' - all samples are included. (default)
+%   exclude_limits - range of ms values to check for index for
+%                 exclusion. If, for a given event, index is outside
+%                 this range, all samples will be included. ([])
 %   map_limits  - colormap limits in [min max] form. ([])
 %   print_input - inputs to print for saving figures. ({'-depsc'})
 %   res_dir     - directory in which to save the figure. Default is:
@@ -33,6 +45,8 @@ function pat = pat_erp_image(pat, fig_name, varargin)
 % options
 defaults.event_index = [];
 defaults.plot_index = [];
+defaults.exclude = 'none';
+defaults.exclude_limits = [];
 defaults.map_limits = [];
 defaults.print_input = {'-depsc'};
 defaults.res_dir = '';
@@ -83,11 +97,43 @@ else
 end
 
 % dimension info
-n_chans = size(pattern, 2);
-n_freqs = size(pattern, 4);
+[n_events, n_chans, n_samps, n_freqs] = size(pattern);
 chan = get_dim(pat.dim, 'chan');
 freq = get_dim(pat.dim, 'freq');
 time = get_dim_vals(pat.dim, 'time');
+
+% remove excluded samples
+samplerate = get_pat_samplerate(pat);
+start_time = time(1);
+mask = true(n_events, n_samps);
+if ~strcmp(params.exclude, 'none')
+  % NaN out samples before the index on each event
+  samp = ms2samp(index, samplerate, start_time);
+  
+  % get sample limits
+  if isempty(params.exclude_limits)
+    samp_limits = [1 n_samps];
+  else
+    samp_limits = ms2samp(params.exclude_limits, samplerate, start_time) + 1;
+  end
+  
+  for i=1:n_events
+    if samp(i) < samp_limits(1) || samp_limits(2) < samp(i);
+      if strcmp(params.exclude, 'inc_all')
+        mask(i, :) = false;
+      end
+      continue
+    end
+    switch params.exclude
+     case 'before'
+      mask(i, 1:samp(i)-1) = false;
+     case 'after'
+      mask(i, samp(i)+1:end) = false;
+     case 'all'
+      mask(i, :) = false;
+    end
+  end
+end
 
 z_lim = params.map_limits;
 files = cell(1, n_chans, 1, n_freqs);
@@ -114,6 +160,7 @@ for i=1:n_chans
     % plot the average
     pos = get(gca, 'Position');
     subplot('position', [pos(1) 0.15 pos(3) 0.1]);
+    data(~mask) = NaN;
     plot_erp(nanmean(data, 1), time);
     ylabel('V (\muV)')
     drawnow
