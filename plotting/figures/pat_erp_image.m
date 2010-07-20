@@ -23,9 +23,12 @@ function pat = pat_erp_image(pat, fig_name, varargin)
 %                  numeric - vector to use as indices.
 %                       [] - indices are 1:length(events). (default)
 %   plot_index  - if true, index will be plotted on the image. Default
-%                 is true if event_index is specified, otherwise false.
+%                 is true if event_index is specified, otherwise
+%                 false.
+%   scale_index - if true, index will be scaled before plotting. This is
+%                 useful when the index is not ms values. (false)
 %   exclude     - use to exclude samples before or after the index
-%                 (the index contains ms values). May be:
+%                 (assuming the index contains ms values). May be:
 %                   'before' - only samples after the index are
 %                              included in the ERP.
 %                    'after' - only samples before the index are included.
@@ -45,6 +48,7 @@ function pat = pat_erp_image(pat, fig_name, varargin)
 % options
 defaults.event_index = [];
 defaults.plot_index = [];
+defaults.scale_index = false;
 defaults.exclude = 'none';
 defaults.exclude_limits = [];
 defaults.map_limits = [];
@@ -133,6 +137,16 @@ if ~strcmp(params.exclude, 'none')
       mask(i, :) = false;
     end
   end
+end
+
+% rescale the index (helpful if index is not ms values)
+if params.scale_index
+  index_min = min(index);
+  index_max = max(index);
+  time_min = min(time);
+  time_max = max(time);
+  b = (time_max - time_min) / (index_max - index_min);
+  index = b * index + (time_min - b * index_min);
 end
 
 z_lim = params.map_limits;
