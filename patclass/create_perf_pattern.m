@@ -1,12 +1,12 @@
-function pat = create_acts_pattern(pat, stat_name, varargin)
-%CREATE_ACTS_PATTERN   Create a pattern from classifier outputs.
+function pat = create_perf_pattern(pat, stat_name, varargin)
+%CREATE_PERF_PATTERN   Create a pattern from classifier outputs.
 %
 %  From the results of pattern classification, get the classifier
 %  output for the target on each trial, and put it in a new pattern.
 %  The classifier output can then be manipulated and plotted in all of
 %  the ways that any other pattern can.
 %
-%  pat = create_acts_pattern(pat, stat_name, ...)
+%  pat = create_perf_pattern(pat, stat_name, ...)
 %
 %  INPUTS:
 %        pat:  a pattern object.
@@ -130,19 +130,24 @@ function acts = get_acts(res, params)
   for i=1:length(res)
     iter_res = res(i);
     
-    if strcmp(params.stat_type, 'acts')
+    switch params.stat_type
+     case 'acts'
       % get classifier activation for the correct unit
       mat = iter_res.acts(logical(iter_res.targs));
       
-    elseif strcmp(params.stat_type, 'correct')
+     case 'correct'
       % for each event, get whether the classifier guessed correctly
       perfmet = perfmet_maxclass(iter_res.acts, iter_res.targs);
       mat = perfmet.corrects;
       
-    elseif strcmp(params.stat_type, 'guess')
+     case 'guess'
       % for each event, get the unit that was maximally active
       perfmet = perfmet_maxclass(iter_res.acts, iter_res.targs);
       mat = perfmet.guesses;
+      
+     case 'rank'
+      perfmet = perfmet_rank(iter_res.acts, iter_res.targs);
+      mat = perfmet.rank;
     end
 
     acts(iter_res.test_idx) = mat;
