@@ -66,6 +66,7 @@ end
 
 % default params
 defaults.regressor = '';
+defaults.test_regressor = '';
 defaults.selector = '';
 defaults.iter_cell = cell(1, 4);
 defaults.overwrite = true;
@@ -107,6 +108,10 @@ events = get_dim(pat.dim, 'ev');
 
 % get the regressor to use for classification
 targets = create_targets(events, params.regressor);
+
+if ~isempty(params.test_regressor)
+  params.test_targets = create_targets(events, params.test_regressor);
+end
 
 % get the selector
 selector = make_event_bins(events, params.selector);
