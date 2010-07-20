@@ -7,7 +7,7 @@ function ev = modify_events(ev, f, f_inputs, varargin)
 %        ev:  an events object.
 %
 %         f:  handle to a function of the form:
-%              ev = f(ev, ...)
+%              events = f(events, ...)
 %
 %  f_inputs:  cell array of additional inputs to f.
 %
