@@ -46,6 +46,7 @@ elseif size(targets, 1) ~= size(pattern, 1)
 end
 
 % default params
+defaults.test_targets = [];
 defaults.verbose = false;
 [xval_params, params] = propval(varargin, defaults);
 
@@ -81,8 +82,16 @@ for i=1:n_iter
   test_idx = selector == sel_vals(i);
 
   % run classification and assess performance
-  iter_res = traintest(pattern(test_idx,:), pattern(train_idx,:), ...
-                       targets(test_idx,:), targets(train_idx,:), params);
+  if ~isempty(xval_params.test_targets)
+    % use different targets for train and test (unusual)
+    iter_res = traintest(pattern(test_idx,:), pattern(train_idx,:), ...
+                         xval_params.test_targets(test_idx,:), ...
+                         targets(train_idx,:), params);
+  else
+    % use targets for both train and test
+    iter_res = traintest(pattern(test_idx,:), pattern(train_idx,:), ...
+                         targets(test_idx,:), targets(train_idx,:), params);
+  end
   
   % save the indices for this cross-validation in res
   iter_res.train_idx = train_idx;
