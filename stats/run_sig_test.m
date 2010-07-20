@@ -146,25 +146,3 @@ end
 if length(statistic)~=length(p)
   error('length of statistic does not match length of p.')
 end
-
-
-function export_r(X,group,filename)
-  % if the file already exists, delete and start fresh
-  if exist(filename,'file')
-    unix(['rm ' filename]);
-  end
-
-  if ~exist(fileparts(filename),'dir')
-    mkdir(fileparts(filename));
-  end
-
-  % open a temporary file for writing
-  fid = fopen(filename,'w');
-  for i=1:length(X)
-    fprintf(fid,'%.4f',X(i));
-    for j=1:length(group)
-      fprintf(fid,'\t%d',group{j}(i));
-    end
-    fprintf(fid,'\n');
-  end
-%endfunction
