@@ -109,10 +109,9 @@
 
 == Patterns ==
 
- * full support for ':' and 'iter' options in patBins
+ * change patBins to call apply_event_bins
 
- * finish splitting up features of modify_pattern.  Artifact rejection
-   particularly important
+ * full support for ':' and 'iter' options in patBins
 
  * import advances in EOG artifact detection (individual grid searches)
 
