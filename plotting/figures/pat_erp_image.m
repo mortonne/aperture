@@ -1,11 +1,17 @@
 function pat = pat_erp_image(pat, channels, varargin)
 %PAT_ERP_IMAGE   Plot an image of all events in a pattern.
 %
-%  pat = pat_erp_image(pat)
+%  pat = pat_erp_image(pat, channels)
+%
+%  INPUTS:
+%       pat:  pattern object.
+%
+%  channels:  vector of channel numbers or cell array of channel labels
+%             indicating channels to plot.
 %
 %  NOTES:
 %   Currently doesn't save out any figures, and isn't well suited for
-%   patterns with multiple channels.
+%   plotting multiple channels.
 
 defaults.map_limits = [];
 params = propval(varargin, defaults);
