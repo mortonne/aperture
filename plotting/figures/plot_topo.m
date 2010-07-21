@@ -335,6 +335,7 @@ g = finputcheck(options, { 'chanlocs'  ''    []          '';
                     'colors'    { 'cell' 'string' }     []          {};
                     'legend'    'cell'                  []          {};
                     'showleg'   'string'                {'on' 'off'} 'on';
+                    'verbose'   'string'                {'on' 'off'} 'off';
                     'ydir'      'integer'               [-1 1]      DEFAULT_SIGN;
                     'vert'      'float'                 []          [];
                     'hori'      'float'                 []          []});
@@ -612,9 +613,11 @@ end;
         end;
     end
     msg = [msg '\n'];    % print starting info on screen . . .
-    fprintf('limits: [xmin,xmax,ymin,ymax] = [%4.1f %4.1f %4.2f %4.2f]\n',...
-            xmin,xmax,ymin,ymax);
-    fprintf(msg,datasets,g.frames);
+    if g.verbose
+      fprintf('limits: [xmin,xmax,ymin,ymax] = [%4.1f %4.1f %4.2f %4.2f]\n',...
+              xmin,xmax,ymin,ymax);
+      fprintf(msg,datasets,g.frames);
+    end
 
     set(h,'FontSize',FONTSIZE);           % choose font size
     set(h,'YLim',[ymin ymax]);            % set default plotting parameters
@@ -706,7 +709,9 @@ end;
 
     Axes = [];
     for P=0:datasets-1, %  for each data epoch
-        fprintf('trace %d: ',P+1);
+        if g.verbose
+          fprintf('trace %d: ',P+1);
+        end
 
         for c=1:chans, %%%%%%%% for each data channel %%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -844,12 +849,16 @@ end;
 
             end;
             
-            fprintf(' %d',c); % finished with channel plot
+            if g.verbose
+              fprintf(' %d',c); % finished with channel plot
+            end
         end; % c, chans / subplot
              % handle legend
         if nolegend, g.legend{P+1} = ['Data ' int2str(P) ]; end;
         
-        fprintf('\n');
+        if g.verbose
+          fprintf('\n');
+        end
     end; % P / epoch
 
     % plot the legend
