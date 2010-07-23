@@ -87,10 +87,25 @@ for sess=subj.sess
                           [basename params.pulse_ext]);
     temp = dir(pulse_path);
     if length(temp) == 0
-      error('No EEG sync pulse files found that match: %s', pulse_path)
+      warning('No EEG sync pulse files found that match: %s', ...
+              pulse_path);
+      return;
     elseif length(temp) > 1
-      error('Multiple EEG sync pulse files found that match: %s', pulse_path)
+      fprintf('Multiple EEG sync pulse files found that match: %s\n', pulse_path)
+      % use the first one that matches this pattern: '###.sync.txt'
+      for j=1:length(temp)
+        if length(temp) > 1
+          if ~isempty(regexp(temp(j).name,'\w*\d\d\d.sync.txt'))
+            temp = temp(j);
+            fprintf('Using: %s\n', temp.name);
+          end
+        end
+      end
+      if length(temp) > 1
+        error('No valid sync files found.');
+      end
     end
+
     eegsyncfiles{i} = fullfile(subj.dir, params.pulse_dir, temp.name);
 
     % for runAlign, make eegfile point to a specific channel
@@ -112,6 +127,10 @@ for sess=subj.sess
   samplerate = GetRateAndFormat(fileparts(eegfiles{1}));
 
   % run the alignment
-  runAlign(samplerate, {behsyncfile}, eegsyncfiles, eegfiles, {eventfile}, ...
-           'mstime', 0, 0);
+  try
+    runAlign(samplerate, {behsyncfile}, eegsyncfiles, eegfiles, {eventfile}, ...
+             'mstime', 0, 0);
+  catch
+    fprintf('runAlign threw an error.\n');
+  end
 end
