@@ -29,7 +29,8 @@ function subj = create_voltage_pattern(subj, pat_name, params, res_dir)
 %                     events to include in the pattern. ('')
 %   chanFilter      - used to choose which channels to include in the
 %                     pattern. Can be a string to pass into
-%                     filterStruct, or an array of channel numbers to
+%                     filterStruct, an array of channel numbers to
+%                     include, or a cell array of channel labels to
 %                     include. ('')
 %   offsetMS        - time in milliseconds before each event to start
 %                     the pattern. (-200)

@@ -16,8 +16,10 @@ function [pat, inds] = patFilt(pat, varargin)
 %  These options may be specified using parameter, value pairs or by
 %  passing a structure. Defaults are shown in parentheses.
 %   eventFilter - string to be input to filterStruct to filter events
-%   chanFilter  - string filter for channels, or array of channel
-%                 numbers to include
+%   chanFilter  - specifies which channels to include. May be:
+%                        char - input to inStruct
+%                     numeric - list of channel numbers to include
+%                  cell array - list of channel labels to include
 %   timeFilter  - string filter for time
 %   freqFilter  - string filter for frequency
 %
@@ -71,8 +73,12 @@ end
 if ~isempty(params.chanFilter)
   if ischar(params.chanFilter)
     inds{2} = inStruct(pat.dim.chan, params.chanFilter);
-  else
+  elseif iscellstr(params.chanFilter)
+    inds{2} = find(ismember({pat.dim.chan.label}, params.chanFilter));
+  elseif isnumeric(params.chanFilter)
     inds{2} = find(ismember([pat.dim.chan.number], params.chanFilter));
+  else
+    error('Invalid chanFilter input.')
   end
   pat.dim.chan = pat.dim.chan(inds{2});
 end
