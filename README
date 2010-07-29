@@ -1,5 +1,5 @@
 EEG_ANA Toolbox
---------------
+---------------
 This is a MATLAB-based toolbox for analysis of EEG data.  The current
 project homepage is:
 https://memory.psych.upenn.edu/InternalWiki/eeg_ana_toolbox
@@ -7,18 +7,27 @@ https://memory.psych.upenn.edu/InternalWiki/eeg_ana_toolbox
 You must have an account on the Kahana lab wiki to access it.
 
 Installation
----------
+------------
 To install, add all project subdirectories to your MATLAB path. For
 example:
 addpath(genpath('path_to_eeg_ana'))
 
 You must also install the UPenn eeg_toolbox. The SVN project is at:
-svn+ssh://[username]@rhino.psych.upenn.edu/home/svn/eeg/eeg_toolbox/branches/unstable
+svn+ssh://rhino.psych.upenn.edu/home/svn/eeg/eeg_toolbox/branches/unstable
 
 Note that this project uses the "unstable" branch of eeg_toolbox.
 
+Some functions may also depend on the UPenn Behavioral Toolbox:
+svn+ssh://rhino.psych.upenn.edu/home/svn/matlab/beh_toolbox/trunk
+
+Pattern classification requires functions from the Princeton MVPA toolbox:
+http://code.google.com/p/princeton-mvpa-toolbox/
+
+Add only core/learn and core/util to your path; some of the functions
+in the other directories conflict with EEG_ANA functions.
+
 Authors
-------
+-------
 Neal Morton (neal.w.morton@vanderbilt.edu)
 Sean Polyn
 Zachary Cohen

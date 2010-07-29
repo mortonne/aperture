@@ -1,13 +1,6 @@
 == Project Management ==
 
- * final pass for 0.3.0 release; write release statement including
-   description of beh_toolbox compatibility improvements. Decide whether
-   to include ZDC fieldtrip functions, or save for 0.4.
-
- * SVN or GIT?
-
- * README needs an update!  Change to give basic installation
-   instructions, point to online documentation
+ * SVN or GIT for future development?
 
  * make documentation public-viewable
 
@@ -21,45 +14,7 @@
 
  * make clearer separation between core and EEG functions
 
- * compatibility with EEGLAB and fieldtrip
-
-  * For right now, throwing in useful functions to whatever folder seems
-    to fit. Should there be a top-level fork between eeg_ana and other
-    toolbox functions to facilitate updates?  How do other software
-    projects handle this?
-
 == General Issues ==
-
- * change default directory structure for events.  Should be like the
-   EEG structure:
-
-   beh/[ev_name]/events
-                            stats
-                            figs
-
-   Where "ev_name" would be the name of an events object.  This
-   organization will guarantee uniqueness of sub-object filenames of ev
-   objects.  The general idea is to mirror the format of the exp
-   structure, where each object has a unique address, with a similar
-   directory structure.  eeg=patterns, beh=events.  When we move to
-   saved channel structures, there can also be a top-level "chans"
-   directory.  Technically, channels don't have to be EEG (could be HR,
-   GSR, etc.), so it's OK if chans is outside the eeg directory.
-
-   Then the only difference between exp and the directory structure will
-   be that subjects are at the file-level, rather than the top-level.
-   This allows for many fewer total directories, and makes browsing
-   easier if you want to see the results of an analysis for all
-   subjects.
-
-  * made needed changes in events functions; need to implement in basic
-    tutorial.
-
- * move to having res_dir be a parameter, and not a main argument. This
-  will often make params the last argument and open up easy support for
-  parameter, value pair-style input of params.  Also will make it clear
-  when there is an obvious default res_dir, and when the user should
-  specify a res_dir.
 
  * improve consistency:
 
@@ -77,9 +32,6 @@
   * should objects be saved with their mats, for ease of reloading them
     if the references in exp get lost?  Or even the whole branch
     (exp.subj.pat), so they can be remerged using merge_exps.
-
- * finish switching functions over to using propval instead of
-   structDefaults.
 
  * check feasibility of cross-experiment analyses (e.g. running Per's
    SME-serial position interaction analysis on all LTP FR experiments)
@@ -113,7 +65,8 @@
 
  * full support for ':' and 'iter' options in patBins
 
- * import advances in EOG artifact detection (individual grid searches)
+ * import advances in EOG artifact detection (individual grid
+   searches, Gratton et al. method)
 
  * support for continuous patterns - one event, many time bins?  How is
    events information stored?
@@ -131,8 +84,8 @@
 
 == Plotting ==
 
- * consider beefing up plot_events.  it's unique and potentially very
-   useful.
+ * option to use locations from the chan struct, rather than from
+   file. Would allow topo plots with a subset of channels
 
  * support for making brain plots
 
@@ -178,7 +131,7 @@
   * translating p to z, setting z* can be done outside of plotting
     function
 
-* settle "stat" vs. "stats" controversy
+ * settle "stat" vs. "stats" controversy
 
  * support for stat printing in exp_disp
 
