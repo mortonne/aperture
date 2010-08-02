@@ -437,7 +437,9 @@ end;
       axheight = DEFAULT_AXHEIGHT;
       axwidth =  DEFAULT_AXWIDTH;
   end
+  if strcmp(g.verbose, 'yes')
     fprintf('Plotting data using axis size [%g,%g]\n',axwidth,axheight);
+  end
 
     %
     %%%%%%%%%%%%% Extend the size of the plotting area in the window %%%%%%%%%%%%
@@ -540,25 +542,31 @@ end;
     %
     %%%%%%%%%%%%%%%%%%%%%%% Read and adjust limits %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %
-    if g.limits==0,      % == 0 or [0 0 0 0]
-        xmin=0;
-        xmax=g.frames-1;
-        % for abs max scaling:
-        ymax=max(max(abs(data)));
-        ymin=ymax*-1;
-        % for data limits:
-        %ymin=min(min(data));
-        %ymax=max(max(data));
-    else
-        if length(g.limits)~=4,
-            error('plottopo: limits should be 0 or an array [xmin xmax ymin ymax].\n');
-        end;
-        xmin = g.limits(1);
-        xmax = g.limits(2);
-        ymin = g.limits(3);
-        ymax = g.limits(4);
-    end;
 
+    if ~ismember(length(g.limits), [1 4])
+      error('plottopo: limits should be 0 or an array [xmin xmax ymin ymax].\n');
+    end
+    
+    if all(g.limits==0) || all(g.limits(1:2)==0)      % == 0 or [0 0 0 0]
+      xmin=0;
+      xmax=g.frames-1;
+    else
+      xmin = g.limits(1);
+      xmax = g.limits(2);
+    end
+    
+    if all(g.limits==0) || all(g.limits(3:4)==0)
+      % for abs max scaling:
+      %ymax=max(max(abs(data)));
+      %ymin=ymax*-1;
+      % for data limits:
+      ymin=min(min(data));
+      ymax=max(max(data));
+    else
+      ymin = g.limits(3);
+      ymax = g.limits(4);
+    end
+        
     if xmax == 0 & xmin == 0,
         x = (0:1:g.frames-1);
         xmin = 0;
@@ -613,14 +621,14 @@ end;
         end;
     end
     msg = [msg '\n'];    % print starting info on screen . . .
-    if g.verbose
+    if strcmp(g.verbose, 'yes')
       fprintf('limits: [xmin,xmax,ymin,ymax] = [%4.1f %4.1f %4.2f %4.2f]\n',...
               xmin,xmax,ymin,ymax);
       fprintf(msg,datasets,g.frames);
     end
 
     set(h,'FontSize',FONTSIZE);           % choose font size
-    set(h,'YLim',[ymin ymax]);            % set default plotting parameters
+    %set(h,'YLim',[ymin ymax]);            % set default plotting parameters
     set(h,'XLim',[xmin xmax]);
 
     axis('off')
@@ -709,7 +717,7 @@ end;
 
     Axes = [];
     for P=0:datasets-1, %  for each data epoch
-        if g.verbose
+        if strcmp(g.verbose, 'yes')
           fprintf('trace %d: ',P+1);
         end
 
@@ -849,14 +857,14 @@ end;
 
             end;
             
-            if g.verbose
+            if strcmp(g.verbose, 'yes')
               fprintf(' %d',c); % finished with channel plot
             end
         end; % c, chans / subplot
              % handle legend
         if nolegend, g.legend{P+1} = ['Data ' int2str(P) ]; end;
         
-        if g.verbose
+        if strcmp(g.verbose, 'yes')
           fprintf('\n');
         end
     end; % P / epoch

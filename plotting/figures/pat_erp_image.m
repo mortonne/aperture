@@ -185,7 +185,7 @@ for i=1:n_chans
       filename = [filename '_' lower(strrep(chan(i).label, ' ', '-'))];
     end
     if n_freqs > 1
-      filename = [filename '_' lower(strrep(freq(i).label, ' ', '-'))];
+      filename = [filename '_' lower(strrep(freq(j).label, ' ', '-'))];
     end
     files{1,i,1,j} = fullfile(params.res_dir, [filename '.eps']);
     

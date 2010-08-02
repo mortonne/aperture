@@ -83,8 +83,17 @@ if length(params.event_labels) > 1
                       'showleg', 'on'];
 end
 
+if n_freq > 1
+  fprintf('Making %d plots...', n_freq)
+  freq = get_dim(pat.dim, 'freq');
+end
+
 eloc = readlocs(params.chan_locs);
 for i=1:n_freq
+  if n_freq > 1
+    fprintf('%s ', freq(i).label)
+  end
+  
   clf
   
   % get data for this frequency in [channels X time X events] order
@@ -94,7 +103,7 @@ for i=1:n_freq
   
   % create the filename for this plot
   if n_freq > 1
-    freq_label = lower(strrep(pat.dim.freq(i).label, ' ', '-'));
+    freq_label = lower(strrep(freq(i).label, ' ', '-'));
     filename = sprintf('%s_%s.pdf', base_filename, freq_label);
   else
     filename = sprintf('%s.pdf', base_filename);
@@ -104,6 +113,9 @@ for i=1:n_freq
   % save as a PDF
   set(gcf, 'PaperOrientation', 'landscape');
   saveas(gcf, files{1,1,1,i});
+end
+if n_freq > 1
+  fprintf('\n')
 end
 
 % create a new figure object
