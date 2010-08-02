@@ -59,18 +59,23 @@ params.verbose = false;
 % get the selector value for each iteration
 sel_vals = unique(selector);
 sel_vals = sel_vals(~isnan(sel_vals));
+n_sel = length(sel_vals);
 if length(sel_vals) < 2
   error('Selector must have at least two unique non-NaN values.')
 end
+n = NaN(1, n_sel);
+for i=1:n_sel
+  n(i) = nnz(selector == sel_vals(i));
+end
+% if any(n < 10)
+%   error('not enough events for each run to classify.')
+% end
 
 % flatten all dimensions > 2 into one vector
 patsize = size(pattern);
 if ndims(pattern) > 2
   pattern = reshape(pattern, [patsize(1) prod(patsize(2:end))]);
 end
-
-pattern = remove_nans(pattern);
-pattern = rescale(pattern);
 
 n_iter = length(sel_vals);
 %n_perfs = length(params.f_perfmet);

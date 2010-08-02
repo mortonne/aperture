@@ -120,9 +120,15 @@ if iscellstr(selector)
 end
 
 % run pattern classification separately for each value on the iter_dims
-res = apply_by_group(@xval, {pattern}, params.iter_cell, ...
-                     {selector, targets, params}, ...
-                     'uniform_output', false);
+try
+  res = apply_by_group(@xval, {pattern}, params.iter_cell, ...
+                       {selector, targets, params}, ...
+                       'uniform_output', false);
+catch err
+  fprintf('error thrown during classification:\n')
+  disp(getReport(err))
+  return
+end
 
 % fix the res structure
 res_size = size(res);
