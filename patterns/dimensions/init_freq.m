@@ -31,7 +31,8 @@ end
 freqs_cell = num2cell(freqs);
 if isempty(labels)
   % if no user-specified labels, print default labels
-  labels = cellfun(@(x)sprintf('%d Hz', x), freqs_cell, 'UniformOutput', ...
+  labels = cellfun(@(x)sprintf('%.2f Hz', x), freqs_cell, 'UniformOutput', ...
                    false);
 end
 freq = struct('vals', freqs_cell, 'avg', freqs_cell, 'label', labels);
+
