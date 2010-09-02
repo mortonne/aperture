@@ -69,6 +69,13 @@ if iscellstr(bins)
       labels(thisfield) = i;
     end
   end
+elseif iscell(bins)
+  % assume each cell contains an eventfilter
+  labels = NaN(1,length(events));
+  for i=1:length(bins)
+    thisfield = inStruct(events, bins{i});
+    labels(thisfield) = i;
+  end
 
 elseif isfield(events, bins)
   % each unique value of the field will be used
