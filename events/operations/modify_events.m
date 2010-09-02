@@ -100,7 +100,7 @@ if ~isempty(params.event_filter)
   sub_events = f(sub_events, f_inputs{:});
 
   % merge back into the complete events structure
-  events = union_structs(sub_events, events, {'eegfile', 'eegoffset'});
+  events = union_structs(sub_events, events, {'mstime'});
   
   % in case merging messes up order
   events = sort_events(events);
