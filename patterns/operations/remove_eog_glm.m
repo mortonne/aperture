@@ -35,6 +35,11 @@ function subj = remove_eog_glm(subj, stat_name, pat_name, H_pat_name, ...
 %   res_dir    - directory in which to save the GLM results. Default is
 %                the pattern's stats directory.
 
+%get the pat objects
+pat = getobj(subj, 'pat', pat_name);
+H_eog_pat = getobj(subj, 'pat', H_pat_name);
+V_eog_pat = getobj(subj, 'pat', V_pat_name);
+
 % options
 defaults.distr = 'normal';
 defaults.link = '';
@@ -43,21 +48,41 @@ defaults.overwrite = true;
 defaults.res_dir = get_pat_dir(pat, 'stats');
 params = propval(varargin, defaults);
 
-%get the pat objects
-pat = getobj(subj, 'pat', pat_name);
-H_eog_pat = getobj(subj, 'pat', H_pat_name);
-V_eog_pat = getobj(subj, 'pat', V_pat_name);
-
-
 warnings = zeros(length(subj.chan));
 %else
 warning('off', 'all');
+
+best_thresh = [];
+params.find_best_thresh = false;
+%if you want to use dynamic thresh search:
+if params.find_best_thresh
+  [best_thresh, blink_thresh] = optimize_blink_detector(pat)
+  clear blink_thresh;
+end
+%
+%
+
+if ~isempty(pat.best_thresh)
+  best_thresh = pat.best_thresh;
+end
+%
 
 
 %get the pattern matrices 
 pattern = get_mat(pat);
 H_eog_pattern = get_mat(H_eog_pat);
 V_eog_pattern = get_mat(V_eog_pat);
+
+%run blink detection
+thresh = [100];
+if ~isempty(best_thresh)
+  thresh = best_thresh;
+end
+blink_params = [];
+blink_params.reject_full = false;
+blink_params.buffer = true;
+blink_mask = reject_blinks(pattern, thresh, blink_params);
+blink_mask = blink_mask(:,1,:);
 
 %add sanity checks about the pattern
 
@@ -90,6 +115,7 @@ time_size = size(pattern,3);
 H_session_pattern = repmat(H_session_vec, [1, 1, time_size]);
 V_session_pattern = repmat(V_session_vec, [1, 1, time_size]);
 
+
 %add sanity check comparing session_pattern to eog_pattern
 
 %to be developed:
@@ -119,26 +145,35 @@ num_sessions = length(unique([H_session_vec]));
 sessions = unique([H_session_vec]);
 
 %define number of regressors
-beta_num = (2*num_sessions);
+beta_num = (5*num_sessions);
 
 %create seperate eog measures for each session
 for sess = 1:num_sessions
-  H_eog{sess} = H_eog_pattern.*(H_session_pattern == sessions(sess));
-  V_eog{sess} = V_eog_pattern.*(V_session_pattern == sessions(sess));
-
+  H_Beog{sess} = H_eog_pattern.*(H_session_pattern == sessions(sess)).*blink_mask;
+  V_Beog{sess} = V_eog_pattern.*(V_session_pattern == sessions(sess)).*blink_mask;
+  H_eog{sess} = H_eog_pattern.*(H_session_pattern == sessions(sess)).*~blink_mask;
+  V_eog{sess} = V_eog_pattern.*(V_session_pattern == sessions(sess)).*~blink_mask;
+  constant{sess} = (V_session_pattern == sessions(sess));
+  
   %pre-allocate memory for the statistics patterns
+  p.hb{sess} = NaN(length(subj.chan),1);
+  p.vb{sess} = NaN(length(subj.chan),1);
   p.h{sess} = NaN(length(subj.chan),1);
   p.v{sess} = NaN(length(subj.chan),1);
+  
+  
 end
 
-tstat = p;
+tstat = p; 
 beta = p;
 
 %clear space in memory
 clear H_eog_pattern
 clear V_eog_pattern
+clear int_eog_pattern
 clear H_session_pattern
 clear V_session_pattern
+clear blink_mask
 
 %reshape the pattern vector
 [pattern, pat_size] = seg2cont(pattern, size(pattern));
@@ -161,17 +196,33 @@ for c = 1:length(subj.chan)
   %column
   %HOW WILL THIS WORK
   counter = 0;
-  for r = 1:2:(beta_num-1)
+  for r = 1:5:(beta_num-1)
     %reshape the pattern
     counter = counter + 1;
+    H_Beog{counter} = permute(H_Beog{counter}, [1 3 2]);
+    H_Beog{counter} = reshape(H_Beog{counter}, size(H_Beog{counter}, ...
+                                                  1)*size(H_Beog{counter},2),1);
+    V_Beog{counter} = permute(V_Beog{counter}, [1 3 2]);
+    V_Beog{counter} = reshape(V_Beog{counter}, size(V_Beog{counter}, ...
+                                                  1)*size(V_Beog{counter},2),1);
     H_eog{counter} = permute(H_eog{counter}, [1 3 2]);
     H_eog{counter} = reshape(H_eog{counter}, size(H_eog{counter}, ...
                                                   1)*size(H_eog{counter},2),1);
     V_eog{counter} = permute(V_eog{counter}, [1 3 2]);
     V_eog{counter} = reshape(V_eog{counter}, size(V_eog{counter}, ...
                                                   1)*size(V_eog{counter},2),1);
-    x(:,(r)) = [H_eog{counter}];
-    x(:,(r+1)) = [V_eog{counter}];
+    
+    constant{counter} = permute(constant{counter}, [1 3 2]);
+    constant{counter} = reshape(constant{counter}, size(constant{counter}, ...
+                                                  1)*size(constant{counter},2),1);
+    
+    
+    x(:,(r)) = [H_Beog{counter}];
+    x(:,(r+1)) = [V_Beog{counter}];
+    x(:,(r+2)) = [H_eog{counter}];
+    x(:,(r+3)) = [V_eog{counter}];
+    x(:,(r+4)) = [constant{counter}];
+    
   end
   
   %we then call glmfit
@@ -179,8 +230,10 @@ for c = 1:length(subj.chan)
   % stats contains the p-values and t-stats for the regressor
   % coefficients
   if ~isempty(params.link)
-    params.glm_inputs = {params.glm_inputs{:}, 'link', params.link};
+    params.glm_inputs = {params.glm_inputs{:}, 'link', params.link, ...
+                        'constant', 'off'};
   end
+   
   [b, dev, stats] = glmfit(x, ev_vec, params.distr, params.glm_inputs{:});
   
   warn = lastwarn;
@@ -190,7 +243,7 @@ for c = 1:length(subj.chan)
   
   
   resid(:,c) = stats.resid;
-  yhat(:,c) = glmval(b,x,link_func);
+  yhat(:,c) = glmval(b,x,'link',params.link,'constant','off');
   
   % below we try and fix a problem with zscoring when #observations is
   % very low, which causes the standard dev to be close to 0 (or 0)
@@ -201,14 +254,25 @@ for c = 1:length(subj.chan)
   
   counter = 0;
   
-  for r = 2:2:(beta_num)
+  for r = 1:5:(beta_num)
     counter = counter + 1;
-    p.h{counter}(c) = stats.p(r);
-    tstat.h{counter}(c) = stats.t(r);
-    p.v{counter}(c) = stats.p(r+1);
-    tstat.v{counter}(c) = stats.t(r+1);
-    beta.h{counter}(c) = stats.beta(r);
-    beta.v{counter}(c) = stats.beta(r+1);
+    p.hb{counter}(c) = stats.p(r);
+    tstat.hb{counter}(c) = stats.t(r);
+    p.vb{counter}(c) = stats.p(r+1);
+    tstat.vb{counter}(c) = stats.t(r+1);
+    p.h{counter}(c) = stats.p(r+2);
+    tstat.h{counter}(c) = stats.t(r+2);
+    p.v{counter}(c) = stats.p(r+3);
+    tstat.v{counter}(c) = stats.t(r+3);
+ 
+    %   p.int{counter}(c) = stats.p(r+2);
+ %   tstat.int{counter}(c) = stats.t(r+2);
+    
+    beta.hb{counter}(c) = stats.beta(r);
+    beta.vb{counter}(c) = stats.beta(r+1);
+    beta.h{counter}(c) = stats.beta(r+2);
+    beta.v{counter}(c) = stats.beta(r+3);
+  %  beta.int{counter}(c) = stats.beta(r+2);
   end
 end
 
@@ -236,4 +300,3 @@ save(stat.file, 'beta', '-append');
 
 stat.warnings = sum(warnings(:));
 subj = setobj(subj, 'pat', pat_name, 'stat', stat);
-

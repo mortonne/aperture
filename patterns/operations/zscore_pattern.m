@@ -48,7 +48,7 @@ defaults.event_bins = 'session';
 % get baseline pattern and events
 base_pat = getobj(subj, 'pat', base_pat_name);
 base_pattern = get_mat(base_pat);
-base_events = get_dim(base_pat.dim, 'ev');
+base_events = get_dim(base_pat.dim, 'ev');  
 
 % get subsets of events to calculate baseline for
 base_event_bins = index2bins(make_event_bins(base_events, params.event_bins));
@@ -77,11 +77,33 @@ function pat = apply_zscore(pat, m, s, event_bin_defs)
     for j=1:n_chans
       for k=1:n_freq
         ind = {event_bins{i},j,':',k};
-        pattern(ind{:}) = (pattern(ind{:}) - m(i,j,:,k)) / s(i,j,:,k);
+        
+        %below we try and deal with situations where most of the
+        %baseline observations are NaNd out, which results in small
+        %standard deviations and huge Zscores
+        %if s(i,j,:,k) < .5
+        %  pattern(ind{:}) = NaN;
+        %else
+        %  pattern(ind{:}) = (pattern(ind{:}) - m(i,j,:,k)) / s(i,j,:,k);
+        %end
+        
+        %below is an attempt to improve upon the above sanity/check
+        %and fix. ideal would be a percentage threshold for the number
+        %of observations in the baseline period, that if not met
+        %would result in that event being excluded
+        %need to make sure the first statement is properly indexed
+        if mean(isnan(base_pattern(ind{:})))>(1/3)
+          pattern(ind{:}) = NaN;
+        elseif s(i,j,:,k) < .5
+          pattern(ind{:}) = NaN;
+        else
+          pattern(ind{:}) = (pattern(ind{:}) - m(i,j,:,k)) / s(i,j,:,k);
+        end
+        
       end
     end
   end
-
+  
   % return the transformed pattern
   pat = set_mat(pat, pattern, 'ws');
 

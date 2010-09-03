@@ -12,6 +12,7 @@ function pat = baseline_pattern(pat, baselineMS);
 %      pat:         pattern object that has been re-baselined.
 
 
+%note - this function should be rewritten to use mod_pattern
 %identify baseline period
 times = get_dim_vals(pat.dim, 'time');
 base = baselineMS(1) <= times & times < baselineMS(2);

@@ -334,8 +334,15 @@ function pat = pattern_ops(pat, params)
   if params.kthresh
     mask = mask | reject_kurtosis(pat.mat, params.kthresh);
   end
+  
+  %i'm using pat.mat as a temporary storage for a cluster mask,
+  %which is a logical, but pattern_ops doesn't play nice with
+  %logicals, so this hack makes it a numeric array...
+  %ZACH HACK
+  pat.mat = +pat.mat;
+  %END ZACH HACK
   pat.mat(mask) = NaN;
-
+  
   % Z-TRANSFORM
   if params.ztrans
     % divide events to take z-transform within
