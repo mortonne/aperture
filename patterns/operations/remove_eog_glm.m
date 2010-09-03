@@ -243,7 +243,7 @@ for c = 1:length(subj.chan)
   
   
   resid(:,c) = stats.resid;
-  yhat(:,c) = glmval(b,x,'link',params.link,'constant','off');
+%  yhat(:,c) = glmval(b,x,'link',params.link,'constant','off');
   
   % below we try and fix a problem with zscoring when #observations is
   % very low, which causes the standard dev to be close to 0 (or 0)
@@ -278,7 +278,7 @@ end
 
 %something is wrong with the p value of the regressor
 resid = cont2seg(resid, pat_size);
-yhat = cont2seg(yhat, pat_size);
+%yhat = cont2seg(yhat, pat_size);
 
 %p and tstat are no longer the size of the pattern
 %so this will break later functions that graph them...
@@ -292,7 +292,7 @@ save(stat.file, 'tstat', '-append');
 %
 save(stat.file, 'resid', '-append');
 %
-save(stat.file, 'yhat', '-append');
+%save(stat.file, 'yhat', '-append');
 %
 save(stat.file, 'beta', '-append');
 %
