@@ -31,7 +31,7 @@ defaults.verbose = true;
 params = propval(varargin, defaults);
 
 % get event-channels with any samples above the threshold
-absmax = max(max(pattern, [], 3), [], 4);
+absmax = max(max(abs(pattern), [], 3), [], 4);
 bad_event_chans = absmax > thresh;
 
 % check for channels that are bad for all events
