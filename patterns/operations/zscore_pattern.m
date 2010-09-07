@@ -62,7 +62,7 @@ s = apply_by_group(@(x) nanmean(nanstd(x, 1), 3), {base_pattern}, iter_cell);
 
 % apply the z-transform for each event_bin, channel, and frequency
 subj = apply_to_pat(subj, pat_name, @mod_pattern, ...
-                    {@apply_zscore, {m, s, params.event_bins}, save_opts});
+                    {@apply_zscore, {base_pattern, m, s, params.event_bins}, save_opts});
 
 function pat = apply_zscore(pat, base_pattern, m, s, event_bin_defs)
   % use same subsets of events used for calculating baseline
