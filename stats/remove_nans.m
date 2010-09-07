@@ -16,24 +16,25 @@ if ~isnumeric(X)
   error('Input must be a matrix.')
 end
 
-% get mean for all observations of each variable
-var_means = nanmean(X, 1);
-
-% fix each variable
 Y = X;
-for i=1:size(X,2)
-  % find missing observations
-  bad_obs = isnan(X(:,i));
-  
-  % set all missing observations to the mean for this variable
-  Y(bad_obs,i) = var_means(i);
-end
 
 % if any variables are completely missing, use mean of other
 % variables
 a = all(isnan(X));
 if any(a)
-  Y(:,a) = nanmean(X, 2);
+  Y(:,a) = repmat(nanmean(X, 2), 1, nnz(a));
+end
+
+% get mean for all observations of each variable
+var_means = nanmean(Y, 1);
+
+% fix each variable
+for i=1:size(X,2)
+  % find missing observations
+  bad_obs = isnan(Y(:,i));
+  
+  % set all missing observations to the mean for this variable
+  Y(bad_obs,i) = var_means(i);
 end
 
 if nnz(isnan(Y)) > 0
