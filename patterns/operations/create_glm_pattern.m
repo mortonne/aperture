@@ -52,5 +52,5 @@ pat = mod_pattern(pat, @get_GLM_pattern, {stat_name, params}, ...
 function pat = get_GLM_pattern(pat, stat_name, params)
   %get the results of the GLM regression
   stat = getobj(pat, 'stat', stat_name);
-  new_pattern = getfield(load(stat.file), 'corrected_resid');
+  new_pattern = getfield(load(stat.file), 'resid');
   pat = set_mat(pat, new_pattern, 'ws');

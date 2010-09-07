@@ -64,7 +64,7 @@ s = apply_by_group(@(x) nanmean(nanstd(x, 1), 3), {base_pattern}, iter_cell);
 subj = apply_to_pat(subj, pat_name, @mod_pattern, ...
                     {@apply_zscore, {m, s, params.event_bins}, save_opts});
 
-function pat = apply_zscore(pat, m, s, event_bin_defs)
+function pat = apply_zscore(pat, base_pattern, m, s, event_bin_defs)
   % use same subsets of events used for calculating baseline
   events = get_dim(pat.dim, 'ev');
   event_bins = index2bins(make_event_bins(events, event_bin_defs));
@@ -92,6 +92,7 @@ function pat = apply_zscore(pat, m, s, event_bin_defs)
         %of observations in the baseline period, that if not met
         %would result in that event being excluded
         %need to make sure the first statement is properly indexed
+
         if mean(isnan(base_pattern(ind{:})))>(1/3)
           pattern(ind{:}) = NaN;
         elseif s(i,j,:,k) < .5
