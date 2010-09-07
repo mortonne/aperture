@@ -1,7 +1,8 @@
-function subj = apply_to_ev(subj, ev_name, fcn_handle, fcn_inputs, dist)
+function subj = apply_to_ev(subj, ev_name, fcn_handle, fcn_inputs, ...
+                            dist, varargin)
 %APPLY_TO_EV   Apply a function to an ev object for all subjects.
 %
-%  subj = apply_to_ev(subj, ev_name, fcn_handle, fcn_inputs, dist)
+%  subj = apply_to_ev(subj, ev_name, fcn_handle, fcn_inputs, dist, ...)
 %  
 %  INPUTS:
 %        subj:  a [1 X N subjects] structure representing each subject
@@ -27,6 +28,11 @@ function subj = apply_to_ev(subj, ev_name, fcn_handle, fcn_inputs, dist)
 %
 %  OUTPUTS:
 %        subj:  a modified subjects vector.
+%
+%  PARAMS:
+%  These options may be specified using parameter, value pairs or by
+%  passing a structure. Defaults are shown in parentheses.
+%   memory - memory requested for each job (dist=1 only). ('1G')
 %
 %  EXAMPLES:
 %   % create a subj structure with ten subjects with ev objects
@@ -59,5 +65,6 @@ if ~exist('dist','var')
 end
 
 % run the function on each subject
-subj = apply_to_subj_obj(subj, {'ev', ev_name}, fcn_handle, fcn_inputs, dist);
+subj = apply_to_subj_obj(subj, {'ev', ev_name}, fcn_handle, fcn_inputs, ...
+                         dist, varargin{:});
 

@@ -1,7 +1,8 @@
-function subj = apply_to_pat(subj, pat_name, fcn_handle, fcn_inputs, dist)
+function subj = apply_to_pat(subj, pat_name, fcn_handle, fcn_inputs, ...
+                             dist, varargin)
 %APPLY_TO_PAT   Apply a function to a pat object for all subjects.
 %
-%  subj = apply_to_pat(subj, pat_name, fcn_handle, fcn_inputs, dist)
+%  subj = apply_to_pat(subj, pat_name, fcn_handle, fcn_inputs, dist, ...)
 %  
 %  INPUTS:
 %        subj:  a [1 X N subjects] structure representing each subject
@@ -27,6 +28,11 @@ function subj = apply_to_pat(subj, pat_name, fcn_handle, fcn_inputs, dist)
 %
 %  OUTPUTS:
 %        subj:  a modified subjects vector.
+%
+%  PARAMS:
+%  These options may be specified using parameter, value pairs or by
+%  passing a structure. Defaults are shown in parentheses.
+%   memory - memory requested for each job (dist=1 only). ('1G')
 %
 %  See also apply_to_ev, apply_to_subj_obj, apply_to_subj.
 
@@ -58,6 +64,6 @@ end
 for i=1:length(pat_names)
   % apply_to_subj_obj does all the work
   subj = apply_to_subj_obj(subj, {'pat', pat_names{i}}, fcn_handle, ...
-                           fcn_inputs, dist);
+                           fcn_inputs, dist, varargin{:});
 end
 

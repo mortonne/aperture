@@ -1,7 +1,7 @@
-function subj = apply_to_subj(subj, fcn_handle, fcn_inputs, dist)
+function subj = apply_to_subj(subj, fcn_handle, fcn_inputs, dist, varargin)
 %APPLY_TO_SUBJ   Apply a function to all subjects.
 %
-%  subj = apply_to_subj(subj, fcn_handle, fcn_inputs, dist)
+%  subj = apply_to_subj(subj, fcn_handle, fcn_inputs, dist, ...)
 %
 %  Apply a function to each element of a subjects vector.
 %
@@ -26,6 +26,11 @@ function subj = apply_to_subj(subj, fcn_handle, fcn_inputs, dist)
 %  OUTPUTS:
 %        subj:  a subject vector.
 %
+%  PARAMS:
+%  These options may be specified using parameter, value pairs or by
+%  passing a structure. Defaults are shown in parentheses.
+%   memory - memory requested for each job (dist=1 only). ('1G')
+%
 %  See also apply_to_subj_obj, apply_to_pat, apply_to_ev.
 
 % input checks
@@ -41,9 +46,14 @@ if ~exist('dist','var')
   dist = 0;
 end
 
+% options
+defaults.memory = '1G';
+params = propval(varargin, defaults);
+
 if dist==1
   % get the default job manager/scheduler
   sm = findResource();
+  set(sm, 'SubmitFcn', {@sgeSubmitFcn2, params.memory});
 
   % create a job to run all subjects
   % use the current path, and override pathdef.m, jobStartup.m, etc.
@@ -53,7 +63,7 @@ if dist==1
   job_name = sprintf('apply_to_subj:%s', func2str(fcn_handle));
   job = createJob(sm, 'FileDependencies', {job_startup_file}, 'Name', job_name);
   job.PathDependencies = path_cell;
-  
+
   % make a task for each subject
   for this_subj=subj
     name = get_obj_name(this_subj);
