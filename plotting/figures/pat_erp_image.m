@@ -52,7 +52,7 @@ defaults.scale_index = false;
 defaults.exclude = 'none';
 defaults.exclude_limits = [];
 defaults.map_limits = [];
-defaults.print_input = {'-depsc'};
+defaults.print_input = {'-djpeg10'};
 defaults.res_dir = '';
 params = propval(varargin, defaults);
 
@@ -187,7 +187,8 @@ for i=1:n_chans
     if n_freqs > 1
       filename = [filename '_' lower(strrep(freq(j).label, ' ', '-'))];
     end
-    files{1,i,1,j} = fullfile(params.res_dir, [filename '.eps']);
+    %files{1,i,1,j} = fullfile(params.res_dir, [filename '.eps']);
+    files{1,i,1,j} = fullfile(params.res_dir, [filename '.jpg']);
     
     % save
     print(gcf, params.print_input{:}, files{1,i,1,j});
