@@ -1,9 +1,7 @@
-function [best_thresh blink_thresh] = optimize_blink_detector(pat)
+function [best_thresh blink_thresh] = optimize_blink_detector(pat, params)
 
-params = [];
 params.verbose = true;
 params.reject_full = true;
-params.veog_chans = [8 126];
 
 blink_thresh = [];
 

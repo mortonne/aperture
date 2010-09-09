@@ -1,8 +1,7 @@
-function subj = remove_eog_glm(subj, stat_name, pat_name, H_pat_name, ...
-                               V_pat_name, varargin)
+function subj = remove_eog_glm(subj, stat_name, pat_name, varargin)
 %REMOVE_EOG_GLM   Fit EOG data to a pattern using a GLM.
 %
-%  subj = remove_eog_glm(subj, stat_name, pat_name, H_pat_name, V_pat_name, ...)
+%  subj = remove_eog_glm(subj, stat_name, pat_name, ...)
 %  
 %  INPUTS:
 %        subj:  a subject structure.
@@ -13,12 +12,6 @@ function subj = remove_eog_glm(subj, stat_name, pat_name, H_pat_name, ...
 %    pat_name:  name of the pattern object to fit. Each channel will be
 %               fit separately to the horizontal and vertical EOG
 %               regressors.
-%
-%  H_pat_name:  name of a pattern containing measurements of horizontal
-%               eye movements.
-%
-%  V_pat_name:  name of a pattern containing measurements of horizontal
-%               eye movements.
 %
 %  OUTPUTS:
 %        subj:  the subject structure with the GLM stat object added.
@@ -34,6 +27,75 @@ function subj = remove_eog_glm(subj, stat_name, pat_name, H_pat_name, ...
 %                overwritten. (true)
 %   res_dir    - directory in which to save the GLM results. Default is
 %                the pattern's stats directory.
+%   find_best_thresh - if true, use dprime optimization to find the
+%                best value for blink thresholding - must have
+%                trackball pattern on subj structure (false)
+%   trackball_pat_name - name of your trackball pattern
+%
+%
+%
+%
+%
+%
+
+
+%create the eog patterns
+p = [];
+V_pat_name1 = ['vEOG1_' pat_name];
+p.save_as = V_pat_name;
+chans1 = [8 126];
+p.chans = {[8 126]};
+p.overwrite = true;
+subj = apply_to_pat(subj, pat_name, @diff_pattern, {p}, 1)
+
+p = [];
+V_pat_name2 = ['vEOG2_' pat_name];
+p.save_as = V_pat_name;
+p.chans = {[25 127]};
+chans1 = [25 127];
+p.overwrite = true;
+subj = apply_to_pat(subj, pat_name, @diff_pattern, {p}, 1)
+
+V_eog_pat1 = getobj(subj, 'pat', V_pat_name1);
+V_eog_pat2 = getobj(subj, 'pat', V_pat_name2);
+V_eog_pattern1 = get_mat(V_eog_pat1);
+V_eog_pattern2 = get_mat(V_eog_pat2);
+%choose the vEOG pair that has fewer NaNs
+%this should act as bootleg bad eog chan detection
+if mean(mean(isnan(V_eog_pattern1))) >= ...
+      mean(mean(isnan(V_eog_pattern2)))
+  %set name to best Veog pattern
+  V_pat_name = V_pat_name1;
+  %set chans to be used in blink detection
+  chans = chans1;
+else
+  V_pat_name = V_pat_name2;  
+  chans = chans2;
+end
+
+%check to make sure both pairs of vEOG chans aren't bad
+if mean(mean(isnan(V_eog_pattern1)))>.4 && ...
+      mean(mean(isnan(V_eog_pattern2)))>.4
+  %we could add a session-wise rejection here to save the data
+  %for now, just print error
+  error('Both verticle EOG pairs bad.')
+end
+
+%clear space in memory
+clear V_pat_name1
+clear V_pat_name2
+clear V_eog_pat1
+clear V_eog_pat2
+clear V_eog_pattern1
+clear_V_eog_pattern2
+
+%make H_eog pattern
+H_pat_name = ['hEOG_' pat_name];
+p = [];
+p.save_as = H_pat_name;
+p.overwrite = true;
+p.chans = [1 32];
+subj = apply_to_pat(subj, pat_name, @diff_pattern, {p}, 1)
 
 %get the pat objects
 pat = getobj(subj, 'pat', pat_name);
@@ -44,20 +106,31 @@ V_eog_pat = getobj(subj, 'pat', V_pat_name);
 defaults.distr = 'normal';
 defaults.link = '';
 defaults.glm_inputs = {};
-defaults.overwrite = true;
+defaults.overwrite = true; 
 defaults.res_dir = get_pat_dir(pat, 'stats');
+defaults.find_best_thresh = false; 
+defaults.trackball_pat_name = '';
 params = propval(varargin, defaults);
+
 
 warnings = zeros(length(subj.chan));
 %else
 warning('off', 'all');
 
-best_thresh = [];
-params.find_best_thresh = false;
+best_thresh = [100];
 %if you want to use dynamic thresh search:
 if params.find_best_thresh
-  [best_thresh, blink_thresh] = optimize_blink_detector(pat)
-  clear blink_thresh;
+  if isempty(trackball_pat_name)
+    error('find_best_thresh requires trackball_pat_name.')
+  end
+  trackball_pat = getobj(subj, 'pat', trackball_pat_name)
+  p = [];
+  p.veog_chans = chans;
+  [best_thresh, blink_thresh] = optimize_blink_detector(trackball_pat, ...
+                                                    p)
+  clear blink_thresh
+  clear trackball_pat
+  pat.best_thresh = best_thresh;
 end
 %
 %
@@ -73,6 +146,12 @@ pattern = get_mat(pat);
 H_eog_pattern = get_mat(H_eog_pat);
 V_eog_pattern = get_mat(V_eog_pat);
 
+%check to make sure H_eog channels aren't bad
+if mean(mean(isnan(H_eog_pattern)))>.1
+  error('Horizontal EOG pair probably bad.')
+end
+
+
 %run blink detection
 thresh = [100];
 if ~isempty(best_thresh)
@@ -81,6 +160,8 @@ end
 blink_params = [];
 blink_params.reject_full = false;
 blink_params.buffer = true;
+%this was set above based on eog pair with least nans
+blink_params.chans = chans;
 blink_mask = reject_blinks(pattern, thresh, blink_params);
 blink_mask = blink_mask(:,1,:);
 
@@ -300,3 +381,9 @@ save(stat.file, 'beta', '-append');
 
 stat.warnings = sum(warnings(:));
 subj = setobj(subj, 'pat', pat_name, 'stat', stat);
+
+
+
+
+
+
