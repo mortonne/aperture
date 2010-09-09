@@ -45,14 +45,16 @@ V_pat_name1 = ['vEOG1_' pat_name];
 p.save_as = V_pat_name;
 chans1 = [8 126];
 p.chans = {[8 126]};
+p.chanlabels = {'r_vEOG'};
 p.overwrite = true;
 subj = apply_to_pat(subj, pat_name, @diff_pattern, {p}, 1)
 
 p = [];
 V_pat_name2 = ['vEOG2_' pat_name];
 p.save_as = V_pat_name;
-p.chans = {[25 127]};
 chans1 = [25 127];
+p.chans = {[25 127]};
+p.chanlabels = {'l_vEOG'};
 p.overwrite = true;
 subj = apply_to_pat(subj, pat_name, @diff_pattern, {p}, 1)
 
@@ -95,6 +97,7 @@ p = [];
 p.save_as = H_pat_name;
 p.overwrite = true;
 p.chans = [1 32];
+p.chanlabels = {'hEOG'};
 subj = apply_to_pat(subj, pat_name, @diff_pattern, {p}, 1)
 
 %get the pat objects
