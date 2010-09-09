@@ -143,13 +143,3 @@ function [y,dim_order] = fix_dim(x,dim1,n_dims)
   y = permute(x, dim_order);
 %endfunction
 
-function labels = get_dim_labels(dim, dim_name)
-  if strcmp(dim_name, 'ev')
-    dim.ev = get_mat(dim.ev);
-    if ~isfield(dim.ev, 'label')
-      error('events must contain a "label" field.')
-    end
-  end
-  
-  labels = {dim.(dim_name).label};
-%endfunction
