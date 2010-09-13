@@ -33,16 +33,12 @@ function subj = remove_eog_glm(subj, stat_name, pat_name, varargin)
 %   trackball_pat_name - name of your trackball pattern
 %
 %
-%
-%
-%
-%
 
 
 %create the eog patterns
 p = [];
 V_pat_name1 = ['vEOG1_' pat_name];
-p.save_as = V_pat_name;
+p.save_as = V_pat_name1;
 chans1 = [8 126];
 p.chans = {[8 126]};
 p.chanlabels = {'r_vEOG'};
@@ -51,7 +47,7 @@ subj = apply_to_pat(subj, pat_name, @diff_pattern, {p}, 1)
 
 p = [];
 V_pat_name2 = ['vEOG2_' pat_name];
-p.save_as = V_pat_name;
+p.save_as = V_pat_name2;
 chans1 = [25 127];
 p.chans = {[25 127]};
 p.chanlabels = {'l_vEOG'};
