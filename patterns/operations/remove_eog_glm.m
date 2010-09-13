@@ -126,13 +126,19 @@ if params.find_best_thresh
   if isempty(trackball_pat_name)
     error('find_best_thresh requires trackball_pat_name.')
   end
-  trackball_pat = getobj(subj, 'pat', trackball_pat_name)
-  p = [];
-  p.veog_chans = chans;
-  [best_thresh, blink_thresh] = optimize_blink_detector(trackball_pat, ...
-                                                    p)
-  clear blink_thresh
-  clear trackball_pat
+  %this try statement should catch subjects who don't have
+  %trackball patterns
+  try
+    trackball_pat = getobj(subj, 'pat', trackball_pat_name)
+    p = [];
+    p.veog_chans = chans;
+    [best_thresh, blink_thresh] = optimize_blink_detector(trackball_pat, ...
+                                                      p)
+    clear blink_thresh
+    clear trackball_pat
+  catch me
+  warning('trackball pattern not found, using default 100mV threshold')
+  end
   pat.best_thresh = best_thresh;
 end
 %
