@@ -39,20 +39,20 @@ function subj = remove_eog_glm(subj, stat_name, pat_name, varargin)
 p = [];
 V_pat_name1 = ['vEOG1_' pat_name];
 p.save_as = V_pat_name1;
-chans1 = [8 126];
+chans1 = {[8 126]};
 p.chans = {[8 126]};
 p.chanlabels = {'r_vEOG'};
 p.overwrite = true;
-subj = apply_to_pat(subj, pat_name, @diff_pattern, {p}, 1)
+subj = apply_to_pat(subj, pat_name, @diff_pattern, {p}, 0)
 
 p = [];
 V_pat_name2 = ['vEOG2_' pat_name];
 p.save_as = V_pat_name2;
-chans1 = [25 127];
+chans2 = {[25 127]};
 p.chans = {[25 127]};
 p.chanlabels = {'l_vEOG'};
 p.overwrite = true;
-subj = apply_to_pat(subj, pat_name, @diff_pattern, {p}, 1)
+subj = apply_to_pat(subj, pat_name, @diff_pattern, {p}, 0)
 
 V_eog_pat1 = getobj(subj, 'pat', V_pat_name1);
 V_eog_pat2 = getobj(subj, 'pat', V_pat_name2);
@@ -85,16 +85,16 @@ clear V_pat_name2
 clear V_eog_pat1
 clear V_eog_pat2
 clear V_eog_pattern1
-clear_V_eog_pattern2
+clear V_eog_pattern2
 
 %make H_eog pattern
 H_pat_name = ['hEOG_' pat_name];
 p = [];
 p.save_as = H_pat_name;
 p.overwrite = true;
-p.chans = [1 32];
+p.chans = {[1 32]};
 p.chanlabels = {'hEOG'};
-subj = apply_to_pat(subj, pat_name, @diff_pattern, {p}, 1)
+subj = apply_to_pat(subj, pat_name, @diff_pattern, {p}, 0)
 
 %get the pat objects
 pat = getobj(subj, 'pat', pat_name);
@@ -119,13 +119,13 @@ warning('off', 'all');
 best_thresh = [100];
 %if you want to use dynamic thresh search:
 if params.find_best_thresh
-  if isempty(trackball_pat_name)
+  if isempty(params.trackball_pat_name)
     error('find_best_thresh requires trackball_pat_name.')
   end
   %this try statement should catch subjects who don't have
   %trackball patterns
   try
-    trackball_pat = getobj(subj, 'pat', trackball_pat_name)
+    trackball_pat = getobj(subj, 'pat', params.trackball_pat_name)
     p = [];
     p.veog_chans = chans;
     [best_thresh, blink_thresh] = optimize_blink_detector(trackball_pat, ...
@@ -166,7 +166,7 @@ blink_params = [];
 blink_params.reject_full = false;
 blink_params.buffer = true;
 %this was set above based on eog pair with least nans
-blink_params.chans = chans;
+blink_params.chans = chans{1};
 blink_mask = reject_blinks(pattern, thresh, blink_params);
 blink_mask = blink_mask(:,1,:);
 
