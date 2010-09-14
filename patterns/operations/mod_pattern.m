@@ -51,6 +51,8 @@ function pat = mod_pattern(pat, f, f_inputs, varargin)
 %   res_dir   - directory in which to save the modified pattern and
 %               events, if applicable. Default is a directory named
 %               pat_name on the same level as the input pat.
+%   verbose   - if true, status about renaming, overwriting, etc. will
+%               be printed. (true)
 %
 %  NOTES:
 %   It is assumed that the pattern will be saved in pat.mat (i.e., in
@@ -82,9 +84,12 @@ defaults.save_mats = true;
 defaults.overwrite = false;
 defaults.save_as = '';
 defaults.res_dir = '';
+defaults.verbose = true;
 params = propval(varargin, defaults, 'strict', false);
 
-fprintf('modifying pattern "%s"...', pat.name)
+if params.verbose
+  fprintf('modifying pattern "%s"...', pat.name)
+end
 
 if strcmp(params.save_as, pat.name)
   params.save_as = '';
@@ -111,7 +116,9 @@ end
 % check to see if there's already a pattern there that we don't want
 % to overwrite
 if params.save_mats && ~params.overwrite && exist(pat_file, 'file')
-  fprintf('pattern "%s" exists. Skipping...\n', pat_name)
+  if params.verbose
+    fprintf('pattern "%s" exists. Skipping...\n', pat_name)
+  end
   return
 end
 
@@ -162,12 +169,14 @@ end
 if params.save_mats && strcmp(get_obj_loc(pat), 'ws')
   % save the pattern
   pat = move_obj_to_hd(pat);
-  if ~isempty(params.save_as)
-    fprintf('saved as "%s".\n', pat.name)
-  else
-    fprintf('saved.\n')
+  if params.verbose
+    if ~isempty(params.save_as)
+      fprintf('saved as "%s".\n', pat.name)
+    else
+      fprintf('saved.\n')
+    end
   end
-else
+elseif params.verbose
   % nothing to do
   if ~isempty(params.save_as)
     fprintf('returning as "%s".\n', pat.name)
