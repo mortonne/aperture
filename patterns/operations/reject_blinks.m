@@ -1,55 +1,77 @@
 function [mask] = reject_blinks(pattern, thresh, varargin)
-%reject_blinks - Reject samples of a pattern based on blink detection.
+%REJECT_BLINKS - Reject samples of a pattern based on blink detection.
 %
-% Uses a fast and slow running average to detect fast and large
-% changes in amplitude (blinks and eye movements).
+%  Uses a fast and slow running average to detect fast, large, and
+%  positive changes in amplitude (i.e. blinks). May also detect upward
+%  saccades.
 %
 %  INPUTS:
 %   pattern:  [events X channels X time] matrix.
 %
-%    thresh:  fast threshold in mV used for marking blinks,
-%             i.e. maximum allowable EOG absolute value for an
-%             event to be included.  Default: 100
+%    thresh:  fast threshold in uV used for marking blinks, i.e. maximum
+%             allowable EOG running average for an event to be included.
+%             Default: 100
 %
 %  OUPUTS:
 %      mask:  logical array the same size as pattern; true samples mark
 %             events with blinks.
 %
 %  PARAMS:
-%   verbose - if true, more information will be printed. (true)
-%   chans   - eog channels to take difference {[8 126] or [1 32]}  
-%   runavg_vals - a,b,c,d values of running average  
-%             {[.5 .5 .975 .025]}
-%   reject_full - if true, the entire event will be rejected, if
-%                false just the bad samples will be rejected.
-%   buffer    - if true, blinks samples will be marked 500ms before
-%             the first blink detection and 1000ms after
-
+%  These options may be specified using parameter, value pairs or by
+%  passing a structure. Defaults are shown in parentheses.
+%   chans        - index of EOG channels search for blinks:
+%                   chans(1) - index of a channel above the eye
+%                   chans(2) - index of a channel below the eye
+%                  Note that these are indices in the pattern matrix,
+%                  which may be different from the corresponding channel
+%                  numbers. ([8 126])
+%   runavg_vals  - a,b,c,d values of running average.
+%                  ([.5 .5 .975 .025])
+%   reject_full  - if true, entire events will be rejected. If false,
+%                  only the samples around the blink (specified by
+%                  buffer) will be rejected. (true)
+%   buffer       - buffer is ms around the start of each blink to mark
+%                  as bad in the form of [-pre_blink post_blink].
+%                  ([-150 500])
+%   samplerate   - samplerate in Hz; required if specifying a buffer.
+%                  ([])
+%   debug_plots  - if true, will make plots of individual traces with
+%                  blinks marked. (false)
+%   debug_images - if true, will plot images of the voltage and the
+%                  blink mask. (false)
+%   verbose      - if true, more information will be printed. (true)
 
 if ~exist('thresh','var')
   thresh = 100;
 end
 
 % options
-defaults.verbose = true;
 defaults.chans = [8 126];
 defaults.runavg_vals = [.5, .5, .975, .025];
 defaults.reject_full = true;
-defaults.buffer = false;
+defaults.buffer = [-150 500];
+defaults.samplerate = [];
+defaults.debug_plots = false;
+defaults.debug_images = false;
+defaults.verbose = true;
 params = propval(varargin, defaults);
 
-
-
-%to get the EOG channel diff we subtract one from the other
-%we then permute the pattern to make it [events X time]
-ev_dat = permute((pattern(:,params.chans(1),:)-pattern(:, ...
-                                                  params.chans(2),:)),[1,3,2]);
+% calculate the EOG channel diff and permute to get [events X time]
+ev_dat = permute((pattern(:, params.chans(1),:) - ...
+                  pattern(:, params.chans(2),:)), [1,3,2]);
 
 %this vector will index trials with blinks
 if params.reject_full
-  ev_mask = zeros(size(pattern,1),1);
+  ev_mask = false(size(pattern,1), 1);
 else
-  ev_mask = zeros(size(pattern,1),size(pattern,3));
+  ev_mask = false(size(pattern,1), size(pattern,3));
+end
+
+% only used for debugging plots
+if ~params.reject_full || params.debug_plots || params.debug_images
+  step = 1000 / params.samplerate;
+  x = [1:size(ev_dat, 2)] * step;
+  y = 1:size(ev_dat, 1);
 end
 
 %this has been adapted from findBlinks and find_eog_art to work on
@@ -59,7 +81,6 @@ for e = 1:size(ev_dat,1)
   % init the two running averages
   fast = zeros(1,length(dat));
   slow = zeros(1,length(dat));
-  %ind = logical(zeros(1,length(dat)));
   
   % params
   a = params.runavg_vals(1);
@@ -80,55 +101,75 @@ for e = 1:size(ev_dat,1)
       fast(i) = a*fast_start + b*(dat(i)-slow_start);
       slow(i) = c*slow_start + d*dat(i);    
     end
-    
-    % check for thresh
-    %ind(i) = abs(fast(i))>=thresh;
-    
   end
   
   % check for thresh
-  ind = logical(abs(fast)>=thresh);
+  ind = fast >= thresh;
   
-  if params.buffer
-    if any(ind)
-      blink_start = find(ind,1);
-      back_step = 50;
-      front_step = 150;
-      if blink_start-back_step<=0
-        back_step = back_step + (blink_start-back_step)-1;
+  if ~any(ind)
+    continue
+  elseif params.reject_full
+    ev_mask(e) = 1;
+    continue
+  end
+
+  if ~isempty(params.buffer)
+    % convert buffer values to samples
+    pre = ms2samp(params.buffer(1), params.samplerate);
+    post = ms2samp(params.buffer(2), params.samplerate);
+    
+    % find starts of identified blinks
+    blink_starts = find([0 diff(ind)] > 0);
+    for j=1:length(blink_starts)
+      % mark a buffer around the start of this blink
+      start = blink_starts(j) + pre;
+      if start < 1
+        start = 1;
       end
-      if blink_start+front_step>length(ind)
-        front_step = front_step - ((blink_start+front_step)- ...
-                                   length(ind));
+      finish = blink_starts(j) + post;
+      if finish > length(ind)
+        finish = length(ind);
       end
-      ind(blink_start-back_step:blink_start+front_step) = true;
+      ind(start:finish) = true;
     end
   end
   
-  
-  if params.reject_full
-    ev_mask(e) = any(ind);
-  else
-    %store events with blink samples labeled
-    ev_mask(e,:) = ind;
+  % example traces with blinks marked
+  if params.debug_plots
+    n_plots = 5;
+    subplot(n_plots, 1, mod(e-1, n_plots)+1)
+    cla
+    plot_erp(dat, x, 'mark', ind);
+    pause(.75)
+    drawnow
   end
+  
+  ev_mask(e,:) = ind;
 end
 
-%in order for this to be compatible with reject_artifacts we
-%take the ev_mask that has events samples with blinks labeled and
-%expand it to be the size of the original pattern
+% voltage image and a mask image
+if params.debug_images
+  clf
+  subplot(1,2,1)
+  imagesc(x, y, ev_dat, [-50 50])
+  subplot(1,2,2)
+  imagesc(x, y, ev_mask)
+  drawnow
+end
 
+% make a mask the same size as the input pattern (necessary for
+% compatibility with reject_artifacts)
 if params.reject_full
-  mask = repmat(ev_mask, [1,size(pattern,2),size(pattern,3)]);
+  mask = repmat(ev_mask, [1, size(pattern, 2), size(pattern, 3)]);
 else
   ev_mask = permute(ev_mask, [1 3 2]);
-  mask = repmat(ev_mask, [1,size(pattern,2),1]);
+  mask = repmat(ev_mask, [1, size(pattern, 2), 1]);
 end
 
 if params.verbose
-  fprintf(['Removed %d events ' ...
-           'of %d (%.f%%) whose eog abs. val. exceeded %d. \n'], ...
-          sum(ev_mask), numel(ev_mask), (sum(ev_mask) / numel(ev_mask)) * 100, ...
+  fprintf(['Removed %d samples ' ...
+           'of %d (%.f%%) whose EOG running average exceeded %d. \n'], ...
+          nnz(ev_mask), numel(ev_mask), (nnz(ev_mask) / numel(ev_mask)) * 100, ...
           thresh)
 end
 
