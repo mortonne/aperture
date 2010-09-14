@@ -1,76 +1,97 @@
-function [d, pHit, pFA, stats] = blink_detector_performance(pat, params)
+function [d, pHit, pFA, stats] = blink_detector_performance(pat, varargin)
+%BLINK_DETECTOR_PERFORMANCE   Calculate performance of a blink detector.
+%
+%  Determine performance of a blink detector by testing it on various
+%  eye movements. If the blink detector marks a blink, that is a hit; if
+%  the blink detector marks any other eye movement, that is a false
+%  alarm. D-prime is calculated as a measure of how well the blink
+%  detector can discriminate between blinks and other eye movements.
+%
+%  [d, pHit, pFA, stats] = blink_detector_performance(pat, ...)
+%
+%  INPUTS:
+%      pat:  a pattern object containing blink, up, down, left, and
+%            right eye movements.
+%
+%  OUTPUTS:
+%        d:  d-prime calculated from the blink detector's hit and false
+%            alarm rates.
+%
+%     pHit:  (N hits) / (N blinks)
+%
+%      pFA:  (N false alarms) / (N non-blinks)
+%
+%    stats:  structure with additional statistics.
+%
+%  PARAMS:
+%   These options may be specified using parameter, value pairs or by
+%   passing a structure. Defaults are shown in parentheses.
+%    blink_thresh - fast threshold in uV used for marking blinks, i.e.
+%                   maximum allowable EOG running average for an event
+%                   to be included. (100)
+%    reject_full  - if true, entire events will be rejected. If false,
+%                   only the samples around the blink (specified by
+%                   buffer) will be rejected. (true)
+%   May also specify other params for reject_blinks.
+%
+%  See also optimize_blink_detector, remove_eog_glm.
 
+% options
+defaults.reject_full = true;
+defaults.blink_thresh = 100;
+params = propval(varargin, defaults, 'strict', false);
 
+% filter to get only relevant trackball events
+filter = 'ismember(type, {''blink'',''up'',''down'',''left'',''right''})';
+pat = filter_pattern(pat, 'event_filter', filter, 'save_mats', false, ...
+                     'verbose', false);
 pattern = get_mat(pat);
-events = getfield(load(pat.dim.ev.file),'events');
+pat.mat = [];
+events = get_dim(pat.dim, 'ev');
 
-%create ev masks
-blink_evs = strcmp({events.type},'blink');
-up_evs = strcmp({events.type},'up');
-down_evs = strcmp({events.type},'down');
-left_evs = strcmp({events.type},'left');
-right_evs = strcmp({events.type},'right');
-open_evs = strcmp({events.type},'open');
-close_evs = strcmp({events.type},'close');
+% create eye movement type masks
+blink_evs = strcmp({events.type}, 'blink');
+up_evs = strcmp({events.type}, 'up');
+down_evs = strcmp({events.type}, 'down');
+left_evs = strcmp({events.type}, 'left');
+right_evs = strcmp({events.type}, 'right');
 
+% run blink detection
+p = rmfield(params, 'blink_thresh');
+blink_mask = reject_blinks(pattern, params.blink_thresh, p);
 
-blink_mask = reject_blinks(pattern, params.blink_thresh, 'verbose', params.verbose, ...
-              'chans', params.veog_chans, 'reject_full', true);
-
-%what events are labeled as blinks
+% get events labeled as blinks
+% (first channel and sample will be same as others)
 blink_hits = blink_mask(:,1,1)';
 
-%how many trials are there
-trials = length(events);
+% calculate probability of hits and false alarms
+pHit = nnz(blink_evs & blink_hits) / nnz(blink_evs);
+pFA = nnz(~blink_evs & blink_hits) / nnz(~blink_evs);
 
-%how many of each event are there
-blinks = sum(blink_evs);
-ups = sum(up_evs);
-downs = sum(down_evs);
-lefts = sum(left_evs);
-rights = sum(right_evs);
-opens = sum(open_evs);
-closes = sum(close_evs);
-
-%important statistics about detector performance
-hits = sum(blink_evs & blink_hits);
-misses = sum(blink_evs) - hits;
-false_alarms = sum(~blink_evs & blink_hits);
-%calculate probability of hits and false alarms
-pHit = hits/blinks;
-pFA = false_alarms/(trials-blinks);
-%calculate dprime
-d = dprime(pHit,pFA);
-
-
-%secondary statistics about other events
-up_blinks = sum(up_evs & blink_hits);
-down_blinks = sum(down_evs & blink_hits);
-left_blinks = sum(left_evs & blink_hits);
-right_blinks = sum(right_evs & blink_hits);
-open_blinks = sum(open_evs & blink_hits);
-close_blinks = sum(close_evs & blink_hits);
-
-pFA_up = up_blinks/ups;
-pFA_down = down_blinks/downs;
-pFA_left = left_blinks/lefts;
-pFA_right = right_blinks/rights;
-pFA_open = open_blinks/opens;
-pFA_close = close_blinks/closes;
-
-%dHits of 1 give dprimes of infinity, so we must NaN them out
-if d>10
-  d = NaN;
-end
+% calculate dprime
+pHit = norminv_fix(pHit);
+pFA = norminv_fix(pFA);
+d = dprime(pHit, pFA);
 
 stats = [];
 stats.eog_thresh = params.blink_thresh;
 stats.dprime = d;
 stats.pHit = pHit;
 stats.pFA = pFA;
-stats.pFA_up = pFA_up;
-stats.pFA_down = pFA_down;
-stats.pFA_left = pFA_left;
-stats.pFA_right = pFA_right;
 
+% FAs by event type
+stats.pFA_up = nnz(up_evs & blink_hits) / nnz(up_evs);
+stats.pFA_down = nnz(down_evs & blink_hits) / nnz(down_evs);
+stats.pFA_left = nnz(left_evs & blink_hits) / nnz(left_evs);
+stats.pFA_right = nnz(right_evs & blink_hits) / nnz(right_evs);
+
+function y = norminv_fix(x)
+  delta = 0.001;
+  if x == 1
+    y = x - delta;
+  elseif x == 0
+    y = x + delta;
+  else
+    y = x;
+  end
 
