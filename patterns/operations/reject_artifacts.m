@@ -12,45 +12,47 @@ function pat = reject_artifacts(pat, varargin)
 %  PARAMS:
 %  These options may be specified using parameter, value pairs or by
 %  passing a structure. Defaults are shown in parentheses.
-%   abs_thresh - if the absolute value of any element of an event
-%                crosses this value, the event will be excluded. ([])
+%   abs_thresh   - if the absolute value of any element of an event
+%                  crosses this value, the event will be excluded. ([])
 %   blink_thresh - if the absolute value of the eog chan diff of
-%                 any element of an event crosses this value, the
-%                 event will be excluded. ([])
-%   reject_full- if true, will reject entire events with blinks (true)
-%   k_thresh   - if an event's distribution over time has a value
-%                exceeding this value, the event will be excluded. ([])
-%   bad_chans  - if true, will find bad channels. (false)
-%   veog_chans - vertical eye movement channels. ({[8 126],[25 127]})
-%   heog_chans - horizontal eye movement channels. ([1 32])
-%   verbose    - if true, information about excluded samples will be
-%                displayed. (false)
-%   reject     - string identifying whether you want to reject
-%                artifacts ('bad') or non-artifact trials ('good').
-%                ('bad')
-%   save_mats  - if true, and input mats are saved on disk, modified
-%                mats will be saved to disk. If false, the modified mats
-%                will be stored in the workspace, and can subsequently
-%                be moved to disk using move_obj_to_hd. (true)
-%   overwrite  - if true, existing patterns on disk will be overwritten.
-%                (false)
-%   save_as    - string identifier to name the modified pattern. If
-%                empty, the name will not change. ('')
-%   res_dir    - directory in which to save the modified pattern and
-%                events, if applicable. Default is a directory named
-%                pat_name on the same level as the input pat.
+%                  any element of an event crosses this value, the
+%                  event will be excluded. ([])
+%   blink_inputs - cell array or structure with additional inputs to
+%                  reject_blinks. ({})
+%   k_thresh     - if an event's distribution over time has a value
+%                  exceeding this value, the event will be excluded.
+%                  ([])
+%   bad_chans    - if true, will find bad channels. (false)
+%   veog_chans   - vertical eye movement channels. ({[8 126],[25 127]})
+%   heog_chans   - horizontal eye movement channels. ([1 32])
+%   verbose      - if true, information about excluded samples will be
+%                  displayed. (false)
+%   reject       - string identifying whether you want to reject
+%                  artifacts ('bad') or non-artifact trials ('good').
+%                  ('bad')
+%   save_mats    - if true, and input mats are saved on disk, modified
+%                  mats will be saved to disk. If false, the modified
+%                  mats will be stored in the workspace, and can
+%                  subsequently be moved to disk using move_obj_to_hd.
+%                  (true)
+%   overwrite    - if true, existing patterns on disk will be
+%                  overwritten. (false)
+%   save_as      - string identifier to name the modified pattern. If
+%                  empty, the name will not change. ('')
+%   res_dir      - directory in which to save the modified pattern and
+%                  events, if applicable. Default is a directory named
+%                  pat_name on the same level as the input pat.
 
 % options
 defaults.abs_thresh = [];
 defaults.blink_thresh = [];
-defaults.reject_full = true;
+defaults.blink_inputs = {};
+defaults.veog_chans = {[8 126], [25 127]};
 defaults.k_thresh = [];
 defaults.bad_chans = false;
-defaults.veog_chans = {[8 126],[25 127]};
 defaults.heog_chans = [1 32];
 defaults.verbose = false;
 defaults.reject = 'bad';
-defaults.buffer = true;
 [params, save_opts] = propval(varargin, defaults);
 
 pat = mod_pattern(pat, @run_reject, {params}, save_opts);
@@ -78,33 +80,33 @@ function pat = run_reject(pat, params)
   end
   
   
-  % blink detection - it's ugly because of the way the defaults are defined
+  % blink detection
   if ~isempty(params.blink_thresh)
-    %vertical eog chan blink detection
-    if iscell(params.veog_chans)
-      bad = bad | reject_blinks(pattern, params.blink_thresh, ...
-                                'verbose', params.verbose, 'chans', ...
-                                params.veog_chans{1}, 'reject_full', ...
-                                params.reject_full);
-      if length(params.veog_chans)==2
-        bad = bad | reject_blinks(pattern, params.blink_thresh, ...
-                                'verbose', params.verbose, 'chans', ...
-                                params.veog_chans{2}, 'reject_full', ...
-                                  params.reject_full);
-      end
-    else
-      bad = bad | reject_blinks(pattern, params.blink_thresh, ...
-                                'verbose', params.verbose, 'chans', ...
-                                params.veog_chans, 'reject_full', ...
-                                params.reject_full);
+    if ~iscell(params.veog_chans)
+      params.veog_chans = {params.veog_chans};
     end
-    %horizontal eog chan blink detection
-    bad = bad | reject_blinks(pattern, params.blink_thresh, ...
-                              'verbose', params.verbose, 'chans', ...
-                              params.heog_chans, 'reject_full', ...
-                              params.reject_full);
+    
+    chan_numbers = get_dim_vals(pat.dim, 'chan');
+    samplerate = get_pat_samplerate(pat);
+    for i=1:length(params.veog_chans)
+      % find these channels in the pattern
+      [tf, loc] = ismember(params.veog_chans{i}, chan_numbers);
+      chan_inds = find(loc);
+      if length(chan_inds) < 2
+        error('EOG channels not found in pattern.')
+      end
+      
+      % identify blinks
+      if isstruct(params.blink_inputs)
+        params.blink_inputs = {params.blink_inputs};
+      end
+      bad = bad | reject_blinks(pattern, params.blink_thresh, ...
+                                'verbose', params.verbose, ...
+                                'chans', chan_inds, ...
+                                'samplerate', samplerate, ...
+                                params.blink_inputs{:});
+    end
   end
-  
   
   % channels with poor contact
   if params.bad_chans

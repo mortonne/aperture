@@ -69,6 +69,9 @@ end
 
 % only used for debugging plots
 if ~params.reject_full || params.debug_plots || params.debug_images
+  if isempty(params.samplerate)
+    error('If using a buffer or making plots, must specify a samplerate.')
+  end
   step = 1000 / params.samplerate;
   x = [1:size(ev_dat, 2)] * step;
   y = 1:size(ev_dat, 1);
