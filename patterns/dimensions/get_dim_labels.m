@@ -28,8 +28,11 @@ dim_name = read_dim_input(dim_id);
 
 if strcmp(dim_name, 'ev')
   dim_info.ev = get_mat(dim_info.ev);
-  if ~isfield(dim_info.ev, 'label')
-    error('events must contain a "label" field.')
+  if ~isfield(dim_info.ev, 'label') && isfield(dim_info.ev, 'type')
+    [dim_info.ev.label] = dim_info.ev.type;
+  end
+  if ~any(ismember(fieldnames(dim_info.ev), {'label', 'type'}))
+    error('events must contain a "type" or a "label" field.')
   end
 end
 
