@@ -110,6 +110,7 @@ eog_pattern = get_mat(eog_pat);
 blink_params = [];
 blink_params.reject_full = false;
 blink_params.buffer = params.blink_buffer;
+%undocumented plotting debug option - plots all events, 5 at a time
 blink_params.debug_plots = false;
 blink_params.chans = [1 2];
 blink_params.samplerate = get_pat_samplerate(eog_pat);
@@ -159,8 +160,14 @@ for i = 1:length(sessions)
   for j = 1:n_chans
     fprintf('%s ', chan_labels{j})
     data = seg2cont(pattern(sess_mask,j,:));
-    [b, dev, stats] = glmfit(X, data, params.distr, params.glm_inputs{:});
-    resid(sess_mask,j,:) = cont2seg(stats.resid, [n_events 1 n_samps]);
+    %added this skip/NanOut bad channels, which glmfit cannot handle
+    if mean(isnan(data)) > .4
+      fprintf('bad channel skipped \n')
+      continue
+    else
+      [b, dev, stats] = glmfit(X, data, params.distr, params.glm_inputs{:});
+      resid(sess_mask,j,:) = cont2seg(stats.resid, [n_events 1 n_samps]);
+    end    
   end
   fprintf('\n')
 end
