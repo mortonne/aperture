@@ -64,9 +64,10 @@ end
 if res(best_d).pHit < params.min_hits
   % if hits are less than the minimum for the best d-prime,
   % conditionalize on that and find lowest FA
-  min_fa = min([res([res.pHit] >= params.min_hits).pFA]);
-  best_fa = find([res.pFA] == min_fa);
-  if ~isempty(best_fa)
+  good = [res.pHit] >= params.min_hits;
+  if any(good)
+    min_fa = min([res(good).pFA]);
+    best_fa = find([res.pFA] == min_fa);
     best_d = best_fa;
   else
     best_d = find(params.search_thresh == min(params.search_thresh));

@@ -50,6 +50,7 @@ defaults.blink_thresh = 100;
 defaults.blink_buffer = [-150 500];
 defaults.optimize_thresh = false;
 defaults.trackball_pat_name = '';
+defaults.search_thresh = 100:10:300;
 defaults.veog_chans = {[8 126] [25 127]};
 defaults.heog_chans = [1 32];
 defaults.eog_max_nan = 0.4;
@@ -75,8 +76,10 @@ if params.optimize_thresh
     error('optimize_thresh requires trackball_pat_name.')
   end
   trackball_pat = getobj(subj, 'pat', params.trackball_pat_name);
+  trackball_samplerate = get_pat_samplerate(trackball_pat);
   p = [];
   p.veog_chans = veog_chans;
+  p.search_thresh = params.search_thresh;
   params.blink_thresh = optimize_blink_detector(trackball_pat, p);
   clear trackball_pat
 end
@@ -89,6 +92,9 @@ eog_params.chanFilter = veog_chans;
 eog_params.offsetMS = pat.params.offsetMS - pre;
 eog_params.durationMS = pat.params.durationMS + pre + post;
 eog_params.relativeMS = [];
+if exist('trackball_samplerate', 'var')
+  eog_params.resampledRate = trackball_samplerate;
+end
 eog_params.filttype = 'bandpass';
 eog_params.filtfreq = [.5 30];
 eog_params.filtorder = 4;
@@ -104,16 +110,16 @@ eog_pattern = get_mat(eog_pat);
 blink_params = [];
 blink_params.reject_full = false;
 blink_params.buffer = params.blink_buffer;
-blink_params.debug_plots = true;
+blink_params.debug_plots = false;
 blink_params.chans = [1 2];
 blink_params.samplerate = get_pat_samplerate(eog_pat);
 blink_mask = reject_blinks(eog_pattern, params.blink_thresh, blink_params);
 
 % remove the buffer
-filt_str = sprintf('%.4f <= avg & avg < %.4f', pat.params.offsetMS, ...
-                   pat.params.offsetMS + pat.params.durationMS);
-[temp, inds] = patFilt(eog_pat, 'timeFilter', filt_str);
-blink_mask = blink_mask(:,1,inds{3});
+pat_time = get_dim_vals(pat.dim, 'time');
+eog_time = get_dim_vals(eog_pat.dim, 'time');
+filter = pat_time(1) <= eog_time & eog_time <= pat_time(end);
+blink_mask = blink_mask(:,1,filter);
 
 clear temp eog_pat eog_pattern
 
