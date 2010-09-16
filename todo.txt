@@ -61,6 +61,8 @@
 
 == Patterns ==
 
+* fix bin_pattern time dimension irregularity (final sample MSvals and avg fields)
+
  * change patBins to call apply_event_bins
 
  * full support for ':' and 'iter' options in patBins
