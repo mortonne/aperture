@@ -95,7 +95,11 @@ elseif isnumeric(params.event_index) && isvector(params.event_index)
 elseif ischar(params.event_index)
   % this is the name of an events field
   events = get_dim(pat.dim, 'ev');
-  index = [events.(params.event_index)];
+  if iscellstr({events.(params.event_index)})
+    index = make_index({events.(params.event_index)});
+  else
+    index = [events.(params.event_index)];
+  end
 else
   error('invalid event index input.')
 end

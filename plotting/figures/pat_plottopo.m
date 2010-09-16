@@ -20,7 +20,7 @@ function pat = pat_plottopo(pat, fig_name, varargin)
 %   event_labels - cell array of strings with labels for each event/
 %                  event_bin. ({})
 %   chan_locs    - path to a readlocs-compatible electrode locations
-%                  file. ('~/eeg/HCGSN128.loc')
+%                  file. ('HCGSN128.loc')
 %   y_lim        - y-limits to use for each subplot. ([])
 %   plot_input   - cell array of additional inputs to plot_topo. ({})
 %   res_dir      - directory in which to save the figure(s). Default
@@ -38,7 +38,7 @@ end
 defaults.event_bins = '';
 defaults.event_labels = {};
 defaults.y_lim = [];
-defaults.chan_locs = '~/eeg/HCGSN128.loc';
+defaults.chan_locs = 'HCGSN128.loc';
 defaults.plot_input = {};
 defaults.res_dir = '';
 params = propval(varargin, defaults);
@@ -63,9 +63,20 @@ params.res_dir = check_dir(params.res_dir);
 
 if ~isempty(params.event_bins)
   % apply binning (don't modify the pat object, even in the workspace)
-  pattern = get_mat(bin_pattern(pat, ...
-                                'eventbins', params.event_bins, ...
-                                'save_mats', false));
+  temp = bin_pattern(pat, ...
+                     'eventbins', params.event_bins, ...
+                     'save_mats', false);
+  pattern = get_mat(temp);
+  
+  if isempty(params.event_labels)
+    % try to grab labels from the events
+    labels = get_dim_labels(temp.dim, 'ev');
+    if length(unique(labels)) == length(labels)
+      params.event_labels = labels;
+    end
+  end
+  
+  clear temp
 else
   % just get the pattern
   pattern = get_mat(pat);
@@ -77,6 +88,8 @@ files = cell(1, 1, 1, n_freq);
 base_filename = sprintf('%s_%s_%s', pat.name, fig_name, pat.source);
 
 % add legend input
+
+
 if length(params.event_labels) > 1
   params.plot_input = [params.plot_input ...
                       'legend', {params.event_labels}, ...
