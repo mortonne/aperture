@@ -1,11 +1,11 @@
-function pat = split_pattern(pat,dimension,res_dir)
+function pat = split_pattern(pat, dimension, res_dir)
 %SPLIT_PATTERN   Resave a pattern in slices along one dimension.
-%
-%  pat = split_pattern(pat, dimension)
 %
 %  Takes an existing pattern that is saved as one matrix, splits it into
 %  slices along a given dimension, and resaves the pattern with one file
 %  per slice.
+%
+%  pat = split_pattern(pat, dimension, res_dir)
 %
 %  INPUTS:
 %        pat:  pat object that corresponds to the pattern that is to be
@@ -29,17 +29,17 @@ function pat = split_pattern(pat,dimension,res_dir)
 %   the references in pat.file.
 
 % input checks
-if ~exist('pat','var')
-  error('You must input a pat object.')
+if ~exist('pat', 'var')
+  error('You must input a pattern object.')
 end
-if ~exist('dimension','var')
+if ~exist('dimension', 'var')
   dimension = 'chan';
 end
 [temp, filename] = fileparts(pat.file);
-if ~exist('res_dir','var')
+if ~exist('res_dir', 'var')
   % use the parent directory of the pattern
   res_dir = temp;
-  elseif ~exist(res_dir,'dir')
+elseif ~exist(res_dir, 'dir')
   % make sure the new directory exists
   mkdir(res_dir);
 end
@@ -51,18 +51,18 @@ end
 pat.dim.splitdim = dim_number;
 
 % load the pattern to be split
-if ~exist(pat.file,'file')
+if ~exist(pat.file, 'file')
   error('%s not found.', pat.file)
 end
-full_pattern = load_pattern(pat);
+full_pattern = get_mat(pat);
 
 fprintf('splitting pattern %s along %s dimension: ', pat.name, dim_name)
 
 % convenience variables
-labels = {pat.dim.(dim_name).label};
+labels = get_dim_labels(pat.dim, dim_name);
 all_dim = {':',':',':',':'};
 dim_len = size(full_pattern, dim_number);
-pat.file = cell(1,dim_len);
+pat.file = cell(1, dim_len);
 
 % split the pattern along the specified dimension
 for i=1:dim_len
@@ -73,7 +73,7 @@ for i=1:dim_len
   pattern = full_pattern(ind{:});
   
   % save to disk
-  pat.file{i} = fullfile(res_dir,sprintf('%s_%s%s.mat',filename,dim_name,labels{i}));
-  save(pat.file{i},'pattern')
+  pat.file{i} = fullfile(res_dir, sprintf('%s_%s.mat', filename, labels{i}));
+  save(pat.file{i}, 'pattern')
 end
 fprintf('\n')
