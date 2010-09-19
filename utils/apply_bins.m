@@ -3,35 +3,27 @@ function bin_inds = apply_bins(x, bin_defs)
 %
 %  bin_inds = apply_bins(x, bin_defs)
 %
-%  Given a numeric vector and a range or set of ranges defining bin(s),
-%  find the indices of the vector corresponding to each bin.
-%
 %  INPUTS:
-%         x:  numeric vector to apply binning to.
+%         x:  vector to apply binning to.
 %
 %  bin_defs:  [bins X 2] matrix that defines the bins. Each row defines
-%             one bin. bin_defs(i,1) and bin_defs(i,2) define the lower
-%             and upper limits, respectively, of bin i. Limits are
+%             one bin. bin_defs(i,1) and bin_defs(i,2) define the upper
+%             and lower limits, respectively, of bin i. Limits are
 %             inclusive, with one exception: if the upper limit of a bin
 %             is equal to the lower limit of the next bin, the upper
-%             limit will not be inclusive. Bins may overlap.
+%             limit will not be inclusive.
 %
 %  OUTPUTS:
 %  bin_inds:  cell array of length [1 X bins] containing the indices of
 %             x that correspond to each bin.
 %
-%  EXAMPLES:
-%   % apply evenly-spaced bins
-%   x = 1:10;
-%   bin_defs = make_bins(2, 1, 10);
-%   bin_inds = apply_bins(x, bin_defs);
-%
-%   % apply more complex overlapping bins
-%   x = [7 2 15 13 1 14];
-%   bin_defs = [1 7; 7 14; 13 15];
-%   bin_inds = apply_bins(x, bin_defs);
-%
-%  See also make_bins.
+%  EXAMPLE:
+%   >> x = [7 1 15 13 2 14];
+%   >> bin_defs = [1 7; 7 13; 13 15];
+%   >> bin_inds = apply_bins(x, bin_defs);
+%   x(bin_inds{1}) % [1 2]
+%   x(bin_inds{2}) % 7
+%   x(bin_inds{3}) % [15 13 14]
 
 % input checks
 if ~exist('x', 'var') || ~isnumeric(x)
@@ -50,10 +42,6 @@ for i=1:n_bins
   % extract the limits for this bin
   lower = bin_defs(i,1);
   upper = bin_defs(i,2);
-  
-  if lower > upper
-    error('Bins must be increasing.')
-  end
   
   % get the indices of the values that correspond to this bin
   if i~=n_bins && upper==bin_defs(i+1, 1)
