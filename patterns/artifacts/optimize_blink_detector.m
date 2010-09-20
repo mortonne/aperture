@@ -42,6 +42,7 @@ for i=1:length(header)
 end
 fprintf('\n')
 
+blink_params = propval(blink_params, struct, 'strict', false);
 blink_params.verbose = false;
 for i=1:length(params.search_thresh)
   fprintf('%-11d', params.search_thresh(i))
