@@ -93,13 +93,13 @@ function pat = apply_zscore(pat, base_pattern, m, s, event_bin_defs)
         %would result in that event being excluded
         %need to make sure the first statement is properly indexed
 
-        if mean(isnan(base_pattern(ind{:})))>(1/3)
-          pattern(ind{:}) = NaN;
-        elseif s(i,j,:,k) < .5
-          pattern(ind{:}) = NaN;
-        else
+        %if mean(isnan(base_pattern(ind{:})))>(1/3)
+        %  pattern(ind{:}) = NaN;
+        %elseif s(i,j,:,k) < .5
+        %pattern(ind{:}) = NaN;
+        %else
           pattern(ind{:}) = (pattern(ind{:}) - m(i,j,:,k)) / s(i,j,:,k);
-        end
+        %end
         
       end
     end
