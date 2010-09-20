@@ -14,7 +14,8 @@ function pat = filter_pattern(pat, varargin)
 %  These options may be specified using parameter, value pairs or by
 %  passing a structure. Defaults are shown in parentheses.
 %   event_filter - string for inStruct to be applied to the
-%                  events structure. ('')
+%                  events structure. See inStruct for details (this
+%                  corresponds to the "expr" input argument). ('')
 %   time_filter  - string for inStruct to be applied to the time
 %                  structure. ('')
 %   chan_filter  - may be of type:
