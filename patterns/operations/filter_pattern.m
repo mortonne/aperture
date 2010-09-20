@@ -13,10 +13,19 @@ function pat = filter_pattern(pat, varargin)
 %  PARAMS:
 %  These options may be specified using parameter, value pairs or by
 %  passing a structure. Defaults are shown in parentheses.
-%   event_filter - string for inStruct
-%   time_filter  - ''
-%   chan_filter  - ''
-%   freq_filter  - ''
+%   event_filter - string for inStruct to be applied to the
+%                  events structure. ('')
+%   time_filter  - string for inStruct to be applied to the time
+%                  structure. ('')
+%   chan_filter  - may be of type:
+%                   char    - will be input to inStruct to filter the
+%                             channel structure
+%                   cellstr - (cell array of strings); a list of channel
+%                             labels in include
+%                   numeric - array of channel numbers to include
+%                  Default is: ''
+%   freq_filter  - string for inStruct to be applied to the frequency
+%                  structure. ('')
 %   save_mats    - if true, and input mats are saved on disk, modified
 %                  mats will be saved to disk. If false, the modified
 %                  mats will be stored in the workspace, and can
