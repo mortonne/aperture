@@ -15,6 +15,21 @@ function pat = baseline_pattern(pat, baselineMS, varargin);
 %
 %  OUTPUTS:
 %         pat:  modified pattern object.
+%
+%  PARAMS:
+%  These options may be specified using parameter, value pairs or by
+%  passing a structure. Defaults are shown in parentheses.
+%   save_mats  - if true, and input mats are saved on disk, modified
+%                mats will be saved to disk. If false, the modified mats
+%                will be stored in the workspace, and can subsequently
+%                be moved to disk using move_obj_to_hd. (true)
+%   overwrite  - if true, existing patterns on disk will be overwritten.
+%                (false)
+%   save_as    - string identifier to name the modified pattern. If
+%                empty, the name will not change. ('')
+%   res_dir    - directory in which to save the modified pattern and
+%                events, if applicable. Default is a directory named
+%                pat_name on the same level as the input pat.
 
 % inputs
 if ~exist('pat', 'var')
