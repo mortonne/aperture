@@ -74,9 +74,13 @@ if ~isempty(params.chanFilter)
   if ischar(params.chanFilter)
     inds{2} = inStruct(pat.dim.chan, params.chanFilter);
   elseif iscellstr(params.chanFilter)
-    inds{2} = find(ismember({pat.dim.chan.label}, params.chanFilter));
+    % specifying labels
+    [tf, loc] = ismember(params.chanFilter, get_dim_labels(pat.dim, 'chan'));
+    inds{2} = loc(tf);
   elseif isnumeric(params.chanFilter)
-    inds{2} = find(ismember([pat.dim.chan.number], params.chanFilter));
+    % specifying channel numbers
+    [tf, loc] = ismember(params.chanFilter, get_dim_vals(pat.dim, 'chan'));
+    inds{2} = loc(tf);
   else
     error('Invalid chanFilter input.')
   end
