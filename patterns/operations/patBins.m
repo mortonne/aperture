@@ -103,7 +103,7 @@ end
 % events
 if ~isempty(params.eventbins)
   % load events
-  events = get_mat(pat.dim.ev);
+  events = get_dim(pat.dim, 'ev');
   [events, bins{1}] = event_bins(events, params.eventbins, ...
                                  params.eventbinlabels);
   
@@ -114,8 +114,9 @@ end
 
 % channels
 if ~isempty(params.chanbins)
-  [pat.dim.chan, bins{2}] = chan_bins(pat.dim.chan, params.chanbins, ...
-                                      params.chanbinlabels);
+  [chan, bins{2}] = chan_bins(get_dim(pat.dim, 'chan'), params.chanbins, ...
+                              params.chanbinlabels);
+  pat.dim = set_dim(pat.dim, 'chan', chan);
 end
 
 % time
@@ -201,9 +202,9 @@ function [events2, bins] = event_bins(events1, bin_defs, labels)
     events2 = cat_structs(events2, bin_event);
   end
   [events2.label] = labels{:};
-%endfunction
 
-function [chan, bins] = chan_bins(chan, bin_defs, labels)
+
+function [chan2, bins] = chan_bins(chan1, bin_defs, labels)
   %CHAN_BINS   Apply binning to a channel dimension.
   %
   %  [chan, bins] = chan_bins(chan, bin_defs, labels)
@@ -214,7 +215,7 @@ function [chan, bins] = chan_bins(chan, bin_defs, labels)
   %  bin_defs:  a cell array, where each cell defines one bin.
   %             Each cell may contain:
   %              [c1 c2 c2 ...] - an array of channel numbers
-  %              {'r1' 'r2' 'r3' ...} - a cell array of region labels
+  %              {'r1' 'r2' 'r3' ...} - a cell array of labels
   %              'filter'       - a string to be input to filterStruct
   %
   %    labels:  a cell array of strings giving a label for each
@@ -227,73 +228,84 @@ function [chan, bins] = chan_bins(chan, bin_defs, labels)
   %
   %     bins:  cell array where each cell contains the indices for
   %            the corresponding bin in the original channels dimension.
-
+  %
+  %  NOTES:
+  %   To assume and maintain in the output chan structure:
+  %   number is defined and unique. It contains a numeric scalar.
+  %   label is defined and unique. It contains a string.
+  %   there may be other fields, which will be kept if possible.
+  
   % input checks
-  if ~exist('chan','var') || ~isstruct(chan)
+  if ~exist('chan1', 'var') || ~isstruct(chan1)
     error('You must pass a channels structure to bin.')
-  elseif ~exist('bin_defs','var')
+  elseif ~exist('bin_defs', 'var')
     error('You must pass bin definitions.')
   end
-  if ~exist('labels','var')
+  if ~iscell(bin_defs)
+    bin_defs = {bin_defs};
+  end
+  if ~exist('labels', 'var')
     labels = {};
   elseif ~iscellstr(labels)
     error('labels must be a cell array of strings.')
-  elseif ~isempty(labels) && length(labels)~=length(bin_defs)
+  elseif ~isempty(labels) && length(labels) ~= length(bin_defs)
     error('labels must be the same length as bin_defs.')
   end
 
   % get numbers and regions from the old channels struct
   c = bin_defs;
-  numbers = [chan.number];
-  if ~isfield(chan, 'region')
-    regions = repmat({''}, size(chan));
-  else
-    regions = {chan.region};
-  end
-  if length(numbers)>length(chan) || length(regions)>length(chan)
-    error('Some channels have multiple channel numbers or regions associated with them. Perhaps you have already binned the channels dimension once.')
-  end
-
-  % backwards compatibility
-  if isnumeric(c)
-    c = num2cell(c);
-  end
+  dim.chan = chan1;
+  chan_numbers = get_dim_vals(dim, 'chan');
+  chan_labels = get_dim_labels(dim, 'chan');
   
-  % define the new channel bins
-  for i=1:length(c)
+  % define each channel bin
+  n_bins = length(c);
+  bins = cell(1, n_bins);
+  chan2 = [];
+  for i = 1:n_bins
     if isnumeric(c{i})
-      % channel number(s)
-      bins{i} = find(ismember(numbers, c{i}));
+      % channel numbers
+      bins{i} = find(ismember(chan_numbers, c{i}));
     elseif iscellstr(c{i})
-      % region(s)
-      bins{i} = find(ismember(regions, c{i}));
+      % channel labels
+      bins{i} = find(ismember(chan_labels, c{i}));
     elseif ischar(c{i})
       % filter string
-      bins{i} = find(inStruct(chan, c{i}));
+      bins{i} = find(inStruct(chan1, c{i}));
     else
-      error('Invalid channel bins input.')
+      error('Channel bin %d definition is invalid', i)
     end
-    bin_numbers{i} = numbers(bins{i});
-    uniq_regions = unique(regions(bins{i}));
-    bin_regions{i} = [uniq_regions{:}];
+    
+    % remove fields that vary between elements
+    bin_chan = collapse_struct(chan1(bins{i}));
+    
+    % if multiple channels in bin, mark for assignment
+    % of a new number (will be unique)
+    if ~isfield(bin_chan, 'number')
+      bin_chan.number = NaN;
+    end
+    
+    if ~isempty(labels)
+      % user-defined label
+      bin_chan.label = labels{i};
+    elseif ~isfield(bin_chan, 'label')
+      % combine the labels of included channels
+      bin_chan.label = strtrim(sprintf('%s ', chan1(bins{i}).label));
+    end
+    
+    % add this bin
+    chan2 = cat_structs(chan2, bin_chan);
+  end
+  
+  % assign new channel numbers where needed
+  bad = isnan([chan2.number]);
+  if any(bad)
+    % use only unused numbers
+    new = num2cell(setdiff(1:n_bins, [chan2(~bad).number]));
+    [chan2(bad).number] = new{:};
   end
 
-  % initialize the new channels structure
-  chan = struct('number', bin_numbers, 'region', bin_regions);
-
-  % update the channel labels
-  if ~isempty(labels)
-    [chan.label] = labels{:};
-  elseif length(unique({chan.region}))==length(chan)
-    % each bin has a unique region
-    [chan.label] = chan.region;
-  else
-    % just use the channel numbers
-    labels = cellfun(@num2str, {chan.number}, 'UniformOutput', false);
-    [chan.label] = labels{:};
-  end
-%endfunction
-
+  
 function [time2, bins] = time_bins(time1, bin_defs, labels)
   %TIME_BINS   Apply binning to a time dimension.
   %
