@@ -16,27 +16,33 @@ function subj = remove_eog_glm(subj, pat_name, new_pat_name, varargin)
 %  PARAMS:
 %  These options may be specified using parameter, value pairs or by
 %  passing a structure. Defaults are shown in parentheses.
-%   distr      - distribution to use for the GLM. ('normal')
-%   link       - link function to use in place of the canonical link;
-%                see glmfit. ('')
-%   glm_inputs - cell array of additional inputs to glmfit. ({})
-%   overwrite  - if true, if the stat file already exists, it will be
-%                overwritten. (true)
-%   res_dir    - directory in which to save the GLM results. Default is
-%                the pattern's stats directory.
+%   distr        - distribution to use for the GLM. ('normal')
+%   link         - link function to use in place of the canonical link;
+%                  see glmfit. ('')
+%   glm_inputs   - cell array of additional inputs to glmfit. ({})
+%   overwrite    - if true, if the stat file already exists, it will be
+%                  overwritten. (true)
+%   res_dir      - directory in which to save the GLM results. Default
+%                  is the pattern's stats directory.
 %   blink_thresh - threshold in microvolts for detecting blinks. If
-%                optimize_thresh is true, this will not be used. (100)
+%                  optimize_thresh is true, this will not be used. (100)
 %   blink_buffer - buffer to make around the start of each detected
-%                blink. ([-150 500])
-%   optimize_thresh - if true, use dprime optimization to find the
-%                best value for blink thresholding - must have
-%                trackball pattern on subj structure (false)
-%   trackball_pat_name - name of your trackball pattern
-%   veog_chans - array cell array of arrays of channel numbers of VEOG
-%                channels. ({[8 126] [25 127]})
-%   heog_chans - array cell array of arrays of channel numbers of HEOG
-%                channels. ([1 32])
-%   eog_max_nan - fraction of NaNs allowed in a given EOG channel. (0.4)
+%                  blink. ([-150 500])
+%   debug_plots  - if true, all events will be plotted with blinks
+%                  marked for purposes of checking blink detection.
+%                  (false)
+%   optimize_thresh - if true, use dprime optimization to find the best
+%                  value for blink thresholding - must have a trackball
+%                  pattern. (false)
+%   trackball_pat_name - name of a pattern with up, down, right, left,
+%                  and blink events. ('')
+%   veog_chans   - array cell array of arrays of channel numbers of VEOG
+%                  channels. ({[8 126] [25 127]})
+%   heog_chans   - array cell array of arrays of channel numbers of HEOG
+%                  channels. ([1 32])
+%   eog_max_nan  - fraction of NaNs allowed in a given channel. (0.4)
+%   baselineMS   - baseline in ms ([start finish]) for applying baseline
+%                  correction after eye movement correction. ([])
 
 pat = getobj(subj, 'pat', pat_name);
 
@@ -48,12 +54,14 @@ defaults.overwrite = true;
 defaults.res_dir = get_pat_dir(pat, 'stats');
 defaults.blink_thresh = 100;
 defaults.blink_buffer = [-150 500];
+defaults.debug_plots = false;
 defaults.optimize_thresh = false;
 defaults.trackball_pat_name = '';
 defaults.search_thresh = 100:10:300;
 defaults.veog_chans = {[8 126] [25 127]};
 defaults.heog_chans = [1 32];
 defaults.eog_max_nan = 0.4;
+defaults.baselineMS = [];
 params = propval(varargin, defaults);
 
 if ~iscell(params.veog_chans)
@@ -78,13 +86,13 @@ if params.optimize_thresh
   trackball_pat = getobj(subj, 'pat', params.trackball_pat_name);
   trackball_samplerate = get_pat_samplerate(trackball_pat);
   p = [];
-  p.veog_chans = veog_chans;
+  p.chans = veog_chans;
   p.search_thresh = params.search_thresh;
   params.blink_thresh = optimize_blink_detector(trackball_pat, p);
   clear trackball_pat
 end
 
-% get a mask of samples containing blinks
+% create a VEOG pattern for detecting blinks
 pre = sum(abs(params.blink_buffer)) + 500;
 post = abs(params.blink_buffer(1));
 eog_params = pat.params;
@@ -107,11 +115,11 @@ temp = create_voltage_pattern(subj, eog_pat_name, eog_params, res_dir);
 eog_pat = getobj(temp, 'pat', eog_pat_name);
 eog_pattern = get_mat(eog_pat);
 
+% get a mask marking blinks
 blink_params = [];
 blink_params.reject_full = false;
 blink_params.buffer = params.blink_buffer;
-%undocumented plotting debug option - plots all events, 5 at a time
-blink_params.debug_plots = false;
+blink_params.debug_plots = params.debug_plots;
 blink_params.chans = [1 2];
 blink_params.samplerate = get_pat_samplerate(eog_pat);
 blink_mask = reject_blinks(eog_pattern, params.blink_thresh, blink_params);
@@ -136,6 +144,23 @@ h_pattern = get_mat(heog_pat);
 pattern = get_mat(pat);
 pat.mat = [];
 [n_events, n_chans, n_samps] = size(pattern);
+
+% resample the blink mask to match the pattern
+samplerate = get_pat_samplerate(pat);
+if samplerate > blink_params.samplerate
+  temp = false(n_events, 1, n_samps);
+  for i = 1:size(blink_mask, 1)
+    x = permute(blink_mask(i,1,:), [3 1 2]);
+    y = resample(double(x), samplerate, blink_params.samplerate) > 0.1;
+    temp(i,1,:) = y;
+  end
+  blink_mask = temp;
+  clear temp
+elseif blink_params.samplerate > samplerate
+  % downsample
+  error('downsampling blink mask not yet supported.')
+end
+
 chan_labels = get_dim_labels(pat.dim, 'chan');
 n_reg = 4;
 resid = NaN(size(pattern), class(pattern));
@@ -150,7 +175,6 @@ for i = 1:length(sessions)
   veog = seg2cont(v_pattern(sess_mask,:,:));
   heog = seg2cont(h_pattern(sess_mask,:,:));
   blink = seg2cont(blink_mask(sess_mask,:,:));
-  
   X = zeros(n_events * n_samps, n_reg);
   X(:,1) = veog .* ~blink;
   X(:,2) = heog .* ~blink;
@@ -160,14 +184,12 @@ for i = 1:length(sessions)
   for j = 1:n_chans
     fprintf('%s ', chan_labels{j})
     data = seg2cont(pattern(sess_mask,j,:));
-    %added this skip/NanOut bad channels, which glmfit cannot handle
-    if mean(isnan(data)) > .4
-      fprintf('bad channel skipped \n')
+    if all(isnan(data))
       continue
-    else
-      [b, dev, stats] = glmfit(X, data, params.distr, params.glm_inputs{:});
-      resid(sess_mask,j,:) = cont2seg(stats.resid, [n_events 1 n_samps]);
-    end    
+    end
+    
+    [b, dev, stats] = glmfit(X, data, params.distr, params.glm_inputs{:});
+    resid(sess_mask,j,:) = cont2seg(stats.resid, [n_events 1 n_samps]);
   end
   fprintf('\n')
 end
@@ -179,7 +201,14 @@ if ~exist(pat_dir, 'dir')
   mkdir(pat_dir)
 end
 pat.file = fullfile(pat_dir, objfilename('pattern', new_pat_name, pat.source));
-pat = set_mat(pat, resid, 'hd');
+
+% baseline correction
+if ~isempty(params.baselineMS)
+  pat = set_mat(pat, resid, 'ws');
+  pat = baseline_pattern(pat, params.baselineMS, 'overwrite', true);
+else
+  pat = set_mat(pat, resid, 'hd');
+end
 
 subj = setobj(subj, 'pat', pat);
 
