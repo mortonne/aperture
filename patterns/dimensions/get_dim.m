@@ -40,7 +40,7 @@ end
 dim = dim_info.(dim_name);
 
 % if necessary, load the info from disk
-if isfield(dim, 'file')
+if isfield(dim, 'file') || isfield(dim, 'mat')
   dim = get_mat(dim);
 end
 
