@@ -32,10 +32,10 @@ function [pat, bins] = patBins(pat, varargin)
 %                    filterStruct. ([])
 %   chanbinlabels  - cell array of string labels for each channel bin.
 %                    ({})
-%   MSbins         - [nbins X 2] array specifying time bins. MSbins(i,:)
+%   timebins       - [nbins X 2] array specifying time bins. timebins(i,:)
 %                    gives the range of millisecond values for bin i.
 %                    ([])
-%   MSbinlabels    - cell array of string labels for each time bin. ({})
+%   timebinlabels  - cell array of string labels for each time bin. ({})
 %   freqbins       - [nbins X 2] array specifying frequency bins.
 %                    freqbins(i,:) gives the range of frequencies for
 %                    bin i. ([])
@@ -54,7 +54,7 @@ function [pat, bins] = patBins(pat, varargin)
 %   >> patsize(pat.dim)
 %      253   129    90    18
 %   >> [pat, bins] = patBins(pat, 'eventbins', 'session', ...
-%                                 'MSbins', [0 1000]);
+%                                 'timebins', [0 1000]);
 %   >> patsize(pat.dim)
 %      3     129    1     18
 %   >> bins
@@ -75,18 +75,28 @@ defaults.eventbins = [];
 defaults.eventbinlabels = {};
 defaults.chanbins = [];
 defaults.chanbinlabels = {};
-defaults.MSbins = [];
-defaults.MSbinlabels = {};
+defaults.timebins = [];
+defaults.timebinlabels = {};
 defaults.freqbins = [];
 defaults.freqbinlabels = {};
-
 [params, unused] = propval(varargin, defaults);
+unused = propval(unused, struct, 'strict', false);
+
+% backwards compatibility
+if isfield(unused, 'MSbins')
+  warning('MSbins is deprecated. use timebins instead.')
+  params.timebins = unused.MSbins;
+end
+if isfield(unused, 'MSbinlabels')
+  warning('MSbinlabels is deprecated. use timebinlabels instead.')
+  params.timebinlabels = unused.MSbinlabels;
+end
 
 % initialize
 bins = cell(1, 4);
 
 % translate : indexes to bin format
-all_bin_fields = {'eventbins' 'chanbins' 'MSbins' 'freqbins'};
+all_bin_fields = {'eventbins' 'chanbins' 'timebins' 'freqbins'};
 for i=1:length(all_bin_fields)
   bin_input = params.(all_bin_fields{i});
   if ischar(bin_input) && ismember(bin_input, {':', 'iter'})
@@ -120,9 +130,9 @@ if ~isempty(params.chanbins)
 end
 
 % time
-if ~isempty(params.MSbins)
-  [pat.dim.time, bins{3}] = time_bins(pat.dim.time, params.MSbins, ...
-                                      params.MSbinlabels);
+if ~isempty(params.timebins)
+  [pat.dim.time, bins{3}] = time_bins(pat.dim.time, params.timebins, ...
+                                      params.timebinlabels);
 end
 
 % frequency
@@ -158,16 +168,6 @@ function [events2, bins] = event_bins(events1, bin_defs, labels)
   %
   %      bins:  a cell array with one cell per bin, where each cell
   %             contains indices for the events in that bin.
-
-  % input checks
-  if ~exist('events1', 'var') || ~isstruct(events1)
-    error('You must pass an event structure.')
-  elseif ~exist('bin_defs', 'var')
-    error('You must define the bins.')
-  end
-  if ~exist('labels', 'var')
-    labels = {};
-  end
 
   % load the events
   fnames = fieldnames(events1);
@@ -246,17 +246,10 @@ function [chan2, bins] = chan_bins(chan1, bin_defs, labels)
   %   there may be other fields, which will be kept if possible.
   
   % input checks
-  if ~exist('chan1', 'var') || ~isstruct(chan1)
-    error('You must pass a channels structure to bin.')
-  elseif ~exist('bin_defs', 'var')
-    error('You must pass bin definitions.')
-  end
   if ~iscell(bin_defs)
     bin_defs = {bin_defs};
   end
-  if ~exist('labels', 'var')
-    labels = {};
-  elseif ~iscellstr(labels)
+  if ~iscellstr(labels)
     error('labels must be a cell array of strings.')
   elseif ~isempty(labels) && length(labels) ~= length(bin_defs)
     error('labels must be the same length as bin_defs.')
@@ -335,45 +328,35 @@ function [time2, bins] = time_bins(time1, bin_defs, labels)
   %             that bin.
 
   % input checks
-  if ~exist('time1','var') || ~isstruct(time1)
-    error('You must pass a time structure to bin.')
-  elseif ~exist('bin_defs','var')
-    error('You must pass bin definitions.')
-  end
-  if ~exist('labels','var')
-    labels = {};
-  elseif ~iscellstr(labels)
+  if ~iscellstr(labels)
     error('labels must be a cell array of strings.')
-  elseif ~isempty(labels) && length(labels)~=size(bin_defs, 1)
+  elseif ~isempty(labels) && length(labels) ~= size(bin_defs, 1)
     error('labels must be the same length as bin_defs.')
   end
 
-  % get the indices corresponding to each bin
-  bins = apply_bins([time1.avg], bin_defs);
+  % if multiple bins of the same size...
+  if size(bin_defs, 2) > 1 && isunique(diff(bin_defs, [], 2))
+    % make the last bin non-inclusive
+    bins = apply_bins([time1.avg], bin_defs, false);
+  else
+    % the last bin will be inclusive
+    bins = apply_bins([time1.avg], bin_defs);
+  end
   
   % create the new time structure
-  time2 = struct('MSvals', cell(size(bins)), 'avg', [], 'label', '');
+  time2 = struct('range', cell(size(bins)), 'avg', [], 'label', '');
   for i=1:length(bins)
-    % min and max vals for this bin
-    if ~isempty(bins{i})
-      start_val = time1(bins{i}(1)).MSvals(1);
-      last_val = time1(bins{i}(end)).MSvals(end);
-      time2(i).MSvals = [start_val last_val];
-    else
-      time2(i).MSvals = NaN(1, 2);
-    end
-    
-    % average for this bin
-    time2(i).avg = nanmean(time2(i).MSvals);
+    time2(i).range = bin_defs(i,:);
+    time2(i).avg = nanmean(time2(i).range);
   end
 
   % update the labels
   if isempty(labels)
     f = @(x)sprintf('%d to %d ms', x(1), x(end));
-    labels = cellfun(f, {time2.MSvals}, 'UniformOutput', false);
+    labels = cellfun(f, {time2.range}, 'UniformOutput', false);
   end
   [time2.label] = labels{:};
-%endfunction
+
 
 function [freq2, bins] = freq_bins(freq1, bin_defs, labels)
   %FREQ_BINS   Apply binning to a frequency dimension.
@@ -394,42 +377,26 @@ function [freq2, bins] = freq_bins(freq1, bin_defs, labels)
   %             that bin.
 
   % input checks
-  if ~exist('freq1','var') || ~isstruct(freq1)
-    error('You must pass a freq structure to bin.')
-  elseif ~exist('bin_defs','var')
-    error('You must pass bin definitions.')
-  end
-  if ~exist('labels','var')
-    labels = {};
-  elseif ~iscellstr(labels)
+  if ~iscellstr(labels)
     error('labels must be a cell array of strings.')
-  elseif ~isempty(labels) && length(labels)~=size(bin_defs, 1)
+  elseif ~isempty(labels) && length(labels) ~= size(bin_defs, 1)
     error('labels must be the same length as bin_defs.')
   end
 
   % get the indices corresponding to each bin
   bins = apply_bins([freq1.avg], bin_defs);
-  
+
   % create the new time structure
-  freq2 = struct('vals', cell(size(bins)), 'avg', [], 'label', '');
+  freq2 = struct('range', cell(size(bins)), 'avg', [], 'label', '');
   for i=1:length(bins)
-    % min and max vals for this bin
-    if ~isempty(bins{i})
-      start_val = freq1(bins{i}(1)).vals(1);
-      last_val = freq1(bins{i}(end)).vals(end);
-      freq2(i).vals = [start_val last_val];
-    else
-      freq2(i).vals = NaN(1, 2);
-    end
-    
-    % average for this bin
-    freq2(i).avg = nanmean(freq2(i).vals);
+    freq2(i).range = bin_defs(i,:);
+    freq2(i).avg = 2 ^ mean(log2(freq2(i).range));
   end
   
   % update the labels
   if isempty(labels)
     f = @(x)sprintf('%d to %d Hz', round(x(1)), round(x(end)));
-    labels = cellfun(f, {freq2.vals}, 'UniformOutput', false);
+    labels = cellfun(f, {freq2.range}, 'UniformOutput', false);
   end
   [freq2.label] = labels{:};
-%endfunction
+
