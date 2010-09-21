@@ -3,10 +3,11 @@ function samplerate = get_pat_samplerate(pat)
 %
 %  samplerate = get_pat_samplerate(pat)
 
-ms = [pat.dim.time.avg];
+ms = get_dim_vals(pat.dim, 'time');
 step_size = unique(diff(ms));
-if length(step_size)>1
+if length(step_size) > 1
   error('Samplerate varies.')
 end
 
-samplerate = 1000/step_size;
+samplerate = 1000 / step_size;
+
