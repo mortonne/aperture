@@ -39,6 +39,7 @@ function pat = volt2pow(pat, freqs, varargin)
 %                  events, if applicable. Default is a directory named
 %                  pat_name on the same level as the input pat.
 
+% options
 defaults.width = 6;
 defaults.buffer = [];
 defaults.logtransform = true;
@@ -73,7 +74,10 @@ end
 
 % samples after decimation
 if ~isempty(params.downsample)
-  dmate = round(samplerate / params.downsample);
+  dmate = samplerate / params.downsample;
+  if mod(dmate, 1) ~= 0
+    error('downsample must divide evenly into samplerate.')
+  end
   n_samps = ceil(n_samps / dmate);
 end
 
@@ -136,7 +140,6 @@ for i = 1:n_chans
       end
       power = temp;
     end
-    
     pow_pattern(j,c,:,:) = power';
   end
 end
@@ -157,11 +160,9 @@ end
 if ~isempty(params.downsample)
   ms = get_dim_vals(pat.dim, 'time');
   start = ms(1);
-  old_step_size = fix(1000 / samplerate);
   new_step_size = fix(1000 / params.downsample);
-  finish = ms(end) + old_step_size - new_step_size;
+  finish = ms(end);
   time = init_time(start:new_step_size:finish);
   pat.dim = set_dim(pat.dim, 'time', time);
 end
-
 
