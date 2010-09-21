@@ -25,16 +25,46 @@ end
 
 % get the short name of the dimension
 dim_name = read_dim_input(dim_id);
+dim = get_dim(dim_info, dim_name);
 
 if strcmp(dim_name, 'ev')
-  dim_info.ev = get_mat(dim_info.ev);
-  if ~isfield(dim_info.ev, 'label') && isfield(dim_info.ev, 'type')
-    [dim_info.ev.label] = dim_info.ev.type;
-  end
-  if ~any(ismember(fieldnames(dim_info.ev), {'label', 'type'}))
-    error('events must contain a "type" or a "label" field.')
-  end
-end
+  % potential fields with labels
+  f = {'label', 'type'};
+  f = f(ismember(f, fieldnames(dim)));
+  labels = {};
+  n = 0;
+  while isempty(labels)
+    n = n + 1;
+    if n > length(f)
+      break
+    end
+    labels = {dim.(f{n})};
 
-labels = {dim_info.(dim_name).label};
+    % if it's not unique, we don't want it
+    if (iscellstr(labels) && ~isunique(labels)) || ...
+       (~iscellstr(labels) && ~isunique([labels{:}]))
+      labels = {};
+      continue
+    end
+    
+    % try to convert to a cell array of strings
+    if ~iscellstr(labels)
+      try
+        labels = cellfun(@num2str, labels, 'UniformOutput', false);
+      catch
+        labels = {};
+        continue
+      end
+    end
+  end
+
+  % if all else fails, just return the indices
+  if isempty(labels)
+    labels = cellfun(@num2str, num2cell(1:length(dim)), ...
+                     'UniformOutput', false);
+  end
+else
+  % use the label field
+  labels = {dim.label};
+end
 
