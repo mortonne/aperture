@@ -1,17 +1,21 @@
-function bin_inds = apply_bins(x, bin_defs)
+function bin_inds = apply_bins(x, bin_defs, inclusive)
 %APPLY_BINS   Apply bins to a vector.
 %
-%  bin_inds = apply_bins(x, bin_defs)
+%  bin_inds = apply_bins(x, bin_defs, inclusive)
 %
 %  INPUTS:
-%         x:  vector to apply binning to.
+%          x:  vector to apply binning to.
 %
-%  bin_defs:  [bins X 2] matrix that defines the bins. Each row defines
-%             one bin. bin_defs(i,1) and bin_defs(i,2) define the upper
-%             and lower limits, respectively, of bin i. Limits are
-%             inclusive, with one exception: if the upper limit of a bin
-%             is equal to the lower limit of the next bin, the upper
-%             limit will not be inclusive.
+%   bin_defs:  [bins X 2] matrix that defines the bins. Each row defines
+%              one bin. bin_defs(i,1) and bin_defs(i,2) define the upper
+%              and lower limits, respectively, of bin i.
+%
+%  inclusive:  if true, all bins will be inclusive; if false, all bins
+%              will be inclusive only on the lower limit. If not
+%              specified, all limits will be inclusive, with one
+%              exception: if the upper limit of a bin is equal to the
+%              lower limit of the next bin, the upper limit will not be
+%              inclusive.
 %
 %  OUTPUTS:
 %  bin_inds:  cell array of length [1 X bins] containing the indices of
@@ -35,6 +39,12 @@ elseif ~exist('bin_defs', 'var') || ~isnumeric(bin_defs)
 elseif size(bin_defs, 2)~=2
   error('bin_defs must be a [bins X 2] matrix.')
 end
+if ~exist('inclusive', 'var')
+  inclusive = false;
+  auto = true;
+else
+  auto = false;
+end
 
 n_bins = size(bin_defs, 1);
 bin_inds = cell(1, n_bins);
@@ -44,7 +54,7 @@ for i=1:n_bins
   upper = bin_defs(i,2);
   
   % get the indices of the values that correspond to this bin
-  if i~=n_bins && upper==bin_defs(i+1, 1)
+  if (auto && i~=n_bins && upper==bin_defs(i+1, 1)) || (~auto && ~inclusive)
     % upper limit is equal to next bin's lower limit; don't include it
     x_bin = lower <= x & x < upper;
   else
