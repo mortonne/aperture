@@ -184,15 +184,6 @@ function [events2, bins] = event_bins(events1, bin_defs, labels)
     vals = vals(~isnan(vals));
   end
 
-  % set the labels field for the new events
-  if isempty(labels)
-    if iscellstr(vals)
-      labels = vals;
-    else
-      labels = num2cell(vals);
-    end
-  end
-
   events2 = [];
   for i=1:length(vals)
     bins{i} = find(ismember(vec, vals(i)));
@@ -200,6 +191,25 @@ function [events2, bins] = event_bins(events1, bin_defs, labels)
     % salvage fields that have the same value for this whole bin
     bin_event = collapse_struct(events1(bins{i}));
     events2 = cat_structs(events2, bin_event);
+  end
+
+  % set the label field
+  if isempty(labels)
+    if iscellstr(vals)
+      % if vals are strings, use that
+      labels = vals;
+    else
+      % try generating labels from the standard fields
+      dim.mat = events2;
+      dim.len = length(events2);
+      labels = get_dim_labels(struct('ev', dim), 'ev');
+
+      % if failed, will be indices; in this case, use vals
+      if isequal(labels, cellfun(@num2str, num2cell(1:length(events2)), ...
+                                 'UniformOutput', false))
+        labels = cellfun(@num2str, num2cell(vals), 'UniformOutput', false);
+      end
+    end
   end
   [events2.label] = labels{:};
 
