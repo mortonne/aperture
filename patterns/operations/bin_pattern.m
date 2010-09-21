@@ -2,8 +2,9 @@ function pat = bin_pattern(pat, varargin)
 %BIN_PATTERN   Average over bins of a pattern.
 %
 %  Average over arbitrary bins along one or more dimensions of a
-%  pattern. For example, you can average within frequency bands or
-%  average over all channels in a region.
+%  pattern. For example, you can average over subsets of events,
+%  average within frequency bands or average over all channels in a
+%  region.
 %
 %  pat = bin_pattern(pat, ...)
 %
@@ -20,16 +21,19 @@ function pat = bin_pattern(pat, varargin)
 %   eventbins      - see make_event_bins for allowed formats. ([])
 %   eventbinlabels - cell array of strings, with one cell per bin. Gives
 %                    a label for each event bin. ({})
-%   chanbins       - see patBins for allowed formats. ([])
+%   chanbins       - cell array where chanbins{i} defines bin i. Each
+%                    cell may contain an array of channel numbers, a
+%                    cell array of channel labels, or a string to be
+%                    passed in inStruct as "expr". ([])
 %   chanbinlabels  - cell array of strings indicating channel bin
 %                    labels. ({})
-%   timebins       - [bins X 2] array, where timebins(X,1) gives the
-%                    start time in milliseconds of bin X, and
-%                    timebins(X,2) gives the end of the bin. ([])
+%   timebins       - [bins X 2] array, where timebins(i,1) gives the
+%                    start time in milliseconds of bin i, and
+%                    timebins(i,2) gives the end of the bin. ([])
 %   timebinlabels  - cell array of strings giving a label for each time
 %                    bin. ({})
-%   freqbins       - [bins X 2] array, where freqbins(X,1) gives the
-%                    start frequency in Hz of bin X, and freqbins(X,2)
+%   freqbins       - [bins X 2] array, where freqbins(i,1) gives the
+%                    start frequency in Hz of bin i, and freqbins(i,2)
 %                    gives the end of the bin. ([])
 %   freqbinlabels  - cell array of strings giving a label for each
 %                    frequency bin. ({})
@@ -67,15 +71,9 @@ pat = mod_pattern(pat, @apply_pat_binning, {params}, saveopts);
 
 function pat = apply_pat_binning(pat, params)
   pattern = get_mat(pat);  
-
-  % backwards compatibility
-  p = params;
-  p.MSbins = params.timebins;
-  p.MSbinlabels = params.timebinlabels;
-  p = rmfield(p, {'timebins', 'timebinlabels'});
   
   % apply the bins to the pat object
-  [pat, bins] = patBins(pat, p);
+  [pat, bins] = patBins(pat, params);
   
   % average within bins in the pattern
   pattern = patMeans(pattern, bins);

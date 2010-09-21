@@ -52,7 +52,7 @@ ALL_CELL = {':',':',':',':'};
 ONE_CELL = {1 1 1 1};
 
 % bin one dimension at a time
-for i=1:length(bins)
+for i = 1:length(bins)
   % if the cell corresponding to this dimension is empty, skip
   if isempty(bins{i})
     continue
@@ -63,7 +63,7 @@ for i=1:length(bins)
   
   % get cell array with the size of each dimension
   new_size = ONE_CELL; % default each dimension to being singleton
-  for j=1:length(old_size)
+  for j = 1:length(old_size)
     new_size{j} = old_size(j);
   end
   
@@ -75,10 +75,11 @@ for i=1:length(bins)
   % created
   temp = NaN(new_size{:}, class(pattern));
   
-  for j=1:length(bins{i})
+  for j = 1:length(bins{i})
     % check this bin
     if isempty(bins{i}{j})
-      warning('eeg_ana:patBinEmpty', 'Warning: Empty Bin in Dimension %d.\n', i);
+      warning('eeg_ana:patBinEmpty', ...
+              'Warning: Empty Bin in Dimension %d.\n', i);
     end
     
     % get reference for everything going into the bin
@@ -94,8 +95,9 @@ for i=1:length(bins)
     end
 
     avg = nanmean(x,i);
-    if nnz(isnan(avg))==numel(avg)
-      warning('eeg_ana:patBinAllNaNs', 'Bin %d of dimension %d contains all NaNs.', j, i)
+    if nnz(isnan(avg)) == numel(avg)
+      warning('eeg_ana:patBinAllNaNs', ...
+              'Bin %d of dimension %d contains all NaNs.', j, i)
     end
     
     % get reference for this bin after averaging

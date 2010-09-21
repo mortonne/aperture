@@ -1,11 +1,11 @@
 function [pat, bins] = patBins(pat, varargin)
 %PATBINS   Apply bins to dimensions of a pat object.
 %
-%  [pat, bins] = patBins(pat, ...)
-%
 %  Bin dimensions of a pattern. Determines the indices of the pattern
 %  for each bin, and updates the dimension information in the pat
 %  object. The pattern matrix is not modified.
+%
+%  [pat, bins] = patBins(pat, ...)
 %
 %  INPUTS:
 %      pat:  a pattern object.
@@ -28,17 +28,18 @@ function [pat, bins] = patBins(pat, varargin)
 %                    bin. ({})
 %   chanbins       - cell array specifying channel bins. Each cell can
 %                    be a vector of channel numbers, a cell array of
-%                    regions, or a string to be passed into
+%                    channel labels, or a string to be passed into
 %                    filterStruct. ([])
 %   chanbinlabels  - cell array of string labels for each channel bin.
 %                    ({})
-%   timebins       - [nbins X 2] array specifying time bins. timebins(i,:)
-%                    gives the range of millisecond values for bin i.
-%                    ([])
+%   timebins       - [nbins X 2] array specifying time bins.
+%                    timebins(i,:) gives the range of millisecond values
+%                    to include in bin i. Use make_bins to generate
+%                    evenly spaced bins. ([])
 %   timebinlabels  - cell array of string labels for each time bin. ({})
 %   freqbins       - [nbins X 2] array specifying frequency bins.
-%                    freqbins(i,:) gives the range of frequencies for
-%                    bin i. ([])
+%                    freqbins(i,:) gives the range of frequencies to
+%                    include in bin i. ([])
 %   freqbinlabels  - cell array of string labels for each frequency bin.
 %                    ({})
 %
