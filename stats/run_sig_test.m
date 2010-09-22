@@ -59,7 +59,7 @@ if ~strcmp(test,'pttest')
 end
 
 switch test
-  case 'pttest'
+ case 'pttest'
   if sum(good)<n_obs
     % we have some bad samples, and we will have to throw
     % out pair(s).
@@ -110,7 +110,12 @@ switch test
   p = p*sign(mean(X));
   statistic = stats.tstat;
 
-  case 'anovan'
+ case 'anova1'
+
+  [p,anovatab] = anova1(X,group{1},'off');
+  statistic = anovatab{2,5};
+  
+ case 'anovan'
    [p,t,stats,terms] = anovan(X,group,'display','off',varargin{:});
    
    % get the F-statistic
