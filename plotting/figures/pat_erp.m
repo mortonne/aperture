@@ -43,6 +43,8 @@ function pat = pat_erp(pat, fig_name, params, res_dir)
 %                      points. ([.8 .8 .8])
 %   mult_fig_windows - if true, each figure will be plotted in a
 %                      separate window. (false)
+%   x_lim            - if specified, x-limit for all figures will be set
+%                      to this. ([])
 %
 %  EXAMPLES:
 %   % make ERPs for each channel in my_pattern for all subjects, and
@@ -76,6 +78,7 @@ if ~exist(res_dir,'dir');
   mkdir(res_dir)
 end
 
+
 % options
 defaults.print_input = {'-depsc'};
 defaults.event_bins = '';
@@ -103,8 +106,16 @@ x = get_dim_vals(pat.dim, 'time');
 if ~isempty(params.stat_name)
   % get the stat object
   stat = getobj(pat, 'stat', params.stat_name);
+  
+  %zach hack
+  %pattern = pattern(1,:,:) - pattern(2,:,:);
+  %p = getfield(load(stat.file), 'pattern');
+  
+  %original
   load(stat.file, 'p');
-
+  %end zach hack
+  
+  
   % HACK - remove any additional p-values and take absolute value
   p = abs(p(1,:,:,:));
   % END HACK
@@ -154,7 +165,10 @@ for i=1:num_events
         % get significant samples
         p_samp = squeeze(p(e,c,:,f));
         alpha_fw = correct_mult_comp(p_samp, params.alpha, params.correctm);
-        plot_params.mark = p_samp < alpha_fw;
+        %USER WARNING!
+        %currently it seems this correction isn't being used! 
+        %plot_params contains the mark matrix, not params...
+        params.mark = p_samp < alpha_fw;
       end
 
       % make the plot
