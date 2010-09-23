@@ -27,7 +27,7 @@ defaults.fig_labels = {};
 defaults.title = '';
 defaults.landscape = true;
 defaults.compile_method = 'latexdvipdf';
-defaults.report_file = '';
+defaults.landscape = true;
 params = propval(varargin, defaults);
 
 if isempty(params.report_file)
@@ -38,6 +38,6 @@ end
 
 [table, header] = create_pat_report(pat, dim, fig_names, params.fig_labels);
 
-longtable(table, header, report_file, params.title);
+longtable(table, header, report_file, params.title, params.landscape);
 pdf_file = pdflatex(report_file, params.compile_method);
 
