@@ -85,6 +85,7 @@ defaults.stat_name = '';
 defaults.alpha = 0.05;
 defaults.correctm = '';
 [params, plot_params] = propval(params, defaults);
+plot_params = propval(plot_params, struct, 'strict', false);
 
 if ~isempty(params.event_bins)
   % apply binning (don't modify the pat object, even in the workspace)
@@ -153,7 +154,7 @@ for i=1:num_events
         % get significant samples
         p_samp = squeeze(p(e,c,:,f));
         alpha_fw = correct_mult_comp(p_samp, params.alpha, params.correctm);
-        params.mark = p_samp < alpha_fw;
+        plot_params.mark = p_samp < alpha_fw;
       end
 
       % make the plot
