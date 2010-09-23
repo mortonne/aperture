@@ -83,6 +83,19 @@ for i = c_range(1,:)
   end
 end
 
+% % what happens if we remove duplicate confusion matrices
+% % the difference between R1,R2 vs R3 gets more stark!
+% duplicate = false(1,size(confusion,2));
+% for i=1:size(confusion,2)
+%   if ~duplicate(i)
+%     temp = confusion - (confusion(:,i) * ones(1,size(confusion,2)));
+%     temp_dupe = sum(abs(temp))==0;
+%     temp_dupe(i) = false;
+%     duplicate = duplicate | temp_dupe;
+%   end
+% end
+% keyboard
+
 % we're creating a set of 6 polyhedra
 vol = zeros(1,6);
 
@@ -96,8 +109,9 @@ v_inds = [1 5 9;
           3 5 7];
 
 for i=1:6
-  dt = DelaunayTri(confusion(v_inds(i,:), :)');
-  [k vol(i)] = convexHull(dt);
+  these = [confusion(v_inds(i,:),:) [0;0;0]]';
+  surf(i).dt = DelaunayTri(these);
+  [k vol(i)] = convexHull(surf(i).dt);
 end
 
 % Shannon entropy (?)
@@ -110,6 +124,7 @@ perfmet.D = D;
 perfmet.H = H;
 perfmet.vol = vol;
 perfmet.confusion = confusion;
+perfmet.surf = surf;
 
 %keyboard
 
