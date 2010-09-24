@@ -125,9 +125,12 @@ blink_params.samplerate = get_pat_samplerate(eog_pat);
 blink_mask = reject_blinks(eog_pattern, params.blink_thresh, blink_params);
 
 % remove the buffer
+samplerate = get_pat_samplerate(pat);
 pat_time = get_dim_vals(pat.dim, 'time');
 eog_time = get_dim_vals(eog_pat.dim, 'time');
-filter = pat_time(1) <= eog_time & eog_time <= pat_time(end);
+finish = pat_time(end) + 1000 / samplerate;
+filter = pat_time(1) <= eog_time & ...
+         eog_time <= finish - eps(finish);
 blink_mask = blink_mask(:,1,filter);
 
 clear temp eog_pat eog_pattern
@@ -135,7 +138,6 @@ clear temp eog_pat eog_pattern
 % get the session vector
 events = get_dim(pat.dim, 'ev');
 session = [events.session]';
-clear events
 
 % load EOG channels
 v_pattern = get_mat(veog_pat);
@@ -146,7 +148,6 @@ pat.mat = [];
 [n_events, n_chans, n_samps] = size(pattern);
 
 % resample the blink mask to match the pattern
-samplerate = get_pat_samplerate(pat);
 if samplerate > blink_params.samplerate
   temp = false(n_events, 1, n_samps);
   for i = 1:size(blink_mask, 1)
@@ -161,6 +162,17 @@ elseif blink_params.samplerate > samplerate
   error('downsampling blink mask not yet supported.')
 end
 
+% get a matrix with label for each unique sample
+% get samplerate of the data (important because we need to know
+% the exact sample for labeling)
+samplerate_data = GetRateAndFormat(events(1));
+samples = make_sample_matrix(events, pat_time(1), pat_time(end), ...
+                             samplerate_data, samplerate);
+
+% match the shape of the patterns
+samples = permute(samples, [1 3 2]);
+clear events
+
 chan_labels = get_dim_labels(pat.dim, 'chan');
 n_reg = 4;
 resid = NaN(size(pattern), class(pattern));
@@ -171,11 +183,23 @@ for i = 1:length(sessions)
   sess_mask = session == sessions(i);
   n_events = nnz(sess_mask);
   
+  % find unique samples
+  samp = seg2cont(samples(sess_mask,:,:));
+  [first, uniq, repeated] = find_repeats(samp);
+  n_repeats = length(repeated);
+
   % column vectors with EOG data
   veog = seg2cont(v_pattern(sess_mask,:,:));
   heog = seg2cont(h_pattern(sess_mask,:,:));
   blink = seg2cont(blink_mask(sess_mask,:,:));
-  X = zeros(n_events * n_samps, n_reg);
+  if n_repeats > 0
+    veog = veog(uniq);
+    heog = heog(uniq);
+    blink = blink(uniq);
+  end
+
+  % make the design matrix
+  X = zeros(length(veog), n_reg);
   X(:,1) = veog .* ~blink;
   X(:,2) = heog .* ~blink;
   X(:,3) = veog .* blink;
@@ -183,14 +207,57 @@ for i = 1:length(sessions)
   
   for j = 1:n_chans
     fprintf('%s ', chan_labels{j})
+    
+    % vectorized data for this channel
     data = seg2cont(pattern(sess_mask,j,:));
+    if n_repeats > 0
+      data = data(uniq);
+    end
     if all(isnan(data))
       continue
     end
     
+    % model this channel using V + VB + H + HB + intercept
     [b, dev, stats] = glmfit(X, data, params.distr, params.glm_inputs{:});
-    resid(sess_mask,j,:) = cont2seg(stats.resid, [n_events 1 n_samps]);
+    
+    % get the residuals from the model
+    if n_repeats == 0
+      % no repeated samples to worry about
+      resid(sess_mask,j,:) = cont2seg(stats.resid, [n_events n_samps 1]);
+    else
+      % fill in unique samples
+      chan_resid = NaN(n_events * n_samps, 1);
+      chan_resid(uniq) = stats.resid;
+      
+      % add to the new pattern
+      resid(sess_mask,j,:) = cont2seg(chan_resid, [n_events n_samps 1]);
+    end    
   end
+
+  % expand repeats
+  if n_repeats > 0
+    sess_resid = resid(sess_mask,:,:);
+    sess_samples = samples(sess_mask,:,:);
+    
+    % get the first location of the repeated samples
+    [e,c,t,f] = ind2sub(size(sess_samples), first);
+    for j = 1:n_repeats
+      if mod(j, 1000) == 0
+        fprintf('.')
+      end
+      
+      % find where this sample was repeated
+      [e1,c1,t1,f1] = ind2sub(size(sess_samples), ...
+                              find(sess_samples == repeated(j)));
+      for k = 1:n_chans
+        % replace the repeat NaNs with the corrected sample that
+        % was used in the GLM
+        sess_resid(e1,k,t1,f1) = sess_resid(e(j),k,t(j),f(j));
+      end
+    end
+    resid(sess_mask,:,:) = sess_resid;
+  end
+  
   fprintf('\n')
 end
 
@@ -246,3 +313,38 @@ end
 eog_pat = eog_pats{best_ind};
 eog_pat = move_obj_to_hd(eog_pat);
 
+
+function [first_repeat, uniq, repeated] = find_repeats(x)
+
+  if size(x, 1) == 1
+    x = x';
+  end
+
+  % unique vals of x
+  ux = unique(x);
+
+  % find the last index of each value
+  [tf, loc1] = ismember(ux, x);
+
+  % repeat, reversing x, so we get the first and last of each value
+  [tf, loc2] = ismember(ux, flipud(x));
+  loc2 = length(x) + 1 - loc2;
+
+  % unique values are one with the same index either way
+  uvals = loc1 == loc2;
+
+  % first presentation of repeated values
+  first_repeat = loc2(~uvals);
+
+  % mask marking unique samples of x (including firsts)
+  uniq = ismember(x, ux(uvals));
+  uniq(first_repeat) = true;
+
+  % list of repeated values
+  repeated = ux(~uvals);
+
+function y = seg2cont(x)
+  y = x(:);
+  
+function y = cont2seg(x, siz)
+  y = reshape(x, siz);
