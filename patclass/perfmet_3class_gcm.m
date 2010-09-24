@@ -114,9 +114,15 @@ v_inds = [1 5 9;
           3 5 7];
 
 for i=1:6
-  these = [confusion(v_inds(i,:),:) [0;0;0]]';
-  surf(i).dt = DelaunayTri(these);
-  [k vol(i)] = convexHull(surf(i).dt);
+  %these = [confusion(v_inds(i,:),:) [0;0;0]]';
+  these = confusion(v_inds(i,:),:)';
+  %surf(i).dt = DelaunayTri(these);
+  fprintf('Fitting surface %d\n',i);
+  fo = fit([these(:,1) these(:,2)], these(:,3), 'lowess');
+  fprintf('Calculating volume %d\n',i);
+  vol(i) = quad2d(fo,0,1,0,1);
+  keyboard
+  %[k vol(i)] = convexHull(surf(i).dt);
 end
 
 % Shannon entropy (?)
@@ -129,7 +135,7 @@ perfmet.D = D;
 perfmet.H = H;
 perfmet.vol = vol;
 perfmet.confusion = confusion;
-perfmet.surf = surf;
+%perfmet.surf = surf;
 
 %keyboard
 
