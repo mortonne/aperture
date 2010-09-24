@@ -116,12 +116,14 @@ v_inds = [1 5 9;
 for i=1:6
   %these = [confusion(v_inds(i,:),:) [0;0;0]]';
   these = confusion(v_inds(i,:),:)';
+
+  keyboard
   %surf(i).dt = DelaunayTri(these);
   fprintf('Fitting surface %d\n',i);
   fo = fit([these(:,1) these(:,2)], these(:,3), 'lowess');
   fprintf('Calculating volume %d\n',i);
   vol(i) = quad2d(fo,0,1,0,1);
-  keyboard
+
   %[k vol(i)] = convexHull(surf(i).dt);
 end
 
