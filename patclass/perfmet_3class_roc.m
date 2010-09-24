@@ -5,6 +5,7 @@ function [perfmet] = perfmet_3class_roc(acts,targs,scratchpad,varargin)
 % acts - nConds x nTimepoints
 % targs - nConds x nTimepoints
 %
+% % CASE WHERE THERE IS NO INFO
 % acts = rand(3,3000);
 % targs = zeros(3,3000);
 % targs(1,1:1000) = 1;
@@ -12,12 +13,25 @@ function [perfmet] = perfmet_3class_roc(acts,targs,scratchpad,varargin)
 % targs(3,2001:3000) = 1;
 %
 % pm = perfmet_3class_roc(acts, targs);
+%
+% % CASE WHERE THERE IS SOME INFO
+% acts = rand(3,3000);
+% targs = zeros(3,3000);
+% acts(1,1:1000) = acts(1,1:1000) + 0.1;
+% acts(2,1001:2000) = acts(2,1001:2000) + 0.1;
+% acts(3,2001:3000) = acts(3,2001:3000) + 0.1;
+% targs(1,1:1000) = 1;
+% targs(2,1001:2000) = 1;
+% targs(3,2001:3000) = 1;
+%
+% pm = perfmet_3class_roc(acts, targs);
+
 
 
 % check that there are 3 categories
 
 % params
-params.c_granularity = 100;
+params.c_granularity = 20;
 
 n_obs = size(acts,2);
 
@@ -63,8 +77,10 @@ for i = c_range(1,:)
     [val, guesses] = max(temp);
     
     % are there ever any ties?
-    if any(sum(temp==(ones(3,1) * val))>1)
-      keyboard
+    tied_inds = sum(temp==(ones(3,1) * val))>1;
+    if any(tied_inds)
+      % randomly choose an answer for each tied ind
+      guesses(tied_inds) = randsample(3,length(find(tied_inds)),true);
     end
     
     % calculate the 3x3 confusion matrix
@@ -108,10 +124,20 @@ v_inds = [1 5 9;
           3 4 8;
           3 5 7];
 
+res = 20;
+linpts = linspace(0,1,res);
+[Xinterp, Yinterp] = meshgrid(linpts, linpts);
+
 for i=1:6
-  these = [confusion(v_inds(i,:),:) [0;0;0]]';
-  surf(i).dt = DelaunayTri(these);
-  [k vol(i)] = convexHull(surf(i).dt);
+
+  these = confusion(v_inds(i,:),:)';
+
+  Zinterp = griddata(these(:,1), these(:,2), these(:,3), ...
+                     Xinterp, Yinterp);
+
+  Zinterp(isnan(Zinterp)) = 0;
+  vol(i) = dblquad(@(a,b)interp2(Xinterp,Yinterp,Zinterp,a,b,'cubic'),0,1,0,1);
+
 end
 
 % Shannon entropy (?)
@@ -124,9 +150,6 @@ perfmet.D = D;
 perfmet.H = H;
 perfmet.vol = vol;
 perfmet.confusion = confusion;
-perfmet.surf = surf;
-
-%keyboard
 
 
 
