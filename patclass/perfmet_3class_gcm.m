@@ -19,6 +19,7 @@ function [perfmet] = perfmet_3class_gcm(acts,targs,scratchpad,varargin)
 % pm = perfmet_3class_gcm(acts, targs);
 %
 % % EXAMPLE CASE WHERE THERE IS SOME CAT. STRUCTURE
+%
 % acts = rand(3,3000);
 % targs = zeros(3,3000);
 % acts(1,1:1000) = acts(1,1:1000) + 0.1;
@@ -40,6 +41,7 @@ end
 % params
 defaults.c_granularity = 20;
 defaults.interp_res = 20;
+defaults.ignore_1ofn = true;
 params = propval(varargin, defaults);
 
 % luce choice the acts
@@ -50,7 +52,7 @@ n_obs = size(acts,2);
 
 [val targets] = max(targs);
 
-% sweep over (c1,c2, c3)
+% sweep over (c1,c2,c3)
 maxact = max(acts, [], 2);
 minact = min(acts, [], 2);
 
@@ -79,10 +81,17 @@ for i = c_range(1,:)
       [val, guesses] = max(temp);
     
       % check for a tie
-      tied_inds = sum(temp==(ones(3,1) * val))>1;
-      if any(tied_inds)
+      tied_cols = sum(temp==(ones(3,1) * val))>1;
+      if any(tied_cols)
         % randomly choose an answer for each tied ind
-        guesses(tied_inds) = randsample(3,length(find(tied_inds)),true);
+        % from among the tied inds
+        tied_inds = temp==(ones(3,1) * val);
+        tied_inds(:,sum(tied_inds)==1) = 0;
+        for t = 1:size(tied_inds,2)
+          if sum(tied_inds(:,t))>1
+            guesses(t) = randsample(find(tied_inds(:,t)),1);
+          end
+        end
       end
 
       % calculate the 3x3 confusion matrix
