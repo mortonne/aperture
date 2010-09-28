@@ -78,6 +78,7 @@ defaults.f_train = @train_logreg;
 defaults.train_args = struct('penalty', 10);
 defaults.f_test = @test_logreg;
 defaults.f_perfmet = {@perfmet_maxclass};
+defaults.perfmet_args = struct;
 defaults.save_scratchpad = true;
 defaults.verbose = false;
 [params, unused] = propval(varargin, defaults);
@@ -142,7 +143,7 @@ try
   testtargets = testtargets';
   [acts, scratchpad] = f_test(testpattern', testtargets, scratchpad);
   %scratchpad.cur_iteration = i;
-  
+
   % calculate performance
   for p=1:n_perfs
     pm_fh = params.f_perfmet{p};
