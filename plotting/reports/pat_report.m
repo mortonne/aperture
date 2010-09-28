@@ -13,6 +13,8 @@ function pdf_file = pat_report(pat, dim, fig_names, varargin)
 %  PARAMS:
 %   fig_labels     - cell array of strings labeling each column of the
 %                    report. ({})
+%   eval_fig_labels - statement to evaluate to give labels to each
+%                     row of the report ('')
 %   title          - string title for the report. ('')
 %   landscape      - if true, PDF will be in landscape orientation.
 %                    (true)
@@ -24,16 +26,23 @@ function pdf_file = pat_report(pat, dim, fig_names, varargin)
 
 % set options
 defaults.fig_labels = {};
+defaults.eval_fig_labels = '';
 defaults.title = '';
 defaults.landscape = true;
 defaults.compile_method = 'latexdvipdf';
 defaults.landscape = true;
 params = propval(varargin, defaults);
 
+if ~isempty(params.eval_fig_labels)
+  params.fig_labels = eval(params.eval_fig_labels);
+end
+
 if isempty(params.report_file)
   report_dir = get_pat_dir(pat, 'reports');
   cd(report_dir)
   report_file = get_next_file([pat.name '_report']);
+else
+  report_file = params.report_file;
 end
 
 [table, header] = create_pat_report(pat, dim, fig_names, params.fig_labels);
