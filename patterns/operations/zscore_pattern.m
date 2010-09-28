@@ -18,6 +18,9 @@ function subj = zscore_pattern(subj, pat_name, base_pat_name, varargin)
 %       pat_name:  pattern to be z-transformed.
 %
 %  base_pat_name:  pattern to use for calculating the baseline.
+%                  Alternatively, may be a range of millisecond times in
+%                  the form of [start end] specifying a period of the
+%                  pattern to use as baseline.
 %
 %  OUTPUTS:
 %           subj:  subject object with a modified or added pattern (see
@@ -46,7 +49,14 @@ defaults.event_bins = 'session';
 [params, save_opts] = propval(varargin, defaults);
 
 % get baseline pattern and events
-base_pat = getobj(subj, 'pat', base_pat_name);
+if ischar(base_pat_name)
+  base_pat = getobj(subj, 'pat', base_pat_name);
+else
+  pat = getobj(subj, 'pat', pat_name);
+  base_pat = bin_pattern(pat, 'timebins', base_pat_name, ...
+                         'save_mats', false);
+end
+
 base_pattern = get_mat(base_pat);
 base_events = get_dim(base_pat.dim, 'ev');  
 
@@ -62,7 +72,8 @@ s = apply_by_group(@(x) nanmean(nanstd(x, 1), 3), {base_pattern}, iter_cell);
 
 % apply the z-transform for each event_bin, channel, and frequency
 subj = apply_to_pat(subj, pat_name, @mod_pattern, ...
-                    {@apply_zscore, {base_pattern, m, s, params.event_bins}, save_opts});
+                    {@apply_zscore, ...
+                    {base_pattern, m, s, params.event_bins}, save_opts});
 
 function pat = apply_zscore(pat, base_pattern, m, s, event_bin_defs)
   % use same subsets of events used for calculating baseline
