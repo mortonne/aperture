@@ -43,6 +43,7 @@ defaults.y_label = 'Trial';
 defaults.map_limits = [];
 defaults.colormap = [];
 defaults.colorbar = true;
+defaults.plot_ind_bounds = false;
 params = propval(varargin, defaults);
 
 [index_sorted, ind] = sort(index);
@@ -59,6 +60,15 @@ if params.plot_index
   hold on
   step = mean(diff(x)) / 2;
   h(2) = plot(index_sorted + step, y, '-k', 'LineWidth', 3);
+end
+
+if params.plot_ind_bounds
+  hold on
+  bounds = find(diff(index_sorted));
+  for i=1:length(bounds)
+    line([min(x) max(x)],[bounds(i) bounds(i)], ...
+         'LineWidth', 3, 'Color', 'k');
+  end
 end
 
 xlabel(params.x_label)
