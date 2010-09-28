@@ -98,7 +98,7 @@ function pat = apply_zscore(pat, base_pattern, m, s, event_bin_defs)
         %elseif s(i,j,:,k) < .5
         %pattern(ind{:}) = NaN;
         %else
-          pattern(ind{:}) = (pattern(ind{:}) - m(i,j,:,k)) / s(i,j,:,k);
+        pattern(ind{:}) = (pattern(ind{:}) - m(i,j,:,k)) / s(i,j,:,k);
         %end
         
       end
