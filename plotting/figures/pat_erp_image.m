@@ -25,6 +25,10 @@ function pat = pat_erp_image(pat, fig_name, varargin)
 %   plot_index  - if true, index will be plotted on the image. Default
 %                 is true if event_index is specified, otherwise
 %                 false.
+%   plot_ind_bounds - if true, horizontal lines depicting a change
+%                     in the index value will be plotted.
+%   freq_inds - a list of the frequency indices that should be
+%               included in the report.
 %   scale_index - if true, index will be scaled before plotting. This is
 %                 useful when the index is not ms values. (false)
 %   exclude     - use to exclude samples before or after the index
@@ -48,6 +52,8 @@ function pat = pat_erp_image(pat, fig_name, varargin)
 % options
 defaults.event_index = [];
 defaults.plot_index = [];
+defaults.plot_ind_bounds = false;
+defaults.freq_inds = [];
 defaults.scale_index = false;
 defaults.exclude = 'none';
 defaults.exclude_limits = [];
@@ -110,6 +116,14 @@ chan = get_dim(pat.dim, 'chan');
 freq = get_dim(pat.dim, 'freq');
 time = get_dim_vals(pat.dim, 'time');
 
+% use only certain frequencies
+if isempty(params.freq_inds)
+  freq_inds = [1:n_freqs];
+else
+  n_freqs = length(params.freq_inds);
+  freq_inds = params.freq_inds;
+end
+
 % remove excluded samples
 samplerate = get_pat_samplerate(pat);
 start_time = time(1);
@@ -157,7 +171,7 @@ z_lim = params.map_limits;
 files = cell(1, n_chans, 1, n_freqs);
 base_filename = sprintf('%s_%s_%s', pat.name, fig_name, pat.source);
 for i=1:n_chans
-  for j=1:n_freqs
+  for j=freq_inds
     clf
     hold on
 
@@ -171,7 +185,9 @@ for i=1:n_chans
     % plot the events, sorted by index if desired
     subplot('position', [0.175 0.275 0.75 0.65]);
     h = image_sorted(data, time, index, ...
-                     'map_limits', z_lim, 'plot_index', params.plot_index);
+                     'map_limits', z_lim, ...
+                     'plot_index', params.plot_index, ...
+                     'plot_ind_bounds', params.plot_ind_bounds);
     xlabel(gca, '');
     set(gca, 'XTickLabel', '');
 
@@ -191,11 +207,11 @@ for i=1:n_chans
     if n_freqs > 1
       filename = [filename '_' lower(strrep(freq(j).label, ' ', '-'))];
     end
-    %files{1,i,1,j} = fullfile(params.res_dir, [filename '.eps']);
-    files{1,i,1,j} = fullfile(params.res_dir, [filename '.jpg']);
+
+    files{1,i,1,find(j==freq_inds)} = fullfile(params.res_dir, [filename '.jpg']);
     
     % save
-    print(gcf, params.print_input{:}, files{1,i,1,j});
+    print(gcf, params.print_input{:}, files{1,i,1,find(j==freq_inds)});
   end
 end
 
