@@ -43,4 +43,5 @@ for i=1:n_obs
   end
   fprintf(fid, '\n');
 end
+fclose(fid);
 
