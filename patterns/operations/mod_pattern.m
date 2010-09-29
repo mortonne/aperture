@@ -85,7 +85,7 @@ defaults.overwrite = false;
 defaults.save_as = '';
 defaults.res_dir = '';
 defaults.verbose = true;
-params = propval(varargin, defaults, 'strict', false);
+params = propval(varargin, defaults);
 
 if params.verbose
   fprintf('modifying pattern "%s"...', pat.name)
