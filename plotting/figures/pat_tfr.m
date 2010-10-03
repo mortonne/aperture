@@ -58,8 +58,8 @@ end
 
 % backwards compatibility
 if length(varargin) == 2 && isstruct(varargin{1})
-  params = varargin{1};
   params.res_dir = varargin{2};
+  varargin = varargin{1};
 end
 
 % options
@@ -75,6 +75,7 @@ defaults.print_input = {'-depsc'};
 defaults.mult_fig_windows = false;
 defaults.res_dir = get_pat_dir(pat, 'reports');
 [params, plot_params] = propval(varargin, defaults);
+plot_params = propval(plot_params, struct, 'strict', false);
 
 % prep the output directory
 params.res_dir = check_dir(params.res_dir);
@@ -183,6 +184,7 @@ for i = 1:num_events
     if ~(t_sing || f_sing)
       % make a spectrogram
       data = permute(data, [4 3 1 2]);
+      plot_params.map_limits = params.map_limits;
       h = plot_tfr(data, freq, time, plot_params);
     elseif t_sing && f_sing
       error(['Cannot plot if both time and freqeuncy dimensions are ' ...
@@ -198,7 +200,7 @@ for i = 1:num_events
     end
 
     % legend
-    if num_events == 1
+    if (t_sing || f_sing) && num_events == 1
       if ~isempty(params.legend)
         l = legend(h, params.legend);
       else
