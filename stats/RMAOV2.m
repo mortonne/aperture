@@ -1,4 +1,4 @@
-function res = RMAOV2(data, group, varargin)
+function [p, F] = RMAOV2(data, group, varargin)
 %RMAOV2   Two-way repeated measures ANOVA.
 %
 %  res = RMAOV2(data, group, ...)
@@ -12,6 +12,10 @@ function res = RMAOV2(data, group, varargin)
 %            group{2} the first independent variable, and group{3} the
 %            second independent variable. Each factor may be numeric or
 %            a cell array of strings.
+
+if length(group) ~= 3
+  error('must have three factors.')
+end
 
 % get temporary files to write to
 tempdir = '~/.Rtemp';
@@ -34,8 +38,8 @@ fid = fopen(outfile, 'r');
 c = textscan(fid, '%n%n');
 fclose(fid);
 
-res.statistic = c{1};
-res.p = c{2};
+F = c{1};
+p = c{2};
 
 % clean up
 delete(infile)
