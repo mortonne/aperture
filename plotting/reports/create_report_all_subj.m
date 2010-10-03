@@ -47,7 +47,7 @@ fig_files = {};
 for i=1:length(fig_paths)
   figs = getobjallsubj(subj, fig_paths{i});
   
-  if ~isvector(figs(1).file)
+  if nnz(size(figs(1).file) > 1) > 1
     error('Each figure object must contain a scalar or vector of figure files.')
   end
   
@@ -56,7 +56,7 @@ for i=1:length(fig_paths)
     these_fig_files = cat(2, figs.file)';
   else
     % one row per subject; columns are whatever non-singleton dimension
-    these_fig_files = cat(1, figs.file);
+    these_fig_files = squeeze(cat(1, figs.file));
   end
   fig_files = [fig_files these_fig_files];
 end
