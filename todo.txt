@@ -49,9 +49,6 @@
 
 == Events ==
 
- * generalized scripts for events -> data -> events (import/export from
-   beh_toolbox)
-
 == Patclass ==
 
  * integrate load_pattern features into get_mat, replace load_pattern
@@ -61,14 +58,9 @@
 
 == Patterns ==
 
-* fix bin_pattern time dimension irregularity (final sample MSvals and avg fields)
-
  * change patBins to call apply_event_bins
 
  * full support for ':' and 'iter' options in patBins
-
- * import advances in EOG artifact detection (individual grid
-   searches, Gratton et al. method)
 
  * support for continuous patterns - one event, many time bins?  How is
    events information stored?
@@ -77,12 +69,6 @@
    saved to disk to free up memory (need to expand use of get_dim)
 
  * move to using EEGLAB-style chan structs
-
- * change "MSvals" and "vals" fields to "range". Then the only
-   difference between time and freq dimensions will be the default
-   labels
-
- * also change "avg" field to "center"
 
 == Plotting ==
 

@@ -39,6 +39,7 @@ defaults.event_bins = '';
 defaults.event_labels = {};
 defaults.y_lim = [];
 defaults.chan_locs = 'HCGSN128.loc';
+defaults.stat_name = '';
 defaults.plot_input = {};
 defaults.res_dir = '';
 params = propval(varargin, defaults);
@@ -88,8 +89,6 @@ files = cell(1, 1, 1, n_freq);
 base_filename = sprintf('%s_%s_%s', pat.name, fig_name, pat.source);
 
 % add legend input
-
-
 if length(params.event_labels) > 1
   params.plot_input = [params.plot_input ...
                       'legend', {params.event_labels}, ...
@@ -107,8 +106,14 @@ for i=1:n_freq
     fprintf('%s ', freq(i).label)
   end
   
-  clf
+  if ~isempty(params.stat_name)
+    % get significant samples
+    p_samp = p(:,:,:,i);
+    alpha_fw = correct_mult_comp(p_samp(:), params.alpha, params.correctm);
+    params.plot_input = [params.plot_input 'mark', p_samp < alpha_fw];
+  end
   
+  clf
   % get data for this frequency in [channels X time X events] order
   data = permute(pattern(:,:,:,i), [2 3 1 4]);
   plot_topo(data, 'chanlocs', eloc, 'ydir', 1, ...
