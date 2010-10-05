@@ -1,7 +1,7 @@
-function pat_dir = get_pat_dir(pat, subdir)
+function pat_dir = get_pat_dir(pat, varargin)
 %GET_PAT_DIR   Get the path to a pattern's standard directory.
 %
-%  pat_dir = get_pat_dir(pat, subdir)
+%  pat_dir = get_pat_dir(pat, s1, s2, ... sN)
 %
 %  It is assumed that the pattern's files are saved in
 %  [pat_dir]/patterns.
@@ -9,26 +9,22 @@ function pat_dir = get_pat_dir(pat, subdir)
 %  INPUTS:
 %      pat:  a pattern object.
 %
-%   subdir:  string name of a subdirectory of the pattern's
-%            main directory to return. If subdir does not
-%            exist, it will be made. Default: ''
+%        s:  additional arguments indicate subdirectories of the main
+%            pattern directory.
 %
 %  OUTPUTS:
 %  pat_dir:  path to the requested pattern directory.
 %
 %  EXAMPLE:
 %   % get the path to the standard directory for a pattern's
-%   % reports
-%   report_dir = get_pat_dir(pat, 'reports');
+%   % figures
+%   report_dir = get_pat_dir(pat, 'reports', 'figs');
 
 % input checks
 if ~exist('pat', 'var') || ~isstruct(pat)
   error('You must pass a pattern object.')
 elseif ~isfield(pat, 'file')
   error('pat must have a "file" field.')
-end
-if ~exist('subdir', 'var')
-  subdir = '';
 end
 
 % get one of this pattern's files
@@ -53,7 +49,7 @@ if ~isempty(main_dir) && ~exist(main_dir, 'dir')
 end
 
 % get the requested directory
-pat_dir = fullfile(main_dir, subdir);
+pat_dir = fullfile(main_dir, varargin{:});
 
 % make sure the subdirectory exists
 if ~isempty(pat_dir) && ~exist(pat_dir, 'dir')
