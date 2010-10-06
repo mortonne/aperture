@@ -168,7 +168,7 @@ for i=1:num_events
         %USER WARNING!
         %currently it seems this correction isn't being used! 
         %plot_params contains the mark matrix, not params...
-        params.mark = p_samp < alpha_fw;
+        plot_params.mark = p_samp < alpha_fw;
       end
 
       % make the plot
