@@ -247,6 +247,9 @@ function [chan2, bins] = chan_bins(chan1, bin_defs, labels)
   %   there may be other fields, which will be kept if possible.
   
   % input checks
+  if isnumeric(bin_defs)
+    bin_defs = num2cell(bin_defs);
+  end
   if ~iscell(bin_defs)
     bin_defs = {bin_defs};
   end
