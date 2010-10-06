@@ -77,6 +77,8 @@ defaults.age_thresh = .8;
 defaults.overwrite = true;
 defaults.force = false;
 defaults.sess_filter = '';
+defaults.logfiledir = '';
+defaults.eventsfile = '';
 params = propval(varargin, defaults);
 
 pd = pwd;
