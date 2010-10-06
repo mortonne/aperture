@@ -53,7 +53,7 @@ switch loc
     error('obj.file is not specified.')
   end
   eval([objtype '=mat;']);
-  save(obj.file, objtype)
+  save('-v7.3', obj.file, objtype)
   obj.modified = false;
   
  case 'ws'
