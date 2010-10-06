@@ -64,8 +64,8 @@ if ~isempty(params.sess_filter)
 else
   match = true(size(subj.sess));
 end
-
-events = [];
+%zach changed below to avoid error in cat_structs
+events = struct();
 for sess=subj.sess(match)
   if length(subj.sess) > 1
     fprintf('%d ', sess.number)
@@ -153,7 +153,9 @@ if ~exist(ev_dir, 'dir')
   mkdir(ev_dir)
 end
 
-ev_file = fullfile(ev_dir, objfilename('events', ev_name, subj.id));
+ev_file = fullfile(ev_dir, objfilename('events', ev_name, ...
+                                       subj.id));
+
 ev = init_ev(ev_name, 'source', subj.id, 'file', ev_file);
 
 % save the new events
