@@ -129,6 +129,6 @@ for i = 1:n_out
   eval([var_names{i} '=output{i};']);
 end
   
-save(stat.file, var_names{:});
+save('-v7.3', stat.file, var_names{:});
 pat = setobj(pat, 'stat', stat);
 
