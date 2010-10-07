@@ -47,6 +47,10 @@ if ~exist('var_names', 'var')
   var_names = {'p', 'statistic'};
 end
 
+if ~exist('n_effects', 'var')
+  n_effects = 1;
+end
+
 % make the regressors
 if ~isempty(reg_defs)
   % load events for this pattern
