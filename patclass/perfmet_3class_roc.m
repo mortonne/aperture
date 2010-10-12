@@ -32,6 +32,7 @@ function [perfmet] = perfmet_3class_roc(acts,targs,scratchpad,varargin)
 % pm = perfmet_3class_roc(acts, targs);
 %
 
+warning('off', 'MATLAB:griddata:DuplicateDataPoints');
 
 % check that there are 3 categories
 if size(acts,1)~=3
@@ -152,7 +153,5 @@ perfmet.scratchpad = [];
 % perfmet.scratchpad.vol = vol;
 % perfmet.scratchpad.H = H;
 
-
-
-
+warning('on', 'MATLAB:griddata:DuplicateDataPoints');
 
