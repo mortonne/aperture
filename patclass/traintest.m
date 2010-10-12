@@ -86,9 +86,11 @@ defaults.verbose = false;
 if ~iscell(params.f_perfmet)
   params.f_perfmet = {params.f_perfmet};
 end
-if ~isfield(params, 'perfmet_args')
+if isempty(params.perfmet_args)
   params.perfmet_args = cell(1, length(params.f_perfmet));
-  params.perfmet_args{:} = deal(struct);
+  [params.perfmet_args{:}] = deal(struct);
+elseif isstruct(params.perfmet_args)
+  params.perfmet_args = {params.perfmet_args};
 end
 if isstruct(params.train_args)
   params.train_args = {params.train_args};

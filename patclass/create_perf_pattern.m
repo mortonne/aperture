@@ -1,10 +1,10 @@
 function pat = create_perf_pattern(pat, stat_name, varargin)
 %CREATE_PERF_PATTERN   Create a pattern from classifier outputs.
 %
-%  From the results of pattern classification, get the classifier
-%  output for the target on each trial, and put it in a new pattern.
-%  The classifier output can then be manipulated and plotted in all of
-%  the ways that any other pattern can.
+%  From the results of pattern classification, get a pattern containing
+%  a measure of classifier performance. The classifier output can then
+%  be manipulated and plotted in all of the ways that any other pattern
+%  can.
 %
 %  pat = create_perf_pattern(pat, stat_name, ...)
 %
@@ -23,14 +23,20 @@ function pat = create_perf_pattern(pat, stat_name, varargin)
 %  passing a structure. Defaults are shown in parentheses.
 %   stat_type - the type of classification statistic to include in the
 %               pattern. Can be:
+%                'perf'    - use an already-calculated performance
+%                            metric. Will be one "event" for each
+%                            cross-validation iteration (default)
 %                'acts'    - value of the output unit for the actual
 %                            condition
 %                'guess'   - condition guessed by the classifier
 %                'correct' - logical array indicating whether the
-%                            classifier was correct. (default)
-%   dim       - [currently not implemented] allows making a pattern from
-%               non-scalar classification statistics; specifies the
-%               dimension along which to extend the added statistic. (2)
+%                            classifier was correct
+%               May also be a function handle to a performance metric
+%               function, which will be applied to each event_bin.
+%   event_bins - input to make_event_bins to define subsets of events to
+%               apply the perfmet function to (only used if stat_type is
+%               a function handle). Default is to calculate the
+%               perfmet for each iteration.
 %   precision - precision of the created pattern. [{'single'} | 'double']
 %   save_mats - if true, and input mats are saved on disk, modified
 %               mats will be saved to disk. If false, the modified mats
@@ -51,9 +57,11 @@ elseif ~exist('stat_name', 'var') || ~ischar(stat_name)
   error('You must pass the name of the stat object to use.')
 end
 
+stat = getobj(pat, 'stat', stat_name);
+
 % set params
-defaults.stat_type = 'correct';
-defaults.dim = 2;
+defaults.stat_type = 'perf';
+defaults.event_bins = stat.params.selector;
 defaults.precision = 'single';
 [params, saveopts] = propval(varargin, defaults);
 
@@ -64,26 +72,73 @@ function pat = get_patclass_stats(pat, stat_name, params)
   % get the results of pattern classification
   stat = getobj(pat, 'stat', stat_name);
   res = getfield(load(stat.file, 'res'), 'res');
+  [n_iter, n_chans, n_time, n_freq] = size(res.iterations);
+  
+  if strcmp(params.stat_type, 'perf')
+    % one event for each iteration
+    n_events = n_iter;
+    
+    % bin the events dimension
+    temp = patBins(pat, 'eventbins', stat.params.selector);
+    pat.dim = temp.dim;
+  
+  elseif isa(params.stat_type, 'function_handle') && ...
+        ~isempty(params.event_bins)
+    % one event for each bin
+    events = get_dim(pat.dim, 'ev');
+    event_bins = index2bins(make_event_bins(events, params.event_bins));
+    n_events = length(event_bins);
+    iter_cell = {[], event_bins};
+    
+    % bin the events dimension
+    temp = patBins(pat, 'eventbins', params.event_bins);
+    pat.dim = temp.dim;
+  else
+    
+    % events don't change
+    n_events = patsize(pat.dim, 'ev');
+  end
 
-  % size of the new pattern is events X [dimensions of res]
-  res_size = size(res.iterations);
-  new_pat_size = [patsize(pat.dim, 1) 1 1 1];
-  new_pat_size(2:length(res_size)) = res_size(2:end);
-  pattern = NaN(new_pat_size, params.precision);
+  % initialize the new pattern
+  pattern = NaN(n_events, n_chans, n_time, n_freq, params.precision);
 
   % create a pattern with classifier outputs
   fprintf('\ncreating pattern from "%s" classification results...', stat_name)
 
-  for c=1:new_pat_size(2)
-    for t=1:new_pat_size(3)
-      for f=1:new_pat_size(4)
-        pattern(:,c,t,f) = get_acts(res.iterations(:,c,t,f), params);
+  if isempty(params.event_bins)
+    iter_cell = {[], 'iter'};
+  end
+  
+  for c = 1:n_chans
+    for t = 1:n_time
+      for f = 1:n_freq
+        if strcmp(params.stat_type, 'perf')
+          % just use the already-calculated perfmet
+          pattern(:,c,t,f) = [res.iterations(:,c,t,f).perf];
+          
+        elseif ischar(params.stat_type)
+          % get some statistic for each event
+          pattern(:,c,t,f) = get_acts(res.iterations(:,c,t,f), ...
+                                      params.stat_type);
+          
+        elseif isa(params.stat_type, 'function_handle')
+          % calculate a new perfmet
+          f_perfmet = params.stat_type;
+          [acts, targs] = get_class_stats(res.iterations(:,c,t,f));
+          
+          perf = apply_by_group(@calc_perf, {acts, targs}, iter_cell, ...
+                                f_perfmet);
+          pattern(:,c,t,f) = perf;
+          
+        else
+          error('Invalid stat_type.')
+        end
       end
     end
   end
 
   % get non-singleton dimentions of res
-  non_sing = find(res_size > 1);
+  non_sing = find([n_iter n_chans n_time n_freq] > 1);
   all_dims = 2:4;
   sing_dims = all_dims(~ismember(all_dims, non_sing));
 
@@ -103,7 +158,7 @@ function pat = get_patclass_stats(pat, stat_name, params)
   
   % collapse the dimensions that were collapsed during classification
   % (not including events)
-  for d=sing_dims
+  for d = sing_dims
     dim_name = read_dim_input(d);
     switch dim_name
      case 'chan'
@@ -121,16 +176,16 @@ function pat = get_patclass_stats(pat, stat_name, params)
 
   % add the classifier outputs as the pattern matrix
   pat = set_mat(pat, pattern, 'ws');
-%endfunction
 
-function acts = get_acts(res, params)
+
+function acts = get_acts(res, stat_type)
   n_events = length(res(1).test_idx);
   acts = NaN(n_events, 1);
   
   for i=1:length(res)
     iter_res = res(i);
     
-    switch params.stat_type
+    switch stat_type
      case 'acts'
       % get classifier activation for the correct unit
       mat = iter_res.acts(logical(iter_res.targs));
@@ -152,4 +207,8 @@ function acts = get_acts(res, params)
 
     acts(iter_res.test_idx) = mat;
   end
-%endfunction
+  
+function perf = calc_perf(acts, targs, f_perfmet)
+  perfmet = f_perfmet(acts, targs);
+  perf = perfmet.perf;
+  
