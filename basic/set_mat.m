@@ -55,6 +55,7 @@ switch loc
   eval([objtype '=mat;']);
   save('-v7.3', obj.file, objtype)
   obj.modified = false;
+  obj.mat = [];
   
  case 'ws'
   % just add it to the mat field
