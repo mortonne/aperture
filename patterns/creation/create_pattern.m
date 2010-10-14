@@ -146,7 +146,8 @@ else
 end
 
 % millisecond values for the final pattern
-end_ms = params.offsetMS + params.durationMS - step_size;
+end_ms = params.offsetMS + params.durationMS;
+end_ms = end_ms - eps(end_ms);
 ms_values = params.offsetMS:step_size:end_ms;
 time = init_time(ms_values);
 
