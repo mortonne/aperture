@@ -68,9 +68,65 @@ function pat = apply_pat_filtering(pat, params)
   % get indices corresponding to each filtered dimension
   [pat, inds] = patFilt(pat, p);
   
-  % apply the filters
+  % apply the filters to the pattern
+  old_size = size(pattern);
+  old_size((length(old_size) + 1):4) = 1;
   pattern = pattern(inds{:});
+  new_size = size(pattern);
+  new_size((length(new_size) + 1):4) = 1;
   
   pat = set_mat(pat, pattern, 'ws');
-%endfunction
+
+  % apply the filters to children
+  all_ind = repmat({':'}, 1, 4);
+  if ~isfield(pat, 'stat')
+    return
+  end
+  
+  for i = 1:length(pat.stat)
+    stat_file = pat.stat(i).file;
+    filename = objfilename('stat', [pat.stat(i).name '_filt'], pat.source);
+    new_stat_file = fullfile(get_pat_dir(pat, 'stats'), filename);
+    
+    vars = whos('-file', stat_file);
+    modified = false(1, length(vars));
+    for j = 1:length(vars)
+      var_name = vars(j).name;
+      
+      % expanded var size
+      var_size = vars(j).size;
+      var_size((length(var_size) + 1):4) = 1;
+      
+      % get dimensions of variable that should be filtered
+      to_filter = (old_size ~= new_size) & (old_size == var_size);
+      if any(to_filter)
+        % load this variable
+        s = load(stat_file, var_name);
+        
+        % get indices for dimensions to change
+        var_ind = all_ind;
+        var_ind(to_filter) = inds(to_filter);
+        
+        % filter
+        var = s.(var_name);
+        var = var(var_ind{:});
+        
+        % save under the original name
+        eval([var_name '=var;']);
+        if exist(new_stat_file, 'file')
+          save(new_stat_file, var_name, '-append');
+        else
+          save(new_stat_file, var_name);
+        end
+        modified(j) = true;
+      end
+    end
+    
+    % modify the stat object to point to the new file
+    if any(modified)
+      pat.stat(i).file = new_stat_file;
+    end
+  end
+
+
 
