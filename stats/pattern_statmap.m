@@ -1,4 +1,4 @@
-function pat = pattern_statmap(pat, reg_defs, f_stat, stat_name, ...
+function pat = pattern_statmap(pat, reg_defs, f_stat, f_inputs, stat_name, ...
                                n_effects, var_names, varargin)
 %PATTERN_STATMAP   Create a statistical map of a pattern.
 %
@@ -7,10 +7,8 @@ function pat = pattern_statmap(pat, reg_defs, f_stat, stat_name, ...
 %  be saved in a stat object, which contains an array called res. res
 %  may be a structure or a numeric arrary with results from the test.
 %
-%  Currently only supports one output from f_stat, but could be expanded
-%  to support multiple outputs and naming of each variable.
-%
-%  pat = pattern_statmap(pat, reg_defs, f_stat, stat_name, ...)
+%  pat = pattern_statmap(pat, reg_defs, f_stat, f_inputs,
+%                        stat_name, n_effects, var_names)
 %
 %  INPUTS:
 %        pat:  a pattern object.
@@ -29,6 +27,8 @@ function pat = pattern_statmap(pat, reg_defs, f_stat, stat_name, ...
 %              Currently, all outputs of f_stat must be numeric and
 %              must be of length n_effects (see below).
 %
+%   f_inputs:  cell array of additional inputs to f_stat.
+%
 %  stat_name:  string name of the stat object to create.
 %
 %  n_effects:  number of effects to be calculated. Default is 1.
@@ -37,8 +37,6 @@ function pat = pattern_statmap(pat, reg_defs, f_stat, stat_name, ...
 %              of f_stat. Default is to name the first two outputs "p"
 %              and "statistic", and name the others "output3",
 %              "output4", etc.
-%
-%  Additional inputs will be passed to f_stat.
 %
 %  OUTPUTS:
 %        pat:  pattern object with an added stat object.
@@ -97,11 +95,11 @@ end
 n_tests = n_chans * n_samps * n_freqs;
 n = 0;
 out = cell(1, n_out);
-step = floor(n_tests / 10);
+step = floor(n_tests / 100);
 for i = 1:n_chans
   for j = 1:n_samps
     for k = 1:n_freqs
-      if mod(n, step) == 0
+      if mod(n, step) == 0 && n ~= 0
         fprintf('.')
       end
       
@@ -110,9 +108,9 @@ for i = 1:n_chans
       
       % run the function
       if isempty(group)
-        [out{:}] = f_stat(x, varargin{:});
+        [out{:}] = f_stat(x, f_inputs{:});
       else
-        [out{:}] = f_stat(x, group, varargin{:});
+        [out{:}] = f_stat(x, group, f_inputs{:});
       end
       
       for o = 1:n_out
@@ -123,6 +121,7 @@ for i = 1:n_chans
     end
   end
 end
+fprintf('\n')
 
 % save the results
 for i = 1:n_out
