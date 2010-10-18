@@ -16,6 +16,8 @@ function pat = cat_all_subj_patterns(subj, pat_name, dimension, varargin)
 %  PARAMS:
 %  These options may be specified using parameter, value pairs or by
 %  passing a structure. Defaults are shown in parentheses.
+%   event_filter - input to filterStruct to get a subset of events
+%                before concatenating. ('')
 %   event_bins - input to make_event_bins to average over events before
 %                concatenating across subjects. ({})
 %   dist       - flag for applying event bins in parallel (0=serial,
@@ -32,15 +34,15 @@ function pat = cat_all_subj_patterns(subj, pat_name, dimension, varargin)
 %                pats.
 
 % options
+defaults.event_filter = '';
 defaults.event_bins = {};
 defaults.dist = 0;
 [params, save_opts] = propval(varargin, defaults);
 
-% apply binning
-if ~isempty(params.event_bins)
-  subj = apply_to_pat(subj, pat_name, @bin_pattern, ...
-                      {'eventbins', params.event_bins, ...
-                      'save_mats', false, 'verbose', false}, params.dist);
+% apply filtering and binning
+if ~isempty(params.event_filter) || ~isempty(params.event_bins)
+  subj = apply_to_pat(subj, pat_name, @prep_pattern, ...
+                      {params.event_filter, params.event_bins}, params.dist);
 end
 
 % get patterns from all subjects
@@ -48,4 +50,17 @@ pats = getobjallsubj(subj, {'pat', pat_name});
 
 % concatenate
 pat = cat_patterns(pats, dimension, save_opts);
+
+
+function pat = prep_pattern(pat, event_filter, event_bins)
+
+  if ~isempty(event_filter)
+    pat = filter_pattern(pat, 'event_filter', event_filter, ...
+                         'save_mats', false, 'verbose', false);
+  end
+  if ~isempty(event_bins)
+    pat = bin_pattern(pat, 'eventbins', event_bins, ...
+                         'save_mats', false, 'verbose', false);
+  end
+  
 
