@@ -22,6 +22,17 @@ function pat = pat_plottopo(pat, fig_name, varargin)
 %   chan_locs    - path to a readlocs-compatible electrode locations
 %                  file. ('HCGSN128.loc')
 %   y_lim        - y-limits to use for each subplot. ([])
+%   stat_name    - name of a stat object attached to pat. If
+%                  specified, p will be loaded from stat.file, and
+%                  significant regions will be shaded below each
+%                  plot. ('')
+%   stat_index   - index of the statistic to plot (see get_stat).
+%                  (1)
+%   alpha        - critical value to use when determining
+%                  significance. (0.05)
+%   correctm     - method to use to correct for multiple
+%                  comparisions (correction separate for each
+%                  freq). [{none} | fdr | bonferroni]
 %   plot_input   - cell array of additional inputs to plot_topo. ({})
 %   res_dir      - directory in which to save the figure(s). Default
 %                  is: [main_pat_dir]/reports/figs
@@ -37,12 +48,19 @@ end
 % options
 defaults.event_bins = '';
 defaults.event_labels = {};
+defaults.stat_name = '';
+defaults.stat_index = 1;
+defaults.stat_type = 'p';
+defaults.alpha = 0.05;
+defaults.correctm = '';
 defaults.y_lim = [];
 defaults.chan_locs = 'HCGSN128.loc';
 defaults.stat_name = '';
 defaults.plot_input = {};
-defaults.res_dir = '';
+defaults.res_dir = get_pat_dir(pat, 'reports', 'figs');
 params = propval(varargin, defaults);
+
+params.res_dir = check_dir(params.res_dir);
 
 % set y-lim convenience param
 time = get_dim_vals(pat.dim, 'time');
@@ -53,14 +71,6 @@ else
   limits = [x_lim 0 0];
 end
 params.plot_input = [params.plot_input {'limits', limits}];
-
-% prep the output directory
-if isempty(params.res_dir)
-  report_dir = get_pat_dir(pat, 'reports');
-  cd(report_dir)
-  params.res_dir = './figs';
-end
-params.res_dir = check_dir(params.res_dir);
 
 if ~isempty(params.event_bins)
   % apply binning (don't modify the pat object, even in the workspace)
@@ -83,6 +93,20 @@ else
   pattern = get_mat(pat);
 end
 
+if ~isempty(params.stat_name)
+  % get the stat object
+  stat = getobj(pat, 'stat', params.stat_name);
+  p = get_stat(stat, 'p', params.stat_index);
+  p = abs(p);
+  
+  % check the size
+  pat_size = patsize(pat.dim);
+  stat_size = size(p);
+  if any(pat_size(2:ndims(p)) ~= stat_size(2:end))
+    error('p must be the same size as pattern.')
+  end
+end
+
 % cell array to hold paths to printed figures
 n_freq = size(pattern, 4);
 files = cell(1, 1, 1, n_freq);
@@ -101,6 +125,7 @@ if n_freq > 1
 end
 
 eloc = readlocs(params.chan_locs);
+n_chans = size(pattern, 2);
 for i=1:n_freq
   if n_freq > 1
     fprintf('%s ', freq(i).label)
@@ -110,10 +135,22 @@ for i=1:n_freq
     % get significant samples
     p_samp = p(:,:,:,i);
     alpha_fw = correct_mult_comp(p_samp(:), params.alpha, params.correctm);
-    params.plot_input = [params.plot_input 'mark', p_samp < alpha_fw];
+    mark = p_samp < alpha_fw;
+
+    % translate for plotting
+    regions = cell(1, n_chans);
+    for j = 1:n_chans
+      mask = permute(mark(:,j,:), [1 3 2]);
+      diff_vec = diff([0 mask 0]);
+      starts = find(diff_vec(1:end - 1) == 1);
+      ends = find(diff_vec(2:end) == -1);
+      
+      regions{j} = [time(starts); time(ends)];
+    end
+    params.plot_input = [params.plot_input 'regions' {regions}];
   end
   
-  clf
+  clf reset
   % get data for this frequency in [channels X time X events] order
   data = permute(pattern(:,:,:,i), [2 3 1 4]);
   plot_topo(data, 'chanlocs', eloc, 'ydir', 1, ...
