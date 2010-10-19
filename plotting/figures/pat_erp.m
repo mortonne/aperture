@@ -65,6 +65,7 @@ end
 defaults.event_bins = '';
 defaults.stat_name = '';
 defaults.stat_index = 1;
+defaults.stat_type = 'p';
 defaults.alpha = 0.05;
 defaults.correctm = '';
 defaults.y_label = '';
@@ -102,7 +103,7 @@ if ~isempty(params.stat_name)
   % check the size
   pat_size = patsize(pat.dim);
   stat_size = size(p);
-  if any(pat_size(2:ndims(p))~=stat_size(2:end))
+  if any(pat_size(2:ndims(p)) ~= stat_size(2:end))
     error('p must be the same size as pattern.')
   end
 end
@@ -192,7 +193,8 @@ for i = 1:n_events
       files{i,j,1,k} = fullfile(params.res_dir, filename);
 
       % print this figure
-      print(gcf, params.print_input{:}, files{i,j,1,k})
+      set(gcf, 'PaperSize', [11 8.5]);
+      print(gcf, params.print_input{:}, files{i,j,1,k});
       n = n + 1;
     end
   end
