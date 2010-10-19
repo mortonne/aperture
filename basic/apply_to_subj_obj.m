@@ -55,7 +55,12 @@ if dist
   % object.
   obj_name = obj_path{end};
   objs = getobjallsubj(subj, obj_path);
-  temp_subj = struct('id', {subj.id}, 'obj', num2cell(objs));
+  ids = cell(1, length(subj));
+  for i = 1:length(subj)
+    ids{i} = get_obj_name(subj(i));
+  end
+  
+  temp_subj = struct('id', ids, 'obj', num2cell(objs));
   
   % run the function on each subject's object
   temp_subj = apply_to_subj(temp_subj, @apply_to_obj, ...
