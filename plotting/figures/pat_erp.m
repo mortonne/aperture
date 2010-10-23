@@ -69,6 +69,7 @@ defaults.stat_type = 'p';
 defaults.alpha = 0.05;
 defaults.correctm = '';
 defaults.y_label = '';
+defaults.diff = false;
 defaults.plot_mult_events = true;
 defaults.legend = {};
 defaults.print_input = {'-depsc'};
@@ -160,7 +161,7 @@ for i = 1:n_events
       clf
 
       % event-related potential(s) for this channel
-      erp = squeeze(pattern(e,j,:,k));
+      erp = permute(pattern(e,j,:,k), [1 3 2 4]);
 
       if ~isempty(params.stat_name)
         % get significant samples
@@ -170,7 +171,24 @@ for i = 1:n_events
       end
 
       % make the plot
-      h = plot_erp(erp, x, plot_params);
+      if ~params.diff
+        h = plot_erp(erp, x, plot_params);
+      else
+        subplot('position', [0.175 0.375 0.75 0.6]);
+        h = plot_erp(erp, x, plot_params);
+        xlabel('');
+        y_lab = get(gca, 'YLabel');
+        y_lab_pos = get(y_lab, 'Position');
+        y_lab_pos(2) = -1;
+        set(y_lab, 'Position', y_lab_pos);
+        set(gca, 'XTick', []);
+        
+        % plot the average
+        pos = get(gca, 'Position');
+        subplot('position', [pos(1) 0.15 pos(3) 0.2]);
+        plot_erp(erp(1,:) - erp(2,:), x);
+        ylabel('');
+      end
 
       % legend
       if n_events == 1
