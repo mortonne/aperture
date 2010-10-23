@@ -16,7 +16,9 @@ function pat = filter_pattern(pat, varargin)
 %   event_filter - string for inStruct to be applied to the
 %                  events structure. See inStruct for details (this
 %                  corresponds to the "expr" input argument). ('')
-%   time_filter  - string for inStruct to be applied to the time
+%   time_filter  - range of times in milliseconds to include in the form
+%                  [start finish] (the upper bound is not inclusive), or
+%                  string for inStruct to be applied to the time
 %                  structure. ('')
 %   chan_filter  - may be of type:
 %                   char    - will be input to inStruct to filter the
@@ -25,8 +27,9 @@ function pat = filter_pattern(pat, varargin)
 %                             labels in include
 %                   numeric - array of channel numbers to include
 %                  Default is: ''
-%   freq_filter  - string for inStruct to be applied to the frequency
-%                  structure. ('')
+%   freq_filter  - range of frequencies in Hz to include in the form
+%                  [lower_bound upper_bound], or string for inStruct to
+%                  be applied to the freq structure. ('')
 %   save_mats    - if true, and input mats are saved on disk, modified
 %                  mats will be saved to disk. If false, the modified
 %                  mats will be stored in the workspace, and can
