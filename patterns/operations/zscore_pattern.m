@@ -54,7 +54,7 @@ if ischar(base_pat_name)
 else
   pat = getobj(subj, 'pat', pat_name);
   base_pat = bin_pattern(pat, 'timebins', base_pat_name, ...
-                         'save_mats', false);
+                         'save_mats', false, 'verbose', false);
 end
 
 base_pattern = get_mat(base_pat);
