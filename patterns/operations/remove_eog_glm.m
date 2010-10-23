@@ -238,24 +238,8 @@ for i = 1:length(sessions)
   if n_repeats > 0
     sess_resid = resid(sess_mask,:,:);
     sess_samples = samples(sess_mask,:,:);
-    
-    % get the first location of the repeated samples
-    [e,c,t,f] = ind2sub(size(sess_samples), first);
-    for j = 1:n_repeats
-      if mod(j, 1000) == 0
-        fprintf('.')
-      end
-      
-      % find where this sample was repeated
-      [e1,c1,t1,f1] = ind2sub(size(sess_samples), ...
-                              find(sess_samples == repeated(j)));
-      for k = 1:n_chans
-        % replace the repeat NaNs with the corrected sample that
-        % was used in the GLM
-        sess_resid(e1,k,t1,f1) = sess_resid(e(j),k,t(j),f(j));
-      end
-    end
-    resid(sess_mask,:,:) = sess_resid;
+    resid(sess_mask,:,:) = replace_repeats(sess_samples, first, ...
+                                           repeated, sess_resid);
   end
   
   fprintf('\n')
@@ -343,6 +327,45 @@ function [first_repeat, uniq, repeated] = find_repeats(x)
   % list of repeated values
   repeated = ux(~uvals);
 
+function y = replace_repeats(labels, first, repeated, x)
+  %
+  %  y = replace_repeats(labels, first, repeated, x)
+  %
+  %  INPUTS:
+  %    labels:  [events X 1 X time] matrix with labels for each element of
+  %             x.
+  %
+  %     first:  index of the first appearance of each repeated element.
+  %
+  %  repeated:  vector of repeated labels. 
+  %
+  %         x:  [events X channels X time] matrix.
+  %
+  %  OUTPUTS:
+  %         y:  [events X channels X time] matrix with repeated values
+  %             filled in.
+
+  % find the first location of the repeated samples
+  [e1,c1,t1,f1] = ind2sub(size(labels), first);
+
+  y = x;
+  n_repeats = length(repeated);
+  n_chans = size(x, 2);
+  for i = 1:n_repeats
+    if mod(i, 1000) == 0
+      fprintf('.')
+    end
+    
+    % find where this sample was repeated
+    reps = setdiff(find(labels == repeated(i)), first(i));
+    [e,c,t,f] = ind2sub(size(labels), reps);
+    for j = 1:n_chans
+      for k = 1:length(e)
+        y(e(k),j,t(k),f(k)) = x(e1(i),j,t1(i),f1(i));
+      end
+    end
+  end
+  
 function y = seg2cont(x)
   y = x(:);
   

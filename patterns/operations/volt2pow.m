@@ -57,6 +57,7 @@ function pat = get_pow_pat(pat, freqs, params)
 
 % load the full pattern and then save out each channel separately
 if params.split && ~isfield(pat.dim, 'splitdim')
+  pat_file = pat.file;
   pat = split_pattern(pat, 'chan');
 elseif ~isfield(pat.dim, 'splitdim')
   pattern = get_mat(pat);
@@ -140,15 +141,20 @@ for i = 1:n_chans
       end
       power = temp;
     end
-    pow_pattern(j,c,:,:) = power';
+    pow_pattern(j,i,:,:) = power';
   end
 end
 if params.verbose
   fprintf('\n')
 end
 
+% set the matrix
 pat = set_mat(pat, pow_pattern, 'ws');
 pat.dim = set_dim(pat.dim, 'freq', init_freq(freqs));
+if params.split
+  pat.dim = rmfield(pat.dim, 'splitdim');
+  pat.file = pat_file;
+end
 
 % remove the buffer from the time dim
 if ~isempty(buffer)

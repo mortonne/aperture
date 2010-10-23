@@ -14,14 +14,25 @@ function [pat, inds] = patFilt(pat, varargin)
 %
 %  PARAMS:
 %  These options may be specified using parameter, value pairs or by
-%  passing a structure. Defaults are shown in parentheses.
-%   eventFilter - string to be input to filterStruct to filter events
-%   chanFilter  - specifies which channels to include. May be:
-%                        char - input to inStruct
+%  passing a structure.
+%   eventFilter - string to be input to inStruct to filter events
+%
+%   chanFilter  - specifies which channels to include. May be of class:
+%                        char - "expr" for inStruct
 %                     numeric - list of channel numbers to include
 %                  cell array - list of channel labels to include
-%   timeFilter  - string filter for time
-%   freqFilter  - string filter for frequency
+%
+%   timeFilter  - specifies times to include. May be of class:
+%                     char - "expr" for inStruct
+%                  numeric - range of times in milliseconds to include
+%                            (bottom inclusive, top noninclusive), e.g.
+%                            [0 500]
+%
+%   freqFilter  - specifies frequencies to include. May be of class:
+%                     char - "expr" for inStruct
+%                  numeric - inclusive range of frequencies in Hz to
+%                            include, e.g. [4 8] to return frequencies
+%                            in the theta band.
 %
 %  EXAMPLE:
 %   % filter the pattern object
@@ -98,13 +109,25 @@ end
 
 % time
 if ~isempty(params.timeFilter)
-  inds{3} = inStruct(pat.dim.time, params.timeFilter);
+  if isnumeric(params.timeFilter)
+    bounds = params.timeFilter;
+    ms = get_dim_vals(pat.dim, 'time');
+    inds{3} = bounds(1) <= ms & ms < bounds(2);
+  elseif ischar(params.timeFilter)
+    inds{3} = inStruct(pat.dim.time, params.timeFilter);
+  end
   pat.dim.time = pat.dim.time(inds{3});
 end
 
 % frequency
 if ~isempty(params.freqFilter)
-  inds{4} = inStruct(pat.dim.freq, params.freqFilter);
+  if isnumeric(params.freqFilter)
+    bounds = params.freqFilter;
+    freq = get_dim_vals(pat.dim, 'freq');
+    inds{4} = bounds(1) <= freq & freq <= bounds(2);
+  elseif ischar(params.freqFilter)
+    inds{4} = inStruct(pat.dim.freq, params.freqFilter);
+  end
   pat.dim.freq = pat.dim.freq(inds{4});
 end
 
