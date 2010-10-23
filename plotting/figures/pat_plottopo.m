@@ -35,7 +35,7 @@ function pat = pat_plottopo(pat, fig_name, varargin)
 %                  freq). [{none} | fdr | bonferroni]
 %   plot_input   - cell array of additional inputs to plot_topo. ({})
 %   res_dir      - directory in which to save the figure(s). Default
-%                  is: [main_pat_dir]/reports/figs
+%                  is: [main_pat_dir]/reports
 
 % input checks
 if ~exist('pat', 'var') || ~isstruct(pat)
@@ -57,7 +57,7 @@ defaults.y_lim = [];
 defaults.chan_locs = 'HCGSN128.loc';
 defaults.stat_name = '';
 defaults.plot_input = {};
-defaults.res_dir = get_pat_dir(pat, 'reports', 'figs');
+defaults.res_dir = get_pat_dir(pat, 'reports');
 params = propval(varargin, defaults);
 
 params.res_dir = check_dir(params.res_dir);
