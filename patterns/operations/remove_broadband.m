@@ -4,7 +4,8 @@ function pat = remove_broadband(pat, varargin)
 %  pat = remove_broadband(pat, ...)
 %
 %  INPUTS:
-%      pat:  input pattern object containing power values.
+%      pat:  input pattern object containing log-transformed power
+%            values.
 %
 %  OUTPUTS:
 %      pat:  pattern with broadband power subtracted.
@@ -31,7 +32,6 @@ function pat = remove_broadband(pat, varargin)
 %   be just at a single timepoint)
 % broadband is power at mean freq index (using the index really
 %   seems strange)
-% subtract broadband from sample or event
 
 % options
 defaults.plot = false;
