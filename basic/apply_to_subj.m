@@ -51,8 +51,12 @@ defaults.memory = '1G';
 params = propval(varargin, defaults);
 
 if dist==1
-  % get the default job manager/scheduler
-  sm = findResource();
+  % set up a scheduler
+  if ~exist('~/runs', 'dir')
+    mkdir('~/runs');
+  end
+  sm = findResource('scheduler', 'type', 'generic');
+  set(sm, 'DataLocation', '~/runs');
   set(sm, 'SubmitFcn', {@sgeSubmitFcn2, params.memory});
 
   % create a job to run all subjects
