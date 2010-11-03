@@ -10,6 +10,9 @@ function subj = zscore_pattern(subj, pat_name, base_pat_name, varargin)
 %  may be customized by defining alternate event bins using
 %  params.event_bins.
 %
+%  If the standard deviation for an event bin is 0, the zscores for that
+%  bin will be NaN.
+%
 %  subj = zscore_pattern(subj, pat_name, base_pat_name, ...)
 %
 %  INPUTS:
@@ -109,9 +112,19 @@ function pat = apply_zscore(pat, base_pattern, m, s, event_bin_defs)
         %elseif s(i,j,:,k) < .5
         %pattern(ind{:}) = NaN;
         %else
-        pattern(ind{:}) = (pattern(ind{:}) - m(i,j,:,k)) / s(i,j,:,k);
-        %end
-        
+        m_sess = m(i,j,:,k);
+        s_sess = s(i,j,:,k);
+        if s_sess == 0
+          % if std deviation is exactly zero (realistically only happens
+          % when there is only one non-NaN sample), the z-score is
+          % undefined
+          pattern(ind{:}) = NaN;
+        else
+          % transform relative to the summary statistics for this
+          % session
+          pattern(ind{:}) = (pattern(ind{:}) - m_sess) / s_sess;
+        end
+      
       end
     end
   end
