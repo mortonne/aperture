@@ -87,25 +87,27 @@ for i = 1:length(bins)
     bin_ind{i} = bins{i}{j};
 
     % do the average along dimension i
-    x = pattern(bin_ind{:});
-    if ~isempty(min_samp) && nnz(~isnan(x)) / numel(x) < min_samp
-      % leave this bin as NaNs
-      fprintf('rm %d:%d ', i,j)
-      continue
-    end
+    % x = pattern(bin_ind{:});
+    % %if ~isempty(min_samp) && nnz(~isnan(x)) / numel(x) < min_samp
+    % if ~isempty(min_samp) && nnz(~isnan(x)) < min_samp
+    %   % leave this bin as NaNs
+    %   fprintf('rm %d:%d ', i,j)
+    %   continue
+    % end
 
-    avg = nanmean(x,i);
-    if nnz(isnan(avg)) == numel(avg)
-      warning('eeg_ana:patBinAllNaNs', ...
-              'Bin %d of dimension %d contains all NaNs.', j, i)
-    end
+    % avg = nanmean(x,i);
+    % if nnz(isnan(avg)) == numel(avg)
+    %   warning('eeg_ana:patBinAllNaNs', ...
+    %           'Bin %d of dimension %d contains all NaNs.', j, i)
+    % end
     
     % get reference for this bin after averaging
     ind = ALL_CELL;
     ind{i} = j;
     
     % place this average in the new array
-    temp(ind{:}) = avg;
+    % temp(ind{:}) = avg;
+    temp(ind{:}) = nanmean(pattern(bin_ind{:}), i);
   end
   
   % this dimension is finished; update the pattern, and we're
