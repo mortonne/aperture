@@ -20,6 +20,8 @@ function pat = pat_erp(pat, fig_name, varargin)
 %  Also see plot_erp for more plotting params.
 %   event_bins       - input to make_event_bins; can be used to average
 %                      over events before plotting. ('')
+%   diff             - if true, the difference between event 1 and event
+%                      2 will be plotted below each ERP. (false)
 %   stat_name        - name of a stat object attached to pat. If
 %                      specified, p will be loaded from stat.file, and
 %                      significant regions will be shaded below each
@@ -63,13 +65,13 @@ end
 
 % options
 defaults.event_bins = '';
+defaults.diff = false;
 defaults.stat_name = '';
 defaults.stat_index = 1;
 defaults.stat_type = 'p';
 defaults.alpha = 0.05;
 defaults.correctm = '';
 defaults.y_label = '';
-defaults.diff = false;
 defaults.plot_mult_events = true;
 defaults.legend = {};
 defaults.print_input = {'-depsc'};

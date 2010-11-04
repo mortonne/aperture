@@ -120,8 +120,7 @@ if ~isempty(params.stat_name)
   
   % make the colormap, set the pattern to be plotted as the
   % z-scores of the p-values
-  [pattern, map, params.map_limits] = sig_colormap(p, [max_sig sig], ...
-                                                   'two_way_signed');
+  [pattern, map, params.map_limits] = sig_colormap(p, [sig max_sig]);
   colormap(map)
 else
   if params.diff

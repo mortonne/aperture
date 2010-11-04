@@ -41,7 +41,7 @@ if ~exist('p', 'var') || ~isnumeric(p)
 end
 if ~exist('alpha_range', 'var')
   alpha_range = [0.05 0.005];
-elseif ~isnumeric(alpha_range) || diff(alpha_range) < 0
+elseif ~isnumeric(alpha_range) || diff(alpha_range) > 0
   error('alpha_range must be an increasing numeric array.')
 end
 if ~exist('dir', 'var')
@@ -50,6 +50,9 @@ if ~exist('dir', 'var')
 end
 if ~exist('map_size', 'var')
   map_size = 512;
+end
+if any(p < 0)
+  error('p-values cannot be negative.')
 end
 
 % RGB values for the colors we will use
