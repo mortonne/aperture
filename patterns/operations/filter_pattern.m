@@ -79,7 +79,8 @@ function pat = apply_pat_filtering(pat, params)
   new_size((length(new_size) + 1):4) = 1;
   
   pat = set_mat(pat, pattern, 'ws');
-
+  clear pattern
+  
   % apply the filters to children
   all_ind = repmat({':'}, 1, 4);
   if ~isfield(pat, 'stat')
