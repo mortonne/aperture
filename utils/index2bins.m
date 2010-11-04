@@ -21,6 +21,8 @@ elseif ~isvector(index)
 end
 
 values = unique(index)';
+values = values(~isnan(values));
+
 bins = cell(1, length(values));
 for i=1:length(values)
   bins{i} = find(index==values(i));
