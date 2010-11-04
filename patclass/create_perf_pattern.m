@@ -43,9 +43,10 @@ function pat = create_perf_pattern(pat, stat_name, varargin)
 %               will be stored in the workspace, and can subsequently
 %               be moved to disk using move_obj_to_hd. (true)
 %   overwrite - if true, existing patterns on disk will be overwritten.
-%               (false)
+%               (true)
 %   save_as   - string identifier to name the modified pattern. If
-%               empty, the name will not change. ('')
+%               empty, the name will not change.
+%               ([pat.name '-' stat_name])
 %   res_dir   - directory in which to save the modified pattern and
 %               events, if applicable. Default is a directory named
 %               pat_name on the same level as the input pat.
@@ -63,7 +64,12 @@ stat = getobj(pat, 'stat', stat_name);
 defaults.stat_type = 'perf';
 defaults.event_bins = stat.params.selector;
 defaults.precision = 'single';
+defaults.save_as = [pat.name '-' stat_name];
+defaults.overwrite = true;
 [params, saveopts] = propval(varargin, defaults);
+saveopts.save_as = params.save_as;
+saveopts.overwrite = params.overwrite;
+params = rmfield(params, {'save_as', 'overwrite'});
 
 % make the new pattern
 pat = mod_pattern(pat, @get_patclass_stats, {stat_name, params}, saveopts);
