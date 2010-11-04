@@ -24,7 +24,13 @@ function pdf_file = pat_report_all_subj(subj, pat_name, fig_names, varargin)
 %   report_file - path to the file to create the report in. If not
 %                 specified, the report will be saved in the pattern's
 %                 default reports directory as [pat.name]_report.pdf.
-%  Additional inputs will be passed to create_report_all_subj.
+%   header      - cell array of strings the same length as fig_paths.
+%                 Default is to use fig.name from each figure object.
+%   title       - string title of the report. ('')
+%   landscape   - whether to print in landscape or portrait. (false)
+%   header_figs - vector of figure objects to place in the top row. ([])
+%   header_figs_label - label for the header fig row. ('Grand Average')
+%   compile_method - 'latexdvipdf' or 'pdflatex'
 
 defaults.report_file = '';
 [params, report_params] = propval(varargin, defaults);
@@ -62,7 +68,9 @@ for i=1:length(fig_names)
   fig_paths{i} = {'pat', pat_name, 'fig', fig_names{i}};
 end
 
-report_params.header = labels;
+if ~isfield(report_params, 'header')
+  report_params.header = labels;
+end
 pdf_file = create_report_all_subj(subj, fig_paths, params.report_file, ...
                                   report_params);
 
