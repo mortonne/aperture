@@ -119,35 +119,67 @@ if params.feature_select
   fprintf('selecting %d of %d features.\n', nnz(mask), prod(patsize(2:end)))
 end
 
-% deal with missing data
+% find observations that have no features
+train_missing = all(isnan(trainpattern), 2);
+test_missing = all(isnan(testpattern), 2);
+trainpattern = trainpattern(~train_missing,:);
+testpattern = trainpattern(~test_missing,:);
+
+if isempty(trainpattern)
+  error('train pattern all NaNs.')
+elseif isempty(testpattern)
+  error('test pattern all NaNs.')
+end
+
+% deal with missing features, rescale each feature to be between
+% 0 and 1
 trainpattern = rescale(remove_nans(trainpattern));
 testpattern = rescale(remove_nans(testpattern));
 
 n_perfs = length(params.f_perfmet);
 store_perfs = NaN(n_perfs);
 
-% save data in MVPA style
-n_events = size(testpattern, 1);
+% transpose to match MVPA format
+trainpattern = trainpattern';
+testpattern = testpattern';
+traintargets = traintargets';
+testtargets = testtargets';
+
+% initialize the results structure
+n_events = length(test_missing);
+% not dealing with xval here, but need to match format
+% so train index is all false, test index is all true
 res.train_idx = false(n_events, 1);
 res.test_idx = true(n_events, 1);
 res.unused_idx = false(n_events, 1);
 res.unknown_idx = [];
-res.targs = testtargets';
+res.targs = testtargets;
+res.acts = NaN(size(testtargets));
 res.train_funct_name = func2str(f_train);
 res.test_funct_name = func2str(f_test);
-res.args = params;
+res.perfmet = cell(1, n_perfs);
+res.perf = NaN(1, n_perfs);
+res.args = [];
+res.scratchpad = [];
+
+% for the classification, remove targets corresponding to missing
+% observations
+traintargets = traintargets(:,~train_missing);
+testtargets = testtargets(:,~test_missing);
 
 try
   % train
-  scratchpad = f_train(trainpattern', traintargets', params.train_args{:});  
+  scratchpad = f_train(trainpattern, traintargets, params.train_args{:}); 
 
   % test
-  testtargets = testtargets';
-  [acts, scratchpad] = f_test(testpattern', testtargets, scratchpad);
-  %scratchpad.cur_iteration = i;
+  [acts, scratchpad] = f_test(testpattern, testtargets, scratchpad);
+  
+  % save the outputs for all events (acts for excluded events will
+  % be NaN)
+  res.acts(:,~test_missing) = acts;
 
   % calculate performance
-  for p=1:n_perfs
+  for p = 1:n_perfs
     pm_fh = params.f_perfmet{p};
     pm = pm_fh(acts, testtargets, scratchpad, params.perfmet_args{p});
     pm.function_name = func2str(pm_fh);
@@ -158,17 +190,12 @@ try
 catch err
   fprintf('error in classification:\n')
   disp(getReport(err))
-  res.perfmet = {struct};
-  res.perf = NaN(1, n_perfs);
-  res.acts = NaN(size(testtargets));
-  if params.save_scratchpad
-    res.scratchpad = struct;
-  end
   return
 end
 
-res.acts = acts;
+% save the scratchpad if desired
 if params.save_scratchpad
+  res.args = params;
   res.scratchpad = scratchpad;
 end
 
