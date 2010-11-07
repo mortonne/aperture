@@ -78,9 +78,7 @@ if ndims(pattern) > 2
 end
 
 n_iter = length(sel_vals);
-%n_perfs = length(params.f_perfmet);
-%store_perfs = NaN(n_iter, n_perfs);
-for i=1:n_iter
+for i = 1:n_iter
   % find the observations to train and test on
   unused_idx = isnan(selector);
   train_idx = ~unused_idx & (selector ~= sel_vals(i));
@@ -104,6 +102,7 @@ for i=1:n_iter
   iter_res.unused_idx = unused_idx;
   iter_res.unknown_idx = [];
 
+  % all other stats come from traintest
   res.iterations(i) = iter_res;
 
   if xval_params.verbose

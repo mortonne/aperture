@@ -43,9 +43,10 @@ function pat = create_perf_pattern(pat, stat_name, varargin)
 %               will be stored in the workspace, and can subsequently
 %               be moved to disk using move_obj_to_hd. (true)
 %   overwrite - if true, existing patterns on disk will be overwritten.
-%               (false)
+%               (true)
 %   save_as   - string identifier to name the modified pattern. If
-%               empty, the name will not change. ('')
+%               empty, the name will not change.
+%               ([pat.name '-' stat_name])
 %   res_dir   - directory in which to save the modified pattern and
 %               events, if applicable. Default is a directory named
 %               pat_name on the same level as the input pat.
@@ -63,7 +64,12 @@ stat = getobj(pat, 'stat', stat_name);
 defaults.stat_type = 'perf';
 defaults.event_bins = stat.params.selector;
 defaults.precision = 'single';
+defaults.save_as = [pat.name '-' stat_name];
+defaults.overwrite = true;
 [params, saveopts] = propval(varargin, defaults);
+saveopts.save_as = params.save_as;
+saveopts.overwrite = params.overwrite;
+params = rmfield(params, {'save_as', 'overwrite'});
 
 % make the new pattern
 pat = mod_pattern(pat, @get_patclass_stats, {stat_name, params}, saveopts);
@@ -79,7 +85,13 @@ function pat = get_patclass_stats(pat, stat_name, params)
     n_events = n_iter;
     
     % bin the events dimension
-    temp = patBins(pat, 'eventbins', stat.params.selector);
+    if n_iter > 1
+      % assume xval
+      temp = patBins(pat, 'eventbins', stat.params.selector);
+    else
+      % assume pat2pat
+      temp = patBins(pat, 'eventbins', 'overall');
+    end
     pat.dim = temp.dim;
   
   elseif isa(params.stat_type, 'function_handle') && ...
@@ -185,6 +197,8 @@ function acts = get_acts(res, stat_type)
   for i=1:length(res)
     iter_res = res(i);
     
+    missing = all(isnan(iter_res.acts), 1);
+    
     switch stat_type
      case 'acts'
       % get classifier activation for the correct unit
@@ -205,10 +219,20 @@ function acts = get_acts(res, stat_type)
       mat = perfmet.rank;
     end
 
+    mat(missing) = NaN;
     acts(iter_res.test_idx) = mat;
   end
   
 function perf = calc_perf(acts, targs, f_perfmet)
-  perfmet = f_perfmet(acts, targs);
-  perf = perfmet.perf;
+  missing = all(isnan(acts), 1);
+  acts = acts(:,~missing);
+  targs = targs(:,~missing);
+
+  if isempty(acts)
+    perfmet = struct;
+    perf = NaN;
+  else
+    perfmet = f_perfmet(acts, targs);
+    perf = perfmet.perf;
+  end
   
