@@ -123,7 +123,7 @@ end
 train_missing = all(isnan(trainpattern), 2);
 test_missing = all(isnan(testpattern), 2);
 trainpattern = trainpattern(~train_missing,:);
-testpattern = trainpattern(~test_missing,:);
+testpattern = testpattern(~test_missing,:);
 
 if isempty(trainpattern)
   error('train pattern all NaNs.')
@@ -133,8 +133,13 @@ end
 
 % deal with missing features, rescale each feature to be between
 % 0 and 1
-trainpattern = rescale(remove_nans(trainpattern));
-testpattern = rescale(remove_nans(testpattern));
+trainpattern = remove_nans(trainpattern);
+testpattern = remove_nans(testpattern);
+temp = [trainpattern; testpattern];
+temp = rescale(temp);
+trainpattern = temp(1:size(trainpattern,1),:);
+testpattern = temp(size(trainpattern,1)+1:end,:);
+clear temp
 
 n_perfs = length(params.f_perfmet);
 store_perfs = NaN(n_perfs);
@@ -216,3 +221,4 @@ if params.verbose
     fprintf('\n')
   end
 end
+
