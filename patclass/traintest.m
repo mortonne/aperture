@@ -125,10 +125,32 @@ test_missing = all(isnan(testpattern), 2);
 trainpattern = trainpattern(~train_missing,:);
 testpattern = testpattern(~test_missing,:);
 
+n_perfs = length(params.f_perfmet);
+store_perfs = NaN(n_perfs);
+
+% initialize the results structure
+n_events = length(test_missing);
+% not dealing with xval here, but need to match format
+% so train index is all false, test index is all true
+res.train_idx = false(n_events, 1);
+res.test_idx = true(n_events, 1);
+res.unused_idx = false(n_events, 1);
+res.unknown_idx = [];
+res.targs = testtargets';
+res.acts = NaN(size(testtargets'));
+res.train_funct_name = func2str(f_train);
+res.test_funct_name = func2str(f_test);
+res.perfmet = cell(1, n_perfs);
+res.perf = NaN(1, n_perfs);
+res.args = [];
+res.scratchpad = [];
+
 if isempty(trainpattern)
-  error('train pattern all NaNs.')
+  fprintf('Warning: train pattern all NaNs.\n')
+  return
 elseif isempty(testpattern)
-  error('test pattern all NaNs.')
+  fprintf('Warning: test pattern all NaNs.\n')
+  return
 end
 
 % deal with missing features, rescale each feature to be between
@@ -141,31 +163,11 @@ trainpattern = temp(1:size(trainpattern,1),:);
 testpattern = temp(size(trainpattern,1)+1:end,:);
 clear temp
 
-n_perfs = length(params.f_perfmet);
-store_perfs = NaN(n_perfs);
-
 % transpose to match MVPA format
 trainpattern = trainpattern';
 testpattern = testpattern';
 traintargets = traintargets';
 testtargets = testtargets';
-
-% initialize the results structure
-n_events = length(test_missing);
-% not dealing with xval here, but need to match format
-% so train index is all false, test index is all true
-res.train_idx = false(n_events, 1);
-res.test_idx = true(n_events, 1);
-res.unused_idx = false(n_events, 1);
-res.unknown_idx = [];
-res.targs = testtargets;
-res.acts = NaN(size(testtargets));
-res.train_funct_name = func2str(f_train);
-res.test_funct_name = func2str(f_test);
-res.perfmet = cell(1, n_perfs);
-res.perf = NaN(1, n_perfs);
-res.args = [];
-res.scratchpad = [];
 
 % for the classification, remove targets corresponding to missing
 % observations
