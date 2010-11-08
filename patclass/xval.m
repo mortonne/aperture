@@ -108,6 +108,7 @@ for i = 1:n_iter
   if xval_params.verbose
     fprintf('%.2f\t', res.iterations(i).perf)
   end
+
   %if n_perfs > 1
   %  fprintf('\n')
   %end
