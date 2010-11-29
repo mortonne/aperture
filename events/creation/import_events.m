@@ -65,7 +65,7 @@ else
   match = true(size(subj.sess));
 end
 %zach changed below to avoid error in cat_structs
-events = struct();
+events = struct([]);
 for sess=subj.sess(match)
   if length(subj.sess) > 1
     fprintf('%d ', sess.number)
