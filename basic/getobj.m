@@ -61,7 +61,8 @@ end
 % search for the matching object
 ind = [];
 for i=1:length(objs)
-  if strcmp(obj_name, get_obj_name(objs(i)))
+  %if strcmp(obj_name, get_obj_name(objs(i)))
+  if ~isempty(regexp(get_obj_name(objs(i)), obj_name))
     ind = i;
     break
   end
