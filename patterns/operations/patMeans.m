@@ -1,7 +1,7 @@
-function pattern = patMeans(pattern, bins, min_samp)
+function pattern = patMeans(pattern, bins, f, varargin)
 %PATMEANS   Bin one or more dimensions of a pattern.
 %
-%  pattern = patMeans(pattern, bins)
+%  pattern = patMeans(pattern, bins, f)
 %
 %  Use this function to average together arbitrary bins for each
 %  dimension of a pattern.
@@ -15,6 +15,11 @@ function pattern = patMeans(pattern, bins, min_samp)
 %            indices for one bin. The cell corresponding to a
 %            dimension can also be empty, to indicate that dimension
 %            should not be binned.
+%
+%        f:  function to apply to each bin. Must be of the form:
+%             y = f(x, dim)
+%            where dim indicates the dimension of x that must be
+%            collapsed in the output y.
 %
 %  OUTPUTS:
 %  pattern:  the modified array.
@@ -107,7 +112,7 @@ for i = 1:length(bins)
     
     % place this average in the new array
     % temp(ind{:}) = avg;
-    temp(ind{:}) = nanmean(pattern(bin_ind{:}), i);
+    temp(ind{:}) = f(pattern(bin_ind{:}), i, varargin{:});
   end
   
   % this dimension is finished; update the pattern, and we're

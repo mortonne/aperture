@@ -84,8 +84,14 @@ defaults.save_mats = true;
 defaults.overwrite = false;
 defaults.save_as = '';
 defaults.res_dir = '';
-defaults.verbose = true;
+defaults.verbose = false;
 params = propval(varargin, defaults);
+
+if ~params.overwrite && isempty(params.save_as) && params.save_mats
+  % contradictory inputs; use the special default of returning to the
+  % workspace
+  params.save_mats = false;
+end
 
 if params.verbose
   fprintf('modifying pattern "%s"...', pat.name)

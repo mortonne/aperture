@@ -13,6 +13,7 @@ function pat = pattern_seg2cont(pat, varargin)
 %  PARAMS:
 %  These options may be specified using parameter, value pairs or by
 %  passing a structure. Defaults are shown in parentheses.
+%   dim_names      - ({'time'})
 %   save_mats      - if true, and input mats are saved on disk, modified
 %                    mats will be saved to disk. If false, the modified
 %                    mats will be stored in the workspace, and can
@@ -32,7 +33,7 @@ if ~exist('pat', 'var') || ~isstruct(pat)
 end
 
 % options
-defaults = struct;
+defaults.dim_names = {'time'};
 [params, saveopts] = propval(varargin, defaults);
 
 % run seg2cont
@@ -42,26 +43,49 @@ function pat = run_seg2cont(pat, params)
 
   % load the pattern
   pattern = get_mat(pat);
-  
-  % reshape to have events X time
-  [n_events, n_chans, n_times, n_freqs] = size(pattern);
-  pattern = reshape(permute(pattern, [3 1 2 4]), ...
-                    [n_events * n_times n_chans 1 n_freqs]);
-  pat = set_mat(pat, pattern, 'ws');
-  
-  % create new events with a time field
-  times = get_dim_vals(pat.dim, 'time');
   events = get_dim(pat.dim, 'ev');
   
-  new_events = [];
-  times_cell = num2cell(times);
-  for i = 1:n_events
-    time_events = repmat(events(i), 1, n_times);
-    [time_events.time] = times_cell{:};
-    new_events = [new_events time_events];
-  end
+  % reshape to merge dimension with events
+  dims = 1:4;
   
-  pat.dim.ev = set_mat(pat.dim.ev, new_events, 'ws');
+  for i = 1:length(params.dim_names)
+    % move this dim to the front
+    pat_size = patsize(pat.dim);
+    [dim_name, dim_number] = read_dim_input(params.dim_names{i});
+    dim_size = pat_size(dim_number);
+    new_order = [dim_number dims(~ismember(dims, dim_number))];
+    
+    % reshape
+    new_shape = [pat_size(1) * dim_size ...
+                 pat_size(~ismember(dims, [1 dim_number]))];
+    pattern = reshape(permute(pattern, new_order), new_shape);
+    
+    % create new events with a field for this dim
+    dim_vals = get_dim_vals(pat.dim, dim_name);
+    
+    new_events = [];
+    vals_cell = num2cell(dim_vals);
+    for j = 1:pat_size(1)
+      these_events = repmat(events(j), 1, dim_size);
+      [these_events.(dim_name)] = vals_cell{:};
+      new_events = [new_events these_events];
+    end
+    events = new_events;
+    
+    % collapse the dim
+    switch dim_name
+     case 'chan'
+      new_dim = struct('number', [], 'label', '');
+     case 'time'
+      new_dim = init_time();
+     case 'freq'
+      new_dim = init_freq();
+    end
+    pat.dim = set_dim(pat.dim, dim_name, new_dim);
+  end
+
+  % store the new pattern and events
+  pat = set_mat(pat, pattern, 'ws');
+  pat.dim.ev = set_mat(pat.dim.ev, events, 'ws');
   pat.dim.ev.modified = true;
-  pat.dim = set_dim(pat.dim, 'time', init_time);
   

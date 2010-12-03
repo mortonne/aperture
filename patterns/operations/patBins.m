@@ -74,6 +74,7 @@ end
 % default parameters
 defaults.eventbins = [];
 defaults.eventbinlabels = {};
+defaults.eventbinlevels = {};
 defaults.chanbins = [];
 defaults.chanbinlabels = {};
 defaults.timebins = [];
@@ -116,30 +117,32 @@ if ~isempty(params.eventbins)
   % load events
   events = get_dim(pat.dim, 'ev');
   [events, bins{1}] = event_bins(events, params.eventbins, ...
-                                 params.eventbinlabels);
+                                 params.eventbinlabels, ...
+                                 params.eventbinlevels);
   
   % save the events to the new ev object
-  pat.dim.ev = set_mat(pat.dim.ev, events, 'ws');
-  pat.dim.ev.modified = true;
+  pat.dim = set_dim(pat.dim, 'ev', events, 'ws');
 end
 
 % channels
 if ~isempty(params.chanbins)
   [chan, bins{2}] = chan_bins(get_dim(pat.dim, 'chan'), params.chanbins, ...
                               params.chanbinlabels);
-  pat.dim = set_dim(pat.dim, 'chan', chan);
+  pat.dim = set_dim(pat.dim, 'chan', chan, 'ws');
 end
 
 % time
 if ~isempty(params.timebins)
-  [pat.dim.time, bins{3}] = time_bins(pat.dim.time, params.timebins, ...
-                                      params.timebinlabels);
+  [time, bins{3}] = time_bins(pat.dim.time, params.timebins, ...
+                              params.timebinlabels);
+  pat.dim = set_dim(pat.dim, 'time', time, 'ws');
 end
 
 % frequency
 if ~isempty(params.freqbins)
-  [pat.dim.freq, bins{4}] = freq_bins(pat.dim.freq, params.freqbins, ...
-                                      params.freqbinlabels);
+  [freq, bins{4}] = freq_bins(pat.dim.freq, params.freqbins, ...
+                              params.freqbinlabels);
+  pat.dim = set_dim(pat.dim, 'freq', freq, 'ws');
 end
 
 % check the dimensions
@@ -149,54 +152,78 @@ if any(~psize)
 end
 
 
-function [events2, bins] = event_bins(events1, bin_defs, labels)
+function [events2, bins] = event_bins(events1, bin_defs, labels, levels)
   %EVENT_BINS   Apply bins to an events dimension.
   %
-  %  [ev, bins] = event_bins(ev, bin_defs, labels)
-  %
-  %  INPUTS:
-  %        ev:  an ev object.
-  %
-  %  bin_defs:  a cell array with one cell per bin. See make_event_bins
-  %             for possible values of each cell.
-  %
-  %    labels:  a cell array of strings indicating a label for each bin.
-  %
-  %  OUTPUTS:
-  %        ev:  a modified ev object. The events structure is also
-  %             modified and stored in ev.mat. There will be one event
-  %             for each bin.
-  %
-  %      bins:  a cell array with one cell per bin, where each cell
-  %             contains indices for the events in that bin.
+  %  [ev, bins] = event_bins(ev, bin_defs, labels, levels)
 
   % load the events
   fnames = fieldnames(events1);
   
+  % create new event fields if necessary
+  if (iscell(bin_defs) && ~iscellstr(bin_defs)) || ...
+     (iscellstr(bin_defs) && all(ismember(bin_defs, fieldnames(events1))))
+    for i = 1:length(bin_defs)
+      % create a new field with one value for each filter/field value
+      [vec, bin_levels{i}] = make_event_index(events1, bin_defs{i});
+      f = sprintf('factor%i', i);
+      c = num2cell(vec);
+      if ~isempty(levels)
+        for j = 1:length(bin_levels{i})
+          [c{vec == j}] = deal(levels{i}{j});
+        end
+      else
+        c = cellfun(@num2str, c, 'UniformOutput', false);
+      end
+      
+      [events1.(f)] = c{:};
+      bin_defs{i} = f;
+    end
+    conj = true;
+  else
+    conj = false;
+  end
+  
   % generate a new events field, one value per bin
-  vec = make_event_bins(events1, bin_defs);
+  [vec, bin_levels] = make_event_index(events1, bin_defs);
   if ~(isnumeric(vec) || iscellstr(vec))
     error('The labels returned by make_event_bins have an invalid type.')
   end
   
   % get values that correspond to bins; NaNs are not included anywhere
-  vals = unique(vec);
-  if isnumeric(vals)
-    vals = vals(~isnan(vals));
+  ind_vals = unique(vec);
+  if isnumeric(ind_vals)
+    ind_vals = ind_vals(~isnan(ind_vals));
   end
 
   events2 = [];
-  for i=1:length(vals)
-    bins{i} = find(ismember(vec, vals(i)));
+  vals = cell(1, length(ind_vals));
+  for i = 1:length(ind_vals)
+    bins{i} = find(ismember(vec, ind_vals(i)));
     
     % salvage fields that have the same value for this whole bin
     bin_event = collapse_struct(events1(bins{i}));
     events2 = cat_structs(events2, bin_event);
+    if ~conj
+      %vals{i} = bin_levels{ind_vals(i)};
+      vals{i} = ind_vals(i);
+    end
   end
 
   % set the label field
   if isempty(labels)
-    if iscellstr(vals)
+    if conj
+      % define labels based on the levels of each factor
+      [n_bins, n_factors] = size(bin_levels);
+      labels = cell(1, n_bins);
+      for i = 1:n_bins
+        for j = 1:n_factors
+          % number of the level within this factor
+          this_label = bin_levels{i,j};
+          labels{i} = [labels{i} this_label];
+        end
+      end
+    elseif iscellstr(vals)
       % if vals are strings, use that
       labels = vals;
     else
@@ -208,7 +235,7 @@ function [events2, bins] = event_bins(events1, bin_defs, labels)
       % if failed, will be indices; in this case, use vals
       if isequal(labels, cellfun(@num2str, num2cell(1:length(events2)), ...
                                  'UniformOutput', false))
-        labels = cellfun(@num2str, num2cell(vals), 'UniformOutput', false);
+        labels = cellfun(@num2str, vals, 'UniformOutput', false);
       end
     end
   end
