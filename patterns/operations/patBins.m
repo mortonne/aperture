@@ -133,14 +133,14 @@ end
 
 % time
 if ~isempty(params.timebins)
-  [time, bins{3}] = time_bins(pat.dim.time, params.timebins, ...
+  [time, bins{3}] = time_bins(get_dim(pat.dim, 'time'), params.timebins, ...
                               params.timebinlabels);
   pat.dim = set_dim(pat.dim, 'time', time, 'ws');
 end
 
 % frequency
 if ~isempty(params.freqbins)
-  [freq, bins{4}] = freq_bins(pat.dim.freq, params.freqbins, ...
+  [freq, bins{4}] = freq_bins(get_dim(pat.dim, 'freq'), params.freqbins, ...
                               params.freqbinlabels);
   pat.dim = set_dim(pat.dim, 'freq', freq, 'ws');
 end

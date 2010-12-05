@@ -41,5 +41,5 @@ for i=1:n_trials
   data.trial{1,i} = squeeze(pattern(i,:,:));
   
   % write time axis for this event (in seconds)
-  data.time{1,i} = [pat.dim.time.avg]./1000;
+  data.time{1,i} = get_dim_vals(pat.dim, 'time')./1000;
 end
