@@ -29,8 +29,8 @@ end
 % number of channels
 if isnumeric(locs_file)
   n_chans = locs_file;
-  for i=1:n_chans
-    subj.chan(i).number = i;
+  for i = 1:n_chans
+    subj.chan(i).number = uint32(i);
     subj.chan(i).label = sprintf('%d', i);
   end
   return
@@ -38,7 +38,7 @@ end
 
 % input for readlocs
 elocs = readlocs(locs_file);
-numbers = num2cell(1:129);
+numbers = num2cell(uint32(1:129));
 %[elocs.number] = number{:};
 %[elocs.label] = elocs.labels;
 
