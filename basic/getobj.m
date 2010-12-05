@@ -62,7 +62,9 @@ end
 ind = [];
 for i=1:length(objs)
   %if strcmp(obj_name, get_obj_name(objs(i)))
-  if ~isempty(regexp(get_obj_name(objs(i)), obj_name))
+  this_obj_name = get_obj_name(objs(i));
+  match = regexp(this_obj_name, obj_name, 'match');
+  if strcmp(this_obj_name, match)
     ind = i;
     break
   end
