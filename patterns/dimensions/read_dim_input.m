@@ -1,7 +1,7 @@
-function [name, number, long_name] = read_dim_input(dim_input)
+function [name, number, long_name, dir_name] = read_dim_input(dim_input)
 %READ_DIM_INPUT   Parse user input indicating a dimension.
 %
-%  [name, number, long_name] = read_dim_input(dim_input)
+%  [name, number, long_name, dir_name] = read_dim_input(dim_input)
 %
 %  INPUTS:
 %  dim_input:  either a string specifying the name of the dimension
@@ -15,6 +15,8 @@ function [name, number, long_name] = read_dim_input(dim_input)
 %
 %  long_name:  long name of the dimension:
 %              'Events', 'Channel', 'Time', 'Frequency'
+%
+%   dir_name:  name for the dim's directory.
 
 % input checks
 if ~exist('dim_input', 'var')
@@ -24,6 +26,7 @@ end
 % process input
 DIM_NAMES = {'ev', 'chan', 'time', 'freq'};
 DIM_LONG_NAMES = {'Event', 'Channel', 'Time', 'Frequency'};
+DIM_DIR_NAMES = {'events', 'channels', 'time', 'freq'};
 if isnumeric(dim_input)
   % input was dim_input number
   number = dim_input;
@@ -49,3 +52,5 @@ else
 end
 
 long_name = DIM_LONG_NAMES{number};
+dir_name = DIM_DIR_NAMES{number};
+
