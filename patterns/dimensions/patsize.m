@@ -18,11 +18,19 @@ function D = patsize(dim_info, dim)
 % input checks
 if ~exist('dim', 'var')
   dim = 1:4;
+elseif ischar(dim)
+  dim = {dim};
 end
 
 % mapping between fields and dimension numbers
 for i = 1:length(dim)
-  D(i) = get_dim_len(dim_info, read_dim_input(dim(i)));
+  if iscell(dim)
+    this_dim = dim{i};
+  else
+    this_dim = dim(i);
+  end
+  
+  D(i) = get_dim_len(dim_info, read_dim_input(this_dim));
 end
 
 function len = get_dim_len(dim_info, dim_name)
