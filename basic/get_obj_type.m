@@ -19,7 +19,7 @@ if ~exist('obj', 'var') || ~isstruct(obj)
 end
 
 % guess the object type
-if isfield(obj, 'type')
+if isfield(obj, 'type') && ~strcmp(obj.type, 'ev')
   objtype = obj.type;
 elseif isfield(obj, 'dim')
   objtype = 'pattern';
