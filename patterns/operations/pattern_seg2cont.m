@@ -81,11 +81,10 @@ function pat = run_seg2cont(pat, params)
      case 'freq'
       new_dim = init_freq();
     end
-    pat.dim = set_dim(pat.dim, dim_name, new_dim);
+    pat.dim = set_dim(pat.dim, dim_name, new_dim, 'ws');
   end
 
   % store the new pattern and events
   pat = set_mat(pat, pattern, 'ws');
-  pat.dim.ev = set_mat(pat.dim.ev, events, 'ws');
-  pat.dim.ev.modified = true;
+  pat.dim = set_dim(pat.dim, 'ev', events, 'ws');
   
