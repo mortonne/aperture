@@ -1,6 +1,10 @@
 function labels = make_event_bins(events, bins)
 %MAKE_EVENT_BINS   Divide an events structure into bins.
 %
+%  *** DEPRECATED ***
+%  Use make_event_index instead, which returns outputs with consistent
+%  class.
+%
 %  labels = make_event_bins(events, bins)
 %
 %  This function is used to create regressors for statistics and pattern
