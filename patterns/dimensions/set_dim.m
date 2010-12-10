@@ -43,7 +43,13 @@ dim_name = read_dim_input(dim_id);
 if any(ismember({'file' 'mat'}, fieldnames(dim_info.(dim_name))))
   % saving to disk is supported for this dimension
   % make sure the type field is set
-  dim_info.(dim_name).type = dim_name;
+  if strcmp(dim_name, 'ev')
+    obj_type = 'events';
+  else
+    obj_type = dim_name;
+  end
+  
+  dim_info.(dim_name).type = obj_type;
   dim_info.(dim_name).len = length(dim);
   
   % set the matrix, passing the loc arg if defined
