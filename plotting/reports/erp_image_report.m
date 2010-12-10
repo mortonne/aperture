@@ -31,7 +31,7 @@ pat = getobj(exp.subj(1), 'pat', pat_name);
 
 % options
 defaults.dist = 0;
-defaults.memory = '1G';
+defaults.memory = '2G';
 defaults.res_dir = get_pat_dir(pat, 'reports');
 defaults.report_name = 'erp_image_report';
 defaults.title = 'ERP Images by Channel';
@@ -46,7 +46,8 @@ exp.subj = apply_to_pat(exp.subj, pat_name, @pat_images, ...
 report_file = fullfile(params.res_dir, params.report_name);
 pdf_file = pat_report_all_subj(exp.subj, pat_name, {'erp_image'}, ...
                                'report_file', report_file, ...
-                               'compile_method', 'pdflatex');
+                               'compile_method', 'pdflatex', ...
+                               'landscape', true);
 
 function pat = pat_images(pat, res_dir, varargin)
 
