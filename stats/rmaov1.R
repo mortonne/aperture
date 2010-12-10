@@ -36,3 +36,15 @@ mc.aov <- Anova(mult.dv, idata=data.frame(rm.factor),
                 idesign=~rm.factor, type='III')
 summary(mc.aov)
 
+if (length(rm.factor) == 3) {
+  pw.comp <- cbind(c(1,-1,0), c(1,0,-1), c(0,1,-1))
+  pw.scores <- data.frame(as.matrix(wide[,-1]) %*% pw.comp)
+  names(pw.scores) <- c('1vs2', '1vs3', '2vs3')
+  n <- length(pw.scores[,1])
+  obst.pw <- (sqrt(n) * mean(pw.scores)) / sd(pw.scores)
+  pval.pw <- 2 * (1 - pt(abs(obst.pw), n - 1))
+}
+
+obst.pw
+pval.pw
+n
