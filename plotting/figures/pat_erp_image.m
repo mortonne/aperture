@@ -176,7 +176,11 @@ for i = 1:n_bins
       hold on
 
       % get [events X time] matrix for this channel and freq
-      data = squeeze(pattern(bins{i},j,:,k));
+      if exist('bins', 'var')
+        data = squeeze(pattern(bins{i},j,:,k));
+      else
+        data = squeeze(pattern(:,j,:,k));
+      end
       if isempty(params.map_limits)
         absmax = max(abs(data(:)));
         z_lim = [-absmax absmax];
