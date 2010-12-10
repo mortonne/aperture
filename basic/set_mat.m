@@ -53,7 +53,18 @@ switch loc
     error('obj.file is not specified.')
   end
   eval([objtype '=mat;']);
-  save('-v7.3', obj.file, objtype, 'obj')
+  
+  % check the size
+  w = whos(objtype);
+  
+  if w.bytes > 1900000000
+    % huge variable; need different MAT-file format
+    % apparently uses some type of compression
+    save('-v7.3', obj.file, objtype, 'obj')
+  else
+    % normal MAT-file will do
+    save(obj.file, objtype, 'obj')
+  end
   obj.modified = false;
   obj.mat = [];
   
