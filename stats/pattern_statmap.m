@@ -42,7 +42,7 @@ function pat = pattern_statmap(pat, reg_defs, f_stat, f_inputs, stat_name, ...
 %        pat:  pattern object with an added stat object.
 
 if ~exist('var_names', 'var')
-  var_names = {'p', 'statistic'};
+  var_names = {'p', 'statistic', 'res'};
 end
 
 if ~exist('n_effects', 'var')
@@ -89,7 +89,7 @@ end
 % initialize the outputs
 output = cell(1, n_out);
 for i = 1:n_out
-  output{i} = NaN(n_effects, n_chans, n_samps, n_freqs);
+  output{i} = cell(1, n_chans, n_samps, n_freqs);
 end
 
 n_tests = n_chans * n_samps * n_freqs;
@@ -114,7 +114,7 @@ for i = 1:n_chans
       end
       
       for o = 1:n_out
-        output{o}(:,i,j,k) = out{o};
+        output{o}{:,i,j,k} = out{o};
       end
       
       n = n + 1;
@@ -125,9 +125,15 @@ fprintf('\n')
 
 % save the results
 for i = 1:n_out
+  try
+    output{i} = cat(1, reshape(output{i}{:}, ...
+                               [n_effects n_chans n_samps n_freqs]));
+  catch
+    output{i} = cell2num(output{i});
+  end
   eval([var_names{i} '=output{i};']);
 end
-  
-save('-v7.3', stat.file, var_names{:});
+
+save(stat.file, var_names{:});
 pat = setobj(pat, 'stat', stat);
 
