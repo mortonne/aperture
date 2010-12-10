@@ -64,15 +64,15 @@ ns = size(perf) > 1;
 % set plotting options based on the dimensionality of the data
 if ns(3) && ns(4)
   % spectrogram
-  x = [pat.dim.time.avg];
-  y = [pat.dim.freq.avg];
+  x = get_dim_vals(pat.dim, 'time');
+  y = get_dim_vals(pat.dim, 'freq');
 elseif ns(3)
   % performance vs. time
-  x = [pat.dim.time.avg];
+  x = get_dim_vals(pat.dim, 'time');
   params.y_label = 'Fraction Correct';
 elseif ns(4)
   % performance vs. frequency
-  x = [pat.dim.freq.avg];
+  x = get_dim_vals(pat.dim, 'freq');
   params.x_label = 'Frequency (Hz)';
   params.y_label = 'Fraction Correct';
   
