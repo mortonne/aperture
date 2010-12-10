@@ -1,10 +1,10 @@
 function pattern = patMeans(pattern, bins, f, varargin)
 %PATMEANS   Bin one or more dimensions of a pattern.
 %
-%  pattern = patMeans(pattern, bins, f)
-%
 %  Use this function to average together arbitrary bins for each
 %  dimension of a pattern.
+%
+%  pattern = patMeans(pattern, bins, f)
 %
 %  INPUTS:
 %  pattern:  the array to be binned.
