@@ -1,4 +1,4 @@
-function [p, F] = RMAOV2(data, group, varargin)
+function [p, F, res] = RMAOV2(data, group, varargin)
 %RMAOV2   Two-way repeated measures ANOVA.
 %
 %  res = RMAOV2(data, group, ...)
@@ -35,6 +35,15 @@ res.output = run_R('RMAOV2.R', infile, outfile);
 
 % read the results
 fid = fopen(outfile, 'r');
+if fid == -1
+  warning('no output from R.')
+  disp(output)
+  F = NaN;
+  p = NaN;
+  delete(infile)
+  return
+end
+
 c = textscan(fid, '%n%n');
 fclose(fid);
 
