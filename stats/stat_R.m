@@ -1,7 +1,7 @@
-function [p, statistic] = stat_R(data, group, f, varargin)
+function [p, statistic, res] = stat_R(data, group, f, varargin)
 %Run a statistical test in R.
 %
-%  [p, statistic] = stat_R(data, group, f, ...)
+%  [p, statistic, res] = stat_R(data, group, f, ...)
 %
 %  INPUTS:
 %     data:  vector of numeric data.
