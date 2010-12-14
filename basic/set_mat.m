@@ -41,7 +41,7 @@ objtype = get_obj_type(obj);
 
 % type-specific checks/changes to obj
 switch objtype
-  case 'events'
+ case {'ev' 'events' 'chan' 'time' 'freq'}
   % update the length field
   obj.len = length(mat);
 end
@@ -53,12 +53,25 @@ switch loc
     error('obj.file is not specified.')
   end
   eval([objtype '=mat;']);
-  save('-v7.3', obj.file, objtype)
+  
+  % check the size
+  w = whos(objtype);
+  
+  if w.bytes > 1900000000
+    % huge variable; need different MAT-file format
+    % apparently uses some type of compression
+    save('-v7.3', obj.file, objtype, 'obj')
+  else
+    % normal MAT-file will do
+    save(obj.file, objtype, 'obj')
+  end
   obj.modified = false;
+  obj.mat = [];
   
  case 'ws'
   % just add it to the mat field
   obj.mat = mat;
+  obj.modified = true;
   
  otherwise
   error('loc must be either "hd" or "ws".')
