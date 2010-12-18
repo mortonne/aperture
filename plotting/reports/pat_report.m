@@ -40,8 +40,11 @@ end
 
 if isempty(params.report_file)
   report_dir = get_pat_dir(pat, 'reports');
-  cd(report_dir)
-  params.report_file = get_next_file([pat.name '_report']);
+  basename = pat.name;
+  for i = 1:length(fig_names)
+    basename = [basename '_' fig_names{i}];
+  end
+  report_file = fullfile(report_dir, get_next_file([basename '_report']));
 else
   report_file = params.report_file;
 end

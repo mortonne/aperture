@@ -72,14 +72,20 @@ fid = fopen(filename,'w');
 % preamble
 fprintf(fid,'\\documentclass{report}\n');
 fprintf(fid,'\\usepackage{graphicx,lscape,longtable,color,verbatim}\n');
-fprintf(fid,'\\setlength{\\oddsidemargin}{-0.5in}\n');
-fprintf(fid,'\\setlength{\\evensidemargin}{-0.5in}\n');
-fprintf(fid,'\\setlength{\\topmargin}{-0.25in}\n');
-fprintf(fid,'\\setlength{\\textwidth}{7.5in}\n');
-fprintf(fid,'\\setlength{\\textheight}{10.9in}\n');
-fprintf(fid,'\\setlength{\\headheight}{0.5in}\n');
-fprintf(fid,'\\setlength{\\headsep}{-0.5in}\n');
+%fprintf(fid,'\\setlength{\\marginparsep=1pt}')
+% fprintf(fid,'\\setlength{\\oddsidemargin}{-1in}\n');
+% fprintf(fid,'\\setlength{\\evensidemargin}{-1in}\n');
+% fprintf(fid,'\\setlength{\\topmargin}{-0.5in}\n');
+% fprintf(fid,'\\setlength{\\textwidth}{7.5in}\n');
+% fprintf(fid,'\\setlength{\\textheight}{10.9in}\n');
+% fprintf(fid,'\\setlength{\\headheight}{0.5in}\n');
+% fprintf(fid,'\\setlength{\\headsep}{-0.5in}\n');
 fprintf(fid,'\\pagestyle{headings}\n');
+if landscape
+  fprintf(fid,'\\usepackage[right=.25in,left=.25in,bottom=-1,top=1in]{geometry}\n');
+else
+  fprintf(fid,'\\usepackage[margin=1in,left=.5in]{geometry}\n');
+end
 fprintf(fid,'\n');
 
 % start the document

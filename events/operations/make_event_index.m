@@ -1,14 +1,7 @@
-function labels = make_event_bins(events, bins)
-%MAKE_EVENT_BINS   Divide an events structure into bins.
+function [index, levels] = make_event_index(events, bins)
+%MAKE_EVENT_INDEX   Divide an events structure into bins.
 %
-%  *** DEPRECATED ***
-%  Use make_event_index instead, which returns outputs with consistent
-%  class.
-%
-%  labels = make_event_bins(events, bins)
-%
-%  This function is used to create regressors for statistics and pattern
-%  classification.
+%  [index, levels] = make_event_index(events, bins)
 %
 %  INPUTS:
 %   events:  an events structure.
@@ -17,20 +10,24 @@ function labels = make_event_bins(events, bins)
 %            into bins (see below).
 %
 %  OUTPUTS:
-%   labels:  a vector or cell array of strings the same length as
+%    index:  a vector or cell array of strings the same length as
 %            events, where each unique value indicates one bin. Events
 %            that are not placed in any bin are marked with a NaN.
 %
+%   levels:  cell array with the value corresponding to each index. Rows
+%            correspond to different conditions, while each column gives
+%            a different factor.
+%
 %  BINS FORMAT:
 %   'field_name'
-%     The name of one of the fields. Same as 
-%     getStructField(events, 'field_name').
+%     The name of one of the fields. Each unique value in the field will
+%     correspond to one label in index.
 %
-%    {'field_name1','field_name2',...}
+%   {'field_name1', 'field_name2', ...}
 %     Cell array of fieldnames. There will be one label for each unique
 %     combination of values of the fields.
 %
-%   {'filter1','filter2',...}
+%   {'filter1', 'filter2', ...}
 %     Cell array of strings that will be input to inStruct to form each
 %     bin.
 %
@@ -57,40 +54,58 @@ elseif ~exist('bins', 'var')
 end
 
 if iscellstr(bins)
-  % first check if each string in the cell array is a field
+  % conjunction of fields or set of filters
   if all(ismember(bins, fieldnames(events)))
+    % multiple factors
     f = cell(1, length(bins));
-    for i=1:length(bins)
+    for i = 1:length(bins)
       f{i} = getStructField(events, bins{i});
     end
     % one label for each unique combination of values
-    labels = make_index(f{:});
+    [index, levels] = make_index(f{:});
   else
-    % assume each cell contains an eventfilter
-    labels = NaN(1,length(events));
-    for i=1:length(bins)
+
+    % set of filters
+    index = NaN(length(events), 1);
+    for i = 1:length(bins)
       thisfield = inStruct(events, bins{i});
-      labels(thisfield) = i;
+      if any(~isnan(index(thisfield)))
+        error('event subsets must not overlap.')
+      end
+      index(thisfield) = i;
     end
-  end
-elseif iscell(bins)
-  % assume each cell contains an eventfilter
-  labels = NaN(1,length(events));
-  for i=1:length(bins)
-    thisfield = inStruct(events, bins{i});
-    labels(thisfield) = i;
+    levels = cell(length(bins), 1);
+    [levels{:}] = bins{:};
   end
 
 elseif isfield(events, bins)
   % each unique value of the field will be used
-  labels = getStructField(events, bins);
-  if islogical(labels)
-    labels = double(labels);
+  f = getStructField(events, bins);
+  uf = unique(f);
+  if isnumeric(uf)
+    uf = uf(~isnan(uf));
+  end
+  n_levels = length(uf);
+  
+  levels = cell(n_levels, 1);
+  index = NaN(length(events), 1);
+  for i = 1:n_levels
+    if iscell(uf)
+      val = uf{i};
+    else
+      val = uf(i);
+    end
+    index(ismember(f, val)) = i;
+    levels{i} = val;
   end
 
 elseif strcmp(bins, 'overall')
   % lump all events together
-  labels = ones(1, length(events));
+  index = ones(length(events), 1);
+  
+elseif strcmp(bins, 'none')
+  % no binning will take place
+  index = [1:length(events)]';
   
 elseif ischar(bins) && ~isfield(events, bins)
   error('Field does not exist in events: %s.', bins)
@@ -98,26 +113,29 @@ elseif ischar(bins) && ~isfield(events, bins)
 elseif isnumeric(bins)
   % randomly divide up the events
   if bins < length(events)
-    events_per_bin = floor(length(events)/bins);
+    events_per_bin = floor(length(events) / bins);
   else
     bins = length(events);
     events_per_bin = 1;
   end
 
-  % make the labels
-  labels = repmat(1:bins, 1, events_per_bin);
+  % make the index
+  index = repmat(1:bins, 1, events_per_bin);
   
   % NaN out any remainder events
-  n_unlabeled = length(events) - length(labels);
-  labels = [labels NaN(1, n_unlabeled)];
+  n_unlabeled = length(events) - length(index);
+  index = [index NaN(1, n_unlabeled)];
   
   % shuffle
-  labels = randsample(labels, length(labels));
+  index = randsample(index, length(index))';
 
-elseif strcmp(bins, 'none')
-  % no binning will take place
-  labels = 1:length(events);
-  
 else
   error('Invalid input for bins.')
 end
+
+if ~exist('levels', 'var')
+  levels = unique(index);
+  levels(isnan(levels)) = [];
+  levels = num2cell(levels);
+end
+

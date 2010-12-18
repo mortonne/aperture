@@ -84,8 +84,14 @@ defaults.save_mats = true;
 defaults.overwrite = false;
 defaults.save_as = '';
 defaults.res_dir = '';
-defaults.verbose = true;
+defaults.verbose = false;
 params = propval(varargin, defaults);
+
+if ~params.overwrite && isempty(params.save_as) && params.save_mats
+  % contradictory inputs; use the special default of returning to the
+  % workspace
+  params.save_mats = false;
+end
 
 if params.verbose
   fprintf('modifying pattern "%s"...', pat.name)
@@ -146,25 +152,36 @@ if ~isempty(params.save_as)
   end
 end
 
-if pat.dim.ev.modified
-  % if event have been modified, change the filepath. We don't want to
-  % overwrite any source events that might be used for other patterns, 
-  % etc., so we'll change the path even if we are using the same 
-  % pat_name as before. Even if we're not saving, we'll change the file
-  % in case events are saved to disk later.
-  events_dir = get_pat_dir(pat, 'events');
-  ev_file = fullfile(events_dir, objfilename('events', pat.name, pat.source));
-  pat.dim.ev.file = ev_file;
-  
-  if params.save_mats
-    if ~params.overwrite && exist(ev_file, 'file')
-      pat.dim.ev.file = strrep(ev_file, '.mat', '_mod.mat');
-    end
+dim_info = pat.dim;
+for i = 1:length(patsize(pat.dim))
+  [dim_name, t, t, dim_long_name] = read_dim_input(i);
+
+  if ~(any(ismember({'file' 'mat'}, fieldnames(dim_info.(dim_name)))) ...
+     && dim_info.(dim_name).modified)
+    continue
+  end
     
-    % save events to disk
-    pat.dim.ev = move_obj_to_hd(pat.dim.ev);
+  % this is a new-format object that has been modified
+  dim = get_dim(dim_info, dim_name);
+  
+  % make sure the type field is set
+  dim_info.(dim_name).type = dim_name;
+  
+  % set the file name
+  dim_dir = get_pat_dir(pat, dim_long_name);
+  dim_file = fullfile(dim_dir, ...
+                      objfilename(dim_long_name, pat.name, pat.source));
+  dim_info.(dim_name).file = dim_file;
+
+  % save
+  if params.save_mats
+    if ~params.overwrite && exist(dim_file, 'file')
+      dim_info.(dim_name).file = strrep(dim_file, '.mat', '_mod.mat');
+    end
+    dim_info = set_dim(dim_info, dim_name, dim, 'hd');
   end
 end
+pat.dim = dim_info;
 
 if params.save_mats && strcmp(get_obj_loc(pat), 'ws')
   % save the pattern

@@ -26,6 +26,14 @@ function [pat, bins] = patBins(pat, varargin)
 %                    input to make_event_bins to create indices. ([])
 %   eventbinlabels - cell array of strings giving a label for each event
 %                    bin. ({})
+%   eventbinlevels - used only if specifying bins by a conjunction of
+%                    multiple factors. This includes if eventbins is a
+%                    cell array of strings with events fields, or a cell
+%                    array of cell arrays containing "expr" inputs for
+%                    inStruct. This is used to specify labels for the
+%                    different levels of the factors. The label for
+%                    factor i, level j goes in eventbinlevels{i}{j}.
+%                    ({})
 %   chanbins       - cell array specifying channel bins. Each cell can
 %                    be a vector of channel numbers, a cell array of
 %                    channel labels, or a string to be passed into
@@ -46,8 +54,6 @@ function [pat, bins] = patBins(pat, varargin)
 %  All *bins fields may also be set to:
 %   ':'    - place all indices of the dimension in one bin
 %   'iter' - place each index in its own bin
-%  NOTE: THE ':' and 'iter' OPTIONS WILL NOT GROUP THE PAT OBJECT, ONLY
-%        THE BINS. Support for modifying the pat will be added later.
 %
 %  EXAMPLE:
 %   sample pattern with three sessions; want to get average for each
@@ -74,72 +80,61 @@ end
 % default parameters
 defaults.eventbins = [];
 defaults.eventbinlabels = {};
+defaults.eventbinlevels = {};
 defaults.chanbins = [];
 defaults.chanbinlabels = {};
 defaults.timebins = [];
 defaults.timebinlabels = {};
 defaults.freqbins = [];
 defaults.freqbinlabels = {};
-[params, unused] = propval(varargin, defaults);
-unused = propval(unused, struct, 'strict', false);
+defaults.MSbins = [];
+defaults.MSbinlabels = {};
+params = propval(varargin, defaults);
 
 % backwards compatibility
-if isfield(unused, 'MSbins')
+if ~isempty(params.MSbins)
   warning('MSbins is deprecated. use timebins instead.')
-  params.timebins = unused.MSbins;
+  params.timebins = params.MSbins;
 end
-if isfield(unused, 'MSbinlabels')
+if ~isempty(params.MSbinlabels)
   warning('MSbinlabels is deprecated. use timebinlabels instead.')
-  params.timebinlabels = unused.MSbinlabels;
+  params.timebinlabels = params.MSbinlabels;
 end
 
 % initialize
 bins = cell(1, 4);
-
-% translate : indexes to bin format
-all_bin_fields = {'eventbins' 'chanbins' 'timebins' 'freqbins'};
-for i=1:length(all_bin_fields)
-  bin_input = params.(all_bin_fields{i});
-  if ischar(bin_input) && ismember(bin_input, {':', 'iter'})
-    switch bin_input
-     case ':'
-      bins{i} = {1:patsize(pat.dim, i)};
-     case 'iter'
-      bins{i} = num2cell(1:patsize(pat.dim, i));
-    end
-    params.(all_bin_fields{i}) = [];
-  end      
-end
 
 % events
 if ~isempty(params.eventbins)
   % load events
   events = get_dim(pat.dim, 'ev');
   [events, bins{1}] = event_bins(events, params.eventbins, ...
-                                 params.eventbinlabels);
+                                 params.eventbinlabels, ...
+                                 params.eventbinlevels);
   
   % save the events to the new ev object
-  pat.dim.ev = set_mat(pat.dim.ev, events, 'ws');
-  pat.dim.ev.modified = true;
+  pat.dim = set_dim(pat.dim, 'ev', events, 'ws');
 end
 
 % channels
 if ~isempty(params.chanbins)
   [chan, bins{2}] = chan_bins(get_dim(pat.dim, 'chan'), params.chanbins, ...
                               params.chanbinlabels);
-  pat.dim = set_dim(pat.dim, 'chan', chan);
+  pat.dim = set_dim(pat.dim, 'chan', chan, 'ws');
 end
 
 % time
 if ~isempty(params.timebins)
-  [pat.dim.time, bins{3}] = time_bins(pat.dim.time, params.timebins, ...
-                                      params.timebinlabels);
+  [time, bins{3}] = time_bins(get_dim(pat.dim, 'time'), params.timebins, ...
+                              params.timebinlabels);
+  pat.dim = set_dim(pat.dim, 'time', time, 'ws');
 end
 
 % frequency
 if ~isempty(params.freqbins)
-  [pat.dim.freq, bins{4}] = freq_bins(pat.dim.freq, params.freqbins, ...
-                                      params.freqbinlabels);
+  [freq, bins{4}] = freq_bins(get_dim(pat.dim, 'freq'), params.freqbins, ...
+                              params.freqbinlabels);
+  pat.dim = set_dim(pat.dim, 'freq', freq, 'ws');
 end
 
 % check the dimensions
@@ -149,67 +144,98 @@ if any(~psize)
 end
 
 
-function [events2, bins] = event_bins(events1, bin_defs, labels)
+function [events2, bins] = event_bins(events1, bin_defs, labels, levels)
   %EVENT_BINS   Apply bins to an events dimension.
   %
-  %  [ev, bins] = event_bins(ev, bin_defs, labels)
-  %
-  %  INPUTS:
-  %        ev:  an ev object.
-  %
-  %  bin_defs:  a cell array with one cell per bin. See make_event_bins
-  %             for possible values of each cell.
-  %
-  %    labels:  a cell array of strings indicating a label for each bin.
-  %
-  %  OUTPUTS:
-  %        ev:  a modified ev object. The events structure is also
-  %             modified and stored in ev.mat. There will be one event
-  %             for each bin.
-  %
-  %      bins:  a cell array with one cell per bin, where each cell
-  %             contains indices for the events in that bin.
+  %  [ev, bins] = event_bins(ev, bin_defs, labels, levels)
 
+  % translate universal bin codes
+  if ischar(bin_defs)
+    if strcmp(bin_defs, ':')
+      bin_defs = 'overall';
+    elseif strcmp(bin_defs, 'iter')
+      bin_defs = 'none';
+    end
+  end
+  
   % load the events
   fnames = fieldnames(events1);
   
-  % generate a new events field, one value per bin
-  vec = make_event_bins(events1, bin_defs);
-  if ~(isnumeric(vec) || iscellstr(vec))
-    error('The labels returned by make_event_bins have an invalid type.')
+  % create new event fields if necessary
+  if (iscell(bin_defs) && ~iscellstr(bin_defs)) || ...
+     (iscellstr(bin_defs) && all(ismember(bin_defs, fieldnames(events1))))
+    for i = 1:length(bin_defs)
+      % create a new field with one value for each filter/field value
+      [vec, bin_levels{i}] = make_event_index(events1, bin_defs{i});
+      f{i} = sprintf('factor%i', i);
+      c = num2cell(vec);
+      [events1.(f{i})] = c{:};
+      
+      % will now use this field for binning
+      bin_defs{i} = f{i};
+    end
+    conj = true;
+  else
+    conj = false;
   end
   
-  % get values that correspond to bins; NaNs are not included anywhere
-  vals = unique(vec);
-  if isnumeric(vals)
-    vals = vals(~isnan(vals));
-  end
-
+  % get a vector with one value for each bin
+  [vec, bin_levels] = make_event_index(events1, bin_defs);
+  [n_bins, n_factors] = size(bin_levels);
+  
+  % create a new collapsed events struct
   events2 = [];
-  for i=1:length(vals)
-    bins{i} = find(ismember(vec, vals(i)));
+  bins = cell(1, n_bins);
+  n = NaN(1, n_bins);
+  for i = 1:n_bins
+    bins{i} = find(vec == i);
     
     % salvage fields that have the same value for this whole bin
     bin_event = collapse_struct(events1(bins{i}));
     events2 = cat_structs(events2, bin_event);
+    n(i) = length(bins{i});
   end
+  
+  % add a field with the number of events going into each bin
+  c = num2cell(n);
+  [events2.n] = c{:};
 
   % set the label field
   if isempty(labels)
-    if iscellstr(vals)
-      % if vals are strings, use that
-      labels = vals;
+    if conj
+      % define labels based on the levels of each factor
+      labels = cell(1, n_bins);
+      for i = 1:n_bins
+        labels{i} = '';
+        for j = 1:n_factors
+          % number of the level within this factor
+          this_label = bin_levels{i,j};
+          if ~isempty(levels)
+            % if specified, use a custom label
+            events2(i).(f{j}) = levels{j}{this_label};
+            labels{i} = [labels{i} ' ' levels{j}{this_label}];
+          else
+            % just print the level number
+            labels{i} = [labels{i} num2str(this_label)];
+          end
+        end
+        labels{i} = strtrim(labels{i});
+      end
+      
+    elseif iscellstr(bin_levels)
+      labels = bin_levels;
+      
+    elseif isnumeric(bin_levels{1})
+      % assuming that the field this is derived from had uniform type;
+      % if not, this may throw an error
+      labels = cellfun(@num2str, bin_levels, 'UniformOutput', false);
+      
     else
+      % can't make labels from the events field values
       % try generating labels from the standard fields
       dim.mat = events2;
       dim.len = length(events2);
       labels = get_dim_labels(struct('ev', dim), 'ev');
-
-      % if failed, will be indices; in this case, use vals
-      if isequal(labels, cellfun(@num2str, num2cell(1:length(events2)), ...
-                                 'UniformOutput', false))
-        labels = cellfun(@num2str, num2cell(vals), 'UniformOutput', false);
-      end
     end
   end
   [events2.label] = labels{:};
@@ -245,6 +271,20 @@ function [chan2, bins] = chan_bins(chan1, bin_defs, labels)
   %   number is defined and unique. It contains a numeric scalar.
   %   label is defined and unique. It contains a string.
   %   there may be other fields, which will be kept if possible.
+
+  % get numbers and regions from the old channels struct
+  dim.chan = chan1;
+  chan_numbers = get_dim_vals(dim, 'chan');
+  chan_labels = get_dim_labels(dim, 'chan');
+  
+  % translate universal bin defs
+  if ischar(bin_defs)
+    if strcmp(bin_defs, ':')
+      bin_defs = {chan_numbers};
+    elseif strcmp(bin_defs, 'iter')
+      bin_defs = num2cell(chan_numbers);
+    end
+  end
   
   % input checks
   if isnumeric(bin_defs)
@@ -258,14 +298,9 @@ function [chan2, bins] = chan_bins(chan1, bin_defs, labels)
   elseif ~isempty(labels) && length(labels) ~= length(bin_defs)
     error('labels must be the same length as bin_defs.')
   end
-
-  % get numbers and regions from the old channels struct
-  c = bin_defs;
-  dim.chan = chan1;
-  chan_numbers = get_dim_vals(dim, 'chan');
-  chan_labels = get_dim_labels(dim, 'chan');
   
   % define each channel bin
+  c = bin_defs;
   n_bins = length(c);
   bins = cell(1, n_bins);
   chan2 = [];
@@ -338,9 +373,17 @@ function [time2, bins] = time_bins(time1, bin_defs, labels)
     error('labels must be the same length as bin_defs.')
   end
 
-  % if multiple bins of the same size...
-  if size(bin_defs, 2) > 1 && isunique(diff(bin_defs, [], 2))
-    % make the last bin non-inclusive
+  if ischar(bin_defs)
+    % universal bin defs
+    if strcmp(bin_defs, ':')
+      bins = {1:length(time1)};
+      bin_defs = [time1(1).range(1) time1(end).range(end)];
+    elseif strcmp(bin_defs, 'iter')
+      bins = num2cell(1:length(time1));
+      bin_defs = cat(1, time1.range);
+    end
+  elseif size(bin_defs, 2) > 1 && isunique(diff(bin_defs, [], 2))
+    % if multiple bins of the same size, make the last bin non-inclusive
     bins = apply_bins([time1.avg], bin_defs, false);
   else
     % the last bin will be inclusive
@@ -349,7 +392,7 @@ function [time2, bins] = time_bins(time1, bin_defs, labels)
   
   % create the new time structure
   time2 = struct('range', cell(size(bins)), 'avg', [], 'label', '');
-  for i=1:length(bins)
+  for i = 1:length(bins)
     time2(i).range = bin_defs(i,:);
     time2(i).avg = nanmean(time2(i).range);
   end
@@ -387,12 +430,27 @@ function [freq2, bins] = freq_bins(freq1, bin_defs, labels)
     error('labels must be the same length as bin_defs.')
   end
 
-  % get the indices corresponding to each bin
-  bins = apply_bins([freq1.avg], bin_defs);
+  if ~isfield(freq1, 'range')
+    [freq1.range] = freq1.vals;
+  end
+  
+  if ischar(bin_defs)
+    % universal bin defs
+    if strcmp(bin_defs, ':')
+      bins = {1:length(freq1)};
+      bin_defs = [freq1(1).range(1) freq1(end).range(end)];
+    elseif strcmp(bin_defs, 'iter')
+      bins = num2cell(1:length(freq1));
+      bin_defs = cat(1, freq1.range);
+    end
+  else
+    % get the indices corresponding to each bin
+    bins = apply_bins([freq1.avg], bin_defs);
+  end
 
   % create the new time structure
   freq2 = struct('range', cell(size(bins)), 'avg', [], 'label', '');
-  for i=1:length(bins)
+  for i = 1:length(bins)
     freq2(i).range = bin_defs(i,:);
     freq2(i).avg = 2 ^ mean(log2(freq2(i).range));
   end

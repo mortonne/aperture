@@ -58,6 +58,7 @@ defaults.debug_plots = false;
 defaults.optimize_thresh = false;
 defaults.trackball_pat_name = '';
 defaults.search_thresh = 100:10:300;
+defaults.min_hits = .8;
 defaults.veog_chans = {[8 126] [25 127]};
 defaults.heog_chans = [1 32];
 defaults.eog_max_nan = 0.4;
@@ -88,6 +89,7 @@ if params.optimize_thresh
   p = [];
   p.chans = veog_chans;
   p.search_thresh = params.search_thresh;
+  p.min_hits = params.min_hits;
   params.blink_thresh = optimize_blink_detector(trackball_pat, p);
   clear trackball_pat
 end
@@ -96,6 +98,7 @@ end
 pre = sum(abs(params.blink_buffer)) + 500;
 post = abs(params.blink_buffer(1));
 eog_params = pat.params;
+eog_params.updateOnly = false;
 eog_params.chanFilter = veog_chans;
 eog_params.offsetMS = pat.params.offsetMS - pre;
 eog_params.durationMS = pat.params.durationMS + pre + post;
@@ -103,6 +106,7 @@ eog_params.relativeMS = [];
 if exist('trackball_samplerate', 'var')
   eog_params.resampledRate = trackball_samplerate;
 end
+
 eog_params.filttype = 'bandpass';
 eog_params.filtfreq = [.5 30];
 eog_params.filtorder = 4;
@@ -261,12 +265,14 @@ else
   pat = set_mat(pat, resid, 'hd');
 end
 
+pat.params.blink_thresh = params.blink_thresh;
+
 subj = setobj(subj, 'pat', pat);
 
 
 function eog_pat = get_best_eog(pat, chan_pairs, eog_type, max_nan)
-%GET_BEST_EOG   Search over EOG channels to find the most artifact-free.
 
+%GET_BEST_EOG   Search over EOG channels to find the most artifact-free.
 n_chan_pairs = length(chan_pairs);
 bad_samp = NaN(1, n_chan_pairs);
 eog_pats = cell(1, n_chan_pairs);
@@ -296,7 +302,6 @@ end
 [y, best_ind] = min(bad_samp);
 eog_pat = eog_pats{best_ind};
 eog_pat = move_obj_to_hd(eog_pat);
-
 
 function [first_repeat, uniq, repeated] = find_repeats(x)
 

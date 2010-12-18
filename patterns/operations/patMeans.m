@@ -1,10 +1,10 @@
-function pattern = patMeans(pattern, bins, min_samp)
+function pattern = patMeans(pattern, bins, f, varargin)
 %PATMEANS   Bin one or more dimensions of a pattern.
-%
-%  pattern = patMeans(pattern, bins)
 %
 %  Use this function to average together arbitrary bins for each
 %  dimension of a pattern.
+%
+%  pattern = patMeans(pattern, bins, f)
 %
 %  INPUTS:
 %  pattern:  the array to be binned.
@@ -15,6 +15,11 @@ function pattern = patMeans(pattern, bins, min_samp)
 %            indices for one bin. The cell corresponding to a
 %            dimension can also be empty, to indicate that dimension
 %            should not be binned.
+%
+%        f:  function to apply to each bin. Must be of the form:
+%             y = f(x, dim)
+%            where dim indicates the dimension of x that must be
+%            collapsed in the output y.
 %
 %  OUTPUTS:
 %  pattern:  the modified array.
@@ -87,25 +92,27 @@ for i = 1:length(bins)
     bin_ind{i} = bins{i}{j};
 
     % do the average along dimension i
-    x = pattern(bin_ind{:});
-    if ~isempty(min_samp) && nnz(~isnan(x)) / numel(x) < min_samp
-      % leave this bin as NaNs
-      fprintf('rm %d:%d ', i,j)
-      continue
-    end
+    % x = pattern(bin_ind{:});
+    % %if ~isempty(min_samp) && nnz(~isnan(x)) / numel(x) < min_samp
+    % if ~isempty(min_samp) && nnz(~isnan(x)) < min_samp
+    %   % leave this bin as NaNs
+    %   fprintf('rm %d:%d ', i,j)
+    %   continue
+    % end
 
-    avg = nanmean(x,i);
-    if nnz(isnan(avg)) == numel(avg)
-      warning('eeg_ana:patBinAllNaNs', ...
-              'Bin %d of dimension %d contains all NaNs.', j, i)
-    end
+    % avg = nanmean(x,i);
+    % if nnz(isnan(avg)) == numel(avg)
+    %   warning('eeg_ana:patBinAllNaNs', ...
+    %           'Bin %d of dimension %d contains all NaNs.', j, i)
+    % end
     
     % get reference for this bin after averaging
     ind = ALL_CELL;
     ind{i} = j;
     
     % place this average in the new array
-    temp(ind{:}) = avg;
+    % temp(ind{:}) = avg;
+    temp(ind{:}) = f(pattern(bin_ind{:}), i, varargin{:});
   end
   
   % this dimension is finished; update the pattern, and we're

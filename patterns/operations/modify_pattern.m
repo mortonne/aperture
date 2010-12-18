@@ -1,6 +1,10 @@
 function pat = modify_pattern(pat, params, pat_name, res_dir)
 %MODIFY_PATTERN   Modify an existing pattern.
 %
+%  *** DEPRECATED ***
+%  Functionality now split into bin_pattern, filter_pattern,
+%  reject_artifacts, zscore_pattern, and princomp_pattern.
+%
 %  pat = modify_pattern(pat, params, pat_name, res_dir)
 %
 %  Use this function to modify existing patterns. You can either save

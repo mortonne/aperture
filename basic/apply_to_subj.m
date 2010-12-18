@@ -47,7 +47,7 @@ if ~exist('dist','var')
 end
 
 % options
-defaults.memory = '1G';
+defaults.memory = '2G';
 params = propval(varargin, defaults);
 
 if dist==1

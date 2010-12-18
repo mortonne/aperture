@@ -71,29 +71,31 @@ defaults.correctm = '';
 defaults.plot_mult_events = true;
 defaults.map_limits = [];
 defaults.legend = {};
-defaults.print_input = {'-depsc'};
+defaults.print_input = {'-djpeg10'};
 defaults.mult_fig_windows = false;
-defaults.res_dir = get_pat_dir(pat, 'reports');
+defaults.res_dir = get_pat_dir(pat, 'reports', 'figs');
 [params, plot_params] = propval(varargin, defaults);
 plot_params = propval(plot_params, struct, 'strict', false);
 
 % prep the output directory
 params.res_dir = check_dir(params.res_dir);
-cd(params.res_dir)
-fig_dir = check_dir('./figs');
 
+n_events = patsize(pat.dim, 'ev');
 if ~isempty(params.event_bins)
   % create bins using inputs accepted by make_event_bins
   temp = bin_pattern(pat, 'eventbins', params.event_bins, ...
                      'save_mats', false, 'verbose', false);
   pattern = get_mat(temp);
   event_labels = get_dim_labels(temp.dim, 'ev');
+  n_events = patsize(temp.dim, 'ev');
   clear temp
 else
   pattern = get_mat(pat);
   event_labels = get_dim_labels(pat.dim, 'ev');
 end
 chan_labels = get_dim_labels(pat.dim, 'chan');
+
+n_chans = patsize(pat.dim, 'chan');
 
 if ~isempty(params.stat_name)
   % get the stat object
@@ -118,8 +120,7 @@ if ~isempty(params.stat_name)
   
   % make the colormap, set the pattern to be plotted as the
   % z-scores of the p-values
-  [pattern, map, params.map_limits] = sig_colormap(p, [max_sig sig], ...
-                                                   'two_way_signed');
+  [pattern, map, params.map_limits] = sig_colormap(p, [sig max_sig]);
   colormap(map)
 else
   if params.diff
@@ -155,6 +156,8 @@ files = cell(num_events, size(pattern,2));
 % make one figure per channel
 n_figs = prod(size(files));
 fprintf('making %d TFR plots from pattern "%s"...\n', n_figs, pat.name);
+
+base_filename = sprintf('%s_%s_%s', pat.name, fig_name, pat.source);
 
 n = 1;
 start_fig = gcf;
@@ -208,16 +211,24 @@ for i = 1:num_events
       end
       set(l, 'Location', 'NorthEast')
     end
-    
+
     % generate the filename
-    if num_events > 1
-      file_name = sprintf('%s_%s_%s_%s_%s', pat.name, fig_name, pat.source, ...
-                          event_labels{i}, chan_labels{c});
-    else
-      file_name = sprintf('%s_%s_%s_%s', pat.name, fig_name, pat.source, ...
-                          chan_labels{c});
+    filename = base_filename;
+    if n_events > 1 || n_chans > 1
+      filename = [filename '_'];
     end
-    files{i,c} = fullfile(fig_dir, file_name);
+    
+    if n_events > 1
+      filename = [filename event_labels{i}];
+    end
+    
+    if n_chans > 1
+      if n_events > 1
+        filename = [filename '-'];
+      end
+      filename = [filename chan_labels{c}];
+    end
+    files{i,c} = fullfile(params.res_dir, filename);
 
     % print this figure
     print(gcf, params.print_input{:}, files{i,c})

@@ -113,7 +113,7 @@ else
 end
 
 % get indices that will work with all the input matrices
-max_in_dim = max(cellfun(@ndims, matrices));
+max_in_dim = max([length(iter_cell) cellfun(@ndims, matrices)]);
 i = repmat({':'}, 1, max_in_dim);
 
 n = 1;
@@ -168,4 +168,4 @@ function out_matrix = eval_dim(in_matrices, out_matrix, i, n, ...
       end
     end
   end
-%endfunction
+

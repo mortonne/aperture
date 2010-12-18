@@ -18,9 +18,16 @@ function pat = bin_pattern(pat, varargin)
 %  PARAMS:
 %  These options may be specified using parameter, value pairs or by
 %  passing a structure. Defaults are shown in parentheses.
+%   f              - function handle to apply to each bin. (@nanmean)
+%   f_inputs       - cell array of additional inputs to f. ({})
 %   eventbins      - see make_event_bins for allowed formats. ([])
 %   eventbinlabels - cell array of strings, with one cell per bin. Gives
 %                    a label for each event bin. ({})
+%   eventbinlevels - cell array of cell arrays of strings. Used only if
+%                    specifying bins as a conjunction of multiple
+%                    factors, e.g. two events fields. The label for
+%                    factor i, level j goes in eventbinlevels{i}{j}.
+%                    ({})
 %   chanbins       - cell array where chanbins{i} defines bin i. Each
 %                    cell may contain an array of channel numbers, a
 %                    cell array of channel labels, or a string to be
@@ -56,14 +63,18 @@ if ~exist('pat', 'var') || ~isstruct(pat)
 end
 
 % default params
+defaults.f = @nanmean;
+defaults.f_inputs = {};
 defaults.eventbins = [];
 defaults.eventbinlabels = {};
+defaults.eventbinlevels = {};
 defaults.timebins = [];
 defaults.timebinlabels = {};
 defaults.chanbins = [];
 defaults.chanbinlabels = {};
 defaults.freqbins = [];
 defaults.freqbinlabels = {};
+defaults.min_samp = [];
 [params, saveopts] = propval(varargin, defaults);
 
 % make the new pattern
@@ -73,11 +84,11 @@ function pat = apply_pat_binning(pat, params)
   pattern = get_mat(pat);  
   
   % apply the bins to the pat object
-  [pat, bins] = patBins(pat, params);
+  p = rmfield(params, {'f' 'f_inputs'});
+  [pat, bins] = patBins(pat, p);
   
   % average within bins in the pattern
-  pattern = patMeans(pattern, bins);
+  pattern = patMeans(pattern, bins, params.f, params.f_inputs{:});
   
   pat = set_mat(pat, pattern, 'ws');
-%endfunction
 

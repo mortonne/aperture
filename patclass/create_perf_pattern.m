@@ -63,6 +63,7 @@ stat = getobj(pat, 'stat', stat_name);
 % set params
 defaults.stat_type = 'perf';
 defaults.event_bins = stat.params.selector;
+defaults.event_levels = {};
 defaults.precision = 'single';
 defaults.save_as = [pat.name '-' stat_name];
 defaults.overwrite = true;
@@ -97,13 +98,18 @@ function pat = get_patclass_stats(pat, stat_name, params)
   elseif isa(params.stat_type, 'function_handle') && ...
         ~isempty(params.event_bins)
     % one event for each bin
-    events = get_dim(pat.dim, 'ev');
-    event_bins = index2bins(make_event_bins(events, params.event_bins));
+    %events = get_dim(pat.dim, 'ev');
+    %event_bins = index2bins(make_event_bins(events, params.event_bins));
+    %n_events = length(event_bins);
+    %iter_cell = {[], event_bins};
+    
+    % bin the events dimension
+    [temp, bins] = patBins(pat, 'eventbins', params.event_bins, ...
+                           'eventbinlevels', params.event_levels);
+    event_bins = bins{1};
     n_events = length(event_bins);
     iter_cell = {[], event_bins};
     
-    % bin the events dimension
-    temp = patBins(pat, 'eventbins', params.event_bins);
     pat.dim = temp.dim;
   else
     

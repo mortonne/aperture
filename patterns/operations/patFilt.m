@@ -70,20 +70,19 @@ inds = repmat({':'}, 1, 4);
 % events
 if ~isempty(params.eventFilter)
   % load
-  events = get_mat(pat.dim.ev);
+  events = get_dim(pat.dim, 'ev');
   
   % filter
   inds{1} = inStruct(events, params.eventFilter);
   events = events(inds{1});
-  pat.dim.ev = set_mat(pat.dim.ev, events, 'ws');
-  pat.dim.ev.modified = true;
+  pat.dim = set_dim(pat.dim, 'ev', events, 'ws');
 end
 
 % channels
 % old way of filtering
 if ~isempty(params.chanFilter)
   if ischar(params.chanFilter)
-    inds{2} = inStruct(pat.dim.chan, params.chanFilter);
+    inds{2} = inStruct(get_dim(pat.dim, 'chan'), params.chanFilter);
   elseif iscellstr(params.chanFilter)
     % specifying labels
     [tf, loc] = ismember(params.chanFilter, get_dim_labels(pat.dim, 'chan'));
@@ -95,7 +94,8 @@ if ~isempty(params.chanFilter)
   else
     error('Invalid chanFilter input.')
   end
-  pat.dim.chan = pat.dim.chan(inds{2});
+  chan = get_dim(pat.dim, 'chan');
+  pat.dim = set_dim(pat.dim, 'chan', chan(inds{2}), 'ws');
 end
 % experimental new way
 if ~isempty(params.chan_filter)
@@ -114,9 +114,10 @@ if ~isempty(params.timeFilter)
     ms = get_dim_vals(pat.dim, 'time');
     inds{3} = bounds(1) <= ms & ms < bounds(2);
   elseif ischar(params.timeFilter)
-    inds{3} = inStruct(pat.dim.time, params.timeFilter);
+    inds{3} = inStruct(get_dim(pat.dim, 'time'), params.timeFilter);
   end
-  pat.dim.time = pat.dim.time(inds{3});
+  time = get_dim(pat.dim, 'time');
+  pat.dim = set_dim(pat.dim, 'time', time(inds{3}), 'ws');
 end
 
 % frequency
@@ -126,9 +127,10 @@ if ~isempty(params.freqFilter)
     freq = get_dim_vals(pat.dim, 'freq');
     inds{4} = bounds(1) <= freq & freq <= bounds(2);
   elseif ischar(params.freqFilter)
-    inds{4} = inStruct(pat.dim.freq, params.freqFilter);
+    inds{4} = inStruct(get_dim(pat.dim, 'freq'), params.freqFilter);
   end
-  pat.dim.freq = pat.dim.freq(inds{4});
+  freq = get_dim(pat.dim, 'freq');
+  pat.dim = set_dim(pat.dim, 'freq', freq(inds{4}), 'ws');
 end
 
 % check the dimensions

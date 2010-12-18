@@ -14,15 +14,18 @@ function objtype = get_obj_type(obj)
 %  objtype:  string indicating the type of object.
 
 % input checks
-if ~exist('obj','var') || ~isstruct(obj)
+if ~exist('obj', 'var') || ~isstruct(obj)
   error('You must pass an object.')
 end
 
 % guess the object type
-if isfield(obj, 'dim')
+if isfield(obj, 'type') && ~strcmp(obj.type, 'ev')
+  objtype = obj.type;
+elseif isfield(obj, 'dim')
   objtype = 'pattern';
 elseif isfield(obj, 'len')
   objtype = 'events';
 else
   error('Unknown object type.')
 end
+

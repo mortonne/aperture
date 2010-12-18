@@ -25,10 +25,6 @@ function pat = pat_erp_image(pat, fig_name, varargin)
 %   plot_index  - if true, index will be plotted on the image. Default
 %                 is true if event_index is specified, otherwise
 %                 false.
-%   plot_ind_bounds - if true, horizontal lines depicting a change
-%                     in the index value will be plotted.
-%   freq_inds - a list of the frequency indices that should be
-%               included in the report.
 %   scale_index - if true, index will be scaled before plotting. This is
 %                 useful when the index is not ms values. (false)
 %   exclude     - use to exclude samples before or after the index
@@ -50,17 +46,18 @@ function pat = pat_erp_image(pat, fig_name, varargin)
 %                  [main_pat_dir]/reports/figs
 
 % options
+defaults.event_bins = '';
 defaults.event_index = [];
 defaults.plot_index = [];
-defaults.plot_ind_bounds = false;
-defaults.freq_inds = [];
 defaults.scale_index = false;
 defaults.exclude = 'none';
 defaults.exclude_limits = [];
 defaults.map_limits = [];
 defaults.print_input = {'-djpeg10'};
-defaults.res_dir = '';
+defaults.res_dir = get_pat_dir(pat, 'reports', 'figs');
 params = propval(varargin, defaults);
+
+params.res_dir = check_dir(params.res_dir);
 
 % set default if user didn't specify whether to plot index
 if isempty(params.plot_index)
@@ -70,14 +67,6 @@ if isempty(params.plot_index)
     params.plot_index = false;
   end
 end
-
-% prep the output directory
-if isempty(params.res_dir)
-  report_dir = get_pat_dir(pat, 'reports');
-  cd(report_dir)
-  params.res_dir = './figs';
-end
-params.res_dir = check_dir(params.res_dir);
 
 % if iscellstr(channels)
 %   match = ismember({pat.dim.chan.label}, channels);
@@ -89,7 +78,14 @@ params.res_dir = check_dir(params.res_dir);
 % chan_inds = find(match);
 % n_chans = length(chan_inds);
 
-% load pattern information
+% apply event bins
+if ~isempty(params.event_bins)
+  [binned, bins] = patBins(pat, 'eventbins', params.event_bins);
+  bins = bins{1};
+  event_labels = get_dim_labels(binned.dim, 'ev');
+end
+
+% load the pattern
 pattern = get_mat(pat);
 
 % prep the event indices
@@ -112,17 +108,14 @@ end
 
 % dimension info
 [n_events, n_chans, n_samps, n_freqs] = size(pattern);
-chan = get_dim(pat.dim, 'chan');
-freq = get_dim(pat.dim, 'freq');
-time = get_dim_vals(pat.dim, 'time');
-
-% use only certain frequencies
-if isempty(params.freq_inds)
-  freq_inds = [1:n_freqs];
+if exist('bins', 'var')
+  n_bins = length(bins);
 else
-  n_freqs = length(params.freq_inds);
-  freq_inds = params.freq_inds;
+  n_bins = 1;
 end
+chan_labels = get_dim_labels(pat.dim, 'chan');
+freq_labels = get_dim_labels(pat.dim, 'freq');
+time = get_dim_vals(pat.dim, 'time');
 
 % remove excluded samples
 samplerate = get_pat_samplerate(pat);
@@ -170,48 +163,67 @@ end
 z_lim = params.map_limits;
 files = cell(1, n_chans, 1, n_freqs);
 base_filename = sprintf('%s_%s_%s', pat.name, fig_name, pat.source);
-for i=1:n_chans
-  for j=freq_inds
-    clf
-    hold on
+for i = 1:n_bins
+  if n_bins > 1
+    this_index = index(bins{i});
+  else
+    this_index = index;
+  end
+  
+  for j = 1:n_chans
+    for k = 1:n_freqs
+      clf
+      hold on
 
-    % get [events X time] matrix for this channel and freq
-    data = squeeze(pattern(:,i,:,j));
-    if isempty(params.map_limits)
-      absmax = max(abs(data(:)));
-      z_lim = [-absmax absmax];
+      % get [events X time] matrix for this channel and freq
+      if exist('bins', 'var')
+        data = squeeze(pattern(bins{i},j,:,k));
+      else
+        data = squeeze(pattern(:,j,:,k));
+      end
+      if isempty(params.map_limits)
+        absmax = max(abs(data(:)));
+        z_lim = [-absmax absmax];
+      end
+
+      % plot the events, sorted by index if desired
+      subplot('position', [0.175 0.275 0.75 0.65]);
+      h = image_sorted(data, time, this_index, ...
+                       'map_limits', z_lim, 'plot_index', params.plot_index);
+      xlabel(gca, '');
+      set(gca, 'XTickLabel', '');
+
+      % plot the average
+      pos = get(gca, 'Position');
+      subplot('position', [pos(1) 0.15 pos(3) 0.1]);
+      data(~mask) = NaN;
+      plot_erp(nanmean(data, 1), time);
+      ylabel('V (\muV)')
+      drawnow
+
+      % set the filename
+      filename = [base_filename '_'];
+      if n_bins > 1
+        filename = [filename strrep(event_labels{i}, ' ', '-') '_'];
+      end
+      if n_chans > 1
+        filename = [filename strrep(chan_labels{j}, ' ', '-') '_'];
+      end
+      if n_freqs > 1
+        label = strrep(freq_labels{k}, ' ', '-');
+        label = strrep(label, '.', '-');
+        filename = [filename label '_'];
+      end
+      if strcmp(filename(end), '_')
+        filename = filename(1:end-1);
+      end
+
+      %files{1,i,1,j} = fullfile(params.res_dir, [filename '.eps']);
+      files{i,j,1,k} = fullfile(params.res_dir, [filename '.jpg']);
+      
+      % save
+      print(gcf, params.print_input{:}, files{i,j,1,k});
     end
-
-    % plot the events, sorted by index if desired
-    subplot('position', [0.175 0.275 0.75 0.65]);
-    h = image_sorted(data, time, index, ...
-                     'map_limits', z_lim, ...
-                     'plot_index', params.plot_index, ...
-                     'plot_ind_bounds', params.plot_ind_bounds);
-    xlabel(gca, '');
-    set(gca, 'XTickLabel', '');
-
-    % plot the average
-    pos = get(gca, 'Position');
-    subplot('position', [pos(1) 0.15 pos(3) 0.1]);
-    data(~mask) = NaN;
-    plot_erp(nanmean(data, 1), time);
-    ylabel('V (\muV)')
-    drawnow
-
-    % set the filename
-    filename = base_filename;
-    if n_chans > 1
-      filename = [filename '_' lower(strrep(chan(i).label, ' ', '-'))];
-    end
-    if n_freqs > 1
-      filename = [filename '_' lower(strrep(freq(j).label, ' ', '-'))];
-    end
-
-    files{1,i,1,find(j==freq_inds)} = fullfile(params.res_dir, [filename '.jpg']);
-    
-    % save
-    print(gcf, params.print_input{:}, files{1,i,1,find(j==freq_inds)});
   end
 end
 

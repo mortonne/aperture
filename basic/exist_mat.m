@@ -29,9 +29,16 @@ if isfield(obj, 'file') && ~isempty(obj.file)
       warning('Broken file reference in %s object ''%s''.', obj_type, ...
               get_obj_name(obj))
     end
-  elseif strcmp(who('-file', obj.file, obj_type), obj_type)
-    % make sure the variable is in the file
-    hd = true;
+  else
+    var_names = who('-file', obj.file);
+    if ismember(obj_type, {'ev' 'events'})
+      obj_type = {'ev' 'events'};
+    end
+      
+    if any(ismember(obj_type, var_names))
+      % make sure the variable is in the file
+      hd = true;
+    end
   end
 end
 

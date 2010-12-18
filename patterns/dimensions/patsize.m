@@ -16,25 +16,29 @@ function D = patsize(dim_info, dim)
 %         D:  an array with the size of the requested dimension(s).
 
 % input checks
-if ~exist('dim_info', 'var') || ~isstruct(dim_info)
-  error('You must pass a dim structure.')
-elseif ~isfield(dim_info.ev, 'len') || isempty(dim_info.ev.len)
-  error('Events dimension length is undefined.')
-end
 if ~exist('dim', 'var')
-  dim = [];
-elseif ~(ischar(dim) || isscalar(dim))
-  error('Dim must only specify one dimension.')
+  dim = 1:4;
+elseif ischar(dim)
+  dim = {dim};
 end
 
 % mapping between fields and dimension numbers
-D(1) = dim_info.ev.len;
-D(2) = length(dim_info.chan);
-D(3) = length(dim_info.time);
-D(4) = length(dim_info.freq);
-
-% return the requested dimension size
-if ~isempty(dim)
-  [name, number] = read_dim_input(dim);
-  D = D(number);
+for i = 1:length(dim)
+  if iscell(dim)
+    this_dim = dim{i};
+  else
+    this_dim = dim(i);
+  end
+  
+  D(i) = get_dim_len(dim_info, read_dim_input(this_dim));
 end
+
+function len = get_dim_len(dim_info, dim_name)
+
+  if isfield(dim_info.(dim_name), 'len')
+    len = dim_info.(dim_name).len;
+  else
+    dim = get_dim(dim_info, dim_name);
+    len = length(dim);
+  end
+

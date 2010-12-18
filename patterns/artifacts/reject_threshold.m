@@ -4,10 +4,10 @@ function [mask, absmax] = reject_threshold(pattern, thresh, varargin)
 %  [mask, absmax] = reject_threshold(pattern, thresh, ...)
 %
 %  INPUTS:
-%   pattern:  [events X channels X time X freq] matrix.
+%   pattern:  [events X channels X time] matrix.
 %
-%    thresh:  maximum allowable absolute value for an event to be
-%             included.  Default: 100
+%    thresh:  maximum allowable range (over time) for an event-channel
+%             to be included.  Default: 100
 %
 %  OUPUTS:
 %      mask:  logical array the same size as pattern; true samples mark
@@ -31,7 +31,8 @@ defaults.verbose = true;
 params = propval(varargin, defaults);
 
 % get event-channels with any samples above the threshold
-absmax = max(max(abs(pattern), [], 3), [], 4);
+%absmax = max(max(abs(pattern), [], 3), [], 4);
+absmax = range(pattern, 3);
 bad_event_chans = absmax > thresh;
 
 % check for channels that are bad for all events

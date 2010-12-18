@@ -20,7 +20,7 @@ Y = X;
 
 % if any variables are completely missing, use mean of other
 % variables
-a = all(isnan(X));
+a = all(isnan(X), 1);
 if any(a)
   Y(:,a) = repmat(nanmean(X, 2), 1, nnz(a));
 end

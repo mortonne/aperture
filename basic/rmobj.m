@@ -6,7 +6,9 @@ function s = rmobj(s, varargin)
 %
 %         f:  name of a field containing a list of objects.
 %
-%  obj_name:  name of the object to be removed.
+%  obj_name:  name or cell array of names of the object(s) to be
+%             removed. May also specify regular expression(s); all
+%             patterns with matching names will be removed.
 %
 %  OUTPUTS:
 %        s:  the modified structure, with the specified object deleted.
@@ -23,11 +25,11 @@ function s = rmobj(s, varargin)
 %  See also getobj, setobj.
 
 % input checks
-if ~exist('s','var') || ~isstruct(s)
+if ~exist('s', 'var') || ~isstruct(s)
   error('You must pass a structure.')
 elseif length(s) > 1
   error('Structure must be of length 1.')
-elseif length(varargin)<2
+elseif length(varargin) < 2
   error('Not enough input arguments.')
 end
 
@@ -35,17 +37,31 @@ end
 [f, obj_name] = varargin{1:2};
 
 if length(varargin)==2
-  try
-    % we've reached the object to delete
-    [obj2rm, ind] = getobj(s, f, obj_name);
-  catch
-    % couldn't find it
-    fprintf('Warning: no object "%s" found in field "%s"\n', obj_name, f);
-    return
+  if ~iscell(obj_name)
+    obj_name = {obj_name};
   end
+  
+  for i = 1:length(obj_name)
+    n = 0;
+    while true
+      try
+        % we've reached the object to delete
+        [obj2rm, ind] = getobj(s, f, obj_name{i});
 
-  % remove the object
-  s.(f)(ind) = [];
+        % remove the object
+        s.(f)(ind) = [];
+        n = n + 1;
+      catch
+        % couldn't find it
+        if n == 0
+          fprintf('Warning: no object "%s" found in field "%s"\n', ...
+                  obj_name{i}, f);
+        end
+        break
+      end
+
+    end    
+  end
 
 else
   % get the next object

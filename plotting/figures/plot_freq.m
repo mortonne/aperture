@@ -53,10 +53,14 @@ params = structDefaults(params, ...
                         'mark',             [],         ...
                         'err_type',         '');
 
-switch params.err_type
- case 'std'
-  err = std(data)/sqrt(size(data,1)-1);
-  data = mean(data);
+if isnumeric(params.err_type)
+  err = params.err_type;
+else
+  switch params.err_type
+   case 'std'
+    err = std(data)/sqrt(size(data,1)-1);
+    data = mean(data);
+  end
 end
 
 % x-axis values
@@ -131,8 +135,8 @@ p2 = 2.^(0:10);
 
 if ~isempty(freq)
   % find powers of two between plotted frequencies
-  minf = min(freq);
-  maxf = max(freq);
+  minf = min(freq(:));
+  maxf = max(freq(:));
   ticks = find(minf < p2 & p2 < maxf);
   
   % add powers of two that are close enough

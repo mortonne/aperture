@@ -14,6 +14,11 @@ if ~(ismac || isunix)
   warning('Designed for UNIX or Mac; may fail for Windows.')
 end
 
+% add user library location (hard-coded). Better solution to come.
+% in the meantime, user must have a local library in ~/R
+% or have necessary packages installed globally
+setenv('R_LIBS_USER', '~/R')
+
 % find the full path to the script
 r_file = which(r_script);
 

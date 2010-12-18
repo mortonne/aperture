@@ -21,8 +21,6 @@ if ~exist('subj', 'var')
   error('You must pass a subj structure.')
 elseif ~isstruct(subj)
   error('subj must be a structure.')
-elseif ~isfield(subj, 'id')
-  error('subj must have an id field.')
 end
 
 if ~isempty(varargin) && iscell(varargin{1})

@@ -42,7 +42,15 @@ elseif strcmp(loc, 'hd')
     error('File not found: %s', obj.file)
   end
   
-  % load the matrix
+  % get the correct variable name
+  if ismember(objtype, {'ev' 'events'})
+    var_names = who('-file', obj.file);    
+    names = {'ev' 'events'};
+    match = find(ismember(names, var_names));
+    objtype = names{match(1)};
+  end
+
+  % load the matrix  
   mat = getfield(load(obj.file, objtype), objtype);
 else
   error('Unknown location type: %s', loc)
@@ -55,7 +63,7 @@ end
 
 bad_obj_size = false;
 switch objtype
- case 'events'
+ case {'ev' 'events'}
   % check the events structure
   if ~isstruct(mat)
     error('events must be a structure.')
