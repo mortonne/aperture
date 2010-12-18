@@ -130,7 +130,8 @@ for sess=subj.sess
   try
     runAlign(samplerate, {behsyncfile}, eegsyncfiles, eegfiles, {eventfile}, ...
              'mstime', 0, 0);
-  catch
+  catch err
     fprintf('runAlign threw an error.\n');
+    getReport(err)
   end
 end

@@ -67,7 +67,9 @@ types = unique({events.type});
 if ~ismember('REC_START', types)
   error('No recall period start events (type=REC_START) found.')
 elseif ~ismember(recWordField, types)
-  error('No word recall events (type=%s) found.', params.recWordField)
+  warning('No word recall events (type=%s) found.', params.recWordField)
+  rec_events = struct([]);
+  return
 end
 
 % some defaults

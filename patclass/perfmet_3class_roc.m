@@ -150,7 +150,7 @@ D = log(6) - H;
 perfmet.perf = D;
 perfmet.scratchpad = [];
 % perfmet.scratchpad.confusion = confusion;
-% perfmet.scratchpad.vol = vol;
+perfmet.scratchpad.vol = vol;
 % perfmet.scratchpad.H = H;
 
 warning('on', 'MATLAB:griddata:DuplicateDataPoints');

@@ -51,6 +51,6 @@ end
 
 [table, header] = create_pat_report(pat, dim, fig_names, params.fig_labels);
 
-longtable(table, header, report_file, params.title, params.landscape);
-pdf_file = pdflatex(report_file, params.compile_method);
+longtable(table, header, params.report_file, params.title, params.landscape);
+pdf_file = pdflatex(params.report_file, params.compile_method);
 

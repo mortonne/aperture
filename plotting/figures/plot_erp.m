@@ -30,6 +30,8 @@ function h = plot_erp(data, time, varargin)
 %                below the plot. ([])
 %   fill_color - [1 X 3] array giving the color to use for marks.
 %                ([.8 .8 .8])
+%   labels     - cell array of labels for lines in legend. ({})
+%   legend_input - cell array of additional inputs to legend. ({})
 %
 %  See also pat_erp.
 
@@ -52,6 +54,8 @@ defaults.y_label = '';
 defaults.plot_input = {'LineWidth', 2};
 defaults.mark = [];
 defaults.fill_color = [.8 .8 .8];
+defaults.labels = {};
+defaults.legend_input = {};
 params = propval(varargin, defaults);
 
 publishfig
@@ -129,6 +133,11 @@ if ~isempty(params.colors)
   for i=1:length(h)
     set(h(i), 'Color', params.colors{mod(i - 1, length(params.colors)) + 1})
   end
+end
+
+% add legend and line labels
+if ~isempty(params.labels)
+  l = legend(h, params.labels, params.legend_input{:});
 end
 
 % set limits
