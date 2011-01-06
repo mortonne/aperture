@@ -26,6 +26,12 @@ http://code.google.com/p/princeton-mvpa-toolbox/
 Add only core/learn and core/util to your path; some of the functions
 in the other directories conflict with EEG_ANA functions.
 
+To use reporting functions that produce PDF reports, you must have LaTeX 
+installed and have latex, pdflatex and dvipdf on your path.
+
+Distributed computing options require the MATLAB Distributed Computing
+ Toolbox.
+
 Authors
 -------
 Neal Morton (neal.w.morton@vanderbilt.edu)
