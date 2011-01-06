@@ -70,6 +70,7 @@ end
 
 % check to make sure that pattern1 and pattern2 have same
 % dimensions > 2
+defaults.oversample = false;
 defaults.feature_select = false;
 defaults.f_stat = @statmap_anova;
 defaults.stat_args = {};
@@ -173,6 +174,29 @@ testtargets = testtargets';
 % observations
 traintargets = traintargets(:,~train_missing);
 testtargets = testtargets(:,~test_missing);
+
+% oversample to remove effects of unequal N
+n = sum(traintargets, 2)';
+c = num2cell(n);
+if params.oversample && ~isequal(c{:})
+  % get the maximum N for any class
+  [t, index] = max(traintargets, [], 1);
+  max_n = max(n);
+  
+  % randomly sample with replacement to get the correct N
+  newtargets = [];
+  newpattern = [];
+  n_class = size(traintargets, 1);
+  for i = 1:n_class
+    this_index = find(index == i);
+    new_index = randsample(this_index, max_n, true);
+    newtargets = [newtargets traintargets(:,new_index)];
+    newpattern = [newpattern trainpattern(:,new_index)];
+  end
+  
+  traintargets = newtargets;
+  trainpattern = newpattern;
+end
 
 try
   % train
