@@ -37,6 +37,12 @@ if strcmp(loc, 'ws')
   % already loaded; just grab it
   mat = obj.mat;
 elseif strcmp(loc, 'hd')
+  % make sure the file extension is there
+  [pathstr, name, ext] = fileparts(obj.file);
+  if isempty(ext)
+    obj.file = [obj.file '.mat'];
+  end
+  
   % must load from file
   if ~exist(obj.file, 'file')
     error('File not found: %s', obj.file)

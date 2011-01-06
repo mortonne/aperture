@@ -15,6 +15,14 @@ if ~isstruct(obj)
   error('obj must be a structure.')
 end
 
+% make sure the file extension is there
+if isfield(obj, 'file')
+  [pathstr, name, ext] = fileparts(obj.file);
+  if isempty(ext)
+    obj.file = [obj.file '.mat'];
+  end
+end
+
 ws = false;
 hd = false;
 
