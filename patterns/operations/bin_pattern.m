@@ -18,7 +18,8 @@ function pat = bin_pattern(pat, varargin)
 %  PARAMS:
 %  These options may be specified using parameter, value pairs or by
 %  passing a structure. Defaults are shown in parentheses.
-%   f              - function handle to apply to each bin. (@nanmean)
+%   f              - function handle to apply to each bin.
+%                    (@(x) nanmean(x(:)))
 %   f_inputs       - cell array of additional inputs to f. ({})
 %   eventbins      - see make_event_bins for allowed formats. ([])
 %   eventbinlabels - cell array of strings, with one cell per bin. Gives
@@ -64,6 +65,7 @@ end
 
 % default params
 defaults.f = @nanmean;
+%defaults.f = @(x) nanmean(x(:));
 defaults.f_inputs = {};
 defaults.eventbins = [];
 defaults.eventbinlabels = {};
@@ -74,7 +76,6 @@ defaults.chanbins = [];
 defaults.chanbinlabels = {};
 defaults.freqbins = [];
 defaults.freqbinlabels = {};
-defaults.min_samp = [];
 [params, saveopts] = propval(varargin, defaults);
 
 % make the new pattern
@@ -88,6 +89,11 @@ function pat = apply_pat_binning(pat, params)
   [pat, bins] = patBins(pat, p);
   
   % average within bins in the pattern
+  % this will be the best method if we can speed up apply_by_group
+  %[bins{cellfun(@isempty, bins)}] = deal('iter');
+  %pattern = apply_by_group(params.f, {pattern}, bins, params.f_inputs);
+  
+  % less general, but faster; averages one dimension at a time
   pattern = patMeans(pattern, bins, params.f, params.f_inputs{:});
   
   pat = set_mat(pat, pattern, 'ws');
