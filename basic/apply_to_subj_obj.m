@@ -30,6 +30,8 @@ function subj = apply_to_subj_obj(subj, obj_path, fcn_handle, ...
 %  These options may be specified using parameter, value pairs or by
 %  passing a structure. Defaults are shown in parentheses.
 %   memory - memory requested for each job (dist=1 only). ('1G')
+%   max_jobs - if dist=1, this sets the maximum number of jobs to be
+%              running at any given time. (Inf)
 %
 %  See also apply_to_subj, apply_to_obj.
 
