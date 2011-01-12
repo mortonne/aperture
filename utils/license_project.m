@@ -21,5 +21,5 @@ for i = 1:length(d)
     % not a hidden directory; call recursively
     license_project(fullfile(project_dir, d(i).name), license_file);
   end
-end  
+end
 
