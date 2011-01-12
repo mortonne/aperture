@@ -50,7 +50,7 @@ end
 
 % options
 defaults.memory = '1.5G';
-defaults.max_jobs = [];
+defaults.max_jobs = Inf;
 params = propval(varargin, defaults);
 
 if dist == 1
