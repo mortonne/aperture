@@ -39,19 +39,23 @@ function subj = apply_to_pat(subj, pat_name, fcn_handle, fcn_inputs, ...
 %  See also apply_to_ev, apply_to_subj_obj, apply_to_subj.
 
 % input checks
-if ~exist('subj','var')
+if ~exist('subj', 'var')
   error('You must pass a subjects vector.')
-elseif ~exist('pat_name','var') || ~ischar(pat_name)
+elseif ~exist('pat_name', 'var') || ~ischar(pat_name)
   error('You must specify the name of a pattern.')
-elseif ~exist('fcn_handle','var')
+elseif ~exist('fcn_handle', 'var')
   error('You must pass a handle to a function.')
 end
-if ~exist('fcn_inputs','var')
+if ~exist('fcn_inputs', 'var')
   fcn_inputs = {};
 end
-if ~exist('dist','var')
+if ~exist('dist', 'var')
   dist = false;
 end
+
+% options
+defaults.memory = '2g';
+params = propval(varargin, defaults, 'strict', false);
 
 if strcmp(pat_name(end), '*')
   % find all patterns that begin with the input name
@@ -63,9 +67,9 @@ else
   pat_names = {pat_name};
 end
 
-for i=1:length(pat_names)
+for i = 1:length(pat_names)
   % apply_to_subj_obj does all the work
   subj = apply_to_subj_obj(subj, {'pat', pat_names{i}}, fcn_handle, ...
-                           fcn_inputs, dist, varargin{:});
+                           fcn_inputs, dist, params);
 end
 
