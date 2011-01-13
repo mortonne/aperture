@@ -22,6 +22,7 @@ function pat = cat_all_subj_patterns(subj, pat_name, dimension, varargin)
 %                concatenating across subjects. ({})
 %   dist       - flag for applying event bins in parallel (0=serial,
 %                1=distributed, 2=parallel). (0)
+%   memory     - memory to allocate each task if dist=1. ('2g')
 %   save_mats  - if true, mats associated with the new pattern will
 %                be saved to disk. If false, modified mats will be stored
 %                in the workspace, and can subsequently be moved to disk
@@ -54,12 +55,14 @@ function pat = cat_all_subj_patterns(subj, pat_name, dimension, varargin)
 defaults.event_filter = '';
 defaults.event_bins = {};
 defaults.dist = 0;
+defaults.memory = '2g';
 [params, save_opts] = propval(varargin, defaults);
 
 % apply filtering and binning
 if ~isempty(params.event_filter) || ~isempty(params.event_bins)
   subj = apply_to_pat(subj, pat_name, @prep_pattern, ...
-                      {params.event_filter, params.event_bins}, params.dist);
+                      {params.event_filter, params.event_bins}, ...
+                      params.dist, 'memory', params.memory);
 end
 
 % get patterns from all subjects
