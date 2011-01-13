@@ -4,8 +4,7 @@ function pat = pattern_statmap(pat, reg_defs, f_stat, f_inputs, stat_name, ...
 %
 %  Run a statistical test on each sample of a pattern.  You may use any
 %  statistics function that follows a certain template.  Results will
-%  be saved in a stat object, which contains an array called res. res
-%  may be a structure or a numeric arrary with results from the test.
+%  be saved in a stat object.
 %
 %  pat = pattern_statmap(pat, reg_defs, f_stat, f_inputs,
 %                        stat_name, n_effects, var_names)
@@ -13,7 +12,7 @@ function pat = pattern_statmap(pat, reg_defs, f_stat, f_inputs, stat_name, ...
 %  INPUTS:
 %        pat:  a pattern object.
 %
-%   reg_defs:  cell array of event bin definitions. See make_event_bins
+%   reg_defs:  cell array of event bin definitions. See make_event_index
 %              for allowed formats.
 %
 %     f_stat:  function handle for a function. Must be of the form:
@@ -21,22 +20,26 @@ function pat = pattern_statmap(pat, reg_defs, f_stat, f_inputs, stat_name, ...
 %              or
 %               [a,b,c,...] = f_stat(x, group, ...)
 %              if reg_defs is non-empty.
-%              res is a structure or numeric scalar, x is a vector
-%              of data for a given channel, sample, and frequency,
-%              group is a cell array of factors created from reg_defs.
-%              Currently, all outputs of f_stat must be numeric and
-%              must be of length n_effects (see below).
+%
+%              x is a vector of data for a given channel, sample, and
+%              frequency, and group is a cell array of factors created
+%              from reg_defs.
+%
+%              Each output will be placed into an
+%              [effects X channels X time X frequency] or an
+%              [1 X channels X time X frequency] array, depending
+%              on whether the output from f_stat is a scalar or a
+%              vector of length n_effects.
 %
 %   f_inputs:  cell array of additional inputs to f_stat.
 %
 %  stat_name:  string name of the stat object to create.
 %
-%  n_effects:  number of effects to be calculated. Default is 1.
+%  n_effects:  number of effects to be calculated (i.e. the length of
+%              any non-scalar outputs from f_stat). Default is 1.
 %
 %  var_names:  cell array of strings containing a name for each output
-%              of f_stat. Default is to name the first two outputs "p"
-%              and "statistic", and name the others "output3",
-%              "output4", etc.
+%              of f_stat. Default is {'p', 'statistic', 'res'}.
 %
 %  OUTPUTS:
 %        pat:  pattern object with an added stat object.
@@ -73,7 +76,7 @@ if ~isempty(reg_defs)
   
   group = cell(1, length(reg_defs));
   for i = 1:length(reg_defs)
-    group{i} = make_event_bins(events, reg_defs{i})';
+    group{i} = make_event_index(events, reg_defs{i})';
   end
   clear events
 else
@@ -142,11 +145,17 @@ fprintf('\n')
 
 % save the results
 for i = 1:n_out
-  try
-    output{i} = cat(1, reshape(output{i}{:}, ...
+  sample = output{i}{1};
+  
+  if length(sample) == n_effects
+    % get outputs of length n_effects
+    output{i} = cat(1, reshape([output{i}{:}], ...
                                [n_effects n_chans n_samps n_freqs]));
-  catch
+  elseif isscalar(sample)
+    % convert from cell array to array
     output{i} = cell2num(output{i});
+  else
+    error('Outputs must have length 1 or n_effects (%d).', n_effects)
   end
   eval([var_names{i} '=output{i};']);
 end
