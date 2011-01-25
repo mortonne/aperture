@@ -81,6 +81,12 @@ function pat = get_patclass_stats(pat, stat_name, params)
   res = getfield(load(stat.file, 'res'), 'res');
   [n_iter, n_chans, n_time, n_freq] = size(res.iterations);
   
+  % sanity check
+  class_events = length(res.iterations(1).train_idx);
+  pat_events = patsize(pat.dim, 1);
+  assert(class_events == pat_events, ...
+         'different numbers of events in the pattern and classification.');
+  
   if strcmp(params.stat_type, 'perf')
     % one event for each iteration
     n_events = n_iter;
@@ -106,6 +112,7 @@ function pat = get_patclass_stats(pat, stat_name, params)
     % bin the events dimension
     [temp, bins] = patBins(pat, 'eventbins', params.event_bins, ...
                            'eventbinlevels', params.event_levels);
+
     event_bins = bins{1};
     n_events = length(event_bins);
     iter_cell = {[], event_bins};
@@ -225,6 +232,7 @@ function acts = get_acts(res, stat_type)
       mat = perfmet.rank;
     end
 
+    mat = double(mat);
     mat(missing) = NaN;
     acts(iter_res.test_idx) = mat;
   end
