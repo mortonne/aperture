@@ -20,36 +20,58 @@ function res = traintest(testpattern, trainpattern, testtargets, ...
 %             iteration.
 %  PARAMS:
 %  Options can be set using property, value pairs or a structure.
-%   f_train      - function handle for training a classifier
-%   train_args   - args to be passed into f_train
-%   f_test       - function handle a classifier
-%   f_perfmet    - function handle for calculating performance
-%   perfmet_args - cell array of addition arguments for the perfmet
-%                  function
+%   f_train         - function handle for training a classifier
+%   train_args      - args to be passed into f_train
+%   f_test          - function handle a classifier
+%   f_perfmet       - function handle for calculating performance
+%   perfmet_args    - cell array of addition arguments for the perfmet
+%                     function
+%   class_sampling  - used if there is an unequal number of observations
+%                     in the conditions:
+%                      'over'  - each condition will be sampled with
+%                                replacement to match the maximum number
+%                                of observations in any condition
+%                      'under' - conditions will be sampled without
+%                                replacement to match the condition with
+%                                the smallest number of observations
+%                      ''      - (default) use all observations
+%   feature_select  - if true, feature selection will be used before
+%                     classification. (false)
+%   f_stat          - handle to a function to run feature selection.
+%                     (@statmap_anova)
+%   stat_args       - cell array of additional inputs to f_stat. ({})
+%   stat_thresh     - alpha value for deciding whether a given feature
+%                     should be included in the classification. (0.05)
+%   save_scratchpad - if true, full details of the classification will
+%                     be saved. (true)
+%   verbose         - if true, more status will be printed. (false)
 %
 %  NOTES:
 %   The counterintuitive test, then train order of inputs is necessary
 %   for compatibility with apply_by_group.
 
 if isempty(testpattern)
-  res.perf = NaN;
   res.train_idx = [];
   res.test_idx = [];
   res.unused_idx = [];
   res.unknown_idx = [];
   res.targs = NaN;
   res.acts = NaN;
-  res.scratchpad = NaN;
   res.train_funct_name = '';
   res.test_funct_name = '';
-  res.args = NaN;
-  res.perfmet.guesses = NaN;
-  res.perfmet.desireds = NaN;
-  res.perfmet.corrects = NaN;
-  res.perfmet.perf = NaN;
-  res.perfmet.scratchpad = [];
-  res.perfmet.perm_perf = NaN;
-  res.perfmet.function_name = '';
+
+  perfmet.guesses = NaN;
+  perfmet.desireds = NaN;
+  perfmet.corrects = NaN;
+  perfmet.perf = NaN;
+  perfmet.scratchpad = [];
+  perfmet.perm_perf = NaN;
+  perfmet.function_name = '';
+  res.perfmet = {perfmet};
+  res.perf = NaN;
+  
+  res.args = [];
+  res.scratchpad = [];
   return
 end
 
@@ -70,16 +92,16 @@ end
 
 % check to make sure that pattern1 and pattern2 have same
 % dimensions > 2
-defaults.oversample = false;
-defaults.feature_select = false;
-defaults.f_stat = @statmap_anova;
-defaults.stat_args = {};
-defaults.stat_thresh = 0.05;
 defaults.f_train = @train_logreg;
 defaults.train_args = struct('penalty', 10);
 defaults.f_test = @test_logreg;
 defaults.f_perfmet = {@perfmet_maxclass};
 defaults.perfmet_args = struct;
+defaults.class_sampling = '';
+defaults.feature_select = false;
+defaults.f_stat = @statmap_anova;
+defaults.stat_args = {};
+defaults.stat_thresh = 0.05;
 defaults.save_scratchpad = true;
 defaults.verbose = false;
 [params, unused] = propval(varargin, defaults);
@@ -101,20 +123,17 @@ f_train = params.f_train;
 f_test = params.f_test;
 
 % flatten all dimensions > 2 into one vector
-patsize = size(trainpattern);
-if ndims(trainpattern) > 2
-  trainpattern = reshape(trainpattern, [patsize(1) prod(patsize(2:end))]);
-end
-
-patsize = size(testpattern);
-if ndims(testpattern) > 2
-  testpattern = reshape(testpattern, [patsize(1) prod(patsize(2:end))]);
-end
+trainpattern = flatten_pattern(trainpattern);
+testpattern = flatten_pattern(testpattern);
 
 % optional feature selection
 if params.feature_select
+  % run statistical test
   p = params.f_stat(trainpattern, traintargets, params.stat_args{:});
   mask = p < params.stat_thresh;
+  
+  % get significant features
+  patsize = size(trainpattern);
   trainpattern = trainpattern(:,mask);
   testpattern = testpattern(:,mask);
   fprintf('selecting %d of %d features.\n', nnz(mask), prod(patsize(2:end)))
@@ -175,21 +194,27 @@ testtargets = testtargets';
 traintargets = traintargets(:,~train_missing);
 testtargets = testtargets(:,~test_missing);
 
-% oversample to remove effects of unequal N
+% under/oversample to remove effects of unequal N
 n = sum(traintargets, 2)';
 c = num2cell(n);
-if params.oversample && ~isequal(c{:})
-  % get the maximum N for any class
-  [t, index] = max(traintargets, [], 1);
-  max_n = max(n);
+if ~isempty(params.class_sampling) && ~isequal(c{:})
+  switch params.class_sampling
+   case 'over'
+    new_n = max(n);
+    replace = true;
+   case 'under'
+    new_n = min(n);
+    replace = false;
+  end
   
-  % randomly sample with replacement to get the correct N
+  % randomly sample to get the correct N
   newtargets = [];
   newpattern = [];
   n_class = size(traintargets, 1);
+  [t, index] = max(traintargets, [], 1);
   for i = 1:n_class
     this_index = find(index == i);
-    new_index = randsample(this_index, max_n, true);
+    new_index = randsample(this_index, new_n, replace);
     newtargets = [newtargets traintargets(:,new_index)];
     newpattern = [newpattern trainpattern(:,new_index)];
   end
