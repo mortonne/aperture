@@ -49,7 +49,7 @@ if ~exist('events', 'var')
   error('You must pass an events structure.')
 elseif ~isstruct(events)
   error('events must be a structure.')
-elseif ~exist('bins', 'var')
+elseif ~exist('bins', 'var') || isempty(bins)
   error('You must specify how to create the bins.')
 end
 
