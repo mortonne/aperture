@@ -57,7 +57,7 @@ function pat = classify_pat(pat, stat_name, varargin)
 %   pat = classify_pat(pat, 'patclass_cat_freq', params);
 
 % input checks
-if ~exist('pat','var') || ~isstruct(pat)
+if ~exist('pat', 'var') || ~isstruct(pat)
   error('You must pass a pattern object.')
 end
 if ~exist('stat_name', 'var')
@@ -114,10 +114,7 @@ if ~isempty(params.test_regressor)
 end
 
 % get the selector
-selector = make_event_bins(events, params.selector);
-if iscellstr(selector)
-  selector = make_index(selector);
-end
+selector = make_event_index(events, params.selector);
 
 % run pattern classification separately for each value on the iter_dims
 try

@@ -45,39 +45,23 @@ elseif size(targets, 1) ~= size(pattern, 1)
   error('Different number of observations in pattern and targets matrix.')
 end
 
-% default params
+% options
 defaults.test_targets = [];
 defaults.verbose = false;
 [xval_params, params] = propval(varargin, defaults);
-
-% use propval since struct does weird things will cell array inputs
 params = propval(params, struct, 'strict', false);
-
-% override printing in traintest
 params.verbose = false;
 
 % get the selector value for each iteration
-sel_vals = unique(selector);
-sel_vals = sel_vals(~isnan(sel_vals));
-n_sel = length(sel_vals);
-if length(sel_vals) < 2
+sel_vals = nanunique(selector);
+n_iter = length(sel_vals);
+if n_iter < 2
   error('Selector must have at least two unique non-NaN values.')
 end
-n = NaN(1, n_sel);
-for i=1:n_sel
-  n(i) = nnz(selector == sel_vals(i));
-end
-% if any(n < 10)
-%   error('not enough events for each run to classify.')
-% end
 
 % flatten all dimensions > 2 into one vector
-patsize = size(pattern);
-if ndims(pattern) > 2
-  pattern = reshape(pattern, [patsize(1) prod(patsize(2:end))]);
-end
+pattern = flatten_pattern(pattern);
 
-n_iter = length(sel_vals);
 for i = 1:n_iter
   % find the observations to train and test on
   unused_idx = isnan(selector);
@@ -108,10 +92,6 @@ for i = 1:n_iter
   if xval_params.verbose
     fprintf('%.2f\t', res.iterations(i).perf)
   end
-
-  %if n_perfs > 1
-  %  fprintf('\n')
-  %end
 end
 
 if xval_params.verbose
@@ -120,7 +100,5 @@ else
   fprintf('%.2f', nanmean([res.iterations.perf]))
 end
 
-%if n_perfs==1
-  fprintf('\n')
-%end
+fprintf('\n')
 

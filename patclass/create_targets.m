@@ -6,7 +6,7 @@ function targets = create_targets(events, bin_defs)
 %  INPUTS:
 %    events:  an events structure.
 %
-%  bin_defs:  input to make_event_bins. Each unique label will
+%  bin_defs:  input to make_event_index. Each unique label will
 %             correspond to a column of targets.
 %
 %  OUTPUTS:
@@ -27,7 +27,7 @@ function targets = create_targets(events, bin_defs)
 %   % create a conditions matrix using the field
 %   targets = create_targets(events, 'x');
 %
-%  See also make_event_bins.
+%  See also make_event_index.
 
 % input checks
 if ~exist('events', 'var') || ~isstruct(events)
@@ -37,18 +37,14 @@ elseif ~exist('bin_defs', 'var')
 end
 
 % create the regressors
-targ_vec = make_event_bins(events, bin_defs);
-if iscellstr(targ_vec)
-  targ_vec = make_index(targ_vec);
-end
+targ_vec = make_event_index(events, bin_defs);
 
 % unique condition labels
-conds = unique(targ_vec(~isnan(targ_vec)));
+conds = nanunique(targ_vec);
 
 % create logical conditions matrix
 targets = false(length(events), length(conds));
-for i=1:length(conds)
-  cond_match = targ_vec == conds(i);
-  targets(:,i) = cond_match;
+for i = 1:length(conds)
+  targets(:,i) = targ_vec == conds(i);
 end
 
