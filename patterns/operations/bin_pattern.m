@@ -81,8 +81,7 @@ if ~exist('pat', 'var') || ~isstruct(pat)
 end
 
 % default params
-defaults.f = @nanmean;
-%defaults.f = @(x) nanmean(x(:));
+defaults.f = @(x) nanmean(x(:));
 defaults.f_inputs = {};
 defaults.eventbins = [];
 defaults.eventbinlabels = {};
@@ -106,12 +105,8 @@ function pat = apply_pat_binning(pat, params)
   [pat, bins] = patBins(pat, p);
   
   % average within bins in the pattern
-  % this will be the best method if we can speed up apply_by_group
-  %[bins{cellfun(@isempty, bins)}] = deal('iter');
-  %pattern = apply_by_group(params.f, {pattern}, bins, params.f_inputs);
-  
-  % less general, but faster; averages one dimension at a time
-  pattern = patMeans(pattern, bins, params.f, params.f_inputs{:});
+  [bins{cellfun(@isempty, bins)}] = deal('iter');
+  pattern = apply_by_group(params.f, {pattern}, bins, params.f_inputs);
   
   pat = set_mat(pat, pattern, 'ws');
 
