@@ -54,8 +54,13 @@ function subj = classify_pat2pat(subj, train_pat_name, test_pat_name, ...
 %  PARAMS:
 %  These options may be specified using parameter, value pairs or by
 %  passing a structure. Defaults are shown in parentheses.
-%   regressor    - REQUIRED - input to make_event_bins; used to create
+%   regressor    - REQUIRED - input to make_event_index; used to create
 %                  the regressor for classification.
+%   test_select  - if true, will run cross-validation on the test
+%                  pattern to select the features to use for training.
+%                  (false)
+%   selector     - if using test_select, input to make_event_index to
+%                  define the selector. ('')
 %   iter_cell    - determines which dimensions to iterate over for both
 %                  training and testing. See apply_by_group for details.
 %                  Default is to train on all features of the training
@@ -107,6 +112,8 @@ test_pat = getobj(subj, 'pat', test_pat_name);
 
 % set default params
 defaults.regressor = '';
+defaults.test_select = false;
+defaults.selector = '';
 defaults.iter_cell = cell(1, 4);
 defaults.sweep_cell = cell(1, 4);
 defaults.overwrite = true;
@@ -156,6 +163,15 @@ test_events = get_dim(test_pat.dim, 'ev');
 train_targs = create_targets(train_events, params.regressor);
 test_targs = create_targets(test_events, params.regressor);
 
+% optional selector for test pattern feature selection
+if params.test_select
+  if isempty(params.selector)
+    error('You must define a selector.')
+  end
+  
+  params.selector = make_event_index(test_events, params.selector);
+end
+
 % load the patterns themselves
 train_pattern = get_mat(train_pat);
 test_pattern = get_mat(test_pat);
@@ -182,12 +198,28 @@ function res = sweep_wrapper(train_pattern, test_pattern, ...
 %
 %
 
-% the inner level of sweeping
-res = apply_by_group(@traintest, {test_pattern}, ...
-                     params.sweep_cell, ...
-                     {train_pattern, test_targs, train_targs, params}, ...
-                     'uniform_output', false);
-
+if ~params.test_select
+  % the inner level of sweeping
+  res = apply_by_group(@traintest, {test_pattern}, ...
+                       params.sweep_cell, ...
+                       {train_pattern, test_targs, train_targs, params}, ...
+                       'uniform_output', false);
+else
+  % xval with feature selection on test set
+  res = apply_by_group(@xval_test_select, {test_pattern}, ...
+                       params.sweep_cell, ...
+                       {test_targs, params.selector, train_pattern, ...
+                        train_targs, rmfield(params, 'selector')}, ...
+                       'uniform_output', false);
+  
+  % fix the res structure to be a [iterations X chans X time X freq]
+  % cell array, where each element has one res structure
+  res_size = size(res);
+  res_fixed_size = [length(res{1}.iterations) res_size(2:end)];
+  cell_vec = [res{:}];
+  struct_vec = [cell_vec.iterations];
+  res = num2cell(reshape(struct_vec, res_fixed_size));
+end
 
 function res = unravel_res(res)
 %UNRAVEL_RES   Reformat res to be a structure array.
