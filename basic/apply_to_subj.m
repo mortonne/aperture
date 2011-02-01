@@ -49,7 +49,7 @@ if ~exist('dist', 'var')
 end
 
 % options
-defaults.memory = '1.5G';
+defaults.memory = '1.7G';
 defaults.max_jobs = Inf;
 params = propval(varargin, defaults);
 
@@ -60,7 +60,7 @@ if dist == 1
   end
   sm = findResource('scheduler', 'type', 'generic');
   set(sm, 'DataLocation', '~/runs');
-  set(sm, 'SubmitFcn', {@sgeSubmitFcn2, params.memory});
+  set(sm, 'SubmitFcn', {@distributedSubmitFcn2, params.memory});
 
   % create a job to run all subjects
   % use the current path, and override pathdef.m, jobStartup.m, etc.
@@ -130,6 +130,7 @@ if dist == 1
       alltasks = get(job, 'Tasks');
       set(alltasks, 'CaptureCommandWindowOutput', true);
       submit(job);
+      fprintf('job %d submitted with %d tasks.\n', job.ID, n_needed);
       
       jobs = [jobs job];
     end
