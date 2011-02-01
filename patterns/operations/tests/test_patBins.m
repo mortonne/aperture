@@ -44,7 +44,7 @@ classdef test_patBins < mlunit.test_case
       self.pat = pat;
     end
     
-    function self = test_event_bins(self)
+    function self = test_event_bins_field(self)
       % event bins with one factor
       pat = self.pat;
       [pat, bins] = patBins(pat, 'eventbins', 'a', ...
@@ -61,6 +61,22 @@ classdef test_patBins < mlunit.test_case
       
       % bins
       mlunit.assert(isequal(bins, {{[1:6]' [7:10]'} [] [] []}));
+    end
+    
+    function self = test_event_bins_filt(self)
+      % event bins with a set of filters
+      pat = self.pat;
+      [pat, bins] = patBins(pat, 'eventbins', {'c == 2' 'c == 1' 'c == 3'}, ...
+                            'eventbinlabels', {'b' 'a' 'c'});
+      events = get_dim(pat.dim, 'ev');
+      
+      % events
+      mlunit.assert(isequal([events.c], [2 1 3]));
+      mlunit.assert(isequal({events.label}, {'b' 'a' 'c'}));
+      mlunit.assert(isequal([events.n], [3 4 3]));
+      
+      % bins
+      mlunit.assert(isequal(bins, {{[4:6]' [7:10]' [1:3]'} [] [] []}));
     end
     
     function self = test_event_bins_field_conj(self)
@@ -85,9 +101,23 @@ classdef test_patBins < mlunit.test_case
       % bins
       mlunit.assert(isequal(bins, {{[4:6]' [1:3]' [7:10]'} [] [] []}))
     end
+
+    function self = test_event_bins_field_conj_nol(self)
+      % events bins from conjunction of two fields
+      pat = self.pat;
+      [pat, bins] = patBins(pat, 'eventbins', {'a' 'c'});
+      events = get_dim(pat.dim, 'ev');
+
+      % events
+      mlunit.assert(isequal({events.label}, ...
+                           {'1 2' '1 3' '2 1'}));
+      
+      % bins
+      mlunit.assert(isequal(bins, {{[4:6]' [1:3]' [7:10]'} [] [] []}))
+    end
     
     function self = test_event_bins_filt_conj(self)
-      % event bins from conjunction of two filters
+      % event bins from conjunction of two sets of filters
       pat = self.pat;
       factor1 = {'d == 1' 'd == 2'};
       labels1 = {'d is one' 'd is two'};
@@ -110,6 +140,29 @@ classdef test_patBins < mlunit.test_case
       mlunit.assert(isequal({events.label}, ...
                            {'d is one b is even' 'd is one b is odd', ...
                             'd is two b is even' 'd is two b is odd'}));
+      
+      % bins
+      mlunit.assert(isequal(bins, ...
+                            {{[2 4]' [1 3 5]' [6 8 10]' [7 9]'} [] [] []}));
     end
+    
+    function self = test_event_bins_filt_conj_nol(self)
+      % event bins from conjunction of two sets of filters
+      pat = self.pat;
+      factor1 = {'d == 1' 'd == 2'};
+      factor2 = {'mod(b, 2) == 0', 'mod(b, 2) == 1'};
+      [pat, bins] = patBins(pat, 'eventbins', {factor1, factor2});
+      events = get_dim(pat.dim, 'ev');
+      
+      % events
+      mlunit.assert(isequal({events.label}, ...
+                           {'d == 1 mod(b, 2) == 0' 'd == 1 mod(b, 2) == 1', ...
+                            'd == 2 mod(b, 2) == 0' 'd == 2 mod(b, 2) == 1'}));
+      
+      % bins
+      mlunit.assert(isequal(bins, ...
+                            {{[2 4]' [1 3 5]' [6 8 10]' [7 9]'} [] [] []}));
+    end
+    
   end
 end

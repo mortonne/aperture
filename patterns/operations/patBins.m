@@ -181,9 +181,14 @@ function [events2, bins] = event_bins(events1, bin_defs, labels, levels)
   % create new event fields if necessary
   if (iscell(bin_defs) && ~iscellstr(bin_defs)) || ...
      (iscellstr(bin_defs) && all(ismember(bin_defs, fieldnames(events1))))
-    for i = 1:length(bin_defs)
+    conj = true;
+    
+    % store values for each level of each factor
+    n_factors = length(bin_defs);
+    conj_bin_levels = cell(1, n_factors);
+    for i = 1:n_factors
       % create a new field with one value for each filter/field value
-      [vec, bin_levels{i}] = make_event_index(events1, bin_defs{i});
+      [vec, conj_bin_levels{i}] = make_event_index(events1, bin_defs{i});
       f{i} = sprintf('factor%i', i);
       c = num2cell(vec);
       [events1.(f{i})] = c{:};
@@ -191,11 +196,29 @@ function [events2, bins] = event_bins(events1, bin_defs, labels, levels)
       % will now use this field for binning
       bin_defs{i} = f{i};
     end
-    conj = true;
+    
+    % set the level names
+    if isempty(levels)
+      levels = cell(1, n_factors);
+      for i = 1:n_factors
+        level_vals = conj_bin_levels{i};
+        if iscellstr(level_vals)
+          % already a cell of strings; use it
+          levels{i} = level_vals;
+        elseif isnumeric(level_vals{1})
+          % convert to strings
+          levels{i} = cellfun(@num2str, level_vals, 'UniformOutput', false);
+        else
+          % some other class; just use order after sorting
+          levels{i} = cellfun(@num2str, num2cell(1:length(level_vals)), ...
+                              'UniformOutput', false);
+        end
+      end
+    end
   else
     conj = false;
   end
-  
+
   % get a vector with one value for each bin
   [vec, bin_levels] = make_event_index(events1, bin_defs);
   [n_bins, n_factors] = size(bin_levels);
@@ -227,14 +250,10 @@ function [events2, bins] = event_bins(events1, bin_defs, labels, levels)
         for j = 1:n_factors
           % number of the level within this factor
           this_label = bin_levels{i,j};
-          if ~isempty(levels)
-            % if specified, use a custom label
-            events2(i).(f{j}) = levels{j}{this_label};
-            labels{i} = [labels{i} ' ' levels{j}{this_label}];
-          else
-            % just print the level number
-            labels{i} = [labels{i} num2str(this_label)];
-          end
+          
+          % add this level to the label for this bin
+          events2(i).(f{j}) = levels{j}{this_label};
+          labels{i} = [labels{i} ' ' levels{j}{this_label}];
         end
         labels{i} = strtrim(labels{i});
       end
