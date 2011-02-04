@@ -105,7 +105,7 @@ stat_file = fullfile(get_pat_dir(pat, 'stats'), ...
                      objfilename('stat', stat_name, pat.source));
 
 stat = init_stat(stat_name, stat_file, pat.source, params);
-save(stat.file, 'b');
+save(stat.file, 'b', 'stat');
 pat = setobj(pat, 'stat', stat);
 
 % pat = set_mat(pat, pattern, 'ws');
