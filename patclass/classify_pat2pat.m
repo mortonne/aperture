@@ -187,7 +187,7 @@ res.iterations = apply_by_group(@sweep_wrapper, ...
 res = unravel_res(res);
 
 % save the results to disk
-save(stat.file, 'res');
+save(stat.file, 'res', 'stat');
 
 % add the stat object to the output pat object
 subj = setobj(subj, 'pat', test_pat_name, 'stat', stat);
