@@ -34,9 +34,16 @@ function [perfmet] = perfmet_3class_roc(acts,targs,scratchpad,varargin)
 
 warning('off', 'MATLAB:griddata:DuplicateDataPoints');
 
+% initialize an empty perfmet
+perfmet.perf = NaN;
+perfmet.scratchpad = [];
+
 % check that there are 3 categories
 if size(acts,1)~=3
   error('perfmet_3class_gcm requires 3 categories.');
+elseif any(~any(targs, 2))
+  warning('not all classes are represented. D is undefined.\n')
+  return
 end
 
 % params
