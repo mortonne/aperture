@@ -59,6 +59,7 @@ end
 defaults.save_mats = true;
 defaults.save_as = default_pat_name;
 defaults.res_dir = get_pat_dir(def_pat);
+defaults.verbose = true;
 params = propval(varargin, defaults);
 pat_name = params.save_as;
 
@@ -85,11 +86,13 @@ catch
 end
 
 % print status
-if length(pats_name) == 1
-  fprintf('concatenating "%s" patterns along %s dimension...\n', ...
-          pats_name{:}, dim_name)
-else
-  fprintf('concatenating patterns along %s dimension...\n', dim_name)
+if params.verbose
+  if length(pats_name) == 1
+    fprintf('concatenating "%s" patterns along %s dimension...\n', ...
+            pats_name{:}, dim_name)
+  else
+    fprintf('concatenating patterns along %s dimension...\n', dim_name)
+  end
 end
 
 % make sure the non-cat dimensions match
@@ -120,14 +123,22 @@ end
 dim = def_pat.dim;
 if strcmp(dim_name, 'ev')
   % load each events structure
-  fprintf('events...')
+  if params.verbose
+    fprintf('events...')
+  end
+    
   events = [];
-  for i=1:length(pats)
-    fprintf('%s ', pats(i).source)
+  for i = 1:length(pats)
+    if params.verbose
+      fprintf('%s ', pats(i).source)
+    end
+      
     pat_events = get_mat(pats(i).dim.ev);
     events = cat_structs(events, pat_events);
   end
-  fprintf('\n')
+  if params.verbose
+    fprintf('\n')
+  end
 
   % save the concatenated events
   ev_dir = fullfile(params.res_dir, 'events');
@@ -158,19 +169,27 @@ if ~exist(pat_dir)
 end
 
 % concatenate the pattern
-fprintf('patterns...')
+if params.verbose
+  fprintf('patterns...')
+end
 pattern = [];
 for i=1:length(pats)
-  fprintf('%s ', pats(i).source)
+  if params.verbose
+    fprintf('%s ', pats(i).source)
+  end
   pattern = cat(dim_number, pattern, get_mat(pats(i)));
 end
-fprintf('\n')
+if params.verbose
+  fprintf('\n')
+end
 
 % create the new pat object
 pat_file = fullfile(pat_dir, ...
                     objfilename('pattern', pat_name, source));
 pat = init_pat(pat_name, pat_file, source, def_pat.params, dim);
-fprintf('pattern "%s" created.\n', pat_name)
+if params.verbose
+  fprintf('pattern "%s" created.\n', pat_name)
+end
 
 % save the new pattern
 pat = set_mat(pat, pattern, loc);
