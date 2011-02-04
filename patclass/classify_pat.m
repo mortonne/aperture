@@ -101,6 +101,7 @@ end
 
 % initialize the stat object
 stat = init_stat(stat_name, stat_file, pat.name, params);
+stat.subjid = pat.source;
 
 % load the pattern and corresponding events
 pattern = get_mat(pat);
@@ -137,7 +138,7 @@ res_fixed.iterations = reshape(struct_vec, res_fixed_size);
 res = res_fixed;
 
 % save the results
-save(stat.file, 'res');
+save(stat.file, 'res', 'stat');
 
 % add the stat object to the output pat object
 pat = setobj(pat, 'stat', stat);
