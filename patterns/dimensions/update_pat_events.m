@@ -1,4 +1,4 @@
-function subj = update_pattern_events(subj, ev_name, pat_name)
+function subj = update_pat_events(subj, ev_name, pat_name)
 %UPDATE_PATTERN_EVENTS   Update events associated with a pattern.
 %
 %  Update the events associated with a pattern or patterns. The new
@@ -59,7 +59,8 @@ for i=1:length(pat_names)
   %                               {'eegfile', 'eegoffset'});
   
   % update the pattern events
-  updated_events = update_struct(pat_events, new_events, 'mstime');
+  updated_events = update_struct(pat_events, new_events, ...
+                                 {'mstime','type'});
   pat.dim.ev = set_mat(pat.dim.ev, updated_events);
   
   % update the pat object
