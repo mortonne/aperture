@@ -273,6 +273,8 @@ function [events2, bins] = event_bins(events1, bin_defs, labels, levels)
       dim.len = length(events2);
       labels = get_dim_labels(struct('ev', dim), 'ev');
     end
+  elseif length(labels) ~= length(events2)
+    error('length of event labels must be same as the number of bins.')
   end
   [events2.label] = labels{:};
 

@@ -1,4 +1,8 @@
 %TEST_PATBINS   Unit tests for patBins.
+%
+%  runner = mlunit.text_test_runner(1,1);
+%loader = mlunit.test_loader;
+%run(runner, load_tests_from_test_case(loader, 'test_patBins'));
 
 % Copyright 2007-2011 Neal Morton, Sean Polyn, Zachary Cohen, Matthew Mollison.
 %
@@ -109,6 +113,13 @@ classdef test_patBins < mlunit.test_case
       events = get_dim(pat.dim, 'ev');
 
       % events
+      mlunit.assert(~isfield(events, 'b'), ...
+                    'non-singular field b not removed.');
+      mlunit.assert(isequal([events.a], [1 1 2]));
+      mlunit.assert(isequal([events.c], [2 3 1]));
+      mlunit.assert(isequal({events.factor1}, {'1' '1' '2'}));
+      mlunit.assert(isequal({events.factor2}, {'2' '3' '1'}));
+      mlunit.assert(isequal([events.n], [3 3 4]));
       mlunit.assert(isequal({events.label}, ...
                            {'1 2' '1 3' '2 1'}));
       
@@ -155,6 +166,16 @@ classdef test_patBins < mlunit.test_case
       events = get_dim(pat.dim, 'ev');
       
       % events
+      mlunit.assert(~isfield(events, 'b'), ...
+                    'non-singular field b not removed.');
+      mlunit.assert(isequal({events.a}, {1 1 [] 2}));
+      mlunit.assert(isequal({events.c}, {[] [] [] 1}));
+      mlunit.assert(isequal({events.factor1}, ...
+                            {'d == 1' 'd == 1' 'd == 2' 'd == 2'}));
+      mlunit.assert(isequal({events.factor2}, ...
+                            {'mod(b, 2) == 0' 'mod(b, 2) == 1' ...
+                             'mod(b, 2) == 0' 'mod(b, 2) == 1'}));
+      mlunit.assert(isequal([events.n], [2 3 3 2]));
       mlunit.assert(isequal({events.label}, ...
                            {'d == 1 mod(b, 2) == 0' 'd == 1 mod(b, 2) == 1', ...
                             'd == 2 mod(b, 2) == 0' 'd == 2 mod(b, 2) == 1'}));
