@@ -37,6 +37,13 @@ function pat = create_perf_pattern(pat, stat_name, varargin)
 %               apply the perfmet function to (only used if stat_type is
 %               a function handle). Default is to calculate the
 %               perfmet for each iteration.
+%   event_labels - cell array of strings, with one cell per bin. Gives
+%                  a label for each event bin. ({})
+%   event_levels - cell array of cell arrays of strings. Used only if
+%                  specifying bins as a conjunction of multiple
+%                  factors, e.g. two events fields. The label for
+%                  factor i, level j goes in event_levels{i}{j}.
+%                  ({})
 %   precision - precision of the created pattern. [{'single'} | 'double']
 %   save_mats - if true, and input mats are saved on disk, modified
 %               mats will be saved to disk. If false, the modified mats
@@ -63,6 +70,7 @@ stat = getobj(pat, 'stat', stat_name);
 % set params
 defaults.stat_type = 'perf';
 defaults.event_bins = stat.params.selector;
+defaults.event_labels = {};
 defaults.event_levels = {};
 defaults.precision = 'single';
 defaults.save_as = [pat.name '-' stat_name];
@@ -81,11 +89,26 @@ function pat = get_patclass_stats(pat, stat_name, params)
   res = getfield(load(stat.file, 'res'), 'res');
   [n_iter, n_chans, n_time, n_freq] = size(res.iterations);
   
-  % sanity check
+  % sanity checks
   class_events = length(res.iterations(1).train_idx);
   pat_events = patsize(pat.dim, 1);
   assert(class_events == pat_events, ...
          'different numbers of events in the pattern and classification.');
+  
+  % get non-singleton dimentions of res
+  pat_size = patsize(pat.dim);
+  class_size = [n_iter n_chans n_time n_freq];
+  
+  non_sing = find(class_size > 1);
+  all_dims = 2:4;
+  sing_dims = all_dims(~ismember(all_dims, non_sing));
+  non_sing = non_sing(~ismember(non_sing, 1));
+  for i = 1:length(non_sing)
+    if class_size(non_sing(i)) ~= pat_size(non_sing(i))
+      error('Class results and pattern do not match on %s dimension.', ...
+            read_dim_input(non_sing(i)))
+    end
+  end
   
   if strcmp(params.stat_type, 'perf')
     % one event for each iteration
@@ -103,14 +126,9 @@ function pat = get_patclass_stats(pat, stat_name, params)
   
   elseif isa(params.stat_type, 'function_handle') && ...
         ~isempty(params.event_bins)
-    % one event for each bin
-    %events = get_dim(pat.dim, 'ev');
-    %event_bins = index2bins(make_event_bins(events, params.event_bins));
-    %n_events = length(event_bins);
-    %iter_cell = {[], event_bins};
-    
     % bin the events dimension
     [temp, bins] = patBins(pat, 'eventbins', params.event_bins, ...
+                           'eventbinlabels', params.event_labels, ...
                            'eventbinlevels', params.event_levels);
 
     event_bins = bins{1};
@@ -161,11 +179,6 @@ function pat = get_patclass_stats(pat, stat_name, params)
       end
     end
   end
-
-  % get non-singleton dimentions of res
-  non_sing = find([n_iter n_chans n_time n_freq] > 1);
-  all_dims = 2:4;
-  sing_dims = all_dims(~ismember(all_dims, non_sing));
 
   % fix dimensions that were binned during classification
   bin_params = struct;
@@ -242,7 +255,7 @@ function perf = calc_perf(acts, targs, f_perfmet)
   acts = acts(:,~missing);
   targs = targs(:,~missing);
 
-  if isempty(acts)
+  if isempty(targs)
     perfmet = struct;
     perf = NaN;
   else
