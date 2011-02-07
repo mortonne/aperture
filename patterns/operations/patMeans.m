@@ -1,6 +1,10 @@
 function pattern = patMeans(pattern, bins, f, varargin)
 %PATMEANS   Bin one or more dimensions of a pattern.
 %
+%  *** DEPRECATED ***
+%  Use the more general apply_by_group instead.
+%  *** DEPRECATED ***
+%
 %  Use this function to average together arbitrary bins for each
 %  dimension of a pattern.
 %
