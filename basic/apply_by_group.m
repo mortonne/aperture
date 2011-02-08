@@ -143,30 +143,32 @@ for i = 1:prod(out_dim_sizes)
   end
 
   % build the inputs
-  slices = cell(size(matrices));
-  for j = 1:length(matrices)
-    try
-      slices{j} = matrices{j}(input_ind{:});
-    catch err
-      if strcmp(err.identifier, 'MATLAB:badsubscript')
-        error('iter_cell exceeds dimensions of matrix %d.', j);
-      else
-        rethrow(err)
+  if length(matrices) > 1
+    slices = cell(size(matrices));
+    for j = 1:length(matrices)
+      try
+        slices{j} = matrices{j}(input_ind{:});
+      catch err
+        if strcmp(err.identifier, 'MATLAB:badsubscript')
+          error('iter_cell exceeds dimensions of matrix %d.', j);
+        else
+          rethrow(err)
+        end
       end
     end
-  end
   
-  % get the output for this slice
-  f_out = f(slices{:}, constant_in{:});
-  
-  % place the output (colons should correspond to collapsed dims)
-  if isnumeric(x)
-    if ~isscalar(f_out)
-      error(['Output of f must be scalar, or uniform_output must be set to false.'])
+    % get the output for this slice
+    if params.uniform_output
+      x(output_ind{:}) = f(slices{:}, constant_in{:});
+    else
+      x{output_ind{:}} = f(slices{:}, constant_in{:});
     end
-    x(output_ind{:}) = f_out;
   else
-    x{output_ind{:}} = f_out;
+    if params.uniform_output
+      x(output_ind{:}) = f(matrices{1}(input_ind{:}), constant_in{:});
+    else
+      x{output_ind{:}} = f(matrices{1}(input_ind{:}), constant_in{:});
+    end
   end
 end
 
