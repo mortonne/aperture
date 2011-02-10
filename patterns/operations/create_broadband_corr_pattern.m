@@ -36,6 +36,9 @@ function pat = create_broadband_corr_pattern(pat, stat_name, varargin)
 %  stat_var_name   - the name of the variable containing your
 %                    broadband coefficients (in the file on the
 %                    stat object). ('b')
+%  fragment_path   - if fragmenting the variables, where to save
+%                    the temporary files
+%  fragment_dim    - dimension along which to do the fragmenting
 %
 
 % input checks
@@ -46,26 +49,75 @@ end
 % options
 defaults.plot = false;
 defaults.stat_var_name = 'b';
+defaults.fragment_path = '';
+defaults.fragment_dim = 1;
 [params, saveopts] = propval(varargin, defaults);
 
 pat = mod_pattern(pat, @apply_bb_removal, {stat_name, params}, saveopts); 
 
 function pat = apply_bb_removal(pat, stat_name, params)
+%
+% params.fragment_path = '/data7/scratch/polyn/analysis/iCatFR/patterns/temp_fragments';
+% params.fragment_dim = 2;
+
 
 % load the pattern
-pattern = get_mat(pat);
+% pattern = get_mat(pat);
+
+% frequency information
+freqs = get_dim_vals(pat.dim, 'freq');
+log_freqs = log2(freqs);
+
+d1 = length(get_dim_vals(pat.dim,1));
+d2 = length(get_dim_vals(pat.dim,2));
+d3 = length(get_dim_vals(pat.dim,3));
+d4 = length(get_dim_vals(pat.dim,4));
+
+% fragment the pattern
+pat_cell = fragment_variable(pat.file, 'pattern', ...
+                             params.fragment_path, ...
+                             params.fragment_dim, ...
+                             pat.source);
 
 % grab the stat with the bb coefficients
 stat = getobj(pat, 'stat', stat_name);
-
 % load the bb coefficients matrix
-b = get_stat(stat, params.stat_var_name);
+% b = get_stat(stat, params.stat_var_name);
 
-% frequency information
-% [n_events, n_chans, n_time, n_freq] = size(pattern);
-freqs = get_dim_vals(pat.dim, 'freq');
-log_freqs = log2(freqs);
+% fragment the coefficients
+b_cell = fragment_variable(stat.file, 'b', ...
+                           params.fragment_path, ...
+                           params.fragment_dim, ...
+                           pat.source);
+
+if length(pat_cell) ~= length(b_cell)
+  error('cell arrays must be of equal length');
+end
+
+pattern = zeros(d1,d2,d3,d4,'single');
+place = {':',':',':',':'};
+
+for i=1:length(pat_cell)
+  
+  pat_frag = load(pat_cell{i}, 'frag');
+  b_frag = load(b_cell{i}, 'frag');
+  
+  bbcorr_frag = bb_removal(pat_frag.('frag'), b_frag.('frag'), log_freqs);
+  
+  place{params.fragment_dim} = i;
+  pattern(place{:}) = bbcorr_frag;
+  
+end
+
+% initialize the pat object
+pat = set_mat(pat, pattern, 'ws');
+
+
+function corr_pattern = bb_removal(pattern, b, log_freqs)
+%
+
 [d1,d2,d3,d4] = size(pattern);
+corr_pattern = zeros(size(pattern),'single');
 
 % create the bb corrected pattern
 for i=1:d1
@@ -76,9 +128,6 @@ for i=1:d1
     end
   end
 end
-
-% initialize the pat object
-pat = set_mat(pat, corr_pattern, 'ws');
-
+% endfunction
 
 
