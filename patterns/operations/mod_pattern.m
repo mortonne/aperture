@@ -48,6 +48,8 @@ function pat = mod_pattern(pat, f, f_inputs, varargin)
 %               (false)
 %   save_as   - string identifier to name the modified pattern. If
 %               empty, the name will not change. ('')
+%   source    - string indicating the source of the pattern. If empty,
+%               the source will not change. ('')
 %   res_dir   - directory in which to save the modified pattern and
 %               events, if applicable. Default is a directory named
 %               pat_name on the same level as the input pat.
@@ -99,12 +101,15 @@ end
 % set default params
 defaults.save_mats = true;
 defaults.overwrite = false;
-defaults.save_as = '';
+defaults.save_as = pat.name;
+defaults.source = pat.source;
 defaults.res_dir = '';
+defaults.split = false;
 defaults.verbose = false;
 params = propval(varargin, defaults);
 
-if ~params.overwrite && isempty(params.save_as) && params.save_mats
+if ~params.overwrite && isempty(params.save_as) ...
+   && strcmp(params.source, pat.source) && params.save_mats
   % contradictory inputs; use the special default of returning to the
   % workspace
   params.save_mats = false;
@@ -114,15 +119,21 @@ if params.verbose
   fprintf('modifying pattern "%s"...', pat.name)
 end
 
-if strcmp(params.save_as, pat.name)
-  params.save_as = '';
+if strcmp(params.save_as, pat.name) && strcmp(params.source, pat.source)
+  % the pattern hasn't changed name or source; we don't need to generate
+  % a new file
+  new_file = false;
+else
+  % name or source has changed, so we need a new file
+  new_file = true;
 end
 
 % before modifying the pat object, make sure files, etc. are OK
-if ~isempty(params.save_as)
+if new_file
   % set new save files, regardless of whether we're saving right now
   % set the default results directory
   pat_name = params.save_as;
+  pat_source = params.source;
   if isempty(params.res_dir)
     params.res_dir = fullfile(fileparts(get_pat_dir(pat)), pat_name);
   end
@@ -130,24 +141,60 @@ if ~isempty(params.save_as)
   % use "patterns" subdirectory of res_dir
   pat_dir = fullfile(params.res_dir, 'patterns');
   pat_file = fullfile(pat_dir, ...
-                      objfilename('pattern', pat_name, pat.source));
+                      objfilename('pattern', pat_name, pat_source));
 else
   pat_name = pat.name;
   pat_file = pat.file;
+  pat_source = pat.source;
 end
 
 % check to see if there's already a pattern there that we don't want
 % to overwrite
-if params.save_mats && ~params.overwrite && exist(pat_file, 'file')
-  if params.verbose
-    fprintf('pattern "%s" exists. Skipping...\n', pat_name)
-  end
+if ~strcmp(pat_file(end-3:end), '.mat')
+  full_pat_file = [pat_file '.mat'];
+else
+  full_pat_file = pat_file;
+end
+if params.save_mats && ~params.overwrite && exist(full_pat_file, 'file')
+  fprintf('pattern "%s" exists. Skipping...\n', pat_name)
   return
 end
 
 % make requested modifications; pattern and events may be modified in
 % the workspace
-pat = f(pat, f_inputs{:});
+if params.split && isfield(pat.dim, 'splitdim') && ~isempty(pat.dim.splitdim)
+  % get all slice patterns
+  pats = [];
+  split_dim = pat.dim.splitdim;
+  for i = 1:patsize(pat.dim, split_dim)
+    slice_pat = getfield(load(pat.file{i}, 'obj'), 'obj');
+    pats = addobj(pats, slice_pat);
+  end
+  dim = pat.dim;
+  
+  % run all slices, overwriting old slices
+  p = params;
+  p.split = false;
+  p.save_mats = true;
+  p.overwrite = true;
+  p.save_as = '';
+  p.verbose = false;
+  pats = apply_to_subj(pats, @mod_pattern, {f, f_inputs, p}, 0);
+  
+  % concatenate to update dimensions info
+  pat_name = pat.name;
+  pat_files = pat.file;
+  pat = cat_patterns(pats, split_dim, 'save_mats', true, ...
+                     'save_as', pat_name);
+  new_dim = get_dim(pat.dim, split_dim);
+  pat.dim = set_dim(dim, split_dim, dim);
+  
+  pat.file = pat_files;
+  pat.dim.splitdim = split_dim;
+  return
+else
+  pat = f(pat, f_inputs{:});
+end
 
 % make sure that the pattern is stored in the workspace--if not, the
 % supplied f is doing something weird
@@ -160,10 +207,11 @@ end
 % modified, if necessary)
 pat.modified = true;
 
-if ~isempty(params.save_as)
-  % change the name and point to the new file
+if new_file
+  % change the name(/source) and point to the new file
   pat.name = pat_name;
   pat.file = pat_file;
+  pat.source = pat_source;
   if ~exist(pat_dir, 'dir')
     mkdir(pat_dir)
   end
@@ -204,7 +252,7 @@ if params.save_mats && strcmp(get_obj_loc(pat), 'ws')
   % save the pattern
   pat = move_obj_to_hd(pat);
   if params.verbose
-    if ~isempty(params.save_as)
+    if new_file
       fprintf('saved as "%s".\n', pat.name)
     else
       fprintf('saved.\n')
@@ -212,7 +260,7 @@ if params.save_mats && strcmp(get_obj_loc(pat), 'ws')
   end
 elseif params.verbose
   % nothing to do
-  if ~isempty(params.save_as)
+  if new_file
     fprintf('returning as "%s".\n', pat.name)
   else
     fprintf('updated.\n')
