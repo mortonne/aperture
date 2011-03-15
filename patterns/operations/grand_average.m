@@ -3,8 +3,8 @@ function pat = grand_average(subj, pat_name, varargin)
 %
 %  Used to calculate an average across subjects for a given pattern
 %  type. The pattern indicated by pat_name must have the same dimensions
-%  for each subject. Events may be averaged prior to averaging across
-%  subjects by setting the event_bins param.
+%  for each subject (except for the events dimension, whose size may
+%  vary between subjects).
 %
 %  pat = grand_average(subj, pat_name, ...)
 %
@@ -20,14 +20,29 @@ function pat = grand_average(subj, pat_name, varargin)
 %  PARAMS:
 %  These options may be specified using parameter, value pairs or by
 %  passing a structure. Defaults are shown in parentheses.
-%   event_bins - definition of event bins to average over before
-%                averaging across subjects. See make_event_bins for
-%                bin definition types. ([])
-%   dist       - option for distributing jobs when calculating
-%                event_bins. See apply_to_pat for details. (0)
-%   save_mat   - if true, the new pattern will be saved to disk. (true)
-%   res_dir    - directory to save the new pattern. Default is subj(1)'s
-%                pattern's res_dir.
+%   event_bins   - definition of event bins to average over before
+%                  averaging across subjects. See make_event_bins for
+%                  bin definition types. Default is to average over all
+%                  of each subject's events. ('overall')
+%   event_labels - cell array of strings giving a label for each
+%                  event_bin. ({})
+%   event_levels - cell array of cell arrays of strings giving labels
+%                  for each level of the factors specified in
+%                  event_bins. ({})
+%   dist         - option for distributing jobs when calculating
+%                  event_bins. See apply_to_pat for details. (0)
+%   save_mats    - if true, and input mats are saved on disk, modified
+%                  mats will be saved to disk. If false, the modified
+%                  mats will be stored in the workspace, and can
+%                  subsequently be moved to disk using move_obj_to_hd.
+%                  (true)
+%   overwrite    - if true, existing patterns on disk will be
+%                  overwritten. (false)
+%   save_as      - string identifier to name the modified pattern. If
+%                  empty, the name will not change. ('')
+%   res_dir      - directory in which to save the new pattern and
+%                  events. Default is a directory named pat_name on the
+%                  same level as the first subject's pat.
 
 % Copyright 2007-2011 Neal Morton, Sean Polyn, Zachary Cohen, Matthew Mollison.
 %
@@ -56,52 +71,33 @@ elseif ~isstruct(subj)
 end
 
 % get info from the first subject
-subj_pat = getobj(subj(1), 'pat', pat_name);
-defaults.event_bins = [];
+defaults.event_bins = 'overall';
+defaults.event_labels = {};
+defaults.event_levels = {};
 defaults.dist = 0;
-defaults.save_mat = true;
-defaults.res_dir = get_pat_dir(subj_pat, 'patterns');
-params = propval(varargin, defaults);
+defaults.memory = '2g';
+[params, saveopts] = propval(varargin, defaults);
 
-source = 'ga';
-if ~isempty(params.event_bins)
-  subj = apply_to_pat(subj, pat_name, @bin_pattern, ...
-                      {'eventbins', params.event_bins, ...
-                      'save_mats', false}, params.dist);
-  subj_pat = getobj(subj(1), 'pat', pat_name);
-  subj_pat.dim.ev.modified = true;
-end
+saveopts = propval(saveopts, struct, 'strict', false);
 
-% initialize the new pattern
-pat_file = fullfile(params.res_dir, objfilename('pattern', pat_name, source));
-pat = init_pat(pat_name, pat_file, source, subj_pat.params, ...
-               subj_pat.dim);
+fprintf('calculating grand average for pattern "%s"...\n', pat_name)
 
-% load and concatenate all subject patterns
-fprintf('calculating grand average for pattern "%s"...', pat_name)
-pattern = getvarallsubj(subj, {'pat', pat_name}, 'pattern', 5);
+% bin each subject's events before concatenating
+subj = apply_to_pat(subj, pat_name, @bin_pattern, ...
+                    {'eventbins', params.event_bins, ...
+                     'eventbinlabels', params.event_labels, ...
+                     'eventbinlevels', params.event_levels, ...
+                    'save_mats', false}, params.dist, ...
+                    'memory', params.memory);
 
-% average across subjects
-pattern = nanmean(pattern, 5);
+% concatenate the subjects
+pats = getobjallsubj(subj, 'pat', pat_name);
+pat = cat_patterns(pats, 'ev', 'save_mats', false, 'verbose', false);
 
-% if events were binned, save them in a new file
-if pat.dim.ev.modified
-  pat.dim.ev.file = fullfile(params.res_dir, ...
-                             objfilename('events', pat.name, pat.source));
-end
-
-% save the new pattern
-if params.save_mat
-  pat = set_mat(pat, pattern, 'hd');
-  
-  if pat.dim.ev.modified
-    pat.dim.ev = move_obj_to_hd(pat.dim.ev);
-  end
-  
-  fprintf('saved.\n')
-else
-  pat = set_mat(pat, pattern, 'ws');
-  pat.modified = true;
-  fprintf('done.\n')
-end
+% average, saving as requested
+% the name may stay the same, so must note that the source has changed
+pat.source = '';
+saveopts.source = 'ga';
+saveopts.eventbins = 'label';
+pat = bin_pattern(pat, saveopts);
 
