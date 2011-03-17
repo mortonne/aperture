@@ -108,7 +108,7 @@ defaults.split = false;
 defaults.verbose = false;
 params = propval(varargin, defaults);
 
-if ~params.overwrite && isempty(params.save_as) ...
+if ~params.overwrite && strcmp(params.save_as, pat.name) ...
    && strcmp(params.source, pat.source) && params.save_mats
   % contradictory inputs; use the special default of returning to the
   % workspace
