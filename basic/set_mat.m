@@ -66,6 +66,7 @@ switch loc
   end
 
   for i = 1:length(obj_file)
+    obj_file{i} = strtrim(obj_file{i});
     if split
       ind = all_ind;
       ind{split_dim} = i;

@@ -74,7 +74,7 @@ elseif strcmp(loc, 'hd')
     all_ind = repmat({':'}, 1, ndims(mat));
     for i = 1:length(obj.file)
       % load this slice
-      s = load(obj.file{i}, 'pattern');
+      s = load(strtrim(obj.file{i}), 'pattern');
       
       % add it to the matrix
       ind = all_ind;
@@ -84,7 +84,7 @@ elseif strcmp(loc, 'hd')
     
   else
     % load the matrix  
-    mat = getfield(load(obj.file, objtype), objtype);
+    mat = getfield(load(strtrim(obj.file), objtype), objtype);
   end
   
 else
