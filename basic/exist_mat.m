@@ -15,6 +15,11 @@ if ~isstruct(obj)
   error('obj must be a structure.')
 end
 
+% if cell array, just check the first file
+if iscell(obj.file)
+  obj.file = obj.file{1};
+end
+
 % make sure the file extension is there
 if isfield(obj, 'file')
   [pathstr, name, ext] = fileparts(obj.file);

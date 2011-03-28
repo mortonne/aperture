@@ -38,14 +38,25 @@ if strcmp(loc, 'ws')
   mat = obj.mat;
 elseif strcmp(loc, 'hd')
   % make sure the file extension is there
-  [pathstr, name, ext] = fileparts(obj.file);
-  if isempty(ext)
-    obj.file = [obj.file '.mat'];
+  if iscellstr(obj.file)
+    for i = 1:length(obj.file)
+      [pathstr, name, ext] = fileparts(obj.file{i});
+      if isempty(ext)
+        obj.file{i} = [obj.file{i} '.mat'];
+      end
+    end
+    obj_file = obj.file{1};
+  else
+    [pathstr, name, ext] = fileparts(obj.file);
+    if isempty(ext)
+      obj.file = [obj.file '.mat'];
+    end
+    obj_file = obj.file;
   end
   
   % must load from file
-  if ~exist(obj.file, 'file')
-    error('File not found: %s', obj.file)
+  if ~exist(obj_file, 'file')
+    error('File not found: %s', obj_file)
   end
   
   % get the correct variable name
@@ -55,9 +66,27 @@ elseif strcmp(loc, 'hd')
     match = find(ismember(names, var_names));
     objtype = names{match(1)};
   end
-
-  % load the matrix  
-  mat = getfield(load(obj.file, objtype), objtype);
+    
+  if strcmp(objtype, 'pattern') && isfield(obj.dim, 'splitdim') ...
+        && ~isempty(obj.dim.splitdim)
+    % concatenate along the split dimension to reform the pattern
+    mat = NaN(patsize(obj.dim));
+    all_ind = repmat({':'}, 1, ndims(mat));
+    for i = 1:length(obj.file)
+      % load this slice
+      s = load(obj.file{i}, 'pattern');
+      
+      % add it to the matrix
+      ind = all_ind;
+      ind{obj.dim.splitdim} = i;
+      mat(ind{:}) = s.pattern;
+    end
+    
+  else
+    % load the matrix  
+    mat = getfield(load(obj.file, objtype), objtype);
+  end
+  
 else
   error('Unknown location type: %s', loc)
 end

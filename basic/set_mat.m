@@ -52,18 +52,39 @@ switch loc
   if ~isfield(obj, 'file') || isempty(obj.file)
     error('obj.file is not specified.')
   end
-  eval([objtype '=mat;']);
   
-  % check the size
-  w = whos(objtype);
-  
-  if w.bytes > 1900000000
-    % huge variable; need different MAT-file format
-    % apparently uses some type of compression
-    save('-v7.3', obj.file, objtype, 'obj')
+  % deal with split files
+  if ~iscell(obj.file)
+    obj_file = {obj.file};
+    split = false;
   else
-    % normal MAT-file will do
-    save(obj.file, objtype, 'obj')
+    split = true;
+    obj_file = obj.file;
+    split_dim = obj.dim.splitdim;
+    full_mat = mat;
+    all_ind = repmat({':'}, 1, ndims(mat));
+  end
+
+  for i = 1:length(obj_file)
+    if split
+      ind = all_ind;
+      ind{split_dim} = i;
+      mat = full_mat(ind{:});
+    end
+    
+    eval([objtype '=mat;']);
+    clear mat
+    % check the size
+    w = whos(objtype);
+
+    if w.bytes > 1900000000
+      % huge variable; need different MAT-file format
+      % apparently uses some type of compression
+      save('-v7.3', obj_file{i}, objtype, 'obj')
+    else
+      % normal MAT-file will do
+      save(obj_file{i}, objtype, 'obj')
+    end
   end
   obj.modified = false;
   obj.mat = [];
