@@ -29,7 +29,12 @@ function subj = apply_to_subj(subj, fcn_handle, fcn_inputs, dist, varargin)
 %  PARAMS:
 %  These options may be specified using parameter, value pairs or by
 %  passing a structure. Defaults are shown in parentheses.
-%   memory   - memory requested for each job (dist=1 only). ('1.5G')
+%   memory   - memory requested for each job (dist=1 only). ('1.7G')
+%   walltime - wall time to for each job ('hh:mm:ss').  This value
+%              should be at least 5 minutes, or '00:05:00' (dist=1
+%              only, Torque).  ('00:15:00')
+%   arch     - specify requested architecture for jobs to run on.
+%              To run on any nodes, leave empty (dist=1 only). ('')
 %   max_jobs - if dist=1, this sets the maximum number of jobs to be
 %              running at any given time. (Inf)
 %
@@ -50,18 +55,34 @@ end
 
 % options
 defaults.memory = '1.7G';
+defaults.walltime = '00:15:00'; % Torque
+defaults.arch = '';             % Torque 
 defaults.max_jobs = Inf;
 params = propval(varargin, defaults);
 
 if dist == 1
+  % determine which resource manager is being used
+  jm = which_resource_manager;
+  if strcmp('none',jm)
+    error('Job manager not found.')
+  end
+    
   % set up a scheduler
   if ~exist('~/runs', 'dir')
     mkdir('~/runs');
-  end
+  end  
   sm = findResource('scheduler', 'type', 'generic');
   set(sm, 'DataLocation', '~/runs');
-  set(sm, 'SubmitFcn', {@distributedSubmitFcn2, params.memory});
 
+  % set SubmitFcn according to resource manager
+  if strcmp('SGE',jm)
+    set(sm, 'SubmitFcn', {@distributedSubmitFcn2, params.memory});
+  
+  elseif strcmp('TORQUE',jm)
+    params.memory = torque_mem_format(params.memory);
+    set(sm, 'SubmitFcn', {@distributedSubmitFcn2, params});
+  end
+  
   % create a job to run all subjects
   % use the current path, and override pathdef.m, jobStartup.m, etc.
   path_cell = regexp(path, ':', 'split');
