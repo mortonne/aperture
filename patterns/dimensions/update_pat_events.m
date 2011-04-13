@@ -1,10 +1,10 @@
 function subj = update_pat_events(subj, ev_name, pat_name)
-%UPDATE_PATTERN_EVENTS   Update events associated with a pattern.
+%UPDATE_PAT_EVENTS   Update events associated with a pattern.
 %
 %  Update the events associated with a pattern or patterns. The new
 %  events will be merged with the pattern events using update_struct.
 %
-%  subj = update_pattern_events(subj, ev_name, pat_name)
+%  subj = update_pat_events(subj, ev_name, pat_name)
 %
 %  INPUTS:
 %      subj:  a subject object.
