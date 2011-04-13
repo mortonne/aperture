@@ -98,11 +98,18 @@ defaults.freqbinlabels = {};
 pat = mod_pattern(pat, @apply_pat_binning, {params}, saveopts);
 
 function pat = apply_pat_binning(pat, params)
-  pattern = get_mat(pat);  
   
+  pattern = get_mat(pat);
+
   % apply the bins to the pat object
   p = rmfield(params, {'f' 'f_inputs'});
   [pat, bins] = patBins(pat, p);
+  
+  if all(cellfun(@isempty, bins))
+    % no binning happened; nothing to do
+    pat = set_mat(pat, pattern, 'ws');
+    return
+  end
   
   % average within bins in the pattern
   [bins{cellfun(@isempty, bins)}] = deal('iter');
