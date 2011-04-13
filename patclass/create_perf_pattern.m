@@ -26,13 +26,22 @@ function pat = create_perf_pattern(pat, stat_name, varargin)
 %                'perf'    - use an already-calculated performance
 %                            metric. Will be one "event" for each
 %                            cross-validation iteration (default)
-%                'acts'    - value of the output unit for the actual
-%                            condition
+%                'acts'    - value of an output unit. Use class_output
+%                            to specify which unit to return (see below)
 %                'guess'   - condition guessed by the classifier
 %                'correct' - logical array indicating whether the
 %                            classifier was correct
 %               May also be a function handle to a performance metric
 %               function, which will be applied to each event_bin.
+%   class_output - if stat_type is 'acts', specifies which output units
+%                to return. Can be:
+%                numeric     - index of the output unit in the acts
+%                              matrix
+%                'fieldname' - name of an events field containing the
+%                              label of the output unit to get for a
+%                              given event
+%                'correct'   - the output unit for the correct category
+%                              on a given event
 %   event_bins - input to make_event_bins to define subsets of events to
 %               apply the perfmet function to (only used if stat_type is
 %               a function handle). Default is to calculate the
@@ -69,6 +78,7 @@ stat = getobj(pat, 'stat', stat_name);
 
 % set params
 defaults.stat_type = 'perf';
+defaults.class_output = 'correct';
 defaults.event_bins = stat.params.selector;
 defaults.event_labels = {};
 defaults.event_levels = {};
@@ -152,6 +162,28 @@ function pat = get_patclass_stats(pat, stat_name, params)
     iter_cell = {[], 'iter'};
   end
   
+  % check if getting classifier output
+  if strcmp(params.stat_type, 'acts') && ~isempty(params.class_output)
+    if ischar(params.class_output) && ...
+             ~strcmp(params.class_output, 'correct')
+      % getting from field
+      output_field = params.class_output;
+      field_val = output_field;
+    elseif isnumeric(params.class_output)
+      % getting a specified unit
+      field_val = num2str(params.class_output);
+    elseif ischar(params.class_output) && ...
+           strcmp(params.class_output, 'correct')
+      % correct output
+      field_val = params.class_output;
+    end
+    
+    % add this info to the events structure
+    events = get_dim(pat.dim, 'ev');
+    [events.class] = deal(field_val);
+    pat.dim = set_dim(pat.dim, 'ev', events, 'ws');
+  end
+  
   for c = 1:n_chans
     for t = 1:n_time
       for f = 1:n_freq
@@ -161,8 +193,17 @@ function pat = get_patclass_stats(pat, stat_name, params)
           
         elseif ischar(params.stat_type)
           % get some statistic for each event
+          if exist('output_field', 'var')
+            % this is a field from the events structure
+            inputs{1} = [events.(output_field)];
+            inputs{2} = nanunique(inputs{1});
+            
+          else
+            inputs = {params.class_output};
+          end
+          
           pattern(:,c,t,f) = get_acts(res.iterations(:,c,t,f), ...
-                                      params.stat_type);
+                                      params.stat_type, inputs{:});
           
         elseif isa(params.stat_type, 'function_handle')
           % calculate a new perfmet
@@ -216,19 +257,40 @@ function pat = get_patclass_stats(pat, stat_name, params)
   pat = set_mat(pat, pattern, 'ws');
 
 
-function acts = get_acts(res, stat_type)
+function acts = get_acts(res, stat_type, class_output, classes)
   n_events = length(res(1).test_idx);
   acts = NaN(n_events, 1);
   
-  for i=1:length(res)
+  for i = 1:length(res)
     iter_res = res(i);
-    
     missing = all(isnan(iter_res.acts), 1);
     
     switch stat_type
      case 'acts'
-      % get classifier activation for the correct unit
-      mat = iter_res.acts(logical(iter_res.targs));
+      if ischar(class_output) && strcmp(class_output, 'correct')
+        % get classifier activation for the correct unit
+        mat = iter_res.acts(logical(iter_res.targs));
+        
+      elseif isscalar(class_output) && isnumeric(class_output)
+        % get the specified unit
+        mat = iter_res.acts(class_output, :);
+        
+      elseif isnumeric(class_output)
+        % vector of category labels
+        iter_inds = find(iter_res.test_idx);
+        n_iter_events = length(iter_inds);
+        mat = NaN(n_iter_events, 1);        
+        for j = 1:n_iter_events
+          this_class = class_output(iter_inds(j));
+          act_ind = find(this_class == classes);
+          if isempty(act_ind)
+            continue
+          end
+          mat(j) = iter_res.acts(act_ind,j);
+        end        
+      else
+        error('Invalid setting for class_output.')
+      end
       
      case 'correct'
       % for each event, get whether the classifier guessed correctly
@@ -244,7 +306,7 @@ function acts = get_acts(res, stat_type)
       perfmet = perfmet_rank(iter_res.acts, iter_res.targs);
       mat = perfmet.rank;
     end
-
+    
     mat = double(mat);
     mat(missing) = NaN;
     acts(iter_res.test_idx) = mat;
