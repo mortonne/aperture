@@ -64,13 +64,7 @@ end
 % parse the dimension input
 [dim_name, dim_number] = read_dim_input(dimension);
 
-% save info in the pat object
-pat.dim.splitdim = dim_number;
-
 % load the pattern to be split
-if ~exist(pat.file, 'file')
-  error('%s not found.', pat.file)
-end
 full_pattern = get_mat(pat);
 
 fprintf('splitting pattern %s along %s dimension: ', pat.name, dim_name)
@@ -81,16 +75,29 @@ all_dim = {':',':',':',':'};
 dim_len = size(full_pattern, dim_number);
 pat.file = cell(1, dim_len);
 
+full_pat = pat;
+dim = get_dim(pat.dim, dim_name);
+
 % split the pattern along the specified dimension
-for i=1:dim_len
+for i = 1:dim_len
   fprintf('%s ', labels{i})
+
   % get this slice
   ind = all_dim;
   ind{dim_number} = i;
   pattern = full_pattern(ind{:});
   
+  pat.dim = set_dim(pat.dim, dim_name, dim(i), 'ws');
+  
   % save to disk
-  pat.file{i} = fullfile(res_dir, sprintf('%s_%s.mat', filename, labels{i}));
-  save(pat.file{i}, 'pattern')
+  pat.name = sprintf('%s_%s', full_pat.name, labels{i});
+  pat.file = fullfile(res_dir, sprintf('%s_%s.mat', filename, labels{i}));
+  obj = pat;
+  save(pat.file, 'pattern', 'obj')
+  full_pat.file{i} = pat.file;
 end
 fprintf('\n')
+
+pat = full_pat;
+pat.dim.splitdim = dim_number;
+
