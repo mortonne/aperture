@@ -190,7 +190,17 @@ elseif dist == 2
     if length(subj) > 1
       fprintf('%s\n', get_obj_name(subj(i)))
     end
-    new_subj = [new_subj fcn_handle(subj(i), fcn_inputs{:})];
+    
+    % apply to this subject
+    try
+      subj_out = fcn_handle(subj(i), fcn_inputs{:})
+    catch err
+      fprintf('error thrown for %s:\n', subj(i).id)
+      getReport(err)
+      subj_out = subj(i);
+      %subj_out = [];
+    end
+    new_subj = [new_subj subj_out];
   end
   subj = new_subj;
   if length(subj) > 1
@@ -207,7 +217,15 @@ else
     end
     % pass this subject as input to the function
     % and modify the subject vector
-    subj = addobj(subj, fcn_handle(this_subj, fcn_inputs{:}));
+    try
+      subj_out = fcn_handle(this_subj, fcn_inputs{:});
+    catch err
+      fprintf('error thrown for %s:\n', this_subj.id)
+      getReport(err)
+      subj_out = this_subj;
+      %subj_out = [];
+    end
+    subj = addobj(subj, subj_out);
   end
   if length(subj) > 1
     fprintf('apply_to_subj: finished: %.2f seconds.\n', toc);
