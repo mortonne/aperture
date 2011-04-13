@@ -37,8 +37,9 @@ infile = fullfile(tempdir, 'in.txt');
 outfile = fullfile(tempdir, 'out.txt');
 
 % fix regressors to standard format
+labels = cell(1, length(group));
 for i = 1:length(group)
-  group{i} = make_index(group{i});
+  [group{i}, labels{i}] = make_index(group{i});
 end
 
 % write data to a text file

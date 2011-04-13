@@ -75,12 +75,15 @@ if ~isempty(reg_defs)
   events = get_dim(pat.dim, 'ev');
   
   group = cell(1, length(reg_defs));
+  levels = cell(1, length(reg_defs));
   for i = 1:length(reg_defs)
-    group{i} = make_event_index(events, reg_defs{i})';
+    [group{i}, levels{i}] = make_event_index(events, reg_defs{i});
+    group{i} = group{i}';
   end
   clear events
 else
   group = {};
+  levels = {};
 end
 
 % initialize the stat object
@@ -160,6 +163,6 @@ for i = 1:n_out
   eval([var_names{i} '=output{i};']);
 end
 
-save(stat.file, var_names{:});
+save(stat.file, 'levels', var_names{:});
 pat = setobj(pat, 'stat', stat);
 
