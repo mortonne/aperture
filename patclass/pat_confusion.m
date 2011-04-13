@@ -17,6 +17,8 @@ function pat = pat_confusion(pat, stat_name, fig_name, varargin)
 %  PARAMS:
 %  All fields are optional.  Default values are shown in parentheses.
 %  Also see plot_erp for more plotting params.
+%   conf_type        - confusion measure to use (see class_confusion).
+%                      ('rate')
 %   class_labels     - cell array of strings giving labels for each
 %                      class. ({})
 %   map_limits       - [low, high] limits for the colormap. If empty,
@@ -27,6 +29,7 @@ function pat = pat_confusion(pat, stat_name, fig_name, varargin)
 %                      (get_pat_dir(pat, 'reports', 'figs'))
 
 % options
+defaults.conf_type = 'rate';
 defaults.class_labels = {};
 defaults.print_input = {'-depsc'};
 defaults.res_dir = get_pat_dir(pat, 'reports', 'figs');
@@ -41,7 +44,7 @@ if isfield(res, 'confmat')
   all_confmats = res.confmat;
 else
   % calculate the confusion matrix
-  all_confmats = class_confusion(res);
+  all_confmats = class_confusion(res, params.conf_type);
 end
 
 % get dimension info

@@ -32,7 +32,7 @@ if ~isempty(params.map_limits)
 else
   h = imagesc(confmat);
 end
-xlabel('Guessed')
+xlabel('Guess')
 ylabel('Right Answer')
 axis xy
 colorbar
