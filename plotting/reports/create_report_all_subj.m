@@ -78,7 +78,8 @@ for i=1:length(fig_paths)
   fig_files = [fig_files these_fig_files];
 end
 if ~isempty(params.header_figs)
-  fig_files = [[params.header_figs.file]'; fig_files];
+  header_files = squeeze(cat(2, params.header_figs.file));
+  fig_files = cat(1, header_files, fig_files);
 end
 
 % set row and column labels
