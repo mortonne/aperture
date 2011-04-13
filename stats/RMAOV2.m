@@ -40,8 +40,24 @@ infile = fullfile(tempdir, 'in.txt');
 outfile = fullfile(tempdir, 'out.txt');
 
 % fix regressors to standard format
-for i=1:length(group)
+for i = 1:length(group)
   group{i} = make_index(group{i});
+end
+
+% find subjects with any missing data
+subjects = unique(group{1});
+n_samples = collect(group{1}, subjects);
+bad = n_samples < max(n_samples);
+
+if any(bad)
+  % find indices from subjects with all samples
+  good_ind = ~ismember(group{1}, subjects(bad));
+  
+  % remove the subjects with missing data
+  for i = 1:length(group)
+    group{i} = group{i}(good_ind);
+  end
+  data = data(good_ind);
 end
 
 % write data to a text file
