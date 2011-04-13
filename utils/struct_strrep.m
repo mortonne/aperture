@@ -47,15 +47,16 @@ elseif ~iscellstr(varargin) || mod(length(varargin), 2)
 end
 
 fnames = fieldnames(s);
-for i=1:length(fnames)
-  fname = fnames{i};
-  for j=1:numel(s)
+for i = 1:numel(s)
+  for j = 1:length(fnames)
+    fname = fnames{j};
+    
     % get the field for this element of the structure
-    f = s(j).(fname);
+    f = s(i).(fname);
 
     % run strrep if applicable
     if isstr(f) || iscellstr(f)
-      for r=1:2:length(varargin)
+      for r = 1:2:length(varargin)
         to_replace = varargin{r};
         replacement = varargin{r+1};
         f = strrep(f, to_replace, replacement);
@@ -68,7 +69,7 @@ for i=1:length(fnames)
     end
 
     % we're done with this element; set it back in the structure
-    s(j).(fname) = f;
+    s(i).(fname) = f;
   end
 end
 
