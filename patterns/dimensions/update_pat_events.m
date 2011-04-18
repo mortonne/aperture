@@ -47,7 +47,7 @@ else
   pat_names = {pat_name};
 end
 
-for i=1:length(pat_names)
+for i = 1:length(pat_names)
   if length(pat_names) > 1
     fprintf('%s\n', pat_names{i})
   end
@@ -61,7 +61,7 @@ for i=1:length(pat_names)
   % update the pattern events
   updated_events = update_struct(pat_events, new_events, ...
                                  {'mstime','type'});
-  pat.dim.ev = set_mat(pat.dim.ev, updated_events);
+  pat.dim = set_dim(pat.dim, 'ev', updated_events);
   
   % update the pat object
   subj = setobj(subj, 'pat', pat);
