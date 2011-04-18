@@ -19,8 +19,17 @@ function pat = bin_pattern(pat, varargin)
 %  These options may be specified using parameter, value pairs or by
 %  passing a structure. Defaults are shown in parentheses.
 %   f              - function handle to apply to each bin.
-%                    (@(x) nanmean(x(:)))
+%                    (@nanmean)
 %   f_inputs       - cell array of additional inputs to f. ({})
+%   eval_by        - how to evaluate the function:
+%                     'dim' (default) evaluate one dimension at a time.
+%                           f must take a second input that indicates
+%                           the dimension to process along (e.g.
+%                           nanmean). This method is usually faster.
+%                           Called as: y = f(x, dim, f_inputs{:})
+%                     'bin' evaluate one bin at a time. f should be able
+%                           to handle matrix input and output a scalar.
+%                           Called as: y = f(x, f_inputs{:})
 %   eventbins      - see make_event_bins for allowed formats. ([])
 %   eventbinlabels - cell array of strings, with one cell per bin. Gives
 %                    a label for each event bin. ({})
@@ -81,8 +90,9 @@ if ~exist('pat', 'var') || ~isstruct(pat)
 end
 
 % default params
-defaults.f = @(x) nanmean(x(:));
+defaults.f = @nanmean;
 defaults.f_inputs = {};
+defaults.eval_by = 'dim';
 defaults.eventbins = [];
 defaults.eventbinlabels = {};
 defaults.eventbinlevels = {};
@@ -102,7 +112,7 @@ function pat = apply_pat_binning(pat, params)
   pattern = get_mat(pat);
 
   % apply the bins to the pat object
-  p = rmfield(params, {'f' 'f_inputs'});
+  p = rmfield(params, {'f' 'f_inputs' 'eval_by'});
   [pat, bins] = patBins(pat, p);
   
   if all(cellfun(@isempty, bins))
@@ -111,9 +121,19 @@ function pat = apply_pat_binning(pat, params)
     return
   end
   
-  % average within bins in the pattern
-  [bins{cellfun(@isempty, bins)}] = deal('iter');
-  pattern = apply_by_group(params.f, {pattern}, bins, params.f_inputs);
+  switch params.eval_by
+   case 'dim'
+    % apply f along one dimension at at time
+    pattern = patMeans(pattern, bins, params.f);
+    
+   case 'bin'
+    % apply f within bins in the pattern
+    [bins{cellfun(@isempty, bins)}] = deal('iter');
+    pattern = apply_by_group(params.f, {pattern}, bins, params.f_inputs);
+    
+   otherwise
+    error('Invalid eval_by input.')
+  end
   
   pat = set_mat(pat, pattern, 'ws');
 
