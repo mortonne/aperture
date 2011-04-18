@@ -8,7 +8,7 @@ function export_R(data, group, outfile)
 %
 %    group:  factor array or cell array of multiple factors. Each cell
 %            must contain a vector the same length as data. Vector(s)
-%            must be numeric.
+%            must be numeric and contain integers.
 %
 %  outfile:  path to a file to write the data to. Existing data in
 %            outfile will be overwritten.
@@ -54,9 +54,9 @@ end
 % open file for writing, overwriting existing contents
 fid = fopen(outfile, 'w');
 for i=1:n_obs
-  fprintf(fid, '%.4f', data(i));
+  fprintf(fid, '%.6f', data(i));
   for j=1:n_factors
-    fprintf(fid, '\t%.4f', group{j}(i));
+    fprintf(fid, '\t%d', group{j}(i));
   end
   fprintf(fid, '\n');
 end
