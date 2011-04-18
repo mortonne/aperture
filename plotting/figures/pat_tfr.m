@@ -24,6 +24,8 @@ function pat = pat_tfr(pat, fig_name, varargin)
 %                      only significant samples will be colored.
 %                      Positive p-values will be plotted red, while
 %                      negative values will be blue. ('')
+%   stat_index       - index of the statistic to plot (see get_stat).
+%                      (1)
 %   alpha_range      - if plotting p-values, this gives the range of
 %                      values to color in. alpha_range(1) gives the
 %                      alpha corresponding to the darkest color in the
@@ -44,8 +46,7 @@ function pat = pat_tfr(pat, fig_name, varargin)
 %   mult_fig_windows - if true, each figure will be plotted in a
 %                      separate window. (false)
 %   res_dir          - path to the directory to save figures in. Default
-%                      is the pattern's standard reports directory.
-%                      Figures will be saved in [res_dir]/figs.
+%                      is the pattern's standard figures directory.
 %  Also see plot_tfr for more plotting options.
 
 % Copyright 2007-2011 Neal Morton, Sean Polyn, Zachary Cohen, Matthew Mollison.
@@ -83,6 +84,7 @@ end
 defaults.event_bins = [];
 defaults.diff = false;
 defaults.stat_name = '';
+defaults.stat_index = 1;
 defaults.alpha_range = [0.005 0.05];
 defaults.correctm = '';
 defaults.plot_mult_events = true;
@@ -117,11 +119,7 @@ n_chans = patsize(pat.dim, 'chan');
 if ~isempty(params.stat_name)
   % get the stat object
   stat = getobj(pat, 'stat', params.stat_name);
-  load(stat.file, 'p');
-
-  % HACK - remove any additional p-values
-  p = p(1,:,:,:);
-  % END HACK
+  p = get_stat(stat, 'p', params.stat_index);
   
   sig = params.alpha_range(2); % threshold for significance
   max_sig = params.alpha_range(1); % color gradient will max out here
