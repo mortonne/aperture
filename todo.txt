@@ -72,6 +72,8 @@
 
 == Plotting ==
 
+ * rather than diff logical, specify linear combination weights
+
  * option to use locations from the chan struct, rather than from
    file. Would allow topo plots with a subset of channels
 
