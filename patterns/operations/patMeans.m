@@ -1,10 +1,6 @@
 function pattern = patMeans(pattern, bins, f, varargin)
 %PATMEANS   Bin one or more dimensions of a pattern.
 %
-%  *** DEPRECATED ***
-%  Use the more general apply_by_group instead.
-%  *** DEPRECATED ***
-%
 %  Use this function to average together arbitrary bins for each
 %  dimension of a pattern.
 %
@@ -130,7 +126,7 @@ for i = 1:length(bins)
     % get reference for this bin after averaging
     ind = ALL_CELL;
     ind{i} = j;
-    
+
     % place this average in the new array
     % temp(ind{:}) = avg;
     temp(ind{:}) = f(pattern(bin_ind{:}), i, varargin{:});
