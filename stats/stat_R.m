@@ -37,9 +37,9 @@ infile = fullfile(tempdir, 'in.txt');
 outfile = fullfile(tempdir, 'out.txt');
 
 % fix regressors to standard format
-labels = cell(1, length(group));
+levels = cell(1, length(group));
 for i = 1:length(group)
-  [group{i}, labels{i}] = make_index(group{i});
+  [group{i}, levels{i}] = make_index(group{i});
 end
 
 % write data to a text file
@@ -47,6 +47,7 @@ export_R(data, group, infile)
 
 % run the ANOVA in R
 res.output = run_R(f, infile, outfile);
+res.levels = levels;
 delete(infile)
 
 if exist(outfile, 'file')
@@ -88,7 +89,9 @@ elseif strcmp(f, 'rmaov1.R')
   end
   
 elseif strcmp(f, 'rmaov2.R')
-  
-  
+  fprintf(['Currently cannot parse rmaov2.R output. ' ...
+           'Returning text results only.\n'])
+  p = NaN;
+  statistic = NaN;
 end
 
