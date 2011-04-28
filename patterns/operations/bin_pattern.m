@@ -123,6 +123,10 @@ function pat = apply_pat_binning(pat, params)
   
   switch params.eval_by
    case 'dim'
+    if ~ismember(func2str(params.f), {'mean' 'nanmean'})
+      warning('Applying f by dimension.')
+    end
+    
     % apply f along one dimension at at time
     pattern = patMeans(pattern, bins, params.f);
     
