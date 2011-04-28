@@ -1,4 +1,4 @@
-function subj = zscore_pattern(subj, pat_name, base_pat_name, varargin)
+function subj = zscore_pattern_new(subj, pat_name, base_pat_name, varargin)
 %ZSCORE_PATTERN   Z-score a pattern compared to a baseline.
 %
 %  To z-score a pattern, first define a baseline pattern and add it to
@@ -71,81 +71,85 @@ defaults.event_bins = 'session';
 % get baseline pattern and events
 if ischar(base_pat_name)
   base_pat = getobj(subj, 'pat', base_pat_name);
+  diff_events = true;
 else
   pat = getobj(subj, 'pat', pat_name);
   base_pat = filter_pattern(pat, 'time_filter', base_pat_name, ...
                             'save_mats', false, 'verbose', false);
+  diff_events = false;
 end
 
+% sanity check
+if patsize(pat.dim, 2) ~= patsize(base_pat.dim, 2)
+  error('Pattern and base pattern have different numbers of channels.')
+elseif patsize(pat.dim, 4) ~= patsize(base_pat.dim, 4)
+  error('Pattern and base pattern have different numbers of frequencies.')
+end
+
+% load the base pattern and corresponding events
 base_pattern = get_mat(base_pat);
 base_events = get_dim(base_pat.dim, 'ev');  
-
-% get subsets of events to calculate baseline for
-base_event_bins = index2bins(make_event_bins(base_events, params.event_bins));
-
-% get mean and std. dev. for each event_bin, channel, and frequency.
-% if there are multiple time samples in each baseline event, calculate
-% for each sample, then average across time
-iter_cell = {base_event_bins, 'iter', [], 'iter'};
-m = apply_by_group(@(x) nanmean(nanmean(x, 1), 3), {base_pattern}, iter_cell);
-s = apply_by_group(@(x) nanmean(nanstd(x, 1), 3), {base_pattern}, iter_cell);
 
 % apply the z-transform for each event_bin, channel, and frequency
 subj = apply_to_pat(subj, pat_name, @mod_pattern, ...
                     {@apply_zscore, ...
-                    {base_pattern, m, s, params.event_bins}, save_opts});
+                    {base_pattern, base_events, ...
+                    params.event_bins, diff_events}, ...
+                    save_opts});
 
-function pat = apply_zscore(pat, base_pattern, m, s, event_bin_defs)
-  % use same subsets of events used for calculating baseline
-  events = get_dim(pat.dim, 'ev');
-  event_bins = index2bins(make_event_bins(events, event_bin_defs));
-  iter_cell = {event_bins, 'iter', [], 'iter'};
-  
-  % z-transform all samples for each event_bin, channel, and frequency
-  pattern = get_mat(pat);
-  [n_events, n_chans, n_time, n_freq] = size(pattern);
-  for i=1:length(event_bins)
-    for j=1:n_chans
-      for k=1:n_freq
-        ind = {event_bins{i},j,':',k};
-        
-        %below we try and deal with situations where most of the
-        %baseline observations are NaNd out, which results in small
-        %standard deviations and huge Zscores
-        %if s(i,j,:,k) < .5
-        %  pattern(ind{:}) = NaN;
-        %else
-        %  pattern(ind{:}) = (pattern(ind{:}) - m(i,j,:,k)) / s(i,j,:,k);
-        %end
-        
-        %below is an attempt to improve upon the above sanity/check
-        %and fix. ideal would be a percentage threshold for the number
-        %of observations in the baseline period, that if not met
-        %would result in that event being excluded
-        %need to make sure the first statement is properly indexed
 
-        %if mean(isnan(base_pattern(ind{:})))>(1/3)
-        %  pattern(ind{:}) = NaN;
-        %elseif s(i,j,:,k) < .5
-        %pattern(ind{:}) = NaN;
-        %else
-        m_sess = m(i,j,:,k);
-        s_sess = s(i,j,:,k);
-        if s_sess == 0
-          % if std deviation is exactly zero (realistically only happens
-          % when there is only one non-NaN sample), the z-score is
-          % undefined
-          pattern(ind{:}) = NaN;
-        else
-          % transform relative to the summary statistics for this
-          % session
-          pattern(ind{:}) = (pattern(ind{:}) - m_sess) / s_sess;
-        end
-      
-      end
-    end
+function pat = apply_zscore(pat, base_pattern, base_events, ...
+                            event_bin_defs, diff_events)
+
+  [n_events, n_chans, n_time, n_freq] = size(base_pattern);
+
+  % baseline event bins
+  base_event_bins = index2bins(make_event_index(base_events, ...
+                                                event_bin_defs));
+  n_bins = length(base_event_bins);
+
+  % get baseline statistics
+  m = NaN(n_bins, n_chans, 1, n_freq);
+  s = NaN(n_bins, n_chans, 1, n_freq);
+  for i = 1:n_bins
+    % samples of interest
+    base_ind = {base_event_bins{i},':',':',':'};
+
+    % within this bin, average over events and time
+    % gives [1 X chans X 1 X freqs]
+    m(i,:,:,:) = nanmean(nanmean(base_pattern(base_ind{:}), 1), 3);
+    
+    % take std dev over events, average over time
+    s(i,:,:,:) = nanmean(nanstd(base_pattern(base_ind{:}), 1), 3);
+  end
+  clear base_pattern
+
+  % apply z-transform
+  if diff_events
+    % pattern events may be different from baseline; calculate
+    % indices separately
+    events = get_dim(pat.dim, 'ev');
+    event_bins = index2bins(make_event_index(events, event_bin_defs));
+  else
+    % same events, so can use the same bins as baseline
+    event_bins = base_event_bins;
   end
   
+  pattern = get_mat(pat);
+  n_time = size(pattern, 3);
+  for i = 1:n_bins
+    % samples of interest
+    ind = {event_bins{i},':',':',':'};
+    
+    % transformation is the same for each event (within this bin) and time
+    rep_ind = [length(event_bins{i}) 1 n_time 1];
+    pattern(ind{:}) = (pattern(ind{:}) - repmat(m(i,:,:,:), rep_ind)) ...
+                       ./ repmat(s(i,:,:,:), rep_ind);
+  end
+  
+  % remove z-scores corresponding to sd=0
+  pattern(isinf(pattern)) = NaN;
+
   % return the transformed pattern
   pat = set_mat(pat, pattern, 'ws');
 

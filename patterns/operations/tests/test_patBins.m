@@ -1,8 +1,8 @@
 %TEST_PATBINS   Unit tests for patBins.
 %
 %  runner = mlunit.text_test_runner(1,1);
-%loader = mlunit.test_loader;
-%run(runner, load_tests_from_test_case(loader, 'test_patBins'));
+%  loader = mlunit.test_loader;
+%  run(runner, load_tests_from_test_case(loader, 'test_patBins'));
 
 % Copyright 2007-2011 Neal Morton, Sean Polyn, Zachary Cohen, Matthew Mollison.
 %
