@@ -9,6 +9,10 @@ function objname = get_obj_name(obj)
 %  OUTPUTS:
 %  objname:  object identifier.
 
+if length(obj) > 1
+  error('Can only get name of one object.')
+end
+
 % look for matching fields
 try
   objname = obj.name;
