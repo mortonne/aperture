@@ -1,4 +1,4 @@
-function subj = zscore_pattern_new(subj, pat_name, base_pat_name, varargin)
+function subj = zscore_pattern(subj, pat_name, base_pat_name, varargin)
 %ZSCORE_PATTERN   Z-score a pattern compared to a baseline.
 %
 %  To z-score a pattern, first define a baseline pattern and add it to
@@ -69,11 +69,11 @@ defaults.event_bins = 'session';
 [params, save_opts] = propval(varargin, defaults);
 
 % get baseline pattern and events
+pat = getobj(subj, 'pat', pat_name);
 if ischar(base_pat_name)
   base_pat = getobj(subj, 'pat', base_pat_name);
   diff_events = true;
 else
-  pat = getobj(subj, 'pat', pat_name);
   base_pat = filter_pattern(pat, 'time_filter', base_pat_name, ...
                             'save_mats', false, 'verbose', false);
   diff_events = false;
