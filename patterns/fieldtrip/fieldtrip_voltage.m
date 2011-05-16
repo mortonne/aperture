@@ -184,10 +184,8 @@ p.clustercritval = params.clustercritval;
 p.clusterthreshold = params.clusterthreshold;
 
 %make time locked grand average patterns
-[grandavg1] = run_fieldtrip(@timelockgrandaverage, p, ...
-                                     averages1{:});
-[grandavg2] = run_fieldtrip(@timelockgrandaverage, p, ...
-                                     averages2{:});
+[grandavg1] = ft_timelockgrandaverage(p, averages1{:});
+[grandavg2] = ft_timelockgrandaverage(p, averages2{:});
 
 %clear space
 clear design
@@ -195,7 +193,7 @@ clear averages1
 clear averages2
 
 %run fieldtrip statistical analysis
-[fieldstat] = run_fieldtrip(@timelockstatistics, p, grandavg1, grandavg2);
+[fieldstat] = ft_timelockstatistics(p, grandavg1, grandavg2);
 
 %need to create director first
 %then make file name
