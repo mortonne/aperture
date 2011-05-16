@@ -2,13 +2,13 @@ function stat_file = fieldtrip_voltage(exp, varargin)
 
 %FIELDTRIP_VOLTAGE  Run fieldtrip for voltage erp.
 %
-%  output = fieldtrip_voltage(exp, ...)
+%  stat_file = fieldtrip_voltage(exp, ...)
 %
 %  INPUTS:
 %      exp:  experiment object.
 %
 %  OUTPUTS:
-%      fieldstat_file:  file location for fieldstat obj
+%      stat_file:  file location for fieldstat obj
 %
 %  PARAMS:
 %  These options may be specified using parameter, value pairs or by
