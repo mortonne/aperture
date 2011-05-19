@@ -14,20 +14,25 @@ function pdf_file = fieldtrip_head_report(exp, pat_name, varargin)
 %  PARAMS:
 %  These options may be specified using parameter, value pairs or by
 %  passing a structure. Defaults are shown in parentheses.
+%   stat_file: if you want to use a fieldstat object you've already
+%              created, then load from this file and use these
+%              parameters
 %   time_bins: inputs to bin_pattern, ([]);
 %   eventFilter1: string input to filter_pattern for 1st condition;
 %   eventFilter2: string input to filter_pattern for 2nd condition;
 %   stat_name: name for fieldtrip stat object;
 
+
 % options
+defaults.stat_file = '';
 defaults.time_bins = [];
 defaults.eventFilter1 = '';
 defaults.eventFilter2 = '';
 defaults.eventbinlabels = {'type1' 'type2'};
 defaults.stat_name = '';
 defaults.res_dir_stat = '';
-defaults.report_name = '';
-defaults.contrast_str = '';
+defaults.report_name = 'fieldtrip_headplot_report';
+defaults.contrast_str = 'contrast';
 defaults.shuffles = 1000;
 defaults.statistic = 'depsamplesT';
 defaults.uvar = 2;
@@ -37,29 +42,39 @@ defaults.print_input = {'-djpeg50'};
 defaults.res_dir = '';
 defaults.dist = 0;
 defaults.compile_method = 'pdflatex';
+defaults.pat_name = pat_name;
 defaults.report_title = 'difference headplots with fieldtrip clusters';
 
 params = propval(varargin, defaults);
 
 %input checks
+if isempty(defaults.stat_file)
+  %run fieldtrip analysis
+  p = [];
+  p.time_bins = params.time_bins;
+  p.eventFilter1 = params.eventFilter1;
+  p.eventFilter2 = params.eventFilter2;
+  p.pat_name = pat_name;
+  p.stat_name = params.stat_name;
+  p.report_name = params.report_name;
+  p.res_dir_stat = ['/data7/scratch/zcohen/results/taskFR/eeg/' params.pat_name '/stats'];
+  p.shuffles = params.shuffles;
+  p.numrandomization = params.shuffles
+  p.statistic = params.statistic;
+  p.uvar = params.uvar;
+  p.ivar = params.ivar;
+  fieldstat_file = fieldtrip_voltage(exp, params)
+else
+  %use the stat_file already created and get the params from here
+  fieldstat_file = params.stat_file;
+  load(fieldstat_file);
+  params.time_bins = fieldstat.params.time_bins;
+  params.eventFilter1 = fieldstat.params.eventFilter1;
+  params.eventFilter2 = fieldstat.params.eventFilter2;
+  params.stat_name = fieldstat.params.stat_name;
+end
 
-
-%run fieldtrip analysis
-p = [];
-p.time_bins = params.time_bins;
-p.eventFilter1 = params.eventFilter1;
-p.eventFilter2 = params.eventFilter2;
-p.pat_name = pat_name;
-p.stat_name = params.stat_name;
-p.report_name = params.report_name;
-p.res_dir_stat = ['/data7/scratch/zcohen/results/taskFR/eeg/' params.pat_name '/stats'];
-p.shuffles = params.shuffles;
-p.numrandomization = params.shuffles
-p.statistic = params.statistic;
-p.uvar = params.uvar;
-p.ivar = params.ivar;
-fieldstat_file = fieldtrip_voltage(exp, params)
-
+  
 %filter, bin, and concatonate all subjs' patterns
 pat = cat_all_subj_patterns(exp.subj, pat_name, 1, ...
                              {'event_bins',{params.eventFilter1 params.eventFilter2}, ...
@@ -73,8 +88,8 @@ pat_ga = bin_pattern(pat, {'eventbins', 'label', 'save_mats', ...
                     'overwrite', true});
 
 %time bin ga pattern to reflect fieldtrip time bins
-pat_ga_tbin = bin_pattern(pat_ga, 'timebins', params.timebins, 'overwrite', ...
-                           true, 'save_as', [pat_ga.name sprintf('_%sbins',num2str(length(params.timebins)))]);
+pat_ga_tbin = bin_pattern(pat_ga, 'timebins', params.time_bins, 'overwrite', ...
+                           true, 'save_as', [pat_ga.name sprintf('_%sbins',num2str(length(params.time_bins)))]);
 
 %initiate and add a stat object for the fieldstat
 stat = init_stat(p.stat_name, fieldstat_file, pat_ga_tbin.source, p);

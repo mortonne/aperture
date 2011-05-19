@@ -195,6 +195,9 @@ clear averages2
 %run fieldtrip statistical analysis
 [fieldstat] = ft_timelockstatistics(p, grandavg1, grandavg2);
 
+%save parameters for later use in plotting
+fieldstat.params = params;
+
 %need to create director first
 %then make file name
 stat_file = strcat(params.res_dir_stat, '/fieldstat_', params.report_name);
