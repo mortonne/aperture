@@ -89,12 +89,11 @@ pat_ga = bin_pattern(pat, {'eventbins', 'label', 'save_mats', ...
                     'overwrite', true});
 
 %time bin ga pattern to reflect fieldtrip time bins
-pat_ga_tbin = bin_pattern(pat_ga, 'timebins', params.time_bins, 'overwrite', ...
-                           true, 'save_as', [pat_ga.name sprintf('_%sbins',num2str(length(params.time_bins)))]);
+pat_ga_tbin = bin_pattern(pat_ga, 'timebins', params.time_bins, 'overwrite', true, 'save_as', [pat_ga.name sprintf('_%sbins',num2str(length(params.time_bins)))]);
 
 %initiate and add a stat object for the fieldstat
 stat = init_stat(params.stat_name, fieldstat_file, pat_ga_tbin.source, params);
-pat_ga_tbin = setobj(pat,'stat',stat);
+pat_ga_tbin = setobj(pat_ga_tbin,'stat',stat);
 
 %put the new pat object on the exp structure
 exp = setobj(exp, 'pat', pat_ga_tbin);
