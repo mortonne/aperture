@@ -34,6 +34,7 @@ defaults.res_dir_stat = '';
 defaults.report_name = 'fieldtrip_headplot_report';
 defaults.contrast_str = 'contrast';
 defaults.shuffles = 1000;
+defaults.numrandomization = 1000;
 defaults.statistic = 'depsamplesT';
 defaults.uvar = 2;
 defaults.ivar = 1;
@@ -48,7 +49,7 @@ defaults.report_title = 'difference headplots with fieldtrip clusters';
 params = propval(varargin, defaults);
 
 %input checks
-if isempty(defaults.stat_file)
+if isempty(params.stat_file)
   %run fieldtrip analysis
   p = [];
   p.time_bins = params.time_bins;
@@ -59,7 +60,7 @@ if isempty(defaults.stat_file)
   p.report_name = params.report_name;
   p.res_dir_stat = ['/data7/scratch/zcohen/results/taskFR/eeg/' params.pat_name '/stats'];
   p.shuffles = params.shuffles;
-  p.numrandomization = params.shuffles
+  p.numrandomization = params.shuffles;
   p.statistic = params.statistic;
   p.uvar = params.uvar;
   p.ivar = params.ivar;
@@ -67,13 +68,13 @@ if isempty(defaults.stat_file)
 else
   %use the stat_file already created and get the params from here
   fieldstat_file = params.stat_file;
-  load(fieldstat_file);
-  params.time_bins = fieldstat.params.time_bins;
-  params.eventFilter1 = fieldstat.params.eventFilter1;
-  params.eventFilter2 = fieldstat.params.eventFilter2;
-  params.stat_name = fieldstat.params.stat_name;
 end
 
+load(fieldstat_file);
+params.time_bins = fieldstat.params.time_bins;
+params.eventFilter1 = fieldstat.params.eventFilter1;
+params.eventFilter2 = fieldstat.params.eventFilter2;
+params.stat_name = fieldstat.params.stat_name;
   
 %filter, bin, and concatonate all subjs' patterns
 pat = cat_all_subj_patterns(exp.subj, pat_name, 1, ...
@@ -92,7 +93,7 @@ pat_ga_tbin = bin_pattern(pat_ga, 'timebins', params.time_bins, 'overwrite', ...
                            true, 'save_as', [pat_ga.name sprintf('_%sbins',num2str(length(params.time_bins)))]);
 
 %initiate and add a stat object for the fieldstat
-stat = init_stat(p.stat_name, fieldstat_file, pat_ga_tbin.source, p);
+stat = init_stat(params.stat_name, fieldstat_file, pat_ga_tbin.source, params);
 pat_ga_tbin = setobj(pat,'stat',stat);
 
 %put the new pat object on the exp structure

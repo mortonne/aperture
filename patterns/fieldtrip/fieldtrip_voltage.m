@@ -115,6 +115,7 @@ defaults.keepindividual = 'yes';
 defaults.computecritval = 'no';
 defaults.clustercritval = .5;
 defaults.clusterthreshold = 'parametric';
+defaults.dist = 1;
 
 [params, extras] = propval(varargin, defaults);
 
@@ -126,7 +127,7 @@ defaults.clusterthreshold = 'parametric';
 
 %convert patterns to fieldtrip ready averages
 exp.subj = apply_to_subj(exp.subj, @fieldtrip_voltage_prepare, ...
-                         {params}, 1, 'memory', '3G');
+                         {params}, params.dist, 'memory', '3G');
 
 
 %aggregate averages and designs
@@ -184,8 +185,8 @@ p.clustercritval = params.clustercritval;
 p.clusterthreshold = params.clusterthreshold;
 
 %make time locked grand average patterns
-[grandavg1] = ft_timelockgrandaverage(p, averages1{:});
-[grandavg2] = ft_timelockgrandaverage(p, averages2{:});
+[grandavg1] = run_fieldtrip(@ft_timelockgrandaverage, p, averages1{:});
+[grandavg2] = run_fieldtrip(@ft_timelockgrandaverage, p, averages2{:});
 
 %clear space
 clear design
@@ -193,7 +194,7 @@ clear averages1
 clear averages2
 
 %run fieldtrip statistical analysis
-[fieldstat] = ft_timelockstatistics(p, grandavg1, grandavg2);
+[fieldstat] = run_fieldtrip(@ft_timelockstatistics, p, grandavg1, grandavg2);
 
 %save parameters for later use in plotting
 fieldstat.params = params;

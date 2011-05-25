@@ -183,7 +183,7 @@ data2 = pat2fieldtrip(pat2);
 p = [];
 p.layout = params.layout;
 p.neighbourdist = params.neighbourdist;
-params.neighbours = ft_neighbourselection(p, data1);
+params.neighbours = run_fieldtrip(@ft_neighbourselection, p, data1);
 
 %make space by clearing
 clear pat1
@@ -193,8 +193,8 @@ clear pat2
 t = [];
 t.keeptrials = params.keeptrials;
 t.vartrllength = params.vartrllength;
-timelock1 = ft_timelockanalysis(t, data1);
-timelock2 = ft_timelockanalysis(t, data2);
+timelock1 = run_fieldtrip(@ft_timelockanalysis, t, data1);
+timelock2 = run_fieldtrip(@ft_timelockanalysis, t, data2);
 
 %make space by clearing
 clear data1
@@ -257,7 +257,7 @@ p.clustercritval = params.clustercritval;
 p.clusterthreshold = params.clusterthreshold;
 
 %Run the actual fieldtrip cluster analysis
-[fieldstat] = ft_timelockstatistics(p, timelock1, timelock2);
+[fieldstat] = run_fieldtrip(@ft_timelockstatistics, p, timelock1, timelock2);
 
 %save the fieldtrip statistic
 save(stat.file, 'fieldstat');

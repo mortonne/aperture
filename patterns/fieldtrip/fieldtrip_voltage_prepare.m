@@ -78,7 +78,7 @@ if ~isempty(params.freq_filter)
   pat1 = filter_pattern(pat1, 'save_mats', false, 'freq_filter', params.freq_filter);
   pat2 = filter_pattern(pat2, 'save_mats', false, 'freq_filter', params.freq_filter);
 end
-  
+
 %time bin pats
 pat1 = bin_pattern(pat1, 'save_mats', false, 'timebins', params.time_bins);
 pat2 = bin_pattern(pat2, 'save_mats', false, 'timebins', params.time_bins);
@@ -99,7 +99,7 @@ data2 = pat2fieldtrip(pat2);
 p = [];
 p.layout = params.layout;
 p.neighbourdist = params.neighbourdist;
-params.neighbours = ft_neighbourselection(p, data1);
+params.neighbours = run_fieldtrip(@ft_neighbourselection, p, data1);
 
 %make space by clearing
 clear pat1
@@ -109,8 +109,8 @@ clear pat2
 t = [];
 t.keeptrials = params.keeptrials;
 t.vartrllength = params.vartrllength; 
-timelock1 = ft_timelockanalysis(t, data1);
-timelock2 = ft_timelockanalysis(t, data2);
+timelock1 = run_fieldtrip(@ft_timelockanalysis, t, data1);
+timelock2 = run_fieldtrip(@ft_timelockanalysis, t, data2);
 
 %make space by clearing
 clear data1
