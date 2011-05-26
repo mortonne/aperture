@@ -86,6 +86,8 @@ defaults.precision = 'single';
 defaults.save_as = [pat.name '-' stat_name];
 defaults.overwrite = true;
 [params, saveopts] = propval(varargin, defaults);
+
+saveopts = propval(saveopts, struct, 'strict', false);
 saveopts.save_as = params.save_as;
 saveopts.overwrite = params.overwrite;
 params = rmfield(params, {'save_as', 'overwrite'});
@@ -156,7 +158,8 @@ function pat = get_patclass_stats(pat, stat_name, params)
   pattern = NaN(n_events, n_chans, n_time, n_freq, params.precision);
 
   % create a pattern with classifier outputs
-  fprintf('\ncreating pattern from "%s" classification results...', stat_name)
+  fprintf('creating pattern from "%s" "%s" classification results...\n', ...
+          pat.name, stat_name)
 
   if isempty(params.event_bins)
     iter_cell = {[], 'iter'};

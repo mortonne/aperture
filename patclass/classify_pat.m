@@ -21,9 +21,11 @@ function pat = classify_pat(pat, stat_name, varargin)
 %                  indices for cross-validation.
 %   iter_cell    - determines which dimensions to iterate over. See
 %                  apply_by_group for details. Default is to classify
-%                  all pattern features at once. May also input a
-%                  struct to be passed into patBins to create grouped
-%                  dimensions. ({[],[],[],[]})
+%                  all pattern features at once. ({[],[],[],[]})
+%   iter_bins    - structure that dynamically determines bins to
+%                  iterate over. See patBins for allowed fields.
+%                  Specified binned dimensions will overwrite iter_cell.
+%                  ([])
 %   f_train      - function handle for a training function.
 %                  (@train_logreg)
 %   train_args   - struct with options for f_train. (struct)
@@ -93,6 +95,10 @@ end
 if isstruct(params.iter_cell)
   params.iter_params = params.iter_cell;
   [temp, params.iter_cell] = patBins(pat, params.iter_cell);
+elseif ~isempty(params.iter_bins)
+  [temp, inds] = patBins(pat, params.iter_bins);
+  to_change = ~cellfun(@isempty, inds);
+  params.iter_cell(to_change) = inds(to_change);
 end
 
 if ~isempty(params.iter_cell{1})
@@ -138,7 +144,15 @@ res_fixed.iterations = reshape(struct_vec, res_fixed_size);
 res = res_fixed;
 
 % save the results
-save(stat.file, 'res', 'stat');
+% check the size
+w = whos('res');
+if w.bytes > 1800000000
+  % huge variable; need different MAT-file format
+  save('-v7.3', stat.file, 'res', 'stat')
+else
+  % normal MAT-file will do
+  save(stat.file, 'res', 'stat')
+end
 
 % add the stat object to the output pat object
 pat = setobj(pat, 'stat', stat);

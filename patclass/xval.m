@@ -83,8 +83,8 @@ for i = 1:n_iter
   % save the indices for this cross-validation in res
   iter_res.train_idx = train_idx;
   iter_res.test_idx = test_idx;
-  iter_res.unused_idx = unused_idx;
-  iter_res.unknown_idx = [];
+  %iter_res.unused_idx = unused_idx;
+  %iter_res.unknown_idx = [];
 
   % all other stats come from traintest
   res.iterations(i) = iter_res;

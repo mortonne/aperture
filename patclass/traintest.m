@@ -50,11 +50,24 @@ function res = traintest(testpattern, trainpattern, testtargets, ...
 %   The counterintuitive test, then train order of inputs is necessary
 %   for compatibility with apply_by_group.
 
+% options
+defaults.f_train = @train_logreg;
+defaults.train_args = struct('penalty', 10);
+defaults.f_test = @test_logreg;
+defaults.f_perfmet = {@perfmet_maxclass};
+defaults.perfmet_args = struct;
+defaults.class_sampling = '';
+defaults.feature_select = false;
+defaults.f_stat = @statmap_anova;
+defaults.stat_args = {};
+defaults.stat_thresh = 0.05;
+defaults.save_scratchpad = true;
+defaults.verbose = false;
+[params, unused] = propval(varargin, defaults);
+
 if isempty(testpattern)
   res.train_idx = [];
   res.test_idx = [];
-  res.unused_idx = [];
-  res.unknown_idx = [];
   res.targs = NaN;
   res.acts = NaN;
   res.train_funct_name = '';
@@ -72,6 +85,13 @@ if isempty(testpattern)
   
   res.args = [];
   res.scratchpad = [];
+  
+  if ~params.save_scratchpad
+    res = rmfield(res, {'args' 'scratchpad' ...
+                        'train_funct_name' 'test_funct_name'});
+    res.perfmet{1} = rmfield(res.perfmet{1}, {'scratchpad' 'function_name'});
+  end
+  
   return
 end
 
@@ -89,22 +109,6 @@ elseif size(traintargets, 1) ~= size(trainpattern, 1)
 elseif size(testtargets, 1) ~= size(testpattern, 1)
   error('Different number of observations in testpattern and targets matrix.')
 end
-
-% check to make sure that pattern1 and pattern2 have same
-% dimensions > 2
-defaults.f_train = @train_logreg;
-defaults.train_args = struct('penalty', 10);
-defaults.f_test = @test_logreg;
-defaults.f_perfmet = {@perfmet_maxclass};
-defaults.perfmet_args = struct;
-defaults.class_sampling = '';
-defaults.feature_select = false;
-defaults.f_stat = @statmap_anova;
-defaults.stat_args = {};
-defaults.stat_thresh = 0.05;
-defaults.save_scratchpad = true;
-defaults.verbose = false;
-[params, unused] = propval(varargin, defaults);
 
 if ~iscell(params.f_perfmet)
   params.f_perfmet = {params.f_perfmet};
@@ -154,8 +158,6 @@ n_events = length(test_missing);
 % so train index is all false, test index is all true
 res.train_idx = false(n_events, 1);
 res.test_idx = true(n_events, 1);
-res.unused_idx = false(n_events, 1);
-res.unknown_idx = [];
 res.targs = testtargets';
 res.acts = NaN(size(testtargets'));
 res.train_funct_name = func2str(f_train);
@@ -253,6 +255,13 @@ end
 if params.save_scratchpad
   res.args = params;
   res.scratchpad = scratchpad;
+else
+  % remove any fields not absolutely necessary
+  res = rmfield(res, {'args' 'scratchpad' ...
+                      'train_funct_name' 'test_funct_name'});
+  for p = 1:n_perfs
+    res.perfmet{p} = rmfield(res.perfmet{p}, {'scratchpad' 'function_name'});
+  end
 end
 
 % clf
