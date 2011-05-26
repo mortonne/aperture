@@ -6,6 +6,8 @@ function pat = bin_pattern(pat, varargin)
 %  average within frequency bands or average over all channels in a
 %  region.
 %
+%  Can also handle applying any function to subsets of a pattern.
+%
 %  pat = bin_pattern(pat, ...)
 %
 %  INPUTS:
@@ -18,8 +20,8 @@ function pat = bin_pattern(pat, varargin)
 %  PARAMS:
 %  These options may be specified using parameter, value pairs or by
 %  passing a structure. Defaults are shown in parentheses.
-%   f              - function handle to apply to each bin.
-%                    (@nanmean)
+%   f              - function handle to apply to each bin. Must return
+%                    a scalar. (@nanmean)
 %   f_inputs       - cell array of additional inputs to f. ({})
 %   eval_by        - how to evaluate the function:
 %                     'dim' (default) evaluate one dimension at a time.
