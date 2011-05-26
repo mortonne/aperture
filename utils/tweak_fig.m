@@ -7,6 +7,10 @@ if ~exist('printopt', 'var')
   printopt = {'-depsc'};
 end
 
+if ~exist(fileparts(file), 'dir')
+  mkdir(fileparts(file))
+end
+
 % make the figure visible
 figure(fig_handle)
 
