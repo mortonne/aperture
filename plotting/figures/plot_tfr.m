@@ -109,10 +109,13 @@ else
   yp2 = [];
   ylabel('Frequency')
 end
+publishfig
 
 % change the y-tick to be logarithmic
 set(gca, 'YTick', log10(yp2))
 set(gca, 'YTickLabel', yp2)
+
+set(gca, 'LineWidth', 2)
 
 % colorbar
 if params.colorbar
@@ -123,8 +126,4 @@ if ~isempty(params.colormap)
   colormap(params.colormap);
 end
 
-% aesthetics
-set(gca, 'LineWidth', 2)
-if exist('publishfig')==2
-  publishfig
-end
+
