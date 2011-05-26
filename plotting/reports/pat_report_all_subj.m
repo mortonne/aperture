@@ -53,15 +53,21 @@ defaults.report_file = '';
 [params, report_params] = propval(varargin, defaults);
 report_params = propval(report_params, struct, 'strict', false);
 
+if ~iscell(fig_names)
+  fig_names = {fig_names};
+end
+
 if isempty(params.report_file)
   pat = getobj(subj(1), 'pat', pat_name);
   report_dir = get_pat_dir(pat, 'reports');
-  cd(report_dir)
-  params.report_file = get_next_file([pat.name '_report']);
-end
-
-if ~iscell(fig_names)
-  fig_names = {fig_names};
+  if length(fig_names) == 1
+    basename = sprintf('%s_%s', pat.name, fig_names{1});
+  else
+    basename = pat.name;
+  end
+  
+  params.report_file = get_next_file(fullfile(report_dir, ...
+                                              [basename '_report']));
 end
 
 % get the column labels
