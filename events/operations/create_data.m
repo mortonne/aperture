@@ -33,6 +33,7 @@ end
 % process options
 defaults.f = @FRdata;
 defaults.f_input = {};
+defaults.event_filter = '';
 defaults.overwrite = true;
 defaults.res_dir = get_ev_dir(ev, 'stats');
 params = propval(varargin, defaults);
@@ -48,6 +49,10 @@ fprintf('creating data struct using %s...', func2str(params.f))
 
 % load the events
 events = get_mat(ev);
+
+if ~isempty(params.event_filter)
+  events = filterStruct(events, params.event_filter);
+end
 
 % attempt to create the data struct
 try
