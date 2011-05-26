@@ -18,7 +18,7 @@ function varargout = run_fieldtrip(f, varargin)
 % along with EEG Analysis Toolbox.  If not, see <http://www.gnu.org/licenses/>.
 
 p = path;
-fieldtrip_dir = fileparts(which('timelockanalysis'));
+fieldtrip_dir = fileparts(which('ft_timelockanalysis'));
 addpath(genpath(fieldtrip_dir));
 varargout = cell(1, nargout(f));
 [varargout{:}] = f(varargin{:});
