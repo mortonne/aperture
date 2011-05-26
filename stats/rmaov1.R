@@ -48,12 +48,12 @@ if (length(rm.factor) == 3) {
   n <- length(pw.scores[,1])
 
   # corresponding t and significance (two-sided)
-  obst.pw <- (sqrt(n) * mean(pw.scores)) / sd(pw.scores)
-  pval.pw <- 2 * (1 - pt(abs(obst.pw), n - 1))
+  obst.pw <- abs((sqrt(n) * mean(pw.scores)) / sd(pw.scores))
+  pval.pw <- 2 * (1 - pt(obst.pw, n - 1))
 
   # print
   m = mean(pw.scores)
-  se = sd(pw.scores) / sqrt(n)
+  se = sd(pw.scores) / sqrt(n - 1)
   round(data.frame(mean=m, SE=se, t=obst.pw, df=rep(n - 1, 3), p=pval.pw), 4)
 }
 
