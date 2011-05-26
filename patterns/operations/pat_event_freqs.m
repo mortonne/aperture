@@ -2,6 +2,10 @@ function [n, labels] = pat_event_freqs(subj, pat_name, event_bins, ...
                                        event_filter)
 %PAT_EVENT_FREQS   Frequency of different event types in patterns.
 %
+%  *** DEPRECATED ***
+%  Use the more general pat_group_freqs instead.
+%  *** DEPRECATED ***
+%
 %  Use this to see how frequent different types of events are for
 %  a set of subjects.
 %
