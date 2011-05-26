@@ -1,11 +1,5 @@
 == Project Management ==
 
- * SVN or GIT for future development?
-
- * make documentation public-viewable
-
- * system for reporting bugs/requesting features
-
  * more specialized tutorials, e.g. artifact removal, binning.
 
  * version management - procedures for testing new releases, when to
@@ -14,13 +8,29 @@
 
  * make clearer separation between core and EEG functions
 
+ * new name that is easier to say/less generic. Ideas:
+  * EEG Toolbox (if replacing Penn EEG Toolbox)
+  * Vanderbilt Electrophysiology Classication TOolbox for Research (VECTOR)
+  * Analysis, Classification, and Reporting of Electrophysiology data (ACRE)
+  * Toolbox for Reporting, Analysis, and Classification of Electrophysiology
+  data (TRACE)
+  * Reporting, Analysis, and Classification of Electrophysiology data (RACE)
+  * Analysis and Classification of Electrophysiology data (ACE)
+
 == General Issues ==
+
+ * work toward greater compatibility with FieldTrip. Integrating cluster
+   statistics will be a good be a proof-of-concept that will demonstrate this
+   potential. Could even approach FieldTrip developers about using
+   eeg_ana as a batch handler, leading to a much wider audience. This would
+   require a great deal of compatibility work, since FieldTrip supports more
+   data types than eeg_ana.
+
+ * script for looking at session data using EEGLAB or FieldTrip scrolling interfaces
 
  * improve consistency:
 
   * naming conventions - getobj vs. get_mat
-
-  * input - getobjallsubj takes "path" while getobj takes varargin
 
   * parameter names - chanFilter vs. chanbins vs. eog_channels
 
@@ -28,10 +38,6 @@
 
   * expand unit tests; pattern modification operations especially
     important
-
-  * should objects be saved with their mats, for ease of reloading them
-    if the references in exp get lost?  Or even the whole branch
-    (exp.subj.pat), so they can be remerged using merge_exps.
 
  * check feasibility of cross-experiment analyses (e.g. running Per's
    SME-serial position interaction analysis on all LTP FR experiments)
@@ -49,6 +55,8 @@
 
 == Events ==
 
+ * tutorial on use of event filters, binning
+
 == Patclass ==
 
  * integrate load_pattern features into get_mat, replace load_pattern
@@ -56,17 +64,12 @@
 
  * expand feature selection capability
 
+ * support for importance maps
+
 == Patterns ==
-
- * change patBins to call apply_event_bins
-
- * full support for ':' and 'iter' options in patBins
 
  * support for continuous patterns - one event, many time bins?  How is
    events information stored?
-
- * generalize dimension objects, give option for any dimension to be
-   saved to disk to free up memory (need to expand use of get_dim)
 
  * move to using EEGLAB-style chan structs
 
@@ -80,24 +83,6 @@
  * support for making brain plots
 
 == Stats ==
-
- * should there be a monolithic function with many params/possible
- outputs, or a function for each type of stat test?
-
-  * multiple functions, with standard stat variables - easier to
-    understand, write new stats
-
- * what is the proper format for stat results?  What about n-way tests,
-   interactions?
-
-  * can make one stat object for each effect; each stat object has
-    overall stats of test, but standard vars (p, statistic, thresh, h)
-    are for the effect only.
-
-  * this moves effects labels to a string identifier, rather than an
-    easy-to-confuse index identifier
-
-  * ANOVA function has job of generating default labels
 
  * proposal for compatibility with plotting functions
 
