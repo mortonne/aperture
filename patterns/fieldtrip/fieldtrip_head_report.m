@@ -58,13 +58,23 @@ if isempty(params.stat_file)
   p.pat_name = pat_name;
   p.stat_name = params.stat_name;
   p.report_name = params.report_name;
-  p.res_dir_stat = ['/data7/scratch/zcohen/results/taskFR/eeg/' params.pat_name '/stats'];
   p.shuffles = params.shuffles;
   p.numrandomization = params.shuffles;
   p.statistic = params.statistic;
   p.uvar = params.uvar;
   p.ivar = params.ivar;
-  fieldstat_file = fieldtrip_voltage(exp, params)
+  p.dist = params.dist;
+
+  if isempty(params.res_dir_stat)
+    p.res_dir_stat = [exp.resDir '/eeg/' params.pat_name '/stats'];
+  else
+    p.res_dir_stat = params.res_dir_stat;
+  end
+  if ~exist(p.res_dir_stat, 'dir')
+    mkdir(p.res_dir_stat)
+  end
+
+  fieldstat_file = fieldtrip_voltage(exp, p);
 else
   %use the stat_file already created and get the params from here
   fieldstat_file = params.stat_file;
@@ -76,11 +86,11 @@ params.eventFilter1 = fieldstat.params.eventFilter1;
 params.eventFilter2 = fieldstat.params.eventFilter2;
 params.stat_name = fieldstat.params.stat_name;
   
-%filter, bin, and concatonate all subjs' patterns
+%filter, bin, and concatenate all subjs' patterns
 pat = cat_all_subj_patterns(exp.subj, pat_name, 1, ...
                              {'event_bins',{params.eventFilter1 params.eventFilter2}, ...
                               'dist', params.dist, ...
-                              'eventbinlabels', params.eventbinlabels, ...
+                              'event_bin_labels', params.eventbinlabels, ...
                               'save_as', [pat_name '_' params.contrast_str]});
 
 %make grand average pattern
@@ -128,8 +138,17 @@ pat_ga_tbin =  pat_topoplot_fieldtrip(pat_ga_tbin, [params.contrast_str '_head_f
                       'event_labels', params.eventbinlabels, 'plot_type', 'head', ...
                      'diff', true, 'head_markchans', true, 'mark_pos', pos_hmask, 'mark_neg', neg_hmask})
 
+if ~isempty(params.report_name)
+  report_dir = get_pat_dir(pat_ga_tbin, 'reports');
+  report_file = fullfile(report_dir, params.report_name);
+else
+  report_file = '';
+end
+
 pdf_file = pat_report(pat_ga_tbin, 3, ...
            {[params.contrast_str '_head_ft']}, ...
            'landscape', false, ...
-           'title', params.report_title,'compile_method', params.compile_method);
+           'title', params.report_title, ...
+           'report_file', report_file, ...
+           'compile_method', params.compile_method);
 

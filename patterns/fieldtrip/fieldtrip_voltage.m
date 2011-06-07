@@ -27,7 +27,7 @@ function stat_file = fieldtrip_voltage(exp, varargin)
 %              value is close to 0.05?; (false)
 %   adaptive_range = for what p values should we rerun fieldtrip?; ([.02 .08])
 %   adaptive_shuffles = how many randomizations should we run adaptively?; (5000)
-%   layout = where is the layout file located?; ('/home1/zcohen/matlab/HCGSN128_nof.sfp')
+%   layout = where is the layout file located?; ('~/matlab/eeg_ana/resources/HCGSN128_nof.sfp')
 %   neighbourdist = what distance defines a neighboring electrode? (.11)
 %   neighbours = if you've already calculated a neighbour; []
 %   keeptrials = always 'yes';
@@ -92,7 +92,7 @@ defaults.numrandomization = defaults.shuffles;
 defaults.adaptive = false;
 defaults.adaptive_range = [.02 .08];
 defaults.adaptive_shuffles = 5000;
-defaults.layout = '~/matlab/HCGSN128_nof.sfp';
+defaults.layout = '~/matlab/eeg_ana/resources/HCGSN128_nof.sfp';
 defaults.neighbourdist = .11;
 defaults.neighbours = [];
 defaults.latency = 'all';
@@ -201,7 +201,7 @@ fieldstat.params = params;
 
 %need to create director first
 %then make file name
-stat_file = strcat(params.res_dir_stat, '/fieldstat_', params.report_name);
+stat_file = strcat(params.res_dir_stat, '/fieldstat_', params.stat_name);
 
 %save file
 save(stat_file, 'fieldstat')

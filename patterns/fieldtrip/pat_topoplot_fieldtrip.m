@@ -71,9 +71,9 @@ function pat = pat_topoplot_fieldtrip(pat, fig_name, varargin)
 %                      used.  Only necessary if plot_perimeter is false.
 %                      See perimeter_chans. ('HCGSN128')
 %   chan_locs        - path to a channel locations file compatible with
-%                      readlocs. ('~/eeg/HCGSN128.loc')
+%                      readlocs. ('~/matlab/eeg_ana/resources/HCGSN128.loc')
 %   splinefile       - headplots only: path to a spline file compatible
-%                      with headplot. ('~/eeg/HCGSN128.spl')
+%                      with headplot. ('~/matlab/eeg_ana/resources/HCGSN128.spl')
 %   views            - headplots only: camera views to use when printing
 %                      headplots.  See headplot.  ({[280 35],[80 35]})
 %   colorbar         - if true, a colorbar will be plotted. (true)
@@ -118,8 +118,8 @@ end
 
 % set default parameters
 defaults.plot_type = 'head';
-defaults.chan_locs = '~/matlab/HCGSN128.loc';
-defaults.splinefile = '~/matlab/HCGSN128.spl';
+defaults.chan_locs = '~/matlab/eeg_ana/resources/HCGSN128.loc';
+defaults.splinefile = '~/matlab/eeg_ana/resources/HCGSN128.spl';
 defaults.views = {[280 35], [80 35]};
 defaults.plot_input = {};
 defaults.map_limits = [];
