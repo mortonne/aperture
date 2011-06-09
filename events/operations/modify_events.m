@@ -61,7 +61,7 @@ defaults.save_as = '';
 defaults.res_dir = '';
 params = propval(varargin, defaults, 'strict', false);
 
-fprintf('modifying "%s" events...', ev.name)
+fprintf('modifying "%s" events using %s...', ev.name, func2str(f))
 
 if strcmp(params.save_as, ev.name)
   params.save_as = '';
@@ -100,7 +100,7 @@ if ~isempty(params.event_filter)
   sub_events = f(sub_events, f_inputs{:});
 
   % merge back into the complete events structure
-  events = union_structs(sub_events, events, {'mstime'});
+  events = union_structs(sub_events, events, {'mstime' 'type'});
   
   % in case merging messes up order
   events = sort_events(events);
