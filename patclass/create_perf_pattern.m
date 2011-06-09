@@ -226,11 +226,11 @@ function pat = get_patclass_stats(pat, stat_name, params)
 
   % fix dimensions that were binned during classification
   bin_params = struct;
-  if isfield(stat.params, 'iter_params') && ~isempty(stat.params.iter_params)
-    bin_params = merge_structs(bin_params, stat.params.iter_params);
+  if isfield(stat.params, 'iter_bins') && ~isempty(stat.params.iter_bins)
+    bin_params = merge_structs(bin_params, stat.params.iter_bins);
   end
-  if isfield(stat.params, 'sweep_params') && ~isempty(stat.params.sweep_params)
-    bin_params = merge_structs(bin_params, stat.params.sweep_params);
+  if isfield(stat.params, 'sweep_bins') && ~isempty(stat.params.sweep_bins)
+    bin_params = merge_structs(bin_params, stat.params.sweep_bins);
   end
   if ~isempty(fieldnames(bin_params))
     % use all bins used for iter or sweep (should not overlap)
@@ -272,6 +272,10 @@ function acts = get_acts(res, stat_type, class_output, classes)
      case 'acts'
       if ischar(class_output) && strcmp(class_output, 'correct')
         % get classifier activation for the correct unit
+        if all(isnan(iter_res.targs(:)))
+          % classification was aborted
+          continue
+        end
         mat = iter_res.acts(logical(iter_res.targs));
         
       elseif isscalar(class_output) && isnumeric(class_output)

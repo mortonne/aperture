@@ -115,7 +115,9 @@ defaults.regressor = '';
 defaults.test_select = false;
 defaults.selector = '';
 defaults.iter_cell = cell(1, 4);
+defaults.iter_bins = [];
 defaults.sweep_cell = cell(1, 4);
+defaults.sweep_bins = [];
 defaults.overwrite = true;
 defaults.res_dir = get_pat_dir(test_pat, 'stats');
 defaults.verbose = true;
@@ -135,15 +137,26 @@ if ~params.overwrite && exist(stat_file, 'file')
 end
 
 % dynamic grouping
+% backwards compatibility
 if isstruct(params.iter_cell)
-  % make bins using the train pattern (shouldn't matter which we use)
-  params.iter_params = params.iter_cell;
-  [temp, params.iter_cell] = patBins(train_pat, params.iter_cell);
+  params.iter_bins = params.iter_cell;
+  params.iter_cell = cell(1, 4);
 end
 if isstruct(params.sweep_cell)
-  % make bins from the test pattern
-  params.sweep_params = params.sweep_cell;
-  [temp, params.sweep_cell] = patBins(test_pat, params.sweep_cell);
+  params.sweep_bins = params.sweep_cell;
+  params.sweep_cell = cell(1, 4);  
+end
+
+if ~isempty(params.iter_bins)
+  % make bins using the train pattern (shouldn't matter which we use)
+  [temp, inds] = patBins(train_pat, params.iter_bins);
+  to_change = ~cellfun(@isempty, inds);
+  params.iter_cell(to_change) = inds(to_change);
+end
+if ~isempty(params.sweep_bins)
+  [temp, inds] = patBin(train_pat, params.sweep_bins);
+  to_change = ~cellfun(@isempty, inds);
+  params.sweep_cell(to_change) = inds(to_change);
 end
 
 % make sure user isn't trying to group events

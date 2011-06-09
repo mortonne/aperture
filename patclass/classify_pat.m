@@ -71,6 +71,7 @@ defaults.regressor = '';
 defaults.test_regressor = '';
 defaults.selector = '';
 defaults.iter_cell = cell(1, 4);
+defaults.iter_bins = [];
 defaults.overwrite = true;
 defaults.res_dir = get_pat_dir(pat, 'stats');
 
@@ -92,10 +93,13 @@ if ~params.overwrite && exist(stat_file, 'file')
 end
 
 % dynamic grouping
+% backwards compatibility
 if isstruct(params.iter_cell)
-  params.iter_params = params.iter_cell;
-  [temp, params.iter_cell] = patBins(pat, params.iter_cell);
-elseif ~isempty(params.iter_bins)
+  params.iter_bins = params.iter_cell;
+  params.iter_cell = cell(1, 4);
+end
+
+if ~isempty(params.iter_bins)
   [temp, inds] = patBins(pat, params.iter_bins);
   to_change = ~cellfun(@isempty, inds);
   params.iter_cell(to_change) = inds(to_change);

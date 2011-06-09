@@ -50,6 +50,17 @@ function res = traintest(testpattern, trainpattern, testtargets, ...
 %   The counterintuitive test, then train order of inputs is necessary
 %   for compatibility with apply_by_group.
 
+% input checks
+if ~exist('trainpattern', 'var') || ~isnumeric(trainpattern)
+  error('You must pass training pattern matrix.')
+elseif ~exist('testpattern', 'var') || ~isnumeric(testpattern)
+  error('You must pass a test pattern vector.')
+elseif ~exist('traintargets', 'var') || isempty(traintargets)
+  error('You must pass a train targets matrix.')
+elseif ~exist('testtargets', 'var') || isempty(traintargets)
+  error('You must pass a test targets matrix.')
+end
+
 % options
 defaults.f_train = @train_logreg;
 defaults.train_args = struct('penalty', 10);
@@ -65,51 +76,7 @@ defaults.save_scratchpad = true;
 defaults.verbose = false;
 [params, unused] = propval(varargin, defaults);
 
-if isempty(testpattern)
-  res.train_idx = [];
-  res.test_idx = [];
-  res.targs = NaN;
-  res.acts = NaN;
-  res.train_funct_name = '';
-  res.test_funct_name = '';
-
-  perfmet.guesses = NaN;
-  perfmet.desireds = NaN;
-  perfmet.corrects = NaN;
-  perfmet.perf = NaN;
-  perfmet.scratchpad = [];
-  perfmet.perm_perf = NaN;
-  perfmet.function_name = '';
-  res.perfmet = {perfmet};
-  res.perf = NaN;
-  
-  res.args = [];
-  res.scratchpad = [];
-  
-  if ~params.save_scratchpad
-    res = rmfield(res, {'args' 'scratchpad' ...
-                        'train_funct_name' 'test_funct_name'});
-    res.perfmet{1} = rmfield(res.perfmet{1}, {'scratchpad' 'function_name'});
-  end
-  
-  return
-end
-
-% input checks
-if ~exist('trainpattern', 'var') || ~isnumeric(trainpattern)
-  error('You must pass training pattern matrix.')
-elseif ~exist('testpattern', 'var') || ~isnumeric(testpattern)
-  error('You must pass a test pattern vector.')
-elseif ~exist('traintargets', 'var')
-  error('You must pass a train targets matrix.')
-elseif ~exist('testtargets', 'var')
-  error('You must pass a test targets matrix.')
-elseif size(traintargets, 1) ~= size(trainpattern, 1)
-  error('Different number of observations in trainpattern and targets matrix.')
-elseif size(testtargets, 1) ~= size(testpattern, 1)
-  error('Different number of observations in testpattern and targets matrix.')
-end
-
+% fix input formatting
 if ~iscell(params.f_perfmet)
   params.f_perfmet = {params.f_perfmet};
 end
@@ -123,8 +90,44 @@ if isstruct(params.train_args)
   params.train_args = {params.train_args};
 end
 
-f_train = params.f_train;
-f_test = params.f_test;
+n_events = size(testtargets, 1);
+n_perfs = length(params.f_perfmet);
+
+% initialize the results structure
+res.train_idx = false(n_events, 1);
+res.test_idx = true(n_events, 1);
+res.targs = testtargets';
+res.acts = NaN(size(testtargets'));
+res.train_funct_name = func2str(params.f_train);
+res.test_funct_name = func2str(params.f_test);
+res.perfmet = cell(1, n_perfs);
+for i = 1:n_perfs
+  perfmet.perf = NaN;
+  perfmet.scratchpad = [];
+  perfmet.function_name = func2str(params.f_perfmet{i});
+  res.perfmet{i} = perfmet;
+end
+res.perf = NaN(1, n_perfs);
+res.args = [];
+res.scratchpad = [];
+
+% if bad inputs, just return results with NaN perf
+if isempty(testpattern) || isempty(trainpattern) || ...
+   all(isnan(testpattern(:))) || all(isnan(trainpattern(:)))
+  if ~params.save_scratchpad
+    res = rmfield(res, {'args' 'scratchpad' ...
+                        'train_funct_name' 'test_funct_name'});
+    res.perfmet{1} = rmfield(res.perfmet{1}, {'scratchpad' 'function_name'});
+  end
+  
+  return
+end
+
+if size(traintargets, 1) ~= size(trainpattern, 1)
+  error('Different number of observations in trainpattern and targets matrix.')
+elseif size(testtargets, 1) ~= size(testpattern, 1)
+  error('Different number of observations in testpattern and targets matrix.')
+end
 
 % flatten all dimensions > 2 into one vector
 trainpattern = flatten_pattern(trainpattern);
@@ -149,31 +152,7 @@ test_missing = all(isnan(testpattern), 2);
 trainpattern = trainpattern(~train_missing,:);
 testpattern = testpattern(~test_missing,:);
 
-n_perfs = length(params.f_perfmet);
-store_perfs = NaN(n_perfs);
-
-% initialize the results structure
-n_events = length(test_missing);
-% not dealing with xval here, but need to match format
-% so train index is all false, test index is all true
-res.train_idx = false(n_events, 1);
-res.test_idx = true(n_events, 1);
-res.targs = testtargets';
-res.acts = NaN(size(testtargets'));
-res.train_funct_name = func2str(f_train);
-res.test_funct_name = func2str(f_test);
-res.perfmet = cell(1, n_perfs);
-res.perf = NaN(1, n_perfs);
-res.args = [];
-res.scratchpad = [];
-
-if isempty(trainpattern)
-  fprintf('Warning: train pattern all NaNs.\n')
-  return
-elseif isempty(testpattern)
-  fprintf('Warning: test pattern all NaNs.\n')
-  return
-end
+store_perfs = NaN(1, n_perfs);
 
 % deal with missing features, rescale each feature to be between
 % 0 and 1
@@ -227,10 +206,11 @@ end
 
 try
   % train
-  scratchpad = f_train(trainpattern, traintargets, params.train_args{:}); 
+  scratchpad = params.f_train(trainpattern, traintargets, ...
+                              params.train_args{:}); 
 
   % test
-  [acts, scratchpad] = f_test(testpattern, testtargets, scratchpad);
+  [acts, scratchpad] = params.f_test(testpattern, testtargets, scratchpad);
   
   % save the outputs for all events (acts for excluded events will
   % be NaN)
