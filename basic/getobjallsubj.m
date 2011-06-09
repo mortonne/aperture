@@ -45,7 +45,8 @@ for s=1:length(subj)
 
   if isempty(obj)
     % we couldn't find an object corresponding to that path
-    fprintf('Warning: object %s not found.', path{end})
+    fprintf('Warning: object not found: %s\n', ...
+            obj_path2str('subj', subj(s).id, path{:}))
     continue
   end
 
