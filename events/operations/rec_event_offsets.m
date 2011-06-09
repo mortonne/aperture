@@ -21,6 +21,7 @@ function events = rec_event_offsets(events, rec_duration, varargin)
 
 defaults.start_buffer = 0;
 defaults.voc_duration = 1000;
+defaults.exclude_overlap = false;
 params = propval(varargin, defaults);
 
 % make sure we have a row vector
@@ -41,15 +42,31 @@ end
 % get recall period start times
 rec_starts = [events(strcmp({events.type}, 'REC_START')).mstime];
 
-for rec_start = rec_starts
+for i = 1:length(rec_starts)
+  rec_start = rec_starts(i);
+  
   % times of all events during this recall period (assuming they are
   % disruptive events of some type, not suitable for baseline)
-  rec_ind = rec_start < times & times <= rec_start + rec_duration;
+  if params.exclude_overlap && i < length(rec_starts)
+    % get either the expected recall end or the start of the next recall
+    % period, whichever ends first
+    time_to_next = rec_starts(i + 1) - rec_start;
+    max_rec_time = min([rec_duration time_to_next]);
+  else
+    max_rec_time = rec_duration;
+  end
+  
+  % get all times in the recall window
+  rec_ind = rec_start < times & times < rec_start + max_rec_time;
   if ~any(rec_ind)
     continue
   end
-  
-  voc_times = times(rec_ind);
+  voc_times = times(rec_ind);  
+
+  % check for overlap
+  if i < length(rec_starts) && any(voc_times > rec_starts(i + 1))
+    error('Recall period %d overlaps with next recall period.', i)
+  end
   
   % find free time between events
   offsets = free_offsets(voc_times, params.voc_duration, ...
