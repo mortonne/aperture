@@ -14,13 +14,16 @@ function ev = create_data(ev, stat_name, varargin)
 %  PARAMS:
 %  These options may be specified using parameter, value pairs or by
 %  passing a structure. Defaults are shown in parentheses.
-%   f         - handle to a function of the form:
-%                [data, ...] = fcn_handle(events, ...)
-%               (@FRdata)
-%   f_input   - cell array of additional inputs to f. ({})
-%   overwrite - if true, existing stat files will be overwritten. (true)
-%   res_dir   - directory in which to save the data structure. Default
-%               is the default stats directory for the ev object.
+%   f            - handle to a function of the form:
+%                   [data, ...] = fcn_handle(events, ...)
+%                  (@FRdata)
+%   f_input      - cell array of additional inputs to f. ({})
+%   event_filter - filter string to apply to events before creating the
+%                  data struct. ('')
+%   overwrite    - if true, existing stat files will be overwritten.
+%                  (true)
+%   res_dir      - directory in which to save the data structure.
+%                  (get_ev_dir(ev, 'stats'))
 
 % input checks
 if ~exist('ev', 'var') || ~isstruct(ev)
