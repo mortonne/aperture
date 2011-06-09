@@ -106,10 +106,16 @@ function pat = apply_pat_filtering(pat, params)
   
   for i = 1:length(pat.stat)
     stat_file = pat.stat(i).file;
+    try
+      vars = whos('-file', stat_file);
+    catch
+      fprintf('Cannot filter attached stat; could not find %s.\n', ...
+              stat_file)
+      continue
+    end
     filename = objfilename('stat', [pat.stat(i).name '_filt'], pat.source);
     new_stat_file = fullfile(get_pat_dir(pat, 'stats'), filename);
     
-    vars = whos('-file', stat_file);
     modified = false(1, length(vars));
     for j = 1:length(vars)
       var_name = vars(j).name;
