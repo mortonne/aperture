@@ -19,12 +19,14 @@ if ~exist('obj', 'var') || ~isstruct(obj)
 end
 
 % guess the object type
-if isfield(obj, 'type') && ~strcmp(obj.type, 'ev')
+if isfield(obj, 'type') && ~isempty(obj.type)
   objtype = obj.type;
+elseif isfield(obj, 'id')
+  objtype = 'subj';
 elseif isfield(obj, 'dim')
-  objtype = 'pattern';
+  objtype = 'pat';
 elseif isfield(obj, 'len')
-  objtype = 'events';
+  objtype = 'ev';
 else
   error('Unknown object type.')
 end

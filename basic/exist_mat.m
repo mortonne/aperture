@@ -46,6 +46,8 @@ if isfield(obj, 'file') && ~isempty(obj.file)
     var_names = who('-file', obj.file);
     if ismember(obj_type, {'ev' 'events'})
       obj_type = {'ev' 'events'};
+    elseif ismember(obj_type, {'pat' 'pattern'})
+      obj_type = 'pattern';
     end
       
     if any(ismember(obj_type, var_names))

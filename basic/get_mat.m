@@ -65,6 +65,8 @@ elseif strcmp(loc, 'hd')
     names = {'ev' 'events'};
     match = find(ismember(names, var_names));
     objtype = names{match(1)};
+  elseif strcmp(objtype, 'pat')
+    objtype = 'pattern';
   end
     
   if strcmp(objtype, 'pattern') && isfield(obj.dim, 'splitdim') ...

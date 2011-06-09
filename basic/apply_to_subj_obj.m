@@ -61,20 +61,26 @@ if dist
   for i = 1:length(subj)
     ids{i} = get_obj_name(subj(i));
   end
-  
-  temp_subj = struct('id', ids, 'obj', num2cell(objs));
+  temp_subj = struct('id', ids, 'obj', num2cell(objs), ...
+                     'obj_name', obj_name);
   
   % run the function on each subject's object
   temp_subj = apply_to_subj(temp_subj, @apply_to_obj, ...
                             {{'obj', obj_name}, fcn_handle, fcn_inputs}, ...
                             dist, varargin{:});
 
+  % check if we're running asynchronously
+  if strcmp(class(temp_subj), 'distcomp.simplejob')
+    subj = temp_subj;
+    return
+  end
+  
   % add the modified objects to the subjects
-  for i=1:length(subj)
+  for i = 1:length(subj)
     obj = temp_subj(i).obj;
     
     % if there are two objects, get the new one
-    if length(obj)==2
+    if length(obj) == 2
       [o,j] = getobj(temp_subj(i), 'obj', obj_name);
       j = setdiff(1:2, j);
       obj = obj(j);

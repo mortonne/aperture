@@ -39,6 +39,12 @@ end
 
 objtype = get_obj_type(obj);
 
+if strcmp(objtype, 'pat')
+  objtype = 'pattern';
+elseif strcmp(objtype, 'ev')
+  objtype = 'events';
+end
+
 % type-specific checks/changes to obj
 switch objtype
  case {'ev' 'events' 'chan' 'time' 'freq'}

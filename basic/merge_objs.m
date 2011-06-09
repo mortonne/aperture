@@ -10,7 +10,7 @@ function objs = merge_objs(objs1, objs2)
 %  are not objects will be merged with the first structure taking
 %  precedence if there is a conflict, as in merge_structs.
 %
-%  objs = merge_objs(objs1, objs2)
+%  objs = merge_objs(old_objs, new_objs)
 %
 %  EXAMPLE:
 %   % merge two experiment objects
@@ -20,15 +20,24 @@ function objs = merge_objs(objs1, objs2)
 names1 = get_obj_names(objs1);
 names2 = get_obj_names(objs2);
 
-[c, ind] = setdiff(names2, names1);
-
 objs = [];
+
+% from set 1
+[c, ind] = setdiff(names1, names2);
+for i = 1:length(ind)
+  objs = addobj(objs, objs1(ind(i)));
+end
+% from set 2
+[c, ind] = setdiff(names2, names1);
 for i = 1:length(ind)
   objs = addobj(objs, objs2(ind(i)));
 end
 
 % get clones
 [clones, i1, i2] = intersect(names1, names2);
+if isempty(clones)
+  return
+end
 
 clone_objs = [];
 for i = 1:length(clones)
@@ -50,8 +59,8 @@ for i = 1:length(clones)
     [s_obj2, s_others2] = transfer_fields(s_obj2, s_others2, fn_obj2(ib));
   end
   
-  % for each clone, merge non-struct fields (1 takes precedence)
-  others_merged = merge_structs(s_others1, s_others2);
+  % for each clone, merge non-struct fields (2 takes precedence)
+  others_merged = merge_structs(s_others2, s_others1);
   
   % for each struct field on both objs, if there is an
   % objname (on both objs), call recursively
@@ -81,6 +90,7 @@ end
 
 % fix order of clones
 [all_true, old_loc] = ismember(names1, clones);
+old_loc = old_loc(old_loc ~= 0);
 new_loc = find(~ismember(clones, names1));
 ind = [old_loc; new_loc];
 for i = 1:length(clone_objs)
@@ -136,7 +146,7 @@ function [s1_new, s2_new] = transfer_fields(s1, s2, fn)
   s2_new = s2;
 
   for i = 1:length(fn)
-    this_fn = fn{i}
+    this_fn = fn{i};
     s2_new.(this_fn) = s1.(this_fn);
     s1_new = rmfield(s1_new, this_fn);
   end

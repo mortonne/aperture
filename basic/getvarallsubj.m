@@ -73,7 +73,7 @@ objs = getobjallsubj(subj, obj_path);
 
 % initialize output
 varargout = cell(1, length(var_names));
-for obj=objs
+for obj = objs
   % use obj type to determine how to load the variables
   try
     obj_type = get_obj_type(obj);
@@ -81,6 +81,12 @@ for obj=objs
     obj_type = '';
   end
 
+  if ismember(obj_type, {'ev' 'events'})
+    obj_type = 'events';
+  elseif ismember(obj_type, {'pat' 'pattern'})
+    obj_type = 'pattern';
+  end
+  
   % load the variables
   if ~isempty(params.file_number)
     % loading one of multiple files
@@ -104,7 +110,7 @@ for obj=objs
   end
   
   % place the loaded variables in the cell array
-  for v=1:length(var_names)
+  for v = 1:length(var_names)
     % check to see if we got this variable
     if ~isfield(temp, var_names{v})
       continue

@@ -29,6 +29,9 @@ function subj = apply_to_subj(subj, fcn_handle, fcn_inputs, dist, varargin)
 %  PARAMS:
 %  These options may be specified using parameter, value pairs or by
 %  passing a structure. Defaults are shown in parentheses.
+%   async    - if true, will not wait for jobs to finish. Vector of job
+%              objects will be returned instead of subj (dist=1 only).
+%              (false)
 %   memory   - memory requested for each job (dist=1 only). ('1.7G')
 %   walltime - wall time to for each job ('hh:mm:ss').  This value
 %              should be at least 5 minutes, or '00:05:00' (dist=1
@@ -54,6 +57,7 @@ if ~exist('dist', 'var')
 end
 
 % options
+defaults.async = false;
 defaults.memory = '1.7G';
 defaults.walltime = '00:15:00'; % Torque
 defaults.arch = '';             % Torque 
@@ -63,22 +67,18 @@ params = propval(varargin, defaults);
 if dist == 1
   % determine which resource manager is being used
   jm = which_resource_manager;
-  if strcmp('none',jm)
+  if strcmp('none', jm)
     error('Job manager not found.')
   end
     
   % set up a scheduler
-  if ~exist('~/runs', 'dir')
-    mkdir('~/runs');
-  end  
-  sm = findResource('scheduler', 'type', 'generic');
-  set(sm, 'DataLocation', '~/runs');
+  sm = get_sm();
 
   % set SubmitFcn according to resource manager
-  if strcmp('SGE',jm)
+  if strcmp('SGE', jm)
     set(sm, 'SubmitFcn', {@distributedSubmitFcn2, params.memory});
   
-  elseif strcmp('TORQUE',jm)
+  elseif strcmp('TORQUE', jm)
     params.memory = torque_mem_format(params.memory);
     set(sm, 'SubmitFcn', {@distributedSubmitFcn2, params});
   end
@@ -100,6 +100,7 @@ if dist == 1
   next = 1;
   jobs = [];
   n_finished = 0;
+  n_submitted = 0;
   tic
   while n_finished < n_jobs
     pause(REFRESH)
@@ -144,6 +145,7 @@ if dist == 1
         createTask(job, fcn_handle, 1, ...
                    {this_subj fcn_inputs{:}}, 'Name', name);
         next = next + 1;
+        n_submitted = n_submitted + 1;
       end
       
       % capture command window output for all tasks
@@ -153,7 +155,20 @@ if dist == 1
       submit(job);
       fprintf('job %d submitted with %d tasks.\n', job.ID, n_needed);
       
+      % % get the scheduler's job IDs
+      % switch jm
+      %  case 'TORQUE'
+      %   % doesn't find jobs when running in MATLAB for some reason
+      %   command = sprintf('q | grep Job%d', job.ID);
+      %   [s, output] = unix(command);
+      % end
+      
       jobs = [jobs job];
+    end
+    
+    if params.async && n_submitted == n_jobs
+      subj = jobs;
+      return
     end
   end
   fprintf('apply_to_subj: jobs finished: %.2f seconds.\n', toc);
@@ -193,14 +208,14 @@ elseif dist == 2
     
     % apply to this subject
     try
-      subj_out = fcn_handle(subj(i), fcn_inputs{:})
+      % add subject output by function
+      new_subj = [new_subj fcn_handle(subj(i), fcn_inputs{:})];
     catch err
       fprintf('error thrown for %s:\n', subj(i).id)
       getReport(err)
-      subj_out = subj(i);
-      %subj_out = [];
+      % error; just add the old subject
+      new_subj = [new_subj subj(i)];
     end
-    new_subj = [new_subj subj_out];
   end
   subj = new_subj;
   if length(subj) > 1
