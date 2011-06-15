@@ -1,4 +1,4 @@
-function stat_file = fieldtrip_voltage_subj(exp, varargin)
+function exp = fieldtrip_voltage_subj(exp, varargin)
 
 %FIELDTRIP_VOLTAGE_SUBJ  Run fieldtrip on individual subjects for voltage erp.
 %
@@ -8,7 +8,7 @@ function stat_file = fieldtrip_voltage_subj(exp, varargin)
 %      exp:  experiment object.
 %
 %  OUTPUTS:
-%      stat_file:  file location for fieldstat obj
+%      exp:  experiment object with fieldstat objects
 %
 %  PARAMS:
 %  These options may be specified using parameter, value pairs or by
@@ -21,6 +21,7 @@ function stat_file = fieldtrip_voltage_subj(exp, varargin)
 %   exp_path = string location of your exp structure;
 %   skip_objcreate = logical, should we skip stat object creation?; (false)
 %   res_dir_stat = directory in which to save the stat object;
+%   overwrite = overwrite resulting pattern obj on disk (false)
 %   shuffles = how many randomizations should fieldtrip run?; (1000)
 %   numrandomization = defaults.shuffles;
 %   adaptive = logical, should we adaptively rerun fieldtrip if p
@@ -86,6 +87,7 @@ defaults.res_dir_stat = '';
 defaults.res_dir_pat = '';
 defaults.fig_dir = '';
 defaults.report_name = '';
+defaults.overwrite = false;
 defaults.shuffles = 1000;
 defaults.numrandomization = defaults.shuffles;
 defaults.adaptive = false;
@@ -112,6 +114,7 @@ defaults.keepindividual = 'yes';
 defaults.computecritval = 'no';
 defaults.clustercritval = .5;
 defaults.clusterthreshold = 'parametric';
+defaults.dist = 1;
 
 [params, extras] = propval(varargin, defaults);
 
@@ -123,7 +126,7 @@ defaults.clusterthreshold = 'parametric';
 
 %convert patterns to fieldtrip ready averages
 exp.subj = apply_to_subj(exp.subj, @fieldtrip_voltage_subj_statistics, ...
-                         {params}, 1, 'memory', '3G');
+                         {params}, params.dist, 'memory', '3G');
 
 if params.adaptive
   %run cluster_counter.m to identify significant clusters and reruns
@@ -138,7 +141,7 @@ if params.adaptive
     params.skip_objcreate = true;
     params.sigclust_rerun = 'yes';
     exp.subj(subj_include) = apply_to_subj(exp.subj(subj_include), @fieldtrip_voltage_subj_statistics, ...
-                         {params}, 1, 'memory', '3G');
+                         {params}, params.dist, 'memory', '3G');
   end
 end
 
@@ -231,7 +234,7 @@ end
 
 %get the necessary parameters for fieldtrip
 p = [];
-p.design = [design; ivar_design];
+p.design = design;
 p.keepindividual = params.keepindividual;
 p.latency = params.latency;
 p.keeptrials = params.keeptrials;
@@ -259,5 +262,10 @@ p.clusterthreshold = params.clusterthreshold;
 %Run the actual fieldtrip cluster analysis
 [fieldstat] = run_fieldtrip(@ft_timelockstatistics, p, timelock1, timelock2);
 
+%save parameters for later use in plotting
+fieldstat.params = params;
+
 %save the fieldtrip statistic
 save(stat.file, 'fieldstat');
+
+subj = setobj(subj, 'pat', params.pat_name, 'stat', stat);

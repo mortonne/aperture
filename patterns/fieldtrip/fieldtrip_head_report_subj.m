@@ -33,6 +33,7 @@ defaults.eventFilter2 = '';
 defaults.eventbinlabels = {'type1' 'type2'};
 defaults.stat_name = '';
 defaults.res_dir_stat = '';
+defaults.overwrite = false;
 defaults.report_name = 'fieldtrip_headplot_report';
 defaults.contrast_str = 'contrast';
 defaults.shuffles = 1000;
@@ -61,26 +62,44 @@ if isempty(params.res_dir_stat)
   p.eventFilter2 = params.eventFilter2;
   p.pat_name = pat_name;
   p.stat_name = params.stat_name;
+  p.overwrite = params.overwrite;
   p.report_name = params.report_name;
-  p.res_dir_stat = ['/data7/scratch/zcohen/results/taskFR/eeg/' params.pat_name '/stats'];
   p.shuffles = params.shuffles;
   p.numrandomization = params.shuffles;
   p.statistic = params.statistic;
   p.uvar = params.uvar;
   p.ivar = params.ivar;
-  exp = fieldtrip_voltage_subj(exp, params)
+  p.dist = params.dist;
+
+  if isempty(params.res_dir_stat)
+    p.res_dir_stat = [exp.resDir '/eeg/' params.pat_name '/stats'];
+  else
+    p.res_dir_stat = params.res_dir_stat;
+  end
+  if ~exist(p.res_dir_stat, 'dir')
+    mkdir(p.res_dir_stat)
+  end
+
+  exp = fieldtrip_voltage_subj(exp, params);
 end
 
 
 exp.subj = apply_to_subj(exp.subj, @fieldtrip_subj_headplot, {params}, ...
-                         params.dist, 'memory', '3G')
+                         0, 'memory', '3G');
 
 
+report_pat_name = [params.pat_name '_' params.contrast_str];
 
-pdf_file = pat_report(exp.subj, params.pat_name, ...
+pat = getobj(exp.subj(1),'pat',report_pat_name);
+report_dir = get_pat_dir(pat, 'reports');
+report_file = get_next_file(fullfile(report_dir, params.report_name));
+
+pdf_file = pat_report_all_subj(exp.subj, report_pat_name, ...
            {[params.contrast_str '_head_ft']}, ...
-           'landscape', false, ...
-           'title', params.report_title,'compile_method', params.compile_method);
+           'landscape', true, ...
+           'title', params.report_title, ...
+           'report_file', report_file, ...
+           'compile_method', params.compile_method);
 
 
 function subj = fieldtrip_subj_headplot(subj, params)
@@ -100,7 +119,8 @@ function subj = fieldtrip_subj_headplot(subj, params)
                      params.eventFilter2},'eventbinlabels', ...
                    params.eventbinlabels,'timebins', ...
                    params.time_bins, 'save_as', ...
-                   [pat_name '_' params.contrast_str])
+                   [params.pat_name '_' params.contrast_str], ...
+                   'overwrite', true);
  
  if ~isempty(params.freq_filter)
    pat = filter_pattern(pat, {'freq_filter', params.freq_filter});
@@ -136,7 +156,7 @@ function subj = fieldtrip_subj_headplot(subj, params)
                      'event_labels', params.eventbinlabels, 'plot_type', 'head', ...
                      'diff', true, 'head_markchans', true, 'mark_pos', ...
                      pos_hmask, 'mark_neg', neg_hmask, 'print_input', ...
-                     params.print_input})
+                     params.print_input});
  
  subj = setobj(subj,'pat',pat);
  
