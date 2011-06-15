@@ -762,16 +762,26 @@ else
   % Perform interpolation
   %%%%%%%%%%%%%%%%%%%%%%%%%%
 
-  meanval = mean(values); values = values - meanval; % make mean zero
+  %JDM: changed interpolation behavior
+  % original did not handle NaNs well, kept below in comments
+  % new behavior treats NaN'd channels as if they have the mean value over all non-NaN electrodes
+
+  %meanval = mean(values); values = values - meanval; % make mean zero
+  meanval = nanmean(values); values = values - meanval; % make mean zero  
+
   onemat = ones(enum,1);
   lamd = 0.1;
-  C = pinv([(G + lamd);ones(1,enum)]) * [values(:);0]; % fixing division error
+  %C = pinv([(G + lamd);ones(1,enum)]) * [values(:);0]; % fixing division error
+  nonan_values = values;
+  nonan_values(isnan(values)) = 0;
+  C = pinv([(G + lamd);ones(1,enum)]) * [nonan_values(:);0]; % fixing division error
+  
   P = zeros(1,size(gx,1));
   for j = 1:size(gx,1)
     P(j) = dot(C,gx(j,:));
   end
   P = P + meanval;
-  
+
   %%%%%%%%%%%%%%%%%%%%%%%%%%
   % Plot surfaces
   %%%%%%%%%%%%%%%%%%%%%%%%%%
