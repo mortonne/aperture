@@ -1,7 +1,5 @@
-function longtable(table, header, filename, title, landscape)
+function longtable(filename, table, varargin)
 %LONGTABLE   Create a LaTeX longtable from Matlab data.
-%
-%  longtable(table, header, filename, title)
 %
 %  This script is designed to create a multipage table using LaTeX code.
 %  It is particularly useful for making PDF reports of multiple figures.
@@ -9,25 +7,38 @@ function longtable(table, header, filename, title, landscape)
 %  table; this script just handles creating the document and placing
 %  your code in the table.
 %
-%  LaTeX will automatically break the table into as many pages as needed.
-%  On each page, the first row of the table will be a header that you specify.
+%  LaTeX will automatically break the table into as many pages as
+%  needed. On each page, the first row of the table will be a header
+%  that you specify.
+%
+%  NEW CALLING SIGNATURE:
+%
+%  longtable(filename, table, ...)
 %
 %  INPUTS:
-%      table:  cell array with a string of LaTeX code in each cell.
+%  filename:  path to the file that LaTeX code will be written to.
 %
-%     header:  cell array of strings of the same length as the number of
-%              columns in table. The header will be displayed in the first
-%              row of the table on each page.
+%     table:  cell array with a string of LaTeX code in each cell.
 %
-%   filename:  path to the file that LaTeX code will be written to.
+%  PARAMS:
+%   col_width   - string or cell array of strings indicating the width
+%                 of each column. ([])
+%   header      - cell array of strings indicating a header to be placed
+%                 at the top of the table on every page. ({})
+%   orientation - page orientation ('portrait' or 'landscape').
+%                 ('landscape')
+%   title       - title for the document. ('')
 %
-%      title:  optional string title for the table.
+%  OLD CALLING SIGNATURE (currently supported, but deprecated):
 %
+%  longtable(table, header, filename, title, landscape)
+%
+%  INPUTS:
 %  landscape:  boolean scalar. If true (default), the page will be in
 %              landscape orientation.
 %
 %  OUTPUTS:
-%  A LaTeX file saved in filename, which you must compile to make a PDF 
+%  A LaTeX file saved in filename, which you must compile to make a PDF
 %  report.
 %
 %  If you are using the \includegraphics command to add .eps figures, use:
@@ -36,126 +47,7 @@ function longtable(table, header, filename, title, landscape)
 %  If you don't have .eps files:
 %  pdflatex [filename].tex; pdflatex [filename].tex
 %
-%  See also create_report.
-
-if ~exist('landscape','var')
-  landscape = true;
-end
-if ~exist('title','var')
-  title = '';
-end
-if ~exist('filename','var')
-  error('You must specify an output file.')
-elseif ~exist('header','var')
-  error('You must pass a header cell array.')
-elseif ~exist('table','var')
-  error('You must pass a cell array of LaTeX code for the table.')
-end
-
-% convenience variables
-n_rows = size(table,1);
-n_cols = size(table,2);
-if length(header)~=n_cols
-  error('header must be the same length as the number of columns in table.')
-end
-
-% set the column formatting
-col_pos = '|';
-for col=1:n_cols
-  col_pos = [col_pos 'c'];
-end
-col_pos = [col_pos '|'];
-
-% open the file
-fid = fopen(filename,'w');
-
-% preamble
-fprintf(fid,'\\documentclass{report}\n');
-fprintf(fid,'\\usepackage{graphicx,lscape,longtable,color,verbatim}\n');
-%fprintf(fid,'\\setlength{\\marginparsep=1pt}')
-% fprintf(fid,'\\setlength{\\oddsidemargin}{-1in}\n');
-% fprintf(fid,'\\setlength{\\evensidemargin}{-1in}\n');
-% fprintf(fid,'\\setlength{\\topmargin}{-0.5in}\n');
-% fprintf(fid,'\\setlength{\\textwidth}{7.5in}\n');
-% fprintf(fid,'\\setlength{\\textheight}{10.9in}\n');
-% fprintf(fid,'\\setlength{\\headheight}{0.5in}\n');
-% fprintf(fid,'\\setlength{\\headsep}{-0.5in}\n');
-fprintf(fid,'\\pagestyle{headings}\n');
-if landscape
-  fprintf(fid,'\\usepackage[right=.25in,left=.25in,bottom=-1,top=1in]{geometry}\n');
-else
-  fprintf(fid,'\\usepackage[margin=1in,left=.5in]{geometry}\n');
-end
-fprintf(fid,'\n');
-
-% start the document
-fprintf(fid,'\\begin{document}\n');
-if landscape
-  fprintf(fid,'\\begin{landscape}\n');
-end
-fprintf(fid,'\n');
-
-% begin the longtable
-fprintf(fid,'\\begin{center}\n');
-fprintf(fid,'\\begin{longtable}{%s}\n', col_pos);
-fprintf(fid,'\n');
-
-% first page title
-fprintf(fid,'\\multicolumn{%d}{c}{\\textbf{%s}} \\\\\n', n_cols, title);
-
-% first page table header
-fprintf(fid,'\\hline \\multicolumn{1}{|c|}{\\textbf{%s}} ', header{1});
-for j=2:n_cols
-  fprintf(fid,'& \\multicolumn{1}{c|}{\\textbf{%s}} ', header{j});
-end
-fprintf(fid,'\\\\ \\hline\n');
-fprintf(fid,'\\endfirsthead\n');
-fprintf(fid,'\n');
-
-% title (continued)
-fprintf(fid,'\\multicolumn{%d}{c}{\\textbf{%s (continued)}} \\\\\n', n_cols, title);
-
-% table header (continued)
-fprintf(fid,'\\hline \\multicolumn{1}{|c|}{\\textbf{%s}} ', header{1});
-for j=2:n_cols
-  fprintf(fid,'& \\multicolumn{1}{c|}{\\textbf{%s}} ', header{j});
-end
-fprintf(fid,'\\\\ \\hline\n');
-fprintf(fid,'\\endhead\n');
-fprintf(fid,'\n');
-
-% table footer
-fprintf(fid,'\\hline \\multicolumn{%d}{|r|}{Continued on next page...} \\\\ \\hline\n',n_cols);
-fprintf(fid,'\\endfoot\n');
-fprintf(fid,'\n');
-
-% last page table footer
-fprintf(fid,'\\hline \\hline\n');
-fprintf(fid,'\\endlastfoot\n');
-fprintf(fid,'\n');
-
-% write the table
-for i=1:n_rows
-  for j=1:n_cols-1
-    fprintf(fid,'%s & ', table{i,j});
-  end
-  fprintf(fid,'%s \\\\ \n', table{i,end});
-end
-fprintf(fid,'\n');
-
-% end the longtable
-fprintf(fid,'\\end{longtable}\n');
-fprintf(fid,'\\end{center}\n');
-fprintf(fid,'\n');
-
-% finish the document
-if landscape
-  fprintf(fid,'\\end{landscape}\n');
-end
-fprintf(fid,'\\end{document}');
-fprintf(fid,'\n');
-fclose(fid);
-
+%  See also pdflatex, create_report.
 
 % Copyright 2007-2011 Neal Morton, Sean Polyn, Zachary Cohen, Matthew Mollison.
 %
@@ -173,4 +65,162 @@ fclose(fid);
 %
 % You should have received a copy of the GNU Lesser General Public License
 % along with EEG Analysis Toolbox.  If not, see <http://www.gnu.org/licenses/>.
+
+% input checks
+if ~exist('filename', 'var')
+  error('You must specify an output file.')
+elseif ~exist('table', 'var')
+  error('You must pass a cell array of LaTeX code for the table.')
+end
+
+% backwards compatibility
+if iscellstr(filename)
+  % old calling signature:
+  % longtable(table, header, filename, title, landscape)
+  new_table = filename;
+  new_header = table;
+  filename = varargin{1};
+  table = new_table;
+  header = new_header;
+  
+  if length(varargin) == 1
+    varargin = {'header', header};
+  elseif length(varargin) == 2
+    varargin = {'header', header, 'title', varargin{2}};
+  elseif length(varargin) == 3 && ...
+        (isbool(varargin({3})) || ismember(varargin{3}, [0 1]))
+    if varargin{3}
+      orientation = 'landscape';
+    else
+      orientation = 'portrait';
+    end
+    varargin = {'header', header, 'title', varargin{2}, ...
+                'orientation', orientation};
+  end
+end
+
+% options
+defaults.header = {};
+defaults.orientation = 'landscape';
+defaults.title = '';
+defaults.col_width = [];
+params = propval(varargin, defaults);
+
+% convenience variables
+n_rows = size(table, 1);
+n_cols = size(table, 2);
+if length(params.header) ~= n_cols
+  error('header must be the same length as the number of columns in table.')
+end
+
+% set the column formatting
+if ~isempty(params.col_width)
+  if ischar(params.col_width)
+    params.col_width = repmat({params.col_width}, 1, n_cols);
+  end
+    
+  for i = 1:n_cols
+    col_format{i} = sprintf('p{%s}', params.col_width{i});
+  end
+else
+  col_format = repmat({'c'}, 1, n_cols);
+end
+col_pos = '|';
+for i = 1:n_cols
+  col_pos = [col_pos col_format{i}];
+end
+col_pos = [col_pos '|'];
+
+% open the file
+fid = fopen(filename, 'w');
+
+% preamble
+fprintf(fid,'\\documentclass{report}\n');
+fprintf(fid,'\\usepackage{graphicx,lscape,longtable,color,verbatim,amsmath}\n');
+%fprintf(fid,'\\setlength{\\marginparsep=1pt}')
+% fprintf(fid,'\\setlength{\\oddsidemargin}{-1in}\n');
+% fprintf(fid,'\\setlength{\\evensidemargin}{-1in}\n');
+% fprintf(fid,'\\setlength{\\topmargin}{-0.5in}\n');
+% fprintf(fid,'\\setlength{\\textwidth}{7.5in}\n');
+% fprintf(fid,'\\setlength{\\textheight}{10.9in}\n');
+% fprintf(fid,'\\setlength{\\headheight}{0.5in}\n');
+% fprintf(fid,'\\setlength{\\headsep}{-0.5in}\n');
+fprintf(fid,'\\pagestyle{headings}\n');
+switch params.orientation
+ case 'landscape'
+  %fprintf(fid,'\\usepackage[right=.25in,left=.25in,bottom=-1,top=1in]{geometry}\n');
+  fprintf(fid,'\\usepackage[right=0in,left=1cm,bottom=0in,top=3.2in]{geometry}\n');
+ case 'portrait'
+  fprintf(fid,'\\usepackage[margin=1in,left=.5in]{geometry}\n');
+end
+fprintf(fid,'\n');
+
+% start the document
+fprintf(fid,'\\begin{document}\n');
+if strcmp(params.orientation, 'landscape')
+  fprintf(fid,'\\begin{landscape}\n');
+end
+fprintf(fid,'\n');
+
+% begin the longtable
+fprintf(fid,'\\begin{center}\n');
+fprintf(fid,'\\begin{longtable}{%s}\n', col_pos);
+fprintf(fid,'\n');
+
+% first page title
+fprintf(fid,'\\multicolumn{%d}{c}{\\textbf{%s}} \\\\\n', n_cols, params.title);
+
+% first page table header
+fprintf(fid,'\\hline \\multicolumn{1}{|c|}{\\textbf{%s}} ', params.header{1});
+for j = 2:n_cols
+  fprintf(fid,'& \\multicolumn{1}{c|}{\\textbf{%s}} ', params.header{j});
+end
+fprintf(fid,'\\\\ \\hline\n');
+fprintf(fid,'\\endfirsthead\n');
+fprintf(fid,'\n');
+
+% title (continued)
+fprintf(fid,'\\multicolumn{%d}{c}{\\textbf{%s (continued)}} \\\\\n', ...
+        n_cols, params.title);
+
+% table header (continued)
+fprintf(fid,'\\hline \\multicolumn{1}{|c|}{\\textbf{%s}} ', params.header{1});
+for j = 2:n_cols
+  fprintf(fid,'& \\multicolumn{1}{c|}{\\textbf{%s}} ', params.header{j});
+end
+fprintf(fid,'\\\\ \\hline\n');
+fprintf(fid,'\\endhead\n');
+fprintf(fid,'\n');
+
+% table footer
+fprintf(fid,'\\hline \\multicolumn{%d}{|r|}{Continued on next page...} \\\\ \\hline\n',n_cols);
+fprintf(fid,'\\endfoot\n');
+fprintf(fid,'\n');
+
+% last page table footer
+fprintf(fid,'\\hline \\hline\n');
+fprintf(fid,'\\endlastfoot\n');
+fprintf(fid,'\n');
+
+% write the table
+for i = 1:n_rows
+  for j = 1:n_cols - 1
+    fprintf(fid,'%s & ', table{i,j});
+  end
+  fprintf(fid,'%s \\\\ \n', table{i,end});
+end
+fprintf(fid,'\n');
+
+% end the longtable
+fprintf(fid,'\\end{longtable}\n');
+fprintf(fid,'\\end{center}\n');
+fprintf(fid,'\n');
+
+% finish the document
+if strcmp(params.orientation, 'landscape')
+  fprintf(fid,'\\end{landscape}\n');
+end
+fprintf(fid,'\\end{document}');
+fprintf(fid,'\n');
+fclose(fid);
 
