@@ -92,7 +92,7 @@ report_pat_name = [params.pat_name '_' params.contrast_str];
 
 pat = getobj(exp.subj(1),'pat',report_pat_name);
 report_dir = get_pat_dir(pat, 'reports');
-report_file = get_next_file(fullfile(report_dir, params.report_name));
+report_file = fullfile(report_dir, params.report_name);
 
 pdf_file = pat_report_all_subj(exp.subj, report_pat_name, ...
            {[params.contrast_str '_head_ft']}, ...
