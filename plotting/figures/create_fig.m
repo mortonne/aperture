@@ -65,7 +65,7 @@ defaults.source = '';
 defaults.subject = '';
 defaults.print_input = {'-depsc'};
 defaults.file_ext = 'eps';
-
+defaults.tweak_fig = false;
 params = propval(varargin, defaults);
 
 % define the basename of the figure files
@@ -80,16 +80,24 @@ switch length(inputs)
   base_name = sprintf('%s_%s_%s', inputs{:});
 end
 
-% print the figures
+% set the figure file names
 files = cell(1, length(h));
 if isscalar(h)
   files{1} = fullfile(res_dir, sprintf('%s.%s', base_name, params.file_ext));
   print(h, files{1}, params.print_input{:});
 else
   % each figure is identified by its position in h
-  for i=1:length(files)
+  for i = 1:length(files)
     files{i} = fullfile(res_dir, sprintf('%s-%d.%s', base_name, i, ...
                                          params.file_ext));
+    print(h(i), files{i}, params.print_input{:});
+  end
+end
+
+for i = 1:length(files)
+  if params.tweak_fig
+    tweak_fig(h(i), files{i}, params.print_input);
+  else
     print(h(i), files{i}, params.print_input{:});
   end
 end
