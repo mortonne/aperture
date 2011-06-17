@@ -83,7 +83,8 @@ if ~isempty(params.header_figs)
 end
 
 % set row and column labels
-row_labels = {subj.id};
+row_labels = cellfun(@(x) strrep(x, '_', '-'), {subj.id}, ...
+                     'UniformOutput', false);
 if ~isempty(params.header_figs)
   row_labels = [{params.header_figs_label} row_labels];
 end
