@@ -21,31 +21,32 @@ function pat = create_perf_pattern(pat, stat_name, varargin)
 %  PARAMS:
 %  These options may be specified using parameter, value pairs or by
 %  passing a structure. Defaults are shown in parentheses.
-%   stat_type - the type of classification statistic to include in the
-%               pattern. Can be:
-%                'perf'    - use an already-calculated performance
-%                            metric. Will be one "event" for each
-%                            cross-validation iteration (default)
-%                'acts'    - value of an output unit. Use class_output
-%                            to specify which unit to return (see below)
-%                'guess'   - condition guessed by the classifier
-%                'correct' - logical array indicating whether the
-%                            classifier was correct
-%               May also be a function handle to a performance metric
-%               function, which will be applied to each event_bin.
+%   stat_type    - the type of classification statistic to include in
+%                  the pattern. Can be:
+%                   'perf'    - use an already-calculated performance
+%                               metric. Will be one "event" for each
+%                               cross-validation iteration (default)
+%                   'acts'    - value of an output unit. Use
+%                               class_output to specify which unit to
+%                               return (see below)
+%                   'guess'   - condition guessed by the classifier
+%                   'correct' - logical array indicating whether the
+%                               classifier was correct
+%                  May also be a function handle to a performance metric
+%                  function, which will be applied to each event_bin.
 %   class_output - if stat_type is 'acts', specifies which output units
-%                to return. Can be:
-%                numeric     - index of the output unit in the acts
-%                              matrix
-%                'fieldname' - name of an events field containing the
-%                              label of the output unit to get for a
-%                              given event
-%                'correct'   - the output unit for the correct category
-%                              on a given event
-%   event_bins - input to make_event_bins to define subsets of events to
-%               apply the perfmet function to (only used if stat_type is
-%               a function handle). Default is to calculate the
-%               perfmet for each iteration.
+%                  to return. Can be:
+%                   numeric     - index of the output unit in the acts
+%                                 matrix
+%                   'fieldname' - name of an events field containing the
+%                                 label of the output unit to get for a
+%                                 given event
+%                   'correct'   - the output unit for the correct
+%                                 category on a given event
+%   event_bins   - input to make_event_bins to define subsets of events
+%                  to apply the perfmet function to (only used if
+%                  stat_type is a function handle). Default is to
+%                  calculate the perfmet for each iteration.
 %   event_labels - cell array of strings, with one cell per bin. Gives
 %                  a label for each event bin. ({})
 %   event_levels - cell array of cell arrays of strings. Used only if
@@ -53,19 +54,21 @@ function pat = create_perf_pattern(pat, stat_name, varargin)
 %                  factors, e.g. two events fields. The label for
 %                  factor i, level j goes in event_levels{i}{j}.
 %                  ({})
-%   precision - precision of the created pattern. [{'single'} | 'double']
-%   save_mats - if true, and input mats are saved on disk, modified
-%               mats will be saved to disk. If false, the modified mats
-%               will be stored in the workspace, and can subsequently
-%               be moved to disk using move_obj_to_hd. (true)
-%   overwrite - if true, existing patterns on disk will be overwritten.
-%               (true)
-%   save_as   - string identifier to name the modified pattern. If
-%               empty, the name will not change.
-%               ([pat.name '-' stat_name])
-%   res_dir   - directory in which to save the modified pattern and
-%               events, if applicable. Default is a directory named
-%               pat_name on the same level as the input pat.
+%   precision    - precision of the created pattern.
+%                  [{'single'} | 'double']
+%   save_mats    - if true, and input mats are saved on disk, modified
+%                  mats will be saved to disk. If false, the modified
+%                  mats will be stored in the workspace, and can
+%                  subsequently be moved to disk using move_obj_to_hd.
+%                  (true)
+%   overwrite    - if true, existing patterns on disk will be
+%                  overwritten. (true)
+%   save_as      - string identifier to name the modified pattern. If
+%                  empty, the name will not change.
+%                  ([pat.name '-' stat_name])
+%   res_dir      - directory in which to save the modified pattern and
+%                  events, if applicable. Default is a directory named
+%                  pat_name on the same level as the input pat.
 
 % input checks
 if ~exist('pat', 'var') || ~isstruct(pat)
@@ -98,14 +101,28 @@ pat = mod_pattern(pat, @get_patclass_stats, {stat_name, params}, saveopts);
 function pat = get_patclass_stats(pat, stat_name, params)
   % get the results of pattern classification
   stat = getobj(pat, 'stat', stat_name);
-  res = getfield(load(stat.file, 'res'), 'res');
+  res = get_stat(stat, 'res');
   [n_iter, n_chans, n_time, n_freq] = size(res.iterations);
   
-  % sanity checks
+  % sanity check events
   class_events = length(res.iterations(1).train_idx);
   pat_events = patsize(pat.dim, 1);
   assert(class_events == pat_events, ...
          'different numbers of events in the pattern and classification.');
+  
+  % fix (non-event) dimensions that were binned during classification
+  bin_params = struct;
+  if isfield(stat.params, 'iter_bins') && ~isempty(stat.params.iter_bins)
+    bin_params = merge_structs(bin_params, stat.params.iter_bins);
+  end
+  if isfield(stat.params, 'sweep_bins') && ~isempty(stat.params.sweep_bins)
+    bin_params = merge_structs(bin_params, stat.params.sweep_bins);
+  end
+  if ~isempty(fieldnames(bin_params))
+    % use all bins used for iter or sweep (should not overlap)
+    temp = patBins(pat, bin_params);
+    pat.dim = temp.dim;
+  end
   
   % get non-singleton dimentions of res
   pat_size = patsize(pat.dim);
@@ -122,6 +139,25 @@ function pat = get_patclass_stats(pat, stat_name, params)
     end
   end
   
+  % collapse the dimensions that were collapsed during classification
+  % (not including events)
+  for d = sing_dims
+    dim_name = read_dim_input(d);
+    switch dim_name
+     case 'chan'
+      dim = struct('number',[], 'region','', 'label','');
+     case 'time'
+      dim = init_time(1);
+     case 'freq'
+      dim = init_freq(1);
+     otherwise
+      error('Unknown dimension type: %s.', dim_name)
+    end
+    
+    pat.dim.(dim_name) = dim;
+  end
+
+  % collapse events to match the classification results
   if strcmp(params.stat_type, 'perf')
     % one event for each iteration
     n_events = n_iter;
@@ -142,11 +178,8 @@ function pat = get_patclass_stats(pat, stat_name, params)
     [temp, bins] = patBins(pat, 'eventbins', params.event_bins, ...
                            'eventbinlabels', params.event_labels, ...
                            'eventbinlevels', params.event_levels);
-
     event_bins = bins{1};
     n_events = length(event_bins);
-    iter_cell = {[], event_bins};
-    
     pat.dim = temp.dim;
   else
     
@@ -154,18 +187,8 @@ function pat = get_patclass_stats(pat, stat_name, params)
     n_events = patsize(pat.dim, 'ev');
   end
 
-  % initialize the new pattern
-  pattern = NaN(n_events, n_chans, n_time, n_freq, params.precision);
-
-  % create a pattern with classifier outputs
-  fprintf('creating pattern from "%s" "%s" classification results...\n', ...
-          pat.name, stat_name)
-
-  if isempty(params.event_bins)
-    iter_cell = {[], 'iter'};
-  end
-  
-  % check if getting classifier output
+  % if getting classifier estimates, add an events field for accessing
+  % the correct unit
   if strcmp(params.stat_type, 'acts') && ~isempty(params.class_output)
     if ischar(params.class_output) && ...
              ~strcmp(params.class_output, 'correct')
@@ -187,6 +210,21 @@ function pat = get_patclass_stats(pat, stat_name, params)
     pat.dim = set_dim(pat.dim, 'ev', events, 'ws');
   end
   
+  % define bins for calculating a new performance metric
+  if isa(params.stat_type, 'function_handle')
+    if ~isempty(params.event_bins)
+      iter_cell = {[], event_bins};
+    else
+      iter_cell = {[], 'iter'};
+    end
+  end
+  
+  % initialize the new pattern
+  pattern = NaN(n_events, n_chans, n_time, n_freq, params.precision);
+
+  % create a pattern with classifier outputs
+  fprintf('creating pattern from "%s" "%s" classification results...\n', ...
+          pat.name, stat_name)
   for c = 1:n_chans
     for t = 1:n_time
       for f = 1:n_freq
@@ -200,11 +238,9 @@ function pat = get_patclass_stats(pat, stat_name, params)
             % this is a field from the events structure
             inputs{1} = [events.(output_field)];
             inputs{2} = nanunique(inputs{1});
-            
           else
             inputs = {params.class_output};
           end
-          
           pattern(:,c,t,f) = get_acts(res.iterations(:,c,t,f), ...
                                       params.stat_type, inputs{:});
           
@@ -224,43 +260,15 @@ function pat = get_patclass_stats(pat, stat_name, params)
     end
   end
 
-  % fix dimensions that were binned during classification
-  bin_params = struct;
-  if isfield(stat.params, 'iter_bins') && ~isempty(stat.params.iter_bins)
-    bin_params = merge_structs(bin_params, stat.params.iter_bins);
-  end
-  if isfield(stat.params, 'sweep_bins') && ~isempty(stat.params.sweep_bins)
-    bin_params = merge_structs(bin_params, stat.params.sweep_bins);
-  end
-  if ~isempty(fieldnames(bin_params))
-    % use all bins used for iter or sweep (should not overlap)
-    temp = patBins(pat, bin_params);
-    pat.dim = temp.dim;
-  end
-  
-  % collapse the dimensions that were collapsed during classification
-  % (not including events)
-  for d = sing_dims
-    dim_name = read_dim_input(d);
-    switch dim_name
-     case 'chan'
-      dim = struct('number',[], 'region','', 'label','');
-     case 'time'
-      dim = init_time(1);
-     case 'freq'
-      dim = init_freq(1);
-     otherwise
-      error('Unknown dimension type: %s.', dim_name)
-    end
-    
-    pat.dim.(dim_name) = dim;
-  end
-
   % add the classifier outputs as the pattern matrix
   pat = set_mat(pat, pattern, 'ws');
 
 
 function acts = get_acts(res, stat_type, class_output, classes)
+%GET_ACTS   Get information from classifier output.
+%
+%  acts = get_acts(res, stat_type, class_output, classes)
+
   n_events = length(res(1).test_idx);
   acts = NaN(n_events, 1);
   
@@ -320,6 +328,10 @@ function acts = get_acts(res, stat_type, class_output, classes)
   end
   
 function perf = calc_perf(acts, targs, f_perfmet)
+%CALC_PERF   Calculate a classification performance metric.
+%
+%  perf = calc_perf(acts, targs, f_perfmet)
+
   missing = all(isnan(acts), 1);
   acts = acts(:,~missing);
   targs = targs(:,~missing);
