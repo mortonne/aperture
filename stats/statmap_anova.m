@@ -32,13 +32,16 @@ function [p, f] = statmap_anova(pattern, targets)
 % along with EEG Analysis Toolbox.  If not, see <http://www.gnu.org/licenses/>.
 
 % translate regressors to group format
-[i, group] = find(targets);
+[n_obs, n_var] = size(pattern);
+group = NaN(n_obs, 1);
+for i = 1:n_obs
+  [temp, group(i)] = max(targets(i,:));
+end
 
 % create the statmap
-n_var = size(pattern, 2);
 p = NaN(1, n_var);
 f = NaN(1, n_var);
-for i=1:n_var
+for i = 1:n_var
   [p(i), anovatab, stats] = anova1(pattern(:,i), group, 'off');
   f(i) = anovatab{2,5};
 end
