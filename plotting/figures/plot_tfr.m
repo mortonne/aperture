@@ -1,7 +1,7 @@
-function h = plot_tfr(data, freq, time, params)
+function h = plot_tfr(data, freq, time, varargin)
 %PLOT_TFR   Make a spectrogram from a time-frequency representation.
 %
-%  h = plot_tfr(data, freq, time, params)
+%  h = plot_tfr(data, freq, time, ...)
 %
 %  Frequency is plotted on a logarithmic scale. The y-tick will only
 %  contain powers of 2.
@@ -13,17 +13,15 @@ function h = plot_tfr(data, freq, time, params)
 %
 %     time:  vector giving time for each column of data.
 %
-%   params:  structure specifying options for plotting. See below.
-%
 %  OUTPUTS:
 %        h:  handle to the image.
 %
 %  PARAMS:
-%   freq_units - units of the frequency axis ('Hz')
-%   time_units - units of the time axis ('ms')
-%   map_limits - limits for the z-axis ([])
-%   colorbar   - boolean; if true, a colorbar will be displayed (true)
-%   colormap   - colormap to use for mapping z-values to colors ([])
+%   freq_units - units of the frequency axis. ('Hz')
+%   time_units - units of the time axis. May be 's' or 'ms'. ('ms')
+%   map_limits - limits for the z-axis. ([])
+%   colorbar   - boolean; if true, a colorbar will be displayed. (true)
+%   colormap   - colormap to use for mapping z-values to colors. ([])
 
 % Copyright 2007-2011 Neal Morton, Sean Polyn, Zachary Cohen, Matthew Mollison.
 %
@@ -57,21 +55,17 @@ elseif length(time)~=size(data,2)
   error(['Time vector should have the same length as the number of ' ...
          'columns in the data matrix.'])
 end
-if ~exist('params', 'var')
-  params = [];
-end
 
-% set default parameters
-params = structDefaults(params, ...
-                        'freq_units', 'Hz',  ...
-                        'time_units', 'ms',  ...
-                        'ms2s',       false, ...
-                        'map_limits',   [],    ...
-                        'colorbar',   true, ...
-                        'colormap',   []);
+% options
+defaults.freq_units = 'Hz';
+defaults.time_units = 'ms';
+defaults.map_limits = [];
+defaults.colorbar = true;
+defaults.colormap = [];
+params = propval(varargin, defaults);
 
 % set the axes
-if params.ms2s
+if strcmp(params.time_units, 's')
   time = time / 1000;
 end
 
@@ -103,7 +97,7 @@ p2 = 2.^(0:10);
 
 % y-axis
 if ~isempty(freq)
-  yp2 = p2(p2>=min(freq) & p2<=max(freq));
+  yp2 = p2(p2 >= min(freq) & p2 <= max(freq));
   ylabel(sprintf('Frequency (%s)', params.freq_units))
 else
   yp2 = [];
@@ -121,6 +115,8 @@ set(gca, 'LineWidth', 2)
 if params.colorbar
   c = colorbar;
   set(c, 'LineWidth', 2)
+  set(c, 'FontSize', get(gca, 'FontSize'), ...
+         'FontWeight', get(gca, 'FontWeight'))
 end
 if ~isempty(params.colormap)
   colormap(params.colormap);
