@@ -4,7 +4,7 @@ function tf = truth_other(x, dim, type)
 %  tf = truth_other(x, dim, type)
 
 x_dims = 1:ndims(x);
-all_ind = repmat({':'}, 1, ndims(x));
+all_ind = repmat({':'}, 1, max([ndims(x) dim]));
 %tf = false(size(x));
 tf = false(1, size(x, dim));
 for i = 1:size(x, dim)
