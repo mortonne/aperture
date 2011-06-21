@@ -2,7 +2,7 @@ function exp = fieldtrip_voltage_subj(exp, varargin)
 
 %FIELDTRIP_VOLTAGE_SUBJ  Run fieldtrip on individual subjects for voltage erp.
 %
-%  stat_file = fieldtrip_voltage_subj(exp, ...)
+%      exp: = fieldtrip_voltage_subj(exp, ...)
 %
 %  INPUTS:
 %      exp:  experiment object.

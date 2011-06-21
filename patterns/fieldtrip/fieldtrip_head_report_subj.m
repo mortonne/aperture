@@ -72,15 +72,15 @@ if isempty(params.res_dir_stat)
   p.dist = params.dist;
 
   if isempty(params.res_dir_stat)
-    p.res_dir_stat = [exp.resDir '/eeg/' params.pat_name '/stats'];
-  else
-    p.res_dir_stat = params.res_dir_stat;
+    params.res_dir_stat = [exp.resDir '/eeg/' params.pat_name '/stats'];
   end
+  p.res_dir_stat = params.res_dir_stat;
+
   if ~exist(p.res_dir_stat, 'dir')
     mkdir(p.res_dir_stat)
   end
 
-  exp = fieldtrip_voltage_subj(exp, params);
+  exp = fieldtrip_voltage_subj(exp, p);
 end
 
 

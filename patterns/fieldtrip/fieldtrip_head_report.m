@@ -66,10 +66,10 @@ if isempty(params.stat_file)
   p.dist = params.dist;
 
   if isempty(params.res_dir_stat)
-    p.res_dir_stat = [exp.resDir '/eeg/' params.pat_name '/stats'];
-  else
-    p.res_dir_stat = params.res_dir_stat;
+    params.res_dir_stat = [exp.resDir '/eeg/' params.pat_name '/stats'];
   end
+  p.res_dir_stat = params.res_dir_stat;
+
   if ~exist(p.res_dir_stat, 'dir')
     mkdir(p.res_dir_stat)
   end
