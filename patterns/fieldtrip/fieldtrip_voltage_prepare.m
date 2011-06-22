@@ -65,27 +65,24 @@ defaults.vartrllength = 2;
 %  error('You must input a pattern object.')
 %end
 
-%get pat object and replicate
-pat1 = getobj(subj, 'pat', params.pat_name);
-pat2 = pat1;
+%get pat object
+pat = getobj(subj, 'pat', params.pat_name);
 
-%event filter pats
-pat1 = filter_pattern(pat1, 'save_mats', false, 'event_filter', params.eventFilter1);
-pat2 = filter_pattern(pat2, 'save_mats', false, 'event_filter', params.eventFilter2);
-
-%freq filter pats
+%freq filter pat
 if ~isempty(params.freq_filter)
-  pat1 = filter_pattern(pat1, 'save_mats', false, 'freq_filter', params.freq_filter);
-  pat2 = filter_pattern(pat2, 'save_mats', false, 'freq_filter', params.freq_filter);
+  pat = filter_pattern(pat, 'save_mats', false, 'freq_filter', params.freq_filter);
 end
 
-%time bin pats
-pat1 = bin_pattern(pat1, 'save_mats', false, 'timebins', params.time_bins);
-pat2 = bin_pattern(pat2, 'save_mats', false, 'timebins', params.time_bins);
+%time bin pat
+pat = bin_pattern(pat, 'save_mats', false, timebins, params.time_bins);
 
 %run post_timebin to make sure all bins are of same size
-pat1 = post_timebin(pat1);
-pat2 = post_timebin(pat2);
+pat = post_timebin(pat);
+
+%event filter pats
+pat1 = filter_pattern(pat, 'save_mats', false, 'event_filter', params.eventFilter1);
+pat2 = filter_pattern(pat, 'save_mats', false, 'event_filter', params.eventFilter2);
+clear pat
 
 %convert pat object to fieldtrip format
 data1 = pat2fieldtrip(pat1);
