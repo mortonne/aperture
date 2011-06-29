@@ -199,7 +199,7 @@ clear averages2
 %save parameters for later use in plotting
 fieldstat.params = params;
 
-%need to create director first
+%need to create directory first
 %then make file name
 stat_file = strcat(params.res_dir_stat, '/fieldstat_', params.stat_name);
 
