@@ -54,8 +54,16 @@ function subj = classify_pat2pat(subj, train_pat_name, test_pat_name, ...
 %  PARAMS:
 %  These options may be specified using parameter, value pairs or by
 %  passing a structure. Defaults are shown in parentheses.
-%   regressor    - REQUIRED - input to make_event_index; used to create
-%                  the regressor for classification.
+%   regressor    - input to make_event_index; used to create the
+%                  regressor for classification.
+%   train_targets - specification for training targets. Can either be
+%                  a [conditions X samples] logical array, or a string
+%                  giving the name of a stat object that contains a
+%                  variable named 'targets'. If defined, this will be
+%                  used instead of regressor when creating the training
+%                  targets. ([])
+%   test_targets - like train_targets (see above), but for defining
+%                  testing targets. ([])
 %   test_select  - if true, will run cross-validation on the test
 %                  pattern to select the features to use for training.
 %                  (false)
@@ -112,6 +120,8 @@ test_pat = getobj(subj, 'pat', test_pat_name);
 
 % set default params
 defaults.regressor = '';
+defaults.train_targets = [];
+defaults.test_targets = [];
 defaults.test_select = false;
 defaults.selector = '';
 defaults.iter_cell = cell(1, 4);
@@ -123,8 +133,10 @@ defaults.res_dir = get_pat_dir(test_pat, 'stats');
 defaults.verbose = true;
 params = propval(varargin, defaults, 'strict', false);
 
-if isempty(params.regressor)
-  error('You must specify a regressor in params.')
+if isempty(params.regressor) && (isempty(params.train_targets) || ...
+      isempty(params.test_targets))
+  error(['You must specify a regressor definition, or define '...
+         'train targets and test targets'])
 end
 
 % set where the results will be saved
@@ -173,8 +185,22 @@ train_events = get_dim(train_pat.dim, 'ev');
 test_events = get_dim(test_pat.dim, 'ev');
 
 % the correct answers for classification
-train_targs = create_targets(train_events, params.regressor);
-test_targs = create_targets(test_events, params.regressor);
+if ~isempty(params.train_targets)
+  train_targs = load_targets(train_pat, params.train_targets);
+  if ~ischar(params.train_targets)
+    params = rmfield(params, 'train_targets');
+  end
+else
+  train_targs = create_targets(train_events, params.regressor)';
+end
+if ~isempty(params.test_targets)
+  test_targs = load_targets(test_pat, params.test_targets);
+  if ~ischar(params.test_targets)
+    params = rmfield(params, 'test_targets');
+  end
+else
+  test_targs = create_targets(test_events, params.regressor)';
+end
 
 % optional selector for test pattern feature selection
 if params.test_select
@@ -298,3 +324,13 @@ temp = permute(temp, [new_outer new_inner]);
 
 res.iterations = temp;
 
+function targets = load_targets(pat, targ_input)
+
+  if ischar(targ_input)
+    stat = getobj(pat, 'stat', targ_input);
+    targets = get_stat(stat, 'targets');
+  elseif isnumeric(targ_input) || islogical(targ_input)
+    targets = targ_input;
+  else
+    error('Invalid targets input')
+  end
