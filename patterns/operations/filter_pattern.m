@@ -30,6 +30,8 @@ function pat = filter_pattern(pat, varargin)
 %   freq_filter  - range of frequencies in Hz to include in the form
 %                  [lower_bound upper_bound], or string for inStruct to
 %                  be applied to the freq structure. ('')
+%   filter_stats - if true, attached stat objects will also be filtered.
+%                  (false)
 %   save_mats    - if true, and input mats are saved on disk, modified
 %                  mats will be saved to disk. If false, the modified
 %                  mats will be stored in the workspace, and can
@@ -70,6 +72,7 @@ defaults.event_filter = '';
 defaults.time_filter = '';
 defaults.chan_filter = '';
 defaults.freq_filter = '';
+defaults.filter_stats = false;
 [params, saveopts] = propval(varargin, defaults);
 
 % mod_pattern handles file management
@@ -87,7 +90,7 @@ function pat = apply_pat_filtering(pat, params)
   
   % get indices corresponding to each filtered dimension
   [pat, inds] = patFilt(pat, p);
-  
+
   % apply the filters to the pattern
   old_size = size(pattern);
   old_size((length(old_size) + 1):4) = 1;
@@ -96,14 +99,13 @@ function pat = apply_pat_filtering(pat, params)
   new_size((length(new_size) + 1):4) = 1;
   
   pat = set_mat(pat, pattern, 'ws');
-  clear pattern
-  
+
   % apply the filters to children
-  all_ind = repmat({':'}, 1, 4);
-  if ~isfield(pat, 'stat')
+  if ~params.filter_stats || ~isfield(pat, 'stat')
     return
   end
   
+  all_ind = repmat({':'}, 1, 4);  
   for i = 1:length(pat.stat)
     stat_file = pat.stat(i).file;
     try
