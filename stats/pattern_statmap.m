@@ -100,14 +100,15 @@ pattern = get_mat(pat);
 [n_events, n_chans, n_samps, n_freqs] = size(pattern);
 
 % check the var names
-n_out = nargout(f_stat);
-if length(var_names) < n_out
-  for i = n_out - length(var_names):n_out
-    var_names{i} = sprintf('output%d', i);
-  end
-elseif length(var_names) > n_out
-  var_names = var_names(1:n_out);
-end
+% n_out = nargout(f_stat);
+% if length(var_names) < n_out
+%   for i = n_out - length(var_names):n_out
+%     var_names{i} = sprintf('output%d', i);
+%   end
+% elseif length(var_names) > n_out
+%   var_names = var_names(1:n_out);
+% end
+n_out = length(var_names);
 
 % initialize the outputs
 output = cell(1, n_out);
@@ -128,6 +129,15 @@ for i = 1:n_chans
       
       % get this [1 X events] vector of data
       x = squeeze(pattern(:,i,j,k));
+      
+      if all(isnan(x))
+        % pattern is all NaNs; can't calculate any stat
+        for o = 1:n_out
+          output{o}{:,i,j,k} = NaN;
+        end
+        n = n + 1;
+        continue
+      end
       
       % run the function
       if isempty(group)
