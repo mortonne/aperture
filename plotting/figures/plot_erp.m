@@ -68,7 +68,7 @@ defaults.x_lim = [];
 defaults.y_lim = [];
 defaults.x_label = '';
 defaults.y_label = '';
-defaults.plot_input = {'LineWidth', 2};
+defaults.plot_input = {'LineWidth', 3};
 defaults.mark = [];
 defaults.fill_color = [.8 .8 .8];
 defaults.labels = {};
@@ -143,7 +143,7 @@ if ~isempty(params.mark)
 end
 
 % make the plot
-h = plot(x, data, params.plot_input{:});
+h = plot(x, data, '-k', params.plot_input{:});
 
 % change line colors from their defaults
 if ~isempty(params.colors)
@@ -160,10 +160,13 @@ end
 % set limits
 set(gca, 'YLimMode', 'manual')
 set(gca, 'XLim', x_lim, 'YLim', y_lim)
+set(gca, 'FontSize', 26, 'LineWidth', 3)
+set(get(gca, 'XLabel'), 'FontSize', 26)
+set(get(gca, 'YLabel'), 'FontSize', 26)
 
 % plot axes
-plot(get(gca, 'XLim'), [0 0], '--k');
-plot([0 0], y_lim, '--k');
+plot(get(gca, 'XLim'), [0 0], '--k', 'LineWidth', 3);
+plot([0 0], y_lim, '--k', 'LineWidth', 3);
 hold off
 
 function shade_regions(x, mark, y_lim, fill_color)
