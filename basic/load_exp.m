@@ -21,7 +21,7 @@ if ~exist('backup_number', 'var')
   backup_number = [];
 end
 
-if ~exist(fileparts(file), 'dir')
+if ~isempty(fileparts(file)) && ~exist(fileparts(file), 'dir')
   error('Results directory no longer exists. Cannot load exp.')
 end
 
