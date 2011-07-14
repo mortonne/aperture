@@ -118,10 +118,10 @@ pattern = get_mat(pat);
 events = get_dim(pat.dim, 'ev');
 
 % get the regressor to use for classification
-targets = create_targets(events, params.regressor);
+targets = create_targets(events, params.regressor)';
 
 if ~isempty(params.test_regressor)
-  params.test_targets = create_targets(events, params.test_regressor);
+  params.test_targets = create_targets(events, params.test_regressor)';
 end
 
 % get the selector

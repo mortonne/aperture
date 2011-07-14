@@ -43,8 +43,8 @@ targ_vec = make_event_index(events, bin_defs);
 conds = nanunique(targ_vec);
 
 % create logical conditions matrix
-targets = false(length(events), length(conds));
+targets = false(length(conds), length(events));
 for i = 1:length(conds)
-  targets(:,i) = targ_vec == conds(i);
+  targets(i,:) = targ_vec == conds(i);
 end
 
