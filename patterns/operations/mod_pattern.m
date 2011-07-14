@@ -236,6 +236,7 @@ for i = 1:length(patsize(pat.dim))
   dim_dir = get_pat_dir(pat, dim_long_name);
   dim_file = fullfile(dim_dir, ...
                       objfilename(dim_long_name, pat.name, pat.source));
+  dim_file = [dim_file '.mat'];
   dim_info.(dim_name).file = dim_file;
 
   % save
