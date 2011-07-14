@@ -31,7 +31,7 @@ function time = init_time(ms_vals, labels)
 
 % input checks
 if ~exist('ms_vals', 'var') || isempty(ms_vals)
-  time = struct('MSvals', [],  'avg', [],  'label', '');
+  time = struct('range', [],  'avg', [],  'label', '');
   return
 elseif ~isnumeric(ms_vals)
   error('ms_vals must be numeric.')
@@ -48,8 +48,8 @@ end
 ms_vals_cell = num2cell(ms_vals);
 if isempty(labels)
   % if no user-specified labels, print default labels
-  labels = cellfun(@(x)sprintf('%d ms', x), ms_vals_cell, 'UniformOutput', ...
+  labels = cellfun(@(x)sprintf('%.0f ms', x), ms_vals_cell, 'UniformOutput', ...
                    false);
 end
-time = struct('MSvals', ms_vals_cell, 'avg', ms_vals_cell, 'label', labels);
+time = struct('range', ms_vals_cell, 'avg', ms_vals_cell, 'label', labels);
 
