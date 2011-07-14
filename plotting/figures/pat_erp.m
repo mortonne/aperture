@@ -137,6 +137,9 @@ if n_events > 1 && params.plot_mult_events && isempty(params.legend)
     params.legend = get_dim_labels(pat.dim, 'ev');
   end
 end
+if n_events > 1 && params.plot_mult_events
+  plot_params.colors = {'r' 'b' 'g'};
+end
 if params.plot_mult_events
   n_events = 1;
 end
@@ -210,7 +213,7 @@ for i = 1:n_events
       end
 
       % legend
-      if n_events == 1
+      if n_events == 1 && ~isempty(params.legend)
         l = legend(h, params.legend);
         set(l, 'Location', 'NorthEast')
       end
