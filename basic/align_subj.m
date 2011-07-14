@@ -25,6 +25,10 @@ function subj = align_subj(subj, varargin)
 %               (*). ('*.sync.txt')
 %   pulse_dir - directory where pulse files are stored, relative to
 %               subj.dir. ('eeg.noreref')
+%   precision - precision of alignment method. May be:
+%                0 - older method, which uses start and end windows and
+%                    interpolates
+%                1 - newer method that uses all pulses. (default)
 %
 %  EXAMPLE:
 %   % path to directory with behavioral data
@@ -59,8 +63,10 @@ end
 defaults.eventfile = 'events.mat';
 defaults.pulse_ext = '*.sync.txt';
 defaults.pulse_dir = 'eeg.noreref';
+defaults.precision = 0;
 params = propval(varargin, defaults);
 
+warning('off', 'eeg_toolbox:pulsealign:WindowOverlap')
 for sess=subj.sess
   % read the eegfile(s) from the sess structure
   if ~isfield(sess, 'eegfile')
@@ -77,41 +83,6 @@ for sess=subj.sess
     error('Events file not found: %s\n', eventfile)
   end
   
-  % get sync files
-  eegsyncfiles = cell(1, length(eegfiles));
-  for i=1:length(eegfiles)
-    [pathstr, basename] = fileparts(eegfiles{i});
-
-    % get the EEG sync pulse file
-    pulse_path = fullfile(subj.dir, params.pulse_dir, ...
-                          [basename params.pulse_ext]);
-    temp = dir(pulse_path);
-    if length(temp) == 0
-      warning('No EEG sync pulse files found that match: %s', ...
-              pulse_path);
-      return;
-    elseif length(temp) > 1
-      fprintf('Multiple EEG sync pulse files found that match: %s\n', pulse_path)
-      % use the first one that matches this pattern: '###.sync.txt'
-      for j=1:length(temp)
-        if length(temp) > 1
-          if ~isempty(regexp(temp(j).name,'\w*\d\d\d.sync.txt'))
-            temp = temp(j);
-            fprintf('Using: %s\n', temp.name);
-          end
-        end
-      end
-      if length(temp) > 1
-        error('No valid sync files found.');
-      end
-    end
-
-    eegsyncfiles{i} = fullfile(subj.dir, params.pulse_dir, temp.name);
-
-    % for runAlign, make eegfile point to a specific channel
-    eegfiles{i} = [eegfiles{i} '.001'];
-  end
-
   % there should be only one behavioral sync pulse file
   behsyncfile = fullfile(sess.dir, 'eeg.eeglog.up');
   if ~exist(behsyncfile, 'file')
@@ -125,13 +96,110 @@ for sess=subj.sess
   
   % get the samplerate
   samplerate = GetRateAndFormat(fileparts(eegfiles{1}));
+  
+  % for runAlign, make eegfile point to a specific channel
+  for i = 1:length(eegfiles)
+    eegfiles{i} = [eegfiles{i} '.001'];
+  end
+  
+  good_align = false;
+  flip = 1;
+  flipped = 0;
+  auto_mark = false;
+  auto_mark_thresh = 100;
+  limit = 25;
+  flip_limit = 90;
+  while ~good_align
+    if auto_mark
+      for i = 1:length(eegfiles)
+        [pathstr, basename] = fileparts(eegfiles{i});
+        fileroot = fullfile(subj.dir, params.pulse_dir, basename);
+        eegsyncfiles{i} = mark_sync_pulses(fileroot, sync_channels{i}, flip, ...
+                                           auto_mark_thresh);
+      end
+      
+    else
+      % get EEG sync files
+      eegsyncfiles = cell(1, length(eegfiles));
+      sync_channels = cell(1, length(eegfiles));
+      for i = 1:length(eegfiles)
+        [pathstr, basename] = fileparts(eegfiles{i});
 
-  % run the alignment
-  try
-    runAlign(samplerate, {behsyncfile}, eegsyncfiles, eegfiles, {eventfile}, ...
-             'mstime', 0, 0);
-  catch err
-    fprintf('runAlign threw an error.\n');
-    getReport(err)
+        % get the EEG sync pulse file
+        pulse_path = fullfile(subj.dir, params.pulse_dir, ...
+                              [basename params.pulse_ext]);
+        temp = dir(pulse_path);
+        if length(temp) == 0
+          warning('No EEG sync pulse files found that match: %s', pulse_path);
+          return
+        elseif length(temp) > 1
+          fprintf('Multiple EEG sync pulse files found that match: %s\n', ...
+                  pulse_path)
+          % use the first one that matches this pattern: '###.sync.txt'
+          for j = 1:length(temp)
+            if length(temp) > 1
+              if ~isempty(regexp(temp(j).name,'\w*\d\d\d.sync.txt'))
+                temp = temp(j);
+                fprintf('Using: %s\n', temp.name);
+              end
+            end
+          end
+          if length(temp) > 1
+            error('No valid sync files found.');
+          end
+        end
+        eegsyncfiles{i} = fullfile(subj.dir, params.pulse_dir, temp.name);
+      end
+      
+      % extract the sync channels used for manual pulse marking from the
+      % sync pulse filename
+      c = regexp(eegsyncfiles{i}, '\.', 'split');
+      c2 = cellfun(@str2num, c, 'UniformOutput', false);
+      sync_channels{i} = [c2{~cellfun(@isempty, c2)}];
+    end
+
+    % run the alignment
+    bad_align = false;
+    lastwarn('')
+    try
+      runAlign(samplerate, {behsyncfile}, eegsyncfiles, eegfiles, ...
+               {eventfile}, 'mstime', 0, 0, params.precision);
+    catch err
+      bad_align = true;
+      fprintf('runAlign threw an error.\n')
+      %getReport(err)
+    end
+    
+    w = lastwarn;
+    if strcmp(strtrim(w), 'The start and end windows overlap.')
+      fprintf('Pulse range too small.\n')
+      bad_align = true;
+    end
+      
+    if bad_align
+      auto_mark = true;
+      auto_mark_thresh = auto_mark_thresh * .95;
+      if auto_mark_thresh < flip_limit && flipped < 2
+        fprintf('Retrying with sync channel flipped...\n')
+        flip = ~flip;
+        flipped = flipped + 1;
+        auto_mark_thresh = 100;
+      end
+      
+      if auto_mark_thresh < limit
+        if flip == 1
+          fprintf('Hit absolute limit. Retrying with sync channel flipped...\n')
+          flip = 0;
+          auto_mark_thresh = 100;
+        else
+          error('Auto sync pulse marking has failed.')
+        end
+      end
+    else
+      fprintf('Alignment successful.\n\n')
+      good_align = true;
+    end
   end
 end
+warning('on', 'eeg_toolbox:pulsealign:WindowOverlap')
+
