@@ -38,9 +38,11 @@ function pat = pat_tfr(pat, fig_name, varargin)
 %                      dimension is singleton. If true, all events will
 %                      be plotted on one axis. Otherwise, each event
 %                      will be plotted on a separate figure. (true)
-%   map_limits       - limits for the z-axis of each plot:
-%                      [z-min z-max]. Default: -(absolute maximum) to
-%                      (absolute maximum)
+%   map_limits       - limits for the z-axis of each plot. May be:
+%                       'absmax'  - Absolute minimum to absolute maximum
+%                                   (default)
+%                       [min max] - User-specified limits
+%                       []        - Use automatic scaling
 %   print_input      - input to print to use when printing figures.
 %                      ({'-depsc'})
 %   mult_fig_windows - if true, each figure will be plotted in a
@@ -88,7 +90,7 @@ defaults.stat_index = 1;
 defaults.alpha_range = [0.005 0.05];
 defaults.correctm = '';
 defaults.plot_mult_events = true;
-defaults.map_limits = [];
+defaults.map_limits = 'absmax';
 defaults.legend = {};
 defaults.print_input = {'-djpeg10'};
 defaults.mult_fig_windows = false;
@@ -145,7 +147,7 @@ else
     pattern = pattern(2,:,:,:) - pattern(1,:,:,:);
   end
   
-  if isempty(params.map_limits)
+  if strcmp(params.map_limits, 'absmax')
     % use absolute maximum
     absmax = max(abs(pattern(:)));
     params.map_limits = [-absmax absmax];
