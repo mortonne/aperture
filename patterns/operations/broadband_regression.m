@@ -1,5 +1,5 @@
 function pat = broadband_regression(pat, stat_name, varargin)
-%BROADBAND_REGRESSION   Subtract broadband power from a pattern.
+%BROADBAND_REGRESSION   Calculate broadband power using robust regression.
 %
 %  pat = broadband_regression(pat, stat_name, ...)
 %
@@ -8,32 +8,15 @@ function pat = broadband_regression(pat, stat_name, varargin)
 %            values.
 %
 %  OUTPUTS:
-%      pat:  the original pattern with a stat object attached.
-%
-%     stat:  the results of the broadband regression.
+%      pat:  the original pattern with a stat object attached with a
+%            matrix named "b" that contains regression coefficients.
+%            b(i,j,k,1) and b(i,j,k,2) give the intercept and slope,
+%            respectively, of event i, channel j, time k.
 %
 %  PARAMS:
 %  These options may be specified using parameter, value pairs or by
 %  passing a structure. Defaults are shown in parentheses.
-%   save_mats      - if true, and input mats are saved on disk, modified
-%                    mats will be saved to disk. If false, the modified
-%                    mats will be stored in the workspace, and can
-%                    subsequently be moved to disk using move_obj_to_hd.
-%                    (true)
-%   overwrite      - if true, existing patterns on disk will be
-%                    overwritten. (false)
-%   save_as        - string identifier to name the modified pattern. If
-%                    empty, the name will not change. ('')
-%   res_dir        - directory in which to save the modified pattern and
-%                    events, if applicable. Default is a directory named
-%                    pat_name on the same level as the input pat.
-
-% original procedure (from getbroad in eeg_toolbox trunk):
-% get average over freq indices (not the freqs themselves)
-% robustfit power on freq index (power may be pooled over whole event or
-%   be just at a single timepoint)
-% broadband is power at mean freq index (using the index really
-%   seems strange)
+%   plot - if true, each regression will be plotted. (false);
 
 % input checks
 if ~exist('pat', 'var') || ~isstruct(pat)
@@ -43,10 +26,6 @@ end
 % options
 defaults.plot = false;
 [params, saveopts] = propval(varargin, defaults);
-
-% run broadband subtraction
-% pat = mod_pattern(pat, @run_remove_broadband, {params}, saveopts);
-
 
 % load the pattern
 pattern = get_mat(pat);
@@ -61,8 +40,8 @@ warning('off', iter_warn);
 n_step = 100;
 step = floor((n_events * n_chans * n_time) / n_step);
 n = 0;
-% b = NaN(1, 2);
-b = NaN(n_events, n_chans, n_time, 2);
+
+b = NaN(n_events, n_chans, n_time, 2, class(pattern));
 pow = NaN(1, n_freq);
 log_freqs = log2(freqs);
 for i = 1:n_events
@@ -81,19 +60,15 @@ for i = 1:n_events
       % fit power on frequency
       b(i,j,k,:) = robustfit(log_freqs, pow);
       
-      % if params.plot
-      %   clf
-      %   subplot(2,1,1)
-      %   plot_freq(b(1) + log_freqs * b(2), freqs);
-      %   hold on
-      %   plot_freq(pow, freqs, struct('y_label', 'Power'));
+      if params.plot
+        clf
+        plot_freq(b(i,j,k,1) + log_freqs * b(i,j,k,2), freqs);
+        hold on
+        plot_freq(pow, freqs, struct('y_label', 'Power'));
+        drawnow
+        pause(.5)
+      end
       
-      %   subplot(2,1,2)
-      %   plot_freq(pow - (b(1) + log_freqs * b(2)), freqs, struct('y_label', 'Power'));
-      % end
-      
-      % get the residuals from the robust fit
-      % pattern(i,j,k,:) = pow - (b(1) + log_freqs * b(2));
     end
   end
 end
@@ -107,6 +82,4 @@ stat_file = fullfile(get_pat_dir(pat, 'stats'), ...
 stat = init_stat(stat_name, stat_file, pat.source, params);
 save(stat.file, 'b', 'stat');
 pat = setobj(pat, 'stat', stat);
-
-% pat = set_mat(pat, pattern, 'ws');
 
