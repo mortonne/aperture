@@ -1,7 +1,5 @@
-function exp = init_iEEG(subj,res_dir,experiment,params)
+function exp = init_iEEG(subj, res_dir, experiment, varargin)
 %INIT_IEEG   Prepare an intracranial EEG experiment for analysis.
-%
-%  exp = init_iEEG(subj, res_dir, experiment, params)
 %
 %  Create an experiment object and read in information about each subject's
 %  electrodes. This information is stored in exp.subj.chan:
@@ -12,6 +10,8 @@ function exp = init_iEEG(subj,res_dir,experiment,params)
 %
 %  If a good_leads_file exists, only the channels listed there will be
 %  included in the subject's chan structure.
+%
+%  exp = init_iEEG(subj, res_dir, experiment, ...)
 %
 %  INPUTS:
 %        subj:  subject structure. See get_sessdirs for details.
@@ -28,19 +28,17 @@ function exp = init_iEEG(subj,res_dir,experiment,params)
 %               with added information about each subject's channels.
 %
 %  PARAMS:
-%  jacksheet       - path to the jacksheet file, relative to each subject's
-%                    directory. Default: 'docs/jacksheet.txt'
+%  These options may be specified using parameter, value pairs or by
+%  passing a structure. Defaults are shown in parentheses.
+%   jacksheet       - path to the jacksheet file, relative to each subject's
+%                     directory. ('docs/jacksheet.txt')
+%   good_leads_file - path to a text file with one electrode number per
+%                     row, indicating all electrodes that are "good".
+%                     ('tal/good_leads.txt')
+%   save_to_disk    - if true, experiment object will be saved on disk.
+%                     (false)
 %
-%  good_leads_file - path to a text file with one electrode number per
-%                    row, indicating all electrodes that are "good".
-%                    Default: 'tal/good_leads.txt'
-%  
-%  NOTES:
-%   This function is deprecated; once a separate function is written to
-%   read in channel information, init_iEEG will be deleted. Then you will just
-%   call init_exp directly.
-%
-%  See also init_exp, init_scalp.
+%  See also init_exp, import_channels.
 
 % input checks
 if ~exist('params', 'var')
@@ -49,25 +47,23 @@ end
 if ~exist('experiment', 'var')
   experiment = '';
 end
-if ~exist('res_dir','var')
+if ~exist('res_dir', 'var')
   res_dir = '.';
 end
-if ~exist('subj','var')
+if ~exist('subj', 'var')
   error('You must pass a subj object.')
 end
-if ~isfield(params,'save_to_disk')
-  params.save_to_disk = true;
-end
 
-% parse parameters
-params = structDefaults(params, ...
-                        'jacksheet',       fullfile('docs', 'jacksheet.txt'), ...
-                        'good_leads_file', fullfile('tal',  'good_leads.txt'));
+% options
+defaults.jacksheet = fullfile('docs', 'jacksheet.txt');
+defaults.good_leads_file = fullfile('tal', 'good_leads.txt');
+defaults.save_to_disk = false;
+params = propval(varargin, defaults);
 
 % create the exp struct
 exp = init_exp(subj, res_dir, experiment, 'iEEG');
 
-for s=1:length(exp.subj)
+for s = 1:length(exp.subj)
   % get the subject's main directory
   subj_dir = exp.subj(s).dir;
   if iscell(subj_dir)
@@ -97,12 +93,12 @@ for s=1:length(exp.subj)
   % create the chan struct for this subject
   chan = [];
   
-  for c=1:length(channels)
+  for c = 1:length(channels)
     chan(c).number = channels(c);
     chan(c).region = regions{c};
     
     % set the label for this channel
-    if length(unique(regions))==length(regions)
+    if length(unique(regions)) == length(regions)
       % if the region labels are unique, use them
       chan(c).label = regions{c};
     else
