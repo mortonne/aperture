@@ -118,16 +118,16 @@ for sess = subj.sess(match)
   try
     % create events
     events = fcn_handle(input_dir, subj.id, sess.number, fcn_input{:});
+    
+    % save the new events
+    save(params.output_file, 'events');
+    fprintf('saved.\n')
   catch err
     % an error thrown by fcn_handle; move to next session
     warning('eeg_ana:create_events:eventCreationError', ...
             'Error thrown by %s processing: %s', ...
             func2str(fcn_handle), getReport(err))
   end
-  
-  % save the new events
-  save(params.output_file, 'events');
-  fprintf('saved.\n')
 end
 
 cd(pd);
