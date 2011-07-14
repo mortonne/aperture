@@ -28,12 +28,16 @@ end
 
 % get the EEG file field
 eegfile = {events.eegfile};
+empty = cellfun(@isempty, eegfile);
+if all(empty)
+  return
+end
 
 % run strrep on each input pair
-for i=1:2:length(varargin)
+for i = 1:2:length(varargin)
   to_replace = varargin{i};
   replacement = varargin{i+1};
-  eegfile = strrep(eegfile, to_replace, replacement);
+  eegfile(~empty) = strrep(eegfile(~empty), to_replace, replacement);
 end
 
 % add the modified field back in
