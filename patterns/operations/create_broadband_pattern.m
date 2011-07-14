@@ -1,25 +1,27 @@
 function pat = create_broadband_pattern(pat, stat_name, varargin)
-%CREATE_BROADBAND_PATTERN   Create a broadband power pattern based on
-%  the broadband regression estimates.  Requires as an input the
-%  stat object created by broadband_regression.
+%CREATE_BROADBAND_PATTERN   Create a pattern with broadband power estimates.
 %
-%  pat = create_broadband_pattern(pat, stat_name, bb_pat_name, ...)
+%  Create a broadband power pattern based on the broadband regression
+%  estimates created by broadband_regression.
+%
+%  pat = create_broadband_pattern(pat, stat_name, ...)
 %
 %  INPUTS:
-%      pat:  input pattern object containing log-transformed power
-%            values.
+%        pat:  input pattern object containing log-transformed power
+%              values.
 %
 %  stat_name:  the name of the statistic containing your broadband
 %              coefficients
 %
-%
 %  OUTPUTS:
 %      pat:  the pattern of broadband power estimates.
-%
 %
 %  PARAMS:
 %  These options may be specified using parameter, value pairs or by
 %  passing a structure. Defaults are shown in parentheses.
+%   stat_var_name  - the name of the variable containing your
+%                    broadband coefficients (in the file on the
+%                    stat object). ('b')
 %   save_mats      - if true, and input mats are saved on disk, modified
 %                    mats will be saved to disk. If false, the modified
 %                    mats will be stored in the workspace, and can
@@ -32,10 +34,6 @@ function pat = create_broadband_pattern(pat, stat_name, varargin)
 %   res_dir        - directory in which to save the modified pattern and
 %                    events, if applicable. Default is a directory named
 %                    pat_name on the same level as the input pat.
-%  stat_var_name   - the name of the variable containing your
-%                    broadband coefficients (in the file on the
-%                    stat object). ('b')
-%
 
 % input checks
 if ~exist('pat', 'var') || ~isstruct(pat)
@@ -61,7 +59,6 @@ stat = getobj(pat, 'stat', stat_name);
 b = get_stat(stat, params.stat_var_name);
 
 % frequency information
-% [n_events, n_chans, n_time, n_freq] = size(pattern);
 freqs = get_dim_vals(pat.dim, 'freq');
 
 % create the bb power matrix
