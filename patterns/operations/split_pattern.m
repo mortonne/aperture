@@ -70,6 +70,7 @@ full_pattern = get_mat(pat);
 fprintf('splitting pattern %s along %s dimension: ', pat.name, dim_name)
 
 % convenience variables
+orig_file = pat.file;
 labels = get_dim_labels(pat.dim, dim_name);
 all_dim = {':',':',':',':'};
 dim_len = size(full_pattern, dim_number);
@@ -99,5 +100,6 @@ end
 fprintf('\n')
 
 pat = full_pat;
+pat.orig_file = orig_file;
 pat.dim.splitdim = dim_number;
 
