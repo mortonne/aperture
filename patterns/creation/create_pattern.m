@@ -140,12 +140,19 @@ end
 ev = getobj(subj, 'ev', params.evname);
 ev = move_obj_to_workspace(ev);
 
+% fix the EEG file field if needed
+if ~isempty(params.replace_eegfile)
+  temp = params.replace_eegfile';
+  ev.mat = rep_eegfile(ev.mat, temp{:});
+  ev.modified = true;
+end
+
 % get channel info from the subject
 chan = get_dim(subj, 'chan');
 
 % time dimension
 if ~isempty(params.downsample)
-  step_size = fix(1000 / params.downsample);
+  step_size = 1000 / params.downsample;
 else
   if isempty(params.resampledRate)
     % if not resampling, we'll need to know the samplerate of the data
@@ -156,16 +163,20 @@ else
       fprintf(['events contain multiple samplerates. ' ...
                'Resampling to %.f Hz...\n'], params.resampledRate)
     else
-      params.resampledRate = unique(samplerates);
+      params.resampledRate = samplerates(1);
     end
   end
-  step_size = fix(1000 / params.resampledRate);
+  step_size = 1000 / params.resampledRate;
 end
 
 % millisecond values for the final pattern
 end_ms = params.offsetMS + params.durationMS;
-end_ms = end_ms - eps(end_ms);
 ms_values = params.offsetMS:step_size:end_ms;
+
+% greater limit is non-inclusive
+if ms_values(end) == end_ms
+  ms_values(end) = [];
+end
 time = init_time(ms_values);
 
 % frequency dimension
@@ -188,11 +199,6 @@ end
 
 % get filtered events and channels for pattern creation
 events = get_mat(pat.dim.ev);
-% fix the EEG file field if needed
-if ~isempty(params.replace_eegfile)
-  temp = params.replace_eegfile';
-  events = rep_eegfile(events, temp{:});
-end
 channels = get_dim_vals(pat.dim, 'chan');
 
 % finalize events for the pattern
