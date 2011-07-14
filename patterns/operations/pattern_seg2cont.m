@@ -1,6 +1,13 @@
 function pat = pattern_seg2cont(pat, varargin)
 %PATTERN_SEG2CONT   Convert a segmented pattern to continuous form.
 %
+%  Fold one or more dimensions of a pattern into events. This is
+%  generally used to change from segmented to continuous format, i.e.
+%  folding in the time dimension, but works with any dimension. The
+%  events structure will contain information about the folded-in
+%  dimension, allowing statistics to be calculated on both events and
+%  other dimension information (e.g. effects of condition and time).
+%
 %  pat = pattern_seg2cont(pat, ...)
 %
 %  INPUTS:
@@ -13,7 +20,11 @@ function pat = pattern_seg2cont(pat, varargin)
 %  PARAMS:
 %  These options may be specified using parameter, value pairs or by
 %  passing a structure. Defaults are shown in parentheses.
-%   dim_names      - ({'time'})
+%   dim_names      - names of dimensions to fold into events. ({'time'})
+%   keep_fields    - cell array of strings indicating fields of the
+%                    events structure to keep. ({})
+%   remove_fields  - cell array of strings indicating fields of the
+%                    events structure to remove. ({})
 %   save_mats      - if true, and input mats are saved on disk, modified
 %                    mats will be saved to disk. If false, the modified
 %                    mats will be stored in the workspace, and can
@@ -51,6 +62,8 @@ end
 
 % options
 defaults.dim_names = {'time'};
+defaults.keep_fields = {};
+defaults.remove_fields = {};
 [params, saveopts] = propval(varargin, defaults);
 
 % run seg2cont
@@ -61,6 +74,17 @@ function pat = run_seg2cont(pat, params)
   % load the pattern
   pattern = get_mat(pat);
   events = get_dim(pat.dim, 'ev');
+  
+  if ~isempty(params.keep_fields)
+    f = fieldnames(events);
+    f_to_remove = setdiff(f, params.keep_fields);
+    events = rmfield(events, f_to_remove);
+  end
+  if ~isempty(params.remove_fields)
+    f = fieldnames(events);
+    f_to_remove = union(f, params.remove_fields);
+    events = rmfield(events, f_to_remove);
+  end
   
   % reshape to merge dimension with events
   dims = 1:4;
@@ -73,8 +97,8 @@ function pat = run_seg2cont(pat, params)
     new_order = [dim_number dims(~ismember(dims, dim_number))];
     
     % reshape
-    new_shape = [pat_size(1) * dim_size ...
-                 pat_size(~ismember(dims, [1 dim_number]))];
+    new_shape = [pat_size(1) * dim_size pat_size(2:end)];
+    new_shape(dim_number) = 1;
     pattern = reshape(permute(pattern, new_order), new_shape);
     
     % create new events with a field for this dim
@@ -101,6 +125,9 @@ function pat = run_seg2cont(pat, params)
     pat.dim = set_dim(pat.dim, dim_name, new_dim, 'ws');
   end
 
+  % save the original, segmented events
+  pat.dim.ev_seg = pat.dim.ev;
+  
   % store the new pattern and events
   pat = set_mat(pat, pattern, 'ws');
   pat.dim = set_dim(pat.dim, 'ev', events, 'ws');
