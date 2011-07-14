@@ -30,10 +30,6 @@ end
 figure(fig_handle)
 
 while true
-  % print so they can look at it
-  print(fig_handle, printopt{:}, file);
-  fprintf('printed in: %s\n', file)
-  
   % what do you want to do next?
   r = input('print/change/quit (p/c/q): ', 's');
   switch r
