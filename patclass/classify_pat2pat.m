@@ -73,16 +73,19 @@ function subj = classify_pat2pat(subj, train_pat_name, test_pat_name, ...
 %                  training and testing. See apply_by_group for details.
 %                  Default is to train on all features of the training
 %                  pattern at once and test on all features of the
-%                  testing pattern. May also input a params struct to be
-%                  passed into patBins to create grouped dimensions.
-%                  ({[],[],[],[]})
+%                  testing pattern. ({[],[],[],[]})
+%   iter_bins    - structure that dynamically determines bins to iterate
+%                  over. See patBins for allowed fields. Specified
+%                  binned dimensions will overwrite iter_cell. ([])
 %   sweep_cell   - determines which dimension to iterate over for
 %                  testing only. See apply_by_group (iter_cell) for
 %                  details. Default is to test on the same dimensions
 %                  as the training pattern. In this case, all dimensions
-%                  of the train and test patterns must match. May also
-%                  input a params struct to be passed into patBins to
-%                  create a grouped dimension. ({[],[],[],[]})
+%                  of the train and test patterns must match.
+%                  ({[],[],[],[]})
+%   sweep_bins   - structure that dynamically determines bins to sweep
+%                  over. See patBins for allowed fields. Specified
+%                  binned dimensions will overwrite sweep_cell. ([])
 %   f_train      - function handle for a training function.
 %                  (@train_logreg)
 %   train_args   - struct with options for f_train. (struct)
