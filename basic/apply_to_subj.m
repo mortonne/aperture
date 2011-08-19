@@ -40,6 +40,9 @@ function subj = apply_to_subj(subj, fcn_handle, fcn_inputs, dist, varargin)
 %              To run on any nodes, leave empty (dist=1 only). ('')
 %   max_jobs - if dist=1, this sets the maximum number of jobs to be
 %              running at any given time. (Inf)
+%   debug    - if true, will stop execution if any subject throws an
+%              error. If false, error information will be printed, but
+%              all other subjects will continue running. (false)
 %
 %  See also apply_to_subj_obj, apply_to_pat, apply_to_ev.
 
@@ -62,7 +65,12 @@ defaults.memory = '1.7G';
 defaults.walltime = '00:15:00'; % Torque
 defaults.arch = '';             % Torque 
 defaults.max_jobs = Inf;
+defaults.debug = true;
 params = propval(varargin, defaults);
+
+if params.debug
+  dbstop if error
+end
 
 if dist == 1
   % determine which resource manager is being used
@@ -120,7 +128,14 @@ if dist == 1
     counts = zeros(1, 4);
     counts([1 2 4]) = totals([1 2 4]);
     for j = n_start(3) + 1:length(c{3})
-      [p, r, f] = findTask(c{3}(j));
+      try
+        % this command sometimes fails (probably intermittently,
+        % due to some sort of scheduler or filesystem issues)
+        [p, r, f] = findTask(c{3}(j));
+      catch
+        % if getting status fails, just wait, then check again
+        continue
+      end
       counts(3) = counts(3) + length(r);
       counts(4) = counts(4) + length(f);
     end
@@ -232,13 +247,17 @@ else
     end
     % pass this subject as input to the function
     % and modify the subject vector
-    try
+    if params.debug
       subj_out = fcn_handle(this_subj, fcn_inputs{:});
-    catch err
-      fprintf('error thrown for %s:\n', this_subj.id)
-      getReport(err)
-      subj_out = this_subj;
-      %subj_out = [];
+    else
+      try
+        subj_out = fcn_handle(this_subj, fcn_inputs{:});
+      catch err
+        fprintf('error thrown for %s:\n', this_subj.id)
+        getReport(err)
+        subj_out = this_subj;
+        %subj_out = [];
+      end
     end
     subj = addobj(subj, subj_out);
   end
