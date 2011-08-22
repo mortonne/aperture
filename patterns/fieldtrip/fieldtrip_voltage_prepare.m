@@ -74,7 +74,7 @@ if ~isempty(params.freq_filter)
 end
 
 %time bin pat
-pat = bin_pattern(pat, 'save_mats', false, timebins, params.time_bins);
+pat = bin_pattern(pat, 'save_mats', false, 'timebins', params.time_bins);
 
 %run post_timebin to make sure all bins are of same size
 pat = post_timebin(pat);
