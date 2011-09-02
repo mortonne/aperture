@@ -128,25 +128,38 @@ function subj = fieldtrip_subj_headplot(subj, params)
  
  %load the fieldtrip stat object
  load(stat.file);
- pos = fieldstat.posclusters(1);
- neg = fieldstat.negclusters(1);
  
  %find the positive and negative clusters and make significance
  %masks if below cluster threshold
- if pos.prob < params.cluster_thresh
-   pos_hmask = fieldstat.posclusterslabelmat==1;
-   pos_hmask = permute(pos_hmask, [3 1 2]);
- else
-   pos_hmask = [];
- end
  
- if neg.prob < params.cluster_thresh
-   neg_hmask = fieldstat.negclusterslabelmat==1;  
-   neg_hmask = permute(neg_hmask, [3 1 2]);
- else
-   neg_hmask = [];
- end
- 
+% positive clusters
+if ~isempty(fieldstat.posclusters)
+  pos = fieldstat.posclusters(1);
+  if pos.prob < params.cluster_thresh
+    pos_hmask = fieldstat.posclusterslabelmat==1;
+    pos_hmask = permute(pos_hmask, [3 1 2]);
+  else
+    pos_hmask = [];
+  end
+else
+  % no positive clusters found
+  pos_hmask = [];
+end
+
+% negative clusters
+if ~isempty(fieldstat.negclusters)
+  neg = fieldstat.negclusters(1);
+  if neg.prob < params.cluster_thresh
+    neg_hmask = fieldstat.negclusterslabelmat==1;
+    neg_hmask = permute(neg_hmask, [3 1 2]);
+  else
+    neg_hmask = [];
+  end
+else
+  % no negative clusters found
+  neg_hmask = [];
+end
+
  %make new event_bins
  event_bins = {sprintf('strcmp(label,''%s'')',params.eventbinlabels{1}) ...
                sprintf('strcmp(label,''%s'')',params.eventbinlabels{2})};
