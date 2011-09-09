@@ -14,6 +14,7 @@ function subj = fieldtrip_voltage_prepare(subj, varargin)
 %  These options may be specified using parameter, value pairs or by
 %  passing a structure. Defaults are shown in parentheses.
 %
+%   freq_filter = '';
 %   time_bins = [];
 %   eventFilter1 = '';
 %   eventFilter2 = '';

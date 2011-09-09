@@ -13,6 +13,7 @@ function stat_file = fieldtrip_voltage(exp, varargin)
 %  PARAMS:
 %  These options may be specified using parameter, value pairs or by
 %  passing a structure. Defaults are shown in parentheses.
+%   freq_filter = string input to filter_pattern
 %   time_bins = inputs to bin_pattern, ([]);
 %   eventFilter1 = string input to filter_pattern for 1st condition;
 %   eventFilter2 = string input to filter_pattern for 2nd condition;

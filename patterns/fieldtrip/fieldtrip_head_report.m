@@ -17,6 +17,7 @@ function pdf_file = fieldtrip_head_report(exp, pat_name, varargin)
 %   stat_file: if you want to use a fieldstat object you've already
 %              created, then load from this file and use these
 %              parameters
+%   freq_filter: string input to filter_pattern;
 %   time_bins: inputs to bin_pattern, ([]);
 %   eventFilter1: string input to filter_pattern for 1st condition;
 %   eventFilter2: string input to filter_pattern for 2nd condition;
@@ -25,6 +26,8 @@ function pdf_file = fieldtrip_head_report(exp, pat_name, varargin)
 
 % options
 defaults.stat_file = '';
+defaults.freq_filter = '';
+defaults.freq_name = 'freq';
 defaults.time_bins = [];
 defaults.eventFilter1 = '';
 defaults.eventFilter2 = '';
@@ -52,6 +55,7 @@ params = propval(varargin, defaults);
 if isempty(params.stat_file)
   %run fieldtrip analysis
   p = [];
+  p.freq_filter = params.freq_filter;
   p.time_bins = params.time_bins;
   p.eventFilter1 = params.eventFilter1;
   p.eventFilter2 = params.eventFilter2;
@@ -81,6 +85,7 @@ else
 end
 
 load(fieldstat_file);
+params.freq_filter = fieldstat.params.freq_filter;
 params.time_bins = fieldstat.params.time_bins;
 params.eventFilter1 = fieldstat.params.eventFilter1;
 params.eventFilter2 = fieldstat.params.eventFilter2;
@@ -98,15 +103,19 @@ pat_ga = bin_pattern(pat, {'eventbins', 'label', 'save_mats', ...
                     true, 'save_as', [pat.name '_ga'], ...
                     'overwrite', true});
 
+%filter pattern for a specified frequency
+pat_ga_f = filter_pattern(pat_ga, {'freq_filter', freq_filter, ...
+                    'save_as', [pat_ga.name '_' params.freq_name, 'overwrite', true);
+
 %time bin ga pattern to reflect fieldtrip time bins
-pat_ga_tbin = bin_pattern(pat_ga, 'timebins', params.time_bins, 'overwrite', true, 'save_as', [pat_ga.name sprintf('_%sbins',num2str(length(params.time_bins)))]);
+pat_ga_f_tbin = bin_pattern(pat_ga_f, 'timebins', params.time_bins, 'overwrite', true, 'save_as', [pat_ga.name sprintf('_%sbins',num2str(length(params.time_bins)))]);
 
 %initiate and add a stat object for the fieldstat
-stat = init_stat(params.stat_name, fieldstat_file, pat_ga_tbin.source, params);
-pat_ga_tbin = setobj(pat_ga_tbin,'stat',stat);
+stat = init_stat(params.stat_name, fieldstat_file, pat_ga_f_tbin.source, params);
+pat_ga_f_tbin = setobj(pat_ga_f_tbin,'stat',stat);
 
 %put the new pat object on the exp structure
-exp = setobj(exp, 'pat', pat_ga_tbin);
+exp = setobj(exp, 'pat', pat_ga_f_tbin);
 
 %load the fieldtrip stat object
 load(stat.file);
@@ -147,18 +156,18 @@ event_bins = {sprintf('strcmp(label,''%s'')',params.eventbinlabels{1}) ...
               sprintf('strcmp(label,''%s'')',params.eventbinlabels{2})};
 
 %make headplots
-pat_ga_tbin =  pat_topoplot_fieldtrip(pat_ga_tbin, [params.contrast_str '_head_ft'], {'event_bins', event_bins, ...
+pat_ga_f_tbin =  pat_topoplot_fieldtrip(pat_ga_f_tbin, [params.contrast_str '_head_ft'], {'event_bins', event_bins, ...
                       'event_labels', params.eventbinlabels, 'plot_type', 'head', ...
 		      'diff', true, 'head_markchans', true, 'mark_pos', pos_hmask, 'mark_neg', neg_hmask});
 
 if ~isempty(params.report_name)
-  report_dir = get_pat_dir(pat_ga_tbin, 'reports');
+  report_dir = get_pat_dir(pat_ga_f_tbin, 'reports');
   report_file = fullfile(report_dir, params.report_name);
 else
   report_file = '';
 end
 
-pdf_file = pat_report(pat_ga_tbin, 3, ...
+pdf_file = pat_report(pat_ga_f_tbin, 3, ...
            {[params.contrast_str '_head_ft']}, ...
            'landscape', false, ...
            'title', params.report_title, ...
