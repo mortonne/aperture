@@ -104,8 +104,13 @@ pat_ga = bin_pattern(pat, {'eventbins', 'label', 'save_mats', ...
                     'overwrite', true});
 
 %filter pattern for a specified frequency
+if ~isempty(params.freq_name)
+  pat_f_name = [pat_ga.name '_' params.freq_name];
+else
+  pat_f_name = pat_ga.name;
+end
 pat_ga_f = filter_pattern(pat_ga, {'freq_filter', freq_filter, ...
-                    'save_as', [pat_ga.name '_' params.freq_name, 'overwrite', true);
+			      'save_as', pat_freq_name, 'overwrite', true});
 
 %time bin ga pattern to reflect fieldtrip time bins
 pat_ga_f_tbin = bin_pattern(pat_ga_f, 'timebins', params.time_bins, 'overwrite', true, 'save_as', [pat_ga.name sprintf('_%sbins',num2str(length(params.time_bins)))]);
