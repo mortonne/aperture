@@ -34,27 +34,27 @@ function stat_file = fieldtrip_voltage(exp, varargin)
 %   keeptrials = always 'yes';
 %   vartrllength = we use NaNs which create different lengths; (2)
 %   correctm = how do you want to handle the MCP; always choose ('cluster')
-%   clusteralpha = alpha threshold for your cluster analysis; (.025)
-%   alphathresh = .025;
+%   clusteralpha = alpha threshold for your cluster analysis; (.05)
 %   method = because we are using cluster method we must use; ('montecarlo')
 %   clusterstatistic = statistic to use with the cluster analysis; ('maxsum')
 %   dimord = dimension order of your data; ('chan_time')
 %   minnbchan = minimum number of neighboring electrodes necessary
 %               to include an electrode in a cluster; (2)
 %   tail = hypothesis about cluster directionality? NO; (0)
+%   correcttail = account for two-tailed analysis in significance measure? ('alpha')
 %   clustertail = hypothesis about cluster directionality? NO; (0)
-%   alpha = .005;
+%   alpha = .05;
 %   statistic = cluster statistic; ('depsamplesT')
 %   uvar = which row in design contains unit variable; (1)
 %   ivar = which row in design contains independent variable; (2)
 %   keepindividual = keep individual trials for grandaverage; ('yes')
-%   computecritval = 'no';
+%   computecritval = 'yes';
 %   clustercritval = this value is for the t-statistic - fieldtrip
 %                    compares all effect sizes and masks out those
 %                    that don't surpass this in the positive or
 %                    negative directions. This is important - it is
 %                    used in clusterstat.m to make a mask of where
-%                    significant observations were noticed; (.5)
+%                    significant observations were noticed; ([])
 %   clusterthreshold = 'parametric';
 %
 % Copyright 2007-2011 Neal Morton, Sean Polyn, Zachary Cohen, Matthew Mollison.
@@ -100,21 +100,21 @@ defaults.latency = 'all';
 defaults.keeptrials = 'yes';
 defaults.vartrllength = 2;
 defaults.correctm = 'cluster';
-defaults.clusteralpha = .025;
-defaults.alphathresh = .025;
+defaults.clusteralpha = 0.05;
 defaults.method = 'montecarlo';
 defaults.clusterstatistic = 'maxsum';
 defaults.dimord = 'chan_time';
 defaults.minnbchan = 2;
 defaults.tail = 0;
 defaults.clustertail = 0;
-defaults.alpha = .005;
+defaults.correcttail = 'alpha';
+defaults.alpha = 0.05;
 defaults.statistic = 'depsamplesT';
 defaults.uvar = 1;
 defaults.ivar = 2;
 defaults.keepindividual = 'yes';
-defaults.computecritval = 'no';
-defaults.clustercritval = .5;
+defaults.computecritval = 'yes';
+defaults.clustercritval = [];
 defaults.clusterthreshold = 'parametric';
 defaults.dist = 1;
 
@@ -176,6 +176,7 @@ p.clusterstatistic = params.clusterstatistic;
 p.dimord = params.dimord;
 p.minnbchan = params.minnbchan;
 p.tail = params.tail;
+p.correcttail = params.correcttail;
 p.clustertail = params.clustertail;
 p.alpha = params.alpha;
 p.statistic = params.statistic;

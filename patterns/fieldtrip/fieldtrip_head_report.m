@@ -27,7 +27,7 @@ function pdf_file = fieldtrip_head_report(exp, pat_name, varargin)
 % options
 defaults.stat_file = '';
 defaults.freq_filter = '';
-defaults.freq_name = 'freq';
+defaults.freq_name = '';
 defaults.time_bins = [];
 defaults.eventFilter1 = '';
 defaults.eventFilter2 = '';
@@ -41,7 +41,7 @@ defaults.numrandomization = 1000;
 defaults.statistic = 'depsamplesT';
 defaults.uvar = 2;
 defaults.ivar = 1;
-defaults.cluster_thresh = .05;
+defaults.cluster_thresh = 0.025;
 defaults.print_input = {'-djpeg50'};
 defaults.res_dir = '';
 defaults.dist = 0;
@@ -109,11 +109,11 @@ if ~isempty(params.freq_name)
 else
   pat_f_name = pat_ga.name;
 end
-pat_ga_f = filter_pattern(pat_ga, {'freq_filter', freq_filter, ...
-			      'save_as', pat_freq_name, 'overwrite', true});
+pat_ga_f = filter_pattern(pat_ga, {'freq_filter', params.freq_filter, ...
+			      'save_as', pat_f_name, 'overwrite', true});
 
 %time bin ga pattern to reflect fieldtrip time bins
-pat_ga_f_tbin = bin_pattern(pat_ga_f, 'timebins', params.time_bins, 'overwrite', true, 'save_as', [pat_ga.name sprintf('_%sbins',num2str(length(params.time_bins)))]);
+pat_ga_f_tbin = bin_pattern(pat_ga_f, 'timebins', params.time_bins, 'overwrite', true, 'save_as', [pat_ga_f.name sprintf('_%sbins',num2str(length(params.time_bins)))]);
 
 %initiate and add a stat object for the fieldstat
 stat = init_stat(params.stat_name, fieldstat_file, pat_ga_f_tbin.source, params);
