@@ -170,7 +170,6 @@ p.neighbourdist = params.neighbourdist;
 p.neighbours = params.neighbours;
 p.correctm = params.correctm;
 p.clusteralpha = params.clusteralpha;
-p.alphathresh = params.alphathresh;
 p.method = params.method;
 p.clusterstatistic = params.clusterstatistic;
 p.dimord = params.dimord;
