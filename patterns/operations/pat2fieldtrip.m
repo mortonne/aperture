@@ -34,7 +34,23 @@ for i=1:length(chan)
 end
 
 % sample rate
-data.fsample = get_pat_samplerate(pat);
+try
+  data.fsample = get_pat_samplerate(pat);
+catch err
+  % check that we don't have only one sample
+  time = get_dim_vals(pat.dim, 'time');
+  if length(time) == 1 & time==0
+    warning('Only one time point, setting arbitrary fsample of 1.')
+    data.fsample = 1;
+  elseif length(time) == 1
+    warning('Only one time point, setting arbitrary fsample.')
+    data.fsample = 1/time;
+  else
+    % different kind of error, rethrow
+    rethrow(err)
+  end
+end
+
 
 % load the pattern
 pattern = load_pattern(pat);
@@ -59,4 +75,9 @@ for i=1:n_trials
   
   % write time axis for this event (in seconds)
   data.time{1,i} = get_dim_vals(pat.dim, 'time')./1000;
+
+  % check dimensions, mainly needed for using only one timebin
+  if size(data.trial{1,i}, 2) ~= length(data.time{1,i})
+    data.trial{1,i} = data.trial{1,i}';
+  end
 end
