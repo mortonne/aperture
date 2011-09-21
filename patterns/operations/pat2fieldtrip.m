@@ -26,11 +26,14 @@ function data = pat2fieldtrip(pat)
 % You should have received a copy of the GNU Lesser General Public License
 % along with EEG Analysis Toolbox.  If not, see <http://www.gnu.org/licenses/>.
 
+data = struct;
+
 % channel labels
-chan = pat.dim.chan;
-data.label = cell(1,length(chan));
-for i=1:length(chan)
-  data.label{1,i} = sprintf('E%d', chan(i).number);
+%data.label = get_dim_labels(pat.dim, 'chan');
+n_chans = patsize(pat.dim, 'chan');
+data.label = cell(1, n_chans);
+for i = 1:n_chans
+  data.label{i} = sprintf('E%d', i);
 end
 
 % sample rate
@@ -51,23 +54,31 @@ catch err
   end
 end
 
+% load the pattern matrix
+pattern = get_mat(pat);
+[n_trials, n_chans, n_times, n_freqs] = size(pattern);
 
-% load the pattern
-pattern = load_pattern(pat);
+if n_freqs > 1
+  data.time = get_dim_vals(pat.dim, 'time');
+  data.freq = get_dim_vals(pat.dim, 'freq');
+  data.dimord = 'chan_freq_time';
 
-% fieldtrip can't handle NaNs...for now, just hack them out
-%if any(isnan(pattern(:)))
-%  pat_mean = nanmean(pattern(:));
-%  num_nans = sum(isnan(pattern(:)));
+  %data.powspctrm = zeros(n_trials, n_chans, n_freqs, n_times, 'single');
+  %data.powspctrm = single(permute(pattern, [1 2 4 3]));
+  data.powspctrm = single(permute(pattern, [2 4 3 1]));
+else
+  % times for each trial
+  data.time = cell(1, n_trials);
+  for i = 1:n_trials
+    data.time{1,i} = get_dim_vals(pat.dim, 'time') ./ 1000;
+  end
 
-%  fprintf('%d NaNs found...replacing with overall mean (%.4f).\n', num_nans, pat_mean)
-%  pattern(isnan(pattern)) = pat_mean;
-%end
-
-% initialize fieldtrip vars
-n_trials = size(pattern,1);
-data.trial = cell(1,n_trials);
-data.time = cell(1,n_trials);
+  data.trial = cell(1, n_trials);
+  for i = 1:n_trials
+    data.trial{1,i} = squeeze(pattern(i,:,:));
+  end
+  data.dimord = 'chan_time';
+end
 
 for i=1:n_trials
   % write data for this event
@@ -81,3 +92,4 @@ for i=1:n_trials
     data.trial{1,i} = data.trial{1,i}';
   end
 end
+
