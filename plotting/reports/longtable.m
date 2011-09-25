@@ -21,13 +21,20 @@ function longtable(filename, table, varargin)
 %     table:  cell array with a string of LaTeX code in each cell.
 %
 %  PARAMS:
-%   col_width   - string or cell array of strings indicating the width
-%                 of each column. ([])
-%   header      - cell array of strings indicating a header to be placed
-%                 at the top of the table on every page. ({})
-%   orientation - page orientation ('portrait' or 'landscape').
-%                 ('landscape')
-%   title       - title for the document. ('')
+%   header          - cell array of strings indicating a header to be
+%                     placed at the top of the table on every page. ({})
+%   orientation     - page orientation ('portrait' or 'landscape').
+%                     ('landscape')
+%   title           - title for the document. ('')
+%   col_format      - format of each column. May be string (applied to
+%                     all columns) or a cell array of strings with one
+%                     element for each column. ('c')
+%   col_width       - numeric array indicating the width of each column.
+%                     May have one element for each column (any element
+%                     that is NaN is ignored), or be a scalar (to be
+%                     applied to all columns). Overrides col_format.
+%                     ([])
+%   col_width_units - units of col_width. ('\\textwidth')
 %
 %  OLD CALLING SIGNATURE (currently supported, but deprecated):
 %
@@ -88,7 +95,7 @@ if iscellstr(filename)
   elseif length(varargin) == 2
     varargin = {'header', header, 'title', varargin{2}};
   elseif length(varargin) == 3 && ...
-        (isbool(varargin({3})) || ismember(varargin{3}, [0 1]))
+        (islogical(varargin{3}) || ismember(varargin{3}, [0 1]))
     if varargin{3}
       orientation = 'landscape';
     else
@@ -104,6 +111,8 @@ defaults.header = {};
 defaults.orientation = 'landscape';
 defaults.title = '';
 defaults.col_width = [];
+defaults.col_width_units = '\textwidth';
+defaults.col_format = 'c';
 params = propval(varargin, defaults);
 
 % convenience variables
@@ -113,18 +122,36 @@ if length(params.header) ~= n_cols
   error('header must be the same length as the number of columns in table.')
 end
 
-% set the column formatting
-if ~isempty(params.col_width)
-  if ischar(params.col_width)
-    params.col_width = repmat({params.col_width}, 1, n_cols);
-  end
-    
-  for i = 1:n_cols
-    col_format{i} = sprintf('p{%s}', params.col_width{i});
+% set column format
+if isscalar(params.col_format)
+  col_format = repmat({params.col_format}, 1, n_cols);
+elseif length(col_format) == n_cols
+  col_format = params.col_format;
+  if any(cellfun(@isempty, col_format))
+    error('Some column formats are undefined.')
   end
 else
-  col_format = repmat({'c'}, 1, n_cols);
+  error('Column format must be specified for each column.')
 end
+
+% if specified, set column width (overwrites format)
+if ~isempty(params.col_width)
+  if isscalar(params.col_width)
+    params.col_width = repmat(params.col_width, 1, n_cols);
+  end
+  
+  for i = 1:n_cols
+    if isnan(params.col_width(i))
+      continue
+    end
+    col_format{i} = strcat('p{', num2str(params.col_width(i)), ...
+                           params.col_width_units, '}');
+    %col_format{i} = sprintf('p{%d%s}', ...
+    %                        params.col_width(i), params.col_width_units);
+  end
+end
+
+% set column dividers
 col_pos = '|';
 for i = 1:n_cols
   col_pos = [col_pos col_format{i}];
