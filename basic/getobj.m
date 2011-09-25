@@ -59,36 +59,27 @@ if ~isstruct(objs)
 end
 
 % search for the matching object
-ind = [];
-for i=1:length(objs)
-  %if strcmp(obj_name, get_obj_name(objs(i)))
-  this_obj_name = get_obj_name(objs(i));
-  match = regexp(this_obj_name, obj_name, 'match');
-  if strcmp(this_obj_name, match)
-    ind = i;
-    break
+obj_names = get_obj_names(objs);
+
+% look for exact matches
+ind = find(strcmp(obj_names, obj_name));
+
+% search using regular expressions
+if isempty(ind)
+  match = regexp(obj_names, obj_name, 'match');
+  for i = 1:length(match)
+    if strcmp(obj_names{i}, match{i})
+      ind = i;
+      break
+    end
   end
 end
 
 if isempty(ind)
   error('Object %s not found.', obj_name)
+elseif length(ind) > 1
+  error('More than one object found matching %s.', obj_name)
 end
-
-% % get the identifier field
-% names = arrayfun(@get_obj_name, objs, 'UniformOutput', false);
-% if all(cellfun(@isempty, names))
-%   error('Structure "%s" does not have an identifier field.', f)
-% end
-
-% % find the object with the name
-% [tf, loc] = ismember(obj_name, names);
-% ind = nonzeros(loc);
-
-% if isempty(ind)
-%   error('Object %s not found.', obj_name)
-% elseif length(ind) > 1
-%   error('More than one object found matching %s.', obj_name)
-% end
 
 % get the object
 obj = objs(ind);
