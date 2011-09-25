@@ -120,13 +120,11 @@ function obj_size = get_obj_size(subobj, obj_type, obj_name)
   end
 
   % get the size of each object
-  for i=1:length(subobj)
-    try
-      obj = getobj(subobj(i), obj_type, obj_name);
-    catch
-      % this subobj doesn't have the object
+  for i = 1:length(subobj)
+    if ~exist_obj(subobj(i), obj_type, obj_name)
       continue
     end
+    obj = getobj(subobj(i), obj_type, obj_name);
     
     switch obj_type
      case 'pat'
