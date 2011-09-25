@@ -1,7 +1,7 @@
-function table = create_report(fig_files, row_labels, fig_size)
+function table = create_report(fig_files, row_labels, varargin)
 %CREATE_REPORT   Make a LaTeX report with a table of figures.
 %
-%  table = create_report(fig_files, row_labels, fig_size)
+%  table = create_report(fig_files, row_labels, ...)
 %
 %  This function is designed to streamline the use of longtable. It
 %  assumes that the entire table will be composed of graphics except (at
@@ -69,6 +69,10 @@ if ~exist('fig_files', 'var')
   error('You must specify paths to graphics to include.')
 end
 
+defaults.row_labels_width = [];
+defaults.fig_size = [];
+params = propval(varargin, defaults);
+
 % number of rows is defined by fig_files
 n_rows = size(fig_files, 1);
 
@@ -91,33 +95,54 @@ end
 table = cell(n_rows, n_cols);
 
 % calculate the optimal figure width
+max_label_length = max(cellfun(@length, row_labels));
 n_figs = size(fig_files, 2);
-if ~exist('fig_size', 'var')
-  fig_size = (1 / n_figs);
-  if fig_size > 0.2
-    fig_size = 0.2;
+if isempty(params.fig_size)
+  page_length = 11;
+
+  if ~isempty(params.row_labels_width)
+    % use row label length to set figure size
+    label_length = params.row_labels_width / page_length;
+  else
+    % estimate the length based on 10 pt font
+    % pt/inches * width ~ half of size * length of paper * max num chars    
+    label_length = ((1/72) * (1/2) * 10 * max_label_length) / page_length;
+  end
+  pad_per_figure = (n_figs * 1/10) / page_length;
+  %margin = 1 / page_length;
+  margin = 0;
+  params.fig_size = (1 - label_length - pad_per_figure - margin) / n_figs;
+  if params.fig_size > 0.2
+    params.fig_size = 0.2;
   end
 end
 
 % vertical placement of text
-raise = fig_size * 0.8 * 0.5;
+raise = params.fig_size * 0.8 * 0.5;
 
 % write LaTeX code for each cell of the table
 for i = 1:n_rows
   if ~isempty(row_labels)
     % first cell should be the row label
-    table{i,1} = sprintf('\\raisebox{%f\\textwidth}{%s}', ...
-                         raise, row_labels{i});
+    if ~isempty(params.row_labels_width)
+      % if fixed width, must use a parbox so raisebox will work
+      table{i,1} = sprintf('\\raisebox{%f\\textwidth}{\\parbox{%fin}{%s}}', ...
+                           raise, params.row_labels_width, row_labels{i});
+    else
+      % raise the font to half the figure height
+      table{i,1} = sprintf('\\raisebox{%f\\textwidth}{%s}', ...
+                           raise, row_labels{i});
+    end
   end
 
   % write in the figures
   for j = 1:n_cols-dj
-    %table{i,j+dj} = sprintf('\\includegraphics[width=%f\\textwidth,viewport=120 60 1100 840]{%s}', fig_size, fig_files{i,j});
+    %table{i,j+dj} = sprintf('\\includegraphics[width=%f\\textwidth,viewport=120 60 1100 840]{%s}', params.fig_size, fig_files{i,j});
     if isempty(fig_files{i,j})
       table{i,j+dj} = '';
     else
       table{i,j+dj} = sprintf('\\includegraphics[width=%f\\textwidth]{%s}', ...
-                              fig_size, fig_files{i,j});
+                              params.fig_size, fig_files{i,j});
     end
   end
 end
