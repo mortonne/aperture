@@ -49,7 +49,7 @@ end
 
 % get the name of the dimension in the dim_info struct
 dim_name = read_dim_input(dim_id);
-if ~ismember(dim_name, fieldnames(dim_info))
+if ~isfield(dim_info, dim_name)
   error('dim_info has no information about "%s" dimension.', dim_name)
 end
 

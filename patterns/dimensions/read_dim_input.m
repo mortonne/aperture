@@ -35,39 +35,49 @@ function [name, number, long_name, dir_name] = read_dim_input(dim_input)
 % You should have received a copy of the GNU Lesser General Public License
 % along with EEG Analysis Toolbox.  If not, see <http://www.gnu.org/licenses/>.
 
-% input checks
-if ~exist('dim_input', 'var')
-  error('You must pass dim_input.')
-end
-
-% process input
-DIM_NAMES = {'ev', 'chan', 'time', 'freq'};
-DIM_LONG_NAMES = {'Event', 'Channel', 'Time', 'Frequency'};
-DIM_DIR_NAMES = {'events', 'channels', 'time', 'freq'};
 if isnumeric(dim_input)
   % input was dim_input number
   number = dim_input;
-  if ~ismember(number, 1:length(DIM_NAMES))
-    error('Invalid dim_input number: %d', dim_input)
+  switch number
+   case 1
+    name = 'ev';
+    long_name = 'Event';
+    dir_name = 'events';
+   case 2
+    name = 'chan';
+    long_name = 'Channel';
+    dir_name = 'channels';
+   case 3
+    name = 'time';
+    long_name = 'Time';
+    dir_name = 'time';
+   case 4
+    name = 'freq';
+    long_name = 'Frequency';
+    dir_name = 'freq';
   end
-  
-  % get dim_input name
-  name = DIM_NAMES{dim_input};
 
 elseif ischar(dim_input)
   name = dim_input;
-  % make sure the name is valid
-  if ~ismember(name, DIM_NAMES)
-    error('Invalid dim_input name: "%s"', dim_input)
+  switch name
+   case 'ev'
+    number = 1;
+    long_name = 'Event';
+    dir_name = 'events';
+   case 'chan'
+    number = 2;
+    long_name = 'Channel';
+    dir_name = 'channels';
+   case 'time'
+    number = 3;
+    long_name = 'Time';
+    dir_name = 'time';
+   case 'freq'
+    number = 4;
+    long_name = 'Frequency';
+    dir_name = 'freq';
   end
-
-  % get dim_input number
-  number = find(strcmp(name, DIM_NAMES));
-
 else
   error('dim_input must be an integer or a string.')
 end
-
-long_name = DIM_LONG_NAMES{number};
-dir_name = DIM_DIR_NAMES{number};
 
