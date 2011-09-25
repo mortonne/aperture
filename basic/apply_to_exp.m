@@ -1,19 +1,51 @@
-function exp = apply_to_exp(exp, fcn_handle, fcn_inputs, memory)
-%APPLY_TO_EXP
+function exp = apply_to_exp(exp, fcn_handle, fcn_inputs, varargin)
+%APPLY_TO_EXP   Run a distributed job applying a function to an experiment.
 %
-%  exp = apply_to_exp(exp, fcn_handle, fcn_inputs, memory)
+%  exp = apply_to_exp(exp, fcn_handle, fcn_inputs, ...)
+%
+%  INPUTS:
+%         exp:  experiment object.
+%
+%  fcn_handle:  handle to a function to apply to exp, of the form:
+%                exp = fcn_handle(exp, ...)
+%
+%  fcn_inputs:  cell array of additional inputs to fcn_handle.
+%
+%  OUTPUTS:
+%         exp:  experiment object.
+%
+%  PARAMS:
+%  These options may be specified using parameter, value pairs or by
+%  passing a structure. Defaults are shown in parentheses.
+%   memory   - amount of memory to request for the job. ('2G')
+%   walltime - walltime to request for the job. ('00:15:00')
+%   async    - if true, a job handle will be returned instead of exp,
+%              and execution will not be halted to wait for the job to
+%              finish. (false)
 
-if ~exist('memory', 'var')
-  memory = '2g';
-end
+% options
+defaults.memory = '2G';
+defaults.walltime = '00:15:00';
+defaults.async = false;
+params = propval(varargin, defaults);
 
 % set up a scheduler
-if ~exist('~/runs', 'dir')
-  mkdir('~/runs');
+sm = get_sm();
+
+% determine which resource manager is being used
+jm = which_resource_manager;
+if strcmp('none', jm)
+  error('Job manager not found.')
 end
-sm = findResource('scheduler', 'type', 'generic');
-set(sm, 'DataLocation', '~/runs');
-set(sm, 'SubmitFcn', {@sgeSubmitFcn2, memory});
+
+% set SubmitFcn according to resource manager
+if strcmp('SGE', jm)
+  set(sm, 'SubmitFcn', {@distributedSubmitFcn2, params.memory});
+  
+elseif strcmp('TORQUE', jm)
+  params.memory = torque_mem_format(params.memory);
+  set(sm, 'SubmitFcn', {@distributedSubmitFcn2, params});
+end
 
 % use the current path, and override pathdef.m, jobStartup.m, etc.
 path_cell = regexp(path, ':', 'split');
@@ -30,9 +62,15 @@ task = createTask(job, fcn_handle, 1, {exp fcn_inputs{:}}, ...
 set(task, 'CaptureCommandWindowOutput', true);
 
 % submit the job and wait for it to finish
-tic
 submit(job);
-fprintf('Job submitted.  Waiting for all tasks to finish...\n')
+
+if params.async
+  exp = job;
+  return
+end
+  
+tic
+fprintf('Job submitted.  Waiting for task to finish...\n')
 
 wait(job);
 fprintf('apply_to_exp: job finished: %.2f seconds.\n', toc);
