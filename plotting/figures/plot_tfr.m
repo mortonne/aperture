@@ -103,7 +103,11 @@ else
   yp2 = [];
   ylabel('Frequency')
 end
-publishfig
+font_options = {'FontSize', 24, 'FontWeight', 'Bold'};
+set(gca, font_options{:});
+set(get(gca, 'XLabel'), font_options{:})
+set(get(gca, 'YLabel'), font_options{:})
+%publishfig
 
 % change the y-tick to be logarithmic
 set(gca, 'YTick', log10(yp2))
