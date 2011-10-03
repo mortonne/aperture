@@ -5,10 +5,15 @@ function disp_job(job)
 
 more on
 
-for i = 1:length(job.tasks)
-  fprintf('%s:\n', job.tasks(i).Name);
-  disp(job.tasks(i).commandWindowOutput)
+try
+  for i = 1:length(job.tasks)
+    fprintf('%s:\n', job.tasks(i).Name);
+    disp(job.tasks(i).commandWindowOutput)
+  end
+catch err
+  % if user quits before all output is shown
+  more off
 end
-
+  
 more off
 
