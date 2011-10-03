@@ -119,6 +119,14 @@ else
   loc = 'ws';
 end
 
+% print names if they are unique; otherwise, print sources
+if params.verbose
+  sources = {pats.name};
+  if ~isunique(sources)
+    sources = {pats.source};
+  end
+end
+
 % concatenate the dim structure
 dim = def_pat.dim;
 if strcmp(dim_name, 'ev')
@@ -130,7 +138,7 @@ if strcmp(dim_name, 'ev')
   events = [];
   for i = 1:length(pats)
     if params.verbose
-      fprintf('%s ', pats(i).source)
+      fprintf('%s ', sources{i})
     end
       
     pat_events = get_mat(pats(i).dim.ev);
@@ -175,7 +183,7 @@ end
 pattern = [];
 for i=1:length(pats)
   if params.verbose
-    fprintf('%s ', pats(i).source)
+    fprintf('%s ', sources{i})
   end
   pattern = cat(dim_number, pattern, get_mat(pats(i)));
 end
