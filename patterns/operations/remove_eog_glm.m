@@ -199,6 +199,9 @@ n_reg = 4;
 resid = NaN(size(pattern), class(pattern));
 sessions = unique(session);
 fprintf('Running GLM...\n')
+warn_id = 'stats:glmfit:IllConditioned';
+warn_state = warning('query', warn_id);
+warning('off', warn_id)
 for i = 1:length(sessions)
   fprintf('Session %d: ', sessions(i))
   sess_mask = session == sessions(i);
@@ -265,6 +268,7 @@ for i = 1:length(sessions)
   
   fprintf('\n')
 end
+warning(warn_state.state, warn_id)
 
 % create a new pattern from the residuals
 pat.name = new_pat_name;
