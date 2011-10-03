@@ -1,16 +1,7 @@
-function pat_size = patsize_all_subj(subj, pat_name)
-%PATSIZE_ALL_SUBJ   Get the size of a pattern for all subjects.
+function [freqbins,freqbinlabels] = freq_bands2()
+%FREQ_BANDS2   Bin definitions for standard frequency bands.
 %
-%  pat_size = patsize_all_subj(subj, pat_name)
-%
-%  INPUTS:
-%      subj:  vector of subject objects.
-%
-%  pat_name:  name of a pattern defined for all subjects.
-%
-%  OUTPUTS:
-%  pat_size:  [subjects X 4] vector giving the size of each subject's
-%             pattern matrix.
+%  [freqbins, freqbinlabels] = freq_bands2()
 
 % Copyright 2007-2011 Neal Morton, Sean Polyn, Zachary Cohen, Matthew Mollison.
 %
@@ -29,10 +20,5 @@ function pat_size = patsize_all_subj(subj, pat_name)
 % You should have received a copy of the GNU Lesser General Public License
 % along with EEG Analysis Toolbox.  If not, see <http://www.gnu.org/licenses/>.
 
-n_subj = length(subj);
-pat_size = NaN(n_subj, 4);
-for i = 1:n_subj
-  pat = getobj(subj(i), 'pat', pat_name);
-  pat_size(i,:) = patsize(pat.dim);
-end
-
+freqbins = [2 4; 4 8.1; 10 14; 16 25; 25 55; 65 128];
+freqbinlabels = {'Delta', 'Theta', 'Alpha', 'Beta', 'Low Gamma', 'High Gamma'};
