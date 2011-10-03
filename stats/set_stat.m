@@ -3,6 +3,7 @@ function set_stat(stat, varargin)
 %
 %  set_stat(stat, var_name1, var1, var_name2, var2, ...)
 
+large_vars = false;
 for i = 1:2:length(varargin)
   % move to the specified variable name
   var_name = varargin{i};
@@ -17,13 +18,26 @@ for i = 1:2:length(varargin)
     options = {};
   end
   
+  %fprintf('Variable %s is %.0f bytes\n', var_name, w.bytes)
   if w.bytes > 1900000000
     % huge variable; need different MAT-file format
     % apparently uses some type of compression
+    large_vars = true;
+    %fprintf('Saving in v7.3 file.\n')
+  end
+  
+  if large_vars
     save('-v7.3', stat.file, var_name, options{:})
   else
-    % normal MAT-file will do
     save(stat.file, var_name, options{:})
   end
+end
+
+% save the stat object also
+obj = stat;
+if large_vars
+  save('-v7.3', stat.file, 'stat', 'obj', '-append')
+else
+  save(stat.file, 'stat', 'obj', '-append')  
 end
 
