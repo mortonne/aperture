@@ -1,20 +1,27 @@
-function exp = load_job(exp, job, method)
+function exp = load_job(exp, job, method, obj_type)
 %LOAD_JOB   Load a completed distributed job and merge into an experiment object.
 %
-%  exp = load_job(exp, job, method)
+%  exp = load_job(exp, job, method, obj_type)
 %
 %  INPUTS:
-%     exp:  an experiment object.
+%       exp:  an experiment object.
 %
-%     job:  job object for a job submitted using apply_to_subj,
-%           apply_to_pat, or apply_to_ev. May also be a vector of
-%           jobs, whose outputs will be merged into exp in order.
+%       job:  job object for a job submitted using apply_to_subj,
+%             apply_to_pat, or apply_to_ev. May also be a vector of
+%             jobs, whose outputs will be merged into exp in order.
 %
-%  method:  method for dealing with conflicts if the loaded objects have
-%           the same name and type as existing objects:
-%            'merge'   - merge with existing objects (and subobjects)
-%                        using the magic of merge_objs. (default)
-%            'replace' - replace existing objects.
+%    method:  method for dealing with conflicts if the loaded objects
+%             have the same name and type as existing objects:
+%              'merge'   - merge with existing objects (and subobjects)
+%                          using the magic of merge_objs. (default)
+%              'replace' - replace existing objects.
+%
+%  obj_type:  type of object to be loaded. If not specified, this will
+%             be determined automatically. If an object fails to load,
+%             try setting this option. May be:
+%              'subj' - job was submitted with apply_to_subj
+%              'pat'  - for apply_to_pat
+%              'ev'   - for apply_to_ev
 %
 %  OUTPUTS:
 %      exp:  experiment object that has been merged with the loaded job
@@ -32,6 +39,9 @@ function exp = load_job(exp, job, method)
 if ~exist('method', 'var')
   method = 'merge';
 end
+if ~exist('obj_type', 'var')
+  obj_type = '';
+end
 
 for i = 1:length(job)
   if ~strcmp(job(i).state, 'finished')
@@ -46,8 +56,14 @@ for i = 1:length(job)
               job(i).name, job(i).tasks(j).name)
       continue
     end
-    
-    if strcmp(job(i).Name, 'apply_to_subj:apply_to_obj')
+
+    %if strcmp(job(i).Name, 'apply_to_subj:apply_to_obj')
+    issubobj = strcmp(get_obj_type(outputs{j}), 'subj') && ...
+               isfield(outputs{j}, 'obj') && ...
+               isfield(outputs{j}, 'obj_name');
+    if (~isempty(obj_type) && strcmp(obj_type, 'subj')) || ~issubobj
+      obj = outputs{j};
+    elseif (~isempty(obj_type) && ismember(obj_type, {'pat' 'ev'})) || issubobj
       % grab the object from the fake subject
       obj = outputs{j}.obj;
       if length(obj) == 2
@@ -55,10 +71,8 @@ for i = 1:length(job)
         j = setdiff(1:2, j);
         obj = obj(j);
       end
-    else
-      obj = outputs{j};
     end
-    
+
     obj_type = get_obj_type(obj);
     obj_name = get_obj_name(obj);
     if strcmp(obj_type, 'subj')
