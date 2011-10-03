@@ -41,13 +41,22 @@ function exp = recover_obj(exp, obj_dir, obj_path, obj_type, file_stem)
 
 % step over each of the subjs and if the file is there, load it.
 for i = 1:length(exp.subj)
+  fprintf('%s\n', exp.subj(i).id)
   filename = fullfile(obj_dir, ...
                       strcat(file_stem, exp.subj(i).id, '.mat'));
   
   % if this filename corresponds to a real file, load it
   if exist(filename, 'file')
-    obj = getfield(load(filename, obj_type), obj_type);
-    exp = setobj(exp, 'subj', exp.subj(i).id, obj_path{:}, obj);
+    var_names = who('-file', filename);
+    if ismember(obj_type, var_names)
+      obj = getfield(load(filename, obj_type), obj_type);
+    elseif ismember('obj', var_names)
+      obj = getfield(load(filename, 'obj'), 'obj');
+    else
+      error('File does not contain a variable named "%s" or "obj": %s\n', ...
+            obj_type, filename)
+    end
+    exp.subj(i) = setobj(exp.subj(i), obj_path{:}, obj);
   else
     fprintf('File does not exist: %s\n', filename)
   end
