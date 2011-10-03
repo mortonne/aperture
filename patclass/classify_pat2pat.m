@@ -229,10 +229,14 @@ res.iterations = apply_by_group(@sweep_wrapper, ...
 res = unravel_res(res);
 
 % save the results to disk
-save(stat.file, 'res', 'stat');
+if exist(stat.file, 'file')
+  delete(stat.file)
+end
+set_stat(stat, 'res', res);
 
 % add the stat object to the output pat object
 subj = setobj(subj, 'pat', test_pat_name, 'stat', stat);
+
 
 function res = sweep_wrapper(train_pattern, test_pattern, ...
                              train_targs, test_targs, params);
@@ -263,6 +267,7 @@ else
   res = num2cell(reshape(struct_vec, res_fixed_size));
 end
 
+
 function res = unravel_res(res)
 %UNRAVEL_RES   Reformat res to be a structure array.
 %
@@ -290,8 +295,8 @@ temp = repmat(s, [outer_loop_size inner_loop_size]);
 % unravel
 outer_sub = cell(1, N_DIMS);
 inner_sub = cell(1, N_DIMS);
-for i=1:prod(outer_loop_size)
-  for j=1:prod(inner_loop_size)
+for i = 1:prod(outer_loop_size)
+  for j = 1:prod(inner_loop_size)
     [outer_sub{:}] = ind2sub(outer_loop_size, i);
     [inner_sub{:}] = ind2sub(inner_loop_size, j);
     temp(outer_sub{:}, inner_sub{:}) = res.iterations{i}{j};
@@ -301,7 +306,7 @@ end
 % move inner to outer if we did any sweeping
 new_outer = NaN(1, N_DIMS);
 new_inner = NaN(1, N_DIMS);
-for i=1:N_DIMS
+for i = 1:N_DIMS
   % size of inner and outer loops
   out = outer_loop_size(i);
   in = inner_loop_size(i);
@@ -326,6 +331,7 @@ end
 temp = permute(temp, [new_outer new_inner]);
 
 res.iterations = temp;
+
 
 function targets = load_targets(pat, targ_input)
 
