@@ -27,8 +27,6 @@ function erp_image_report(exp, pat_name, varargin)
 %   dist        - distribute flag for creating the plots. (0)
 %   memory      - memory to allocate for processing each pattern. ('1G')
  
-pat = getobj(exp.subj(1), 'pat', pat_name);
-
 % Copyright 2007-2011 Neal Morton, Sean Polyn, Zachary Cohen, Matthew Mollison.
 %
 % This file is part of EEG Analysis Toolbox.
@@ -45,6 +43,8 @@ pat = getobj(exp.subj(1), 'pat', pat_name);
 %
 % You should have received a copy of the GNU Lesser General Public License
 % along with EEG Analysis Toolbox.  If not, see <http://www.gnu.org/licenses/>.
+
+pat = getobj(exp.subj(1), 'pat', pat_name);
 
 % options
 defaults.dist = 0;

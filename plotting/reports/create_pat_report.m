@@ -1,7 +1,8 @@
-function [table, header] = create_pat_report(pat, dim, fig_names, fig_labels)
+function [table, header] = create_pat_report(pat, dim, fig_names, ...
+                                             fig_labels, varargin)
 %CREATE_PAT_REPORT   Create a PDF report of figures derived from a pattern.
 %
-%  [table, header] = create_pat_report(pat, dim, fig_names, fig_labels)
+%  [table, header] = create_pat_report(pat, dim, fig_names, fig_labels, ...)
 %
 %  Use this function to prepare a report with one fig object per column,
 %  and a dimension label in the first column.
@@ -28,6 +29,13 @@ function [table, header] = create_pat_report(pat, dim, fig_names, fig_labels)
 %
 %      header:  cell array of strings giving the header for the
 %               report.
+%
+%  PARAMS:
+%  These options may be specified using parameter, value pairs or by
+%  passing a structure. Defaults are shown in parentheses.
+%   row_labels_width
+%   row_dim_field
+%   row_dim_sort
 
 % Copyright 2007-2011 Neal Morton, Sean Polyn, Zachary Cohen, Matthew Mollison.
 %
@@ -47,21 +55,27 @@ function [table, header] = create_pat_report(pat, dim, fig_names, fig_labels)
 % along with EEG Analysis Toolbox.  If not, see <http://www.gnu.org/licenses/>.
 
 % input checks
-if ~exist('pat','var')
+if ~exist('pat', 'var')
   error('You must pass a pattern object.')
-elseif ~exist('dim','var')
+elseif ~exist('dim', 'var')
   error('You must specify a dimension to use as row labels.')
 end
-if ~exist('fig_names','var') || isempty(fig_names)
+if ~exist('fig_names', 'var') || isempty(fig_names)
   fig_names = {pat.fig.name};
 elseif ~iscellstr(fig_names)
   error('fig_names must be a cell array of strings.')
 end
-if ~exist('fig_labels','var')
+if ~exist('fig_labels', 'var')
   fig_labels = {};
 elseif ~iscellstr(fig_labels)
   error('fig_labels must be a cell array of strings.')
 end
+
+% options
+defaults.row_labels_width = [];
+defaults.row_dim_field = '';
+defaults.row_dim_sort = {};
+params = propval(varargin, defaults);
 
 % read the input dimension
 [dim_name, dim_number, dim_long_name] = read_dim_input(dim);
@@ -111,17 +125,61 @@ for i=1:length(fig_names)
 end
 
 % labels for the report
-row_labels = get_dim_labels(pat.dim, dim_name);
+if isempty(params.row_dim_field)
+  % use the standard labels
+  row_labels = get_dim_labels(pat.dim, dim_name);
+else
+  this_dim = get_dim(pat.dim, dim_name);
+  
+  if ischar(params.row_dim_field)
+    % get labels directly from a field
+    row_labels = getStructField(this_dim, params.row_dim_field);
+    if ~iscellstr(row_labels)
+      error('%s field %s does not contain strings; cannot use as labels.', ...
+            dim_name, params.row_dim_field)
+    end
+  elseif iscellstr(params.row_dim_field)
+    % get all labels
+    dim_labels = cell(length(this_dim), length(params.row_dim_field));
+    for i = 1:length(params.row_dim_field)
+      dim_labels(:,i) = getStructField(this_dim, params.row_dim_field{i});
+    end
+    
+    % create row labels
+    row_labels = cell(1, length(this_dim));
+    for i = 1:length(this_dim)
+      row_labels{i} = strtrim(sprintf('%s ', dim_labels{i,:}));
+    end
+  end
+end
+
+row_labels = cellfun(@(x) strrep(x, '_', ' '), row_labels, ...
+                     'UniformOutput', false);
 
 % create the table
-table = create_report(fig_files, row_labels);
+table = create_report(fig_files, row_labels, ...
+                      'row_labels_width', params.row_labels_width);
 
 % check our outputs
-if length(row_labels)~=size(table,1)
+if length(row_labels) ~= size(table,1)
   error('row_labels does not match the number of rows in table.')
-elseif length(header)~=size(table,2)
+elseif length(header) ~= size(table,2)
   error('header does not match the number of columns in table.')
 end
+
+% sort the rows
+if ~isempty(params.row_dim_sort)
+  n_sort = length(params.row_dim_sort);
+  n_rows = size(table, 1);
+  this_dim = get_dim(pat.dim, dim_name);
+  sort_labels = NaN(n_rows, n_sort);
+  for i = 1:n_sort
+    sort_labels(:,i) = make_event_index(this_dim, params.row_dim_sort{i});
+  end
+  [y, sort_ind] = sortrows(sort_labels);
+  table = table(sort_ind,:);
+end
+
 
 function [y,dim_order] = fix_dim(x,dim1,n_dims)
   %FIX_DIM   Put a specified dimension first, then non-singleton,

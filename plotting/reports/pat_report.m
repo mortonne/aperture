@@ -49,25 +49,53 @@ defaults.landscape = true;
 defaults.compile_method = 'latexdvipdf';
 defaults.landscape = true;
 defaults.report_file = '';
-params = propval(varargin, defaults);
+defaults.label_col_width = [];
+defaults.col_width_units = 'in';
+[params, report_params] = propval(varargin, defaults);
+report_params = propval(report_params, struct, 'strict', false);
 
 if ~isempty(params.eval_fig_labels)
   params.fig_labels = eval(params.eval_fig_labels);
 end
 
+% set the filename
 if isempty(params.report_file)
   report_dir = get_pat_dir(pat, 'reports');
   basename = pat.name;
   for i = 1:length(fig_names)
     basename = [basename '_' fig_names{i}];
   end
+  basename = [basename '_' pat.source];
   report_file = fullfile(report_dir, get_next_file([basename '_report']));
 else
   report_file = params.report_file;
 end
 
-[table, header] = create_pat_report(pat, dim, fig_names, params.fig_labels);
+% determine dimension ordering, get headers, place figures
+report_params.row_labels_width = params.label_col_width;
+[table, header] = create_pat_report(pat, dim, fig_names, ...
+                                    params.fig_labels, report_params);
 
-longtable(table, header, report_file, params.title, params.landscape);
+if ~isempty(params.label_col_width)
+  col_width = [params.label_col_width repmat(NaN, 1, size(table, 2) - 1)];
+else
+  col_width = [];
+end
+
+% create a LaTeX document
+%longtable(table, header, report_file, params.title, params.landscape);
+if params.landscape
+  orientation = 'landscape';
+else
+  orientation = 'portrait';
+end
+longtable(report_file, table, ...
+          'title', params.title, ...
+          'header', header, ...
+          'orientation', orientation, ...
+          'col_width', col_width, ...
+          'col_width_units', params.col_width_units);
+
+% compile
 pdf_file = pdflatex(report_file, params.compile_method);
 
