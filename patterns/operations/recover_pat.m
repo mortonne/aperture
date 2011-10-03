@@ -31,12 +31,26 @@ function exp = recover_pat(exp, pat_dir)
 % You should have received a copy of the GNU Lesser General Public License
 % along with EEG Analysis Toolbox.  If not, see <http://www.gnu.org/licenses/>.
 
+if ~exist(pat_dir, 'dir')
+  error('Directory does not exist: %s', pat_dir)
+end
+
 search_dir = fullfile(pat_dir, '*.mat');
 d = dir(search_dir);
+
+if isempty(d)
+  error('No MAT-files found in %s.', pat_dir)
+end
 
 for i = 1:length(d)
   filename = fullfile(pat_dir, d(i).name);
   pat = getfield(load(filename, 'obj'), 'obj');
+  if ~exist_obj(exp, 'subj', pat.source)
+    fprintf('No subject "%s" to add "%s" pattern to. Skipping...\n', ...
+            pat.source, pat.name)
+    continue
+  end
+  
   exp = setobj(exp, 'subj', pat.source, 'pat', pat);
 end
 
