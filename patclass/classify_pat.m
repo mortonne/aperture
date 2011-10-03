@@ -15,9 +15,9 @@ function pat = classify_pat(pat, stat_name, varargin)
 %  PARAMS:
 %  These options may be specified using parameter, value pairs or by
 %  passing a structure. Defaults are shown in parentheses.
-%   regressor    - REQUIRED - input to make_event_bins; used to create
+%   regressor    - REQUIRED - input to make_event_index; used to create
 %                  the regressor for classification.
-%   selector     - REQUIRED - input to make_event_bins; used to create
+%   selector     - REQUIRED - input to make_event_index; used to create
 %                  indices for cross-validation.
 %   iter_cell    - determines which dimensions to iterate over. See
 %                  apply_by_group for details. Default is to classify
@@ -29,6 +29,23 @@ function pat = classify_pat(pat, stat_name, varargin)
 %   f_train      - function handle for a training function.
 %                  (@train_logreg)
 %   train_args   - struct with options for f_train. (struct)
+%   train_sampling - how to deal with unequal N in the training set:
+%                   'over'  - sample with replacement until each bin has
+%                             as many observations as the largest bin.
+%                   'under' - sample without replacement to get the same
+%                             number of observations from each bin as
+%                             the largest bin.
+%                   ''      - use all the original samples. (default)
+%   n_reps       - number of times to repeat sampling and classification
+%                  to obtain a stable measure of classifier performance.
+%                  (1000)
+%   train_bins   - input to make_event_index; used to define
+%                  groups of observations that must be equally
+%                  represented in the training set. An equal number of
+%                  observations will be randomly sampled from the
+%                  members of each group to make the training set. ([])
+%   n_reps       - number of times to repeat sampling and
+%                  classification, if train_bins are defined. (1000)
 %   f_test       - function handle for a testing function.
 %                  (@test_logreg)
 %   f_perfmet    - function handle for a function that calculates
@@ -72,6 +89,7 @@ defaults.test_regressor = '';
 defaults.selector = '';
 defaults.iter_cell = cell(1, 4);
 defaults.iter_bins = [];
+defaults.train_bins = [];
 defaults.overwrite = true;
 defaults.res_dir = get_pat_dir(pat, 'stats');
 
@@ -120,12 +138,28 @@ events = get_dim(pat.dim, 'ev');
 % get the regressor to use for classification
 targets = create_targets(events, params.regressor)';
 
+% create test regressors using different bin defs (unusual)
 if ~isempty(params.test_regressor)
   params.test_targets = create_targets(events, params.test_regressor)';
 end
 
 % get the selector
 selector = make_event_index(events, params.selector);
+
+% define training groups that must be sampled equally
+if ~isempty(params.train_bins)
+  if iscell(params.train_bins)
+    % multiple factors
+    factors = {};
+    levels = {};
+    for i = 1:length(params.train_bins)
+      [factors{i}, levels{i}] = make_event_index(events, params.train_bins{i});
+    end
+    params.train_index = make_index(factors{:});
+  else
+    params.train_index = make_event_index(events, params.train_bins);
+  end
+end
 
 % run pattern classification separately for each value on the iter_dims
 try
@@ -148,15 +182,7 @@ res_fixed.iterations = reshape(struct_vec, res_fixed_size);
 res = res_fixed;
 
 % save the results
-% check the size
-w = whos('res');
-if w.bytes > 1800000000
-  % huge variable; need different MAT-file format
-  save('-v7.3', stat.file, 'res', 'stat')
-else
-  % normal MAT-file will do
-  save(stat.file, 'res', 'stat')
-end
+set_stat(stat, 'res', res, 'stat', stat);
 
 % add the stat object to the output pat object
 pat = setobj(pat, 'stat', stat);

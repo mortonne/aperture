@@ -26,7 +26,7 @@ function res = traintest(testpattern, trainpattern, testtargets, ...
 %   f_perfmet       - function handle for calculating performance
 %   perfmet_args    - cell array of addition arguments for the perfmet
 %                     function
-%   class_sampling  - used if there is an unequal number of observations
+%   train_sampling  - used if there is an unequal number of observations
 %                     in the conditions:
 %                      'over'  - each condition will be sampled with
 %                                replacement to match the maximum number
@@ -35,6 +35,14 @@ function res = traintest(testpattern, trainpattern, testtargets, ...
 %                                replacement to match the condition with
 %                                the smallest number of observations
 %                      ''      - (default) use all observations
+%   train_index     - vector of length observations, where each unique
+%                     value labels a group. When class_sampling is set,
+%                     this will be used to determine the groups to
+%                     balance. If not specified, the traintargets will
+%                     be used to define groups. ([])
+%   n_reps          - if train_sampling is set, gives the number of
+%                     replications to run of random sampling and
+%                     classification. (1000)
 %   feature_select  - if true, feature selection will be used before
 %                     classification. (false)
 %   f_stat          - handle to a function to run feature selection.
@@ -67,7 +75,9 @@ defaults.train_args = struct('penalty', 10);
 defaults.f_test = @test_logreg;
 defaults.f_perfmet = {@perfmet_maxclass};
 defaults.perfmet_args = struct;
-defaults.class_sampling = '';
+defaults.train_sampling = '';
+defaults.train_index = [];
+defaults.n_reps = 1000;
 defaults.feature_select = false;
 defaults.f_stat = @statmap_anova;
 defaults.stat_args = {};
@@ -152,8 +162,6 @@ test_missing = all(isnan(testpattern), 2);
 trainpattern = trainpattern(~train_missing,:);
 testpattern = testpattern(~test_missing,:);
 
-store_perfs = NaN(1, n_perfs);
-
 % deal with missing features, rescale each feature to be between
 % 0 and 1
 trainpattern = remove_nans(trainpattern);
@@ -176,60 +184,118 @@ traintargets = traintargets(:,~train_missing);
 testtargets = testtargets(:,~test_missing);
 
 % under/oversample to remove effects of unequal N
-n = sum(traintargets, 2)';
-c = num2cell(n);
-if ~isempty(params.class_sampling) && ~isequal(c{:})
-  switch params.class_sampling
-   case 'over'
-    new_n = max(n);
-    replace = true;
-   case 'under'
-    new_n = min(n);
-    replace = false;
+% first, set the final params and create the index
+if ~isempty(params.train_sampling)
+  if isempty(params.train_index)
+    % train_index undefined; just use the targets to define groups
+    [t, params.train_index] = max(traintargets, [], 1);
+  else
+    % remove missing observations
+    params.train_index = params.train_index(~train_missing);
   end
   
-  % randomly sample to get the correct N
-  newtargets = [];
-  newpattern = [];
-  n_class = size(traintargets, 1);
-  [t, index] = max(traintargets, [], 1);
-  for i = 1:n_class
-    this_index = find(index == i);
-    new_index = randsample(this_index, new_n, replace);
-    newtargets = [newtargets traintargets(:,new_index)];
-    newpattern = [newpattern trainpattern(:,new_index)];
+  % get the N for each group
+  labels = nanunique(params.train_index);
+  n = NaN(1, length(labels));
+  for i = 1:length(labels)
+    n(i) = nnz(params.train_index == labels(i));
   end
   
-  traintargets = newtargets;
-  trainpattern = newpattern;
-end
-
-try
-  % train
-  scratchpad = params.f_train(trainpattern, traintargets, ...
-                              params.train_args{:}); 
-
-  % test
-  [acts, scratchpad] = params.f_test(testpattern, testtargets, scratchpad);
-  
-  % save the outputs for all events (acts for excluded events will
-  % be NaN)
-  res.acts(:,~test_missing) = acts;
-
-  % calculate performance
-  for p = 1:n_perfs
-    pm_fh = params.f_perfmet{p};
-    pm = pm_fh(acts, testtargets, scratchpad, params.perfmet_args{p});
-    pm.function_name = func2str(pm_fh);
+  c = num2cell(n);
+  if ~isequal(c{:})
+    % set the type of resampling
+    switch params.train_sampling
+     case 'over'
+      new_n = max(n);
+      replace = true;
+     case 'under'
+      new_n = min(n);
+      replace = false;
+    end
     
-    res.perfmet{p} = pm;
-    [res.perf(p), store_perfs(p)] = deal(pm.perf);
+    % if the smallest bin has 0, cannot run classification
+    if new_n == 0
+      if ~params.save_scratchpad
+        res = rmfield(res, {'args' 'scratchpad' ...
+                            'train_funct_name' 'test_funct_name'});
+        res.perfmet{1} = rmfield(res.perfmet{1}, ...
+                                 {'scratchpad' 'function_name'});
+      end
+      return
+    end
+    
+    % save the original train targets and pattern
+    orig_traintargets = traintargets;
+    orig_trainpattern = trainpattern;
+    
+  else
+    % all N are equal; no need to resample or run multiple reps
+    params.train_sampling = '';
+    params.n_reps = 1;
   end
-catch err
-  fprintf('error in classification:\n')
-  disp(getReport(err))
-  return
+else
+  params.n_reps = 1;
 end
+
+% re-initialize the acts matrix to be 3D if necessary
+if params.n_reps > 1
+  res.acts = NaN([size(res.acts, 1) size(res.acts, 2) params.n_reps]);
+end
+
+store_perfs = NaN(params.n_reps, n_perfs);
+for i = 1:params.n_reps
+  if params.n_reps > 1 && mod(i, round(params.n_reps / 10)) == 0
+    fprintf('.')
+  end
+  
+  if ~isempty(params.train_sampling)
+    % create new train pattern and targets by sampling
+    traintargets = [];
+    trainpattern = [];
+    for j = 1:length(labels)
+      new_index = randsample(find(params.train_index == j), ...
+                             new_n, replace);
+      traintargets = [traintargets orig_traintargets(:,new_index)];
+      trainpattern = [trainpattern orig_trainpattern(:,new_index)];
+    end
+  end
+  
+  try
+    % train
+    scratchpad = params.f_train(trainpattern, traintargets, ...
+                                params.train_args{:}); 
+
+    % test
+    [acts, scratchpad] = params.f_test(testpattern, testtargets, scratchpad);
+    
+    % save the outputs for all events (acts for excluded events will
+    % be NaN)
+    res.acts(:,~test_missing,i) = acts;
+
+    % calculate performance
+    for p = 1:n_perfs
+      % if multiple reps, this will just store the last rep
+      pm_fh = params.f_perfmet{p};
+      pm = pm_fh(acts, testtargets, scratchpad, params.perfmet_args{p});
+      pm.function_name = func2str(pm_fh);
+      
+      res.perfmet{p} = pm;
+      
+      % save for later averaging over reps
+      store_perfs(i,p) = pm.perf;
+    end
+  catch err
+    fprintf('error in classification:\n')
+    disp(getReport(err))
+    return
+  end
+end
+
+if params.n_reps > 1
+  fprintf('\n')
+end
+
+res.perf = nanmean(store_perfs);
 
 % save the scratchpad if desired
 if params.save_scratchpad

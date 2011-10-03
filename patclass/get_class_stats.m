@@ -21,13 +21,17 @@ function [acts, targs] = get_class_stats(res)
 n_iter = length(res);
 n_events = length(res(1).train_idx);
 n_class = size(res(1).acts, 1);
+%n_rep = size(res(1).acts, 3);
+n_rep = max(cellfun(@(x) size(x,3), {res.acts}));
 
-acts = NaN(n_class, n_events);
+acts = NaN(n_class, n_events, n_rep);
 targs = NaN(n_class, n_events);
 for i = 1:n_iter
   % get acts and targs for the test events
   iter_res = res(i);
-  acts(:,iter_res.test_idx) = iter_res.acts;
+  
+  % store however many replications we have for this iteration
+  acts(:,iter_res.test_idx,1:size(iter_res.acts,3)) = iter_res.acts;
   targs(:,iter_res.test_idx) = iter_res.targs;
 end
 

@@ -213,9 +213,9 @@ function pat = get_patclass_stats(pat, stat_name, params)
   % define bins for calculating a new performance metric
   if isa(params.stat_type, 'function_handle')
     if ~isempty(params.event_bins)
-      iter_cell = {[], event_bins};
+      iter_cell = {[], event_bins, []};
     else
-      iter_cell = {[], 'iter'};
+      iter_cell = {[], 'iter', []};
     end
   end
   
@@ -231,7 +231,7 @@ function pat = get_patclass_stats(pat, stat_name, params)
         if strcmp(params.stat_type, 'perf')
           % just use the already-calculated perfmet
           pattern(:,c,t,f) = [res.iterations(:,c,t,f).perf];
-          
+        
         elseif ischar(params.stat_type)
           % get some statistic for each event
           if exist('output_field', 'var')
@@ -274,7 +274,11 @@ function acts = get_acts(res, stat_type, class_output, classes)
   
   for i = 1:length(res)
     iter_res = res(i);
-    missing = all(isnan(iter_res.acts), 1);
+    missing = all(all(isnan(iter_res.acts), 1), 3);
+    
+    %if size(iter_res.acts, 3) > 1
+    %  error('classification with multiple replications not supported.')
+    %end
     
     switch stat_type
      case 'acts'
@@ -284,7 +288,17 @@ function acts = get_acts(res, stat_type, class_output, classes)
           % classification was aborted
           continue
         end
-        mat = iter_res.acts(logical(iter_res.targs));
+        
+        [n_cond, n_obs, n_rep] = size(iter_res.acts);
+        [y, correct_targ] = max(iter_res.targs);
+        mat = NaN(n_rep, n_obs);
+        for j = 1:n_obs
+          % get the acts for the correct unit
+          mat(:,j) = iter_res.acts(correct_targ(j),j,:);
+        end
+        
+        % average over replications
+        mat = nanmean(mat, 1);
         
       elseif isscalar(class_output) && isnumeric(class_output)
         % get the specified unit
@@ -332,15 +346,30 @@ function perf = calc_perf(acts, targs, f_perfmet)
 %
 %  perf = calc_perf(acts, targs, f_perfmet)
 
-  missing = all(isnan(acts), 1);
-  acts = acts(:,~missing);
-  targs = targs(:,~missing);
-
-  if isempty(targs)
-    perfmet = struct;
+  if isempty(targs) || isempty(acts)
     perf = NaN;
-  else
+    return
+  end
+  
+  if size(acts, 3) == 1
+    % only one replication
+    missing = all(isnan(acts), 1);
+    acts = acts(:,~missing);
+    targs = targs(:,~missing);
+    if isempty(targs) || isempty(acts)
+      perf = NaN;
+      return
+    end
     perfmet = f_perfmet(acts, targs);
     perf = perfmet.perf;
+  else
+    % multiple replications to average over
+    perf = NaN(1, size(acts, 3));
+    for i = 1:size(acts, 3)
+      missing = all(isnan(acts(:,:,i)), 1);
+      perfmet = f_perfmet(acts(:,~missing,i), targs(:,~missing));
+      perf(i) = perfmet.perf;
+    end
+    perf = nanmean(perf);
   end
   
