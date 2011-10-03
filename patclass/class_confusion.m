@@ -58,6 +58,9 @@ targs = targs(:,~missing);
 % targs (right answer) X acts (guess)
 n_conds = size(acts, 1);
 confmat = NaN(n_conds, n_conds);
+if isempty(acts) || isempty(targs)
+  return
+end
 for i = 1:n_conds
   for j = 1:n_conds
     confmat(i,j) = corr(targs(i,:)', acts(j,:)');
