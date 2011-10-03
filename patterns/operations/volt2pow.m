@@ -167,7 +167,7 @@ end
 
 % set the matrix
 pat = set_mat(pat, pow_pattern, 'ws');
-pat.dim = set_dim(pat.dim, 'freq', init_freq(freqs));
+pat.dim = set_dim(pat.dim, 'freq', init_freq(freqs), 'ws');
 if params.split
   pat.dim = rmfield(pat.dim, 'splitdim');
   pat.file = pat_file;
@@ -176,7 +176,7 @@ end
 % remove the buffer from the time dim
 if ~isempty(buffer)
   time = get_dim(pat.dim, 'time');
-  pat.dim = set_dim(pat.dim, 'time', time(buffer+1:end-buffer));
+  pat.dim = set_dim(pat.dim, 'time', time(buffer+1:end-buffer), 'ws');
 end
 
 % correct for downsampling
@@ -186,6 +186,6 @@ if ~isempty(params.downsample)
   new_step_size = fix(1000 / params.downsample);
   finish = ms(end);
   time = init_time(start:new_step_size:finish);
-  pat.dim = set_dim(pat.dim, 'time', time);
+  pat.dim = set_dim(pat.dim, 'time', time, 'ws');
 end
 
