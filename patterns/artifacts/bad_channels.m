@@ -1,14 +1,36 @@
-function bad = bad_channels(events, channels, heog_channels, veog_channels)
+function bad = bad_channels(eeg_files, channels, heog_channels, ...
+                            veog_channels, thresh_m, thresh_sd)
 %BAD_CHANNELS   Find channels with poor contact.
 %
-%  Search for channels with poor contact within EEG referenced by an
-%  events structure. A channel's "badness" is assumed to be the same
-%  within each unique EEG file in events. A channel is marked as bad
-%  if the mean or standard deviation of that channel is more than 10
-%  standard deviations away from the distribution of those statistics
-%  across all channels.
+%  Search for channels with poor contact. A channel's "badness" is
+%  assumed to be the same within each unique EEG file in events. A
+%  channel is marked as bad if the mean or standard deviation of that
+%  channel is more than 5 standard deviations away from the distribution
+%  of those statistics across all channels, after EOG has been regressed
+%  out.
 %
-%  bad = bad_channels(events, channels, heog_channels, veog_channels)
+%  bad = bad_channels(eeg_files, channels, heog_channels, veog_channels)
+%
+%  INPUTS:
+%      eeg_files:  cell array of EEG file roots.
+%
+%       channels:  vector of numbers indicating which channels to
+%                  examine.
+%
+%  heog_channels:  numbers of a pair of horizontal EOG electrodes.
+%
+%  veog_channels:  cell array of numbers of vertical EOG electrode
+%                  pairs.
+%
+%       thresh_m:  threshold (in z-scores) of a channel's mean, for that
+%                  channel to be considered "bad"
+%
+%      thresh_sd:  threshold (in z-scores) of a channel's standard
+%                  deviation, for that channel to be considered "bad"
+%
+%  OUTPUTS:
+%      bad:  [EEG files X channels] logical array; true for EEG
+%            files/channels that probably had poor contact.
 
 % Copyright 2007-2011 Neal Morton, Sean Polyn, Zachary Cohen, Matthew Mollison.
 %
@@ -27,33 +49,44 @@ function bad = bad_channels(events, channels, heog_channels, veog_channels)
 % You should have received a copy of the GNU Lesser General Public License
 % along with EEG Analysis Toolbox.  If not, see <http://www.gnu.org/licenses/>.
 
-eegfiles = unique({events.eegfile});
-bad = false(length(events), length(channels));
-for i=1:length(eegfiles)
-  fileroot = eegfiles{i};
+bad = false(length(eeg_files), length(channels));
+for i = 1:length(eeg_files)
+  fileroot = eeg_files{i};
+  fprintf('Searching for bad channels in %s...\n', fileroot)
 
+  % load voltage from EOG pairs
   heog = load_chan(fileroot, heog_channels);
+  veog1 = load_chan(fileroot, veog_channels{1});
+  veog2 = load_chan(fileroot, veog_channels{2});
   
-  veog = mean([load_chan(fileroot, veog_channels{1}); 
-               load_chan(fileroot, veog_channels{2})]);
+  x = [heog' veog1' veog2'];
+  clear heog veog1 veog2
   
-  x = [heog' veog'];
-  clear heog veog
-  
+  % for each channel, regress out EOG, then get stats over time
   m = NaN(1, length(channels));
   s = NaN(1, length(channels));
-  parfor j=1:length(channels)
+  for j = 1:length(channels)
+    fprintf('%d ', channels(j))
     eeg = load_chan(fileroot, channels(j));
     [b, dev, stats] = glmfit(x, eeg);
     m(j) = mean(stats.resid);
     s(j) = std(stats.resid);
   end
+  fprintf('\n')
+
+  % find channels with unusually large means or variance
+  bad(i,:) = abs(zscore(m)) > thresh_m | zscore(s) > thresh_sd;
   
-  mask = abs(zscore(m)) > 5 | abs(zscore(s)) > 5;
-  fileroot_ind = strcmp({events.eegfile}, fileroot);
-  
-  % repeat this mask for all events corresponding to this file
-  bad(fileroot_ind, :) = repmat(mask, nnz(fileroot_ind), 1);
+  % print them
+  if any(bad(i,:))
+    bad_channels = find(bad(i,:));
+    fprintf('Found %d bad channels:', length(bad_channels))
+    
+    for i = 1:length(bad_channels)
+      fprintf(' %d', bad_channels(i))
+    end
+    fprintf('\n')
+  end
 
   %if any(mask)
   %  keyboard
