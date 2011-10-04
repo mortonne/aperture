@@ -26,6 +26,10 @@ function data = pat2fieldtrip(pat)
 % You should have received a copy of the GNU Lesser General Public License
 % along with EEG Analysis Toolbox.  If not, see <http://www.gnu.org/licenses/>.
 
+if ~exist('pat','var')
+  error('You must pass a pattern object.')
+end
+
 data = struct;
 
 % channel labels
@@ -77,19 +81,11 @@ else
   for i = 1:n_trials
     data.trial{1,i} = squeeze(pattern(i,:,:));
   end
-  data.dimord = 'chan_time';
-end
-
-for i=1:n_trials
-  % write data for this event
-  data.trial{1,i} = squeeze(pattern(i,:,:));
-  
-  % write time axis for this event (in seconds)
-  data.time{1,i} = get_dim_vals(pat.dim, 'time')./1000;
 
   % check dimensions, mainly needed for using only one timebin
   if size(data.trial{1,i}, 2) ~= length(data.time{1,i})
     data.trial{1,i} = data.trial{1,i}';
   end
-end
 
+  data.dimord = 'chan_time';
+end
