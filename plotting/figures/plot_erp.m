@@ -143,7 +143,7 @@ if ~isempty(params.mark)
 end
 
 % make the plot
-h = plot(x, data, '-k', params.plot_input{:});
+h = plot(x, double(data), '-k', params.plot_input{:});
 
 % change line colors from their defaults
 if ~isempty(params.colors)

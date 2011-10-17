@@ -116,7 +116,7 @@ end
 
 % make the plot
 if isempty(params.err_type)
-  h = plot(x, data, params.plot_input{:}, 'LineWidth', 2);
+  h = plot(x, double(data), params.plot_input{:}, 'LineWidth', 2);
 else
   h = errorbar(x, data, err, params.plot_input{:}, 'LineWidth', 2);
 end
