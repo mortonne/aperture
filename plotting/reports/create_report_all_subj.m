@@ -79,6 +79,9 @@ for i=1:length(fig_paths)
 end
 if ~isempty(params.header_figs)
   header_files = squeeze(cat(2, params.header_figs.file));
+  if iscolumn(header_files)
+    header_files = header_files';
+  end
   fig_files = cat(1, header_files, fig_files);
 end
 
