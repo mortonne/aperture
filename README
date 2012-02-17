@@ -2,9 +2,18 @@ EEG_ANA Toolbox
 ---------------
 This is a MATLAB-based toolbox for analysis of EEG data.  The current
 project homepage is:
-https://memory.psych.upenn.edu/InternalWiki/eeg_ana_toolbox
 
-You must have an account on the Kahana lab wiki to access it.
+http://code.google.com/p/eeg-analysis-toolbox/
+
+The SVN project used to develop code is currently hosted on a private
+server. We plan to move SVN access to the Google code page later.
+
+The toolbox uses functions from the EEG Toolbox developed at the
+University of Pennsylvania Computational Memory Lab. Pattern
+classification uses the Princeton MVPA toolbox, and much of the internal
+organization and user interface is based on the MVPA toolbox. 3D
+plotting functions are taken from EEGLAB, and other plotting functions
+are based on EEGLAB and fieldTrip functions.
 
 Installation
 ------------
@@ -37,4 +46,5 @@ Authors
 Neal Morton (neal.w.morton@vanderbilt.edu)
 Sean Polyn
 Zachary Cohen
-
+Matthew Mollison
+Joshua McCluey
