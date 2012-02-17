@@ -84,11 +84,11 @@ pat_size = patsize(pat.dim);
 % get a cell array of figure filenames
 fig_files = {};
 header = {dim_long_name};
-for i=1:length(fig_names)
+for i = 1:length(fig_names)
   fig = getobj(pat, 'fig', fig_names{i});
 
   % check the dimensions on the filename cell array
-  if size(fig.file, dim_number)~=pat_size(dim_number)
+  if size(fig.file, dim_number) ~= pat_size(dim_number)
     error('The files on fig object "%s" do not match the %s dimension of pattern "%s".', ...
           fig.name, dim_name, pat.name)
   end
@@ -102,12 +102,12 @@ for i=1:length(fig_names)
   % set the header for these column(s)
   if ~isempty(fig_labels)
     % use user-defined labels
-    cols_added = size(files,2);
-    tot_cols = size(fig_files,2);
-    ind = tot_cols-cols_added+1:tot_cols;
-    header(ind+1) = fig_labels(ind);
+    cols_added = size(files, 2);
+    tot_cols = size(fig_files, 2);
+    ind = tot_cols - cols_added + 1:tot_cols;
+    header(ind + 1) = fig_labels(ind);
   %elseif length(find(size(files)>1))==2
-  elseif size(files,2)>1
+  elseif size(files, 2) > 1
     % the second dimension is non-singleton
     % blank out the header for the first column
     header{1} = '';
@@ -181,29 +181,29 @@ if ~isempty(params.row_dim_sort)
 end
 
 
-function [y,dim_order] = fix_dim(x,dim1,n_dims)
+function [y, dim_order] = fix_dim(x, dim1, n_dims)
   %FIX_DIM   Put a specified dimension first, then non-singleton,
   %          then singleton.
   %
-  %  y = fix_dim(x,dim1,n_dims)
+  %  y = fix_dim(x, dim1, n_dims)
   
   % input checks
-  if ~exist('n_dims','var')
+  if ~exist('n_dims', 'var')
     n_dims = ndims(x);
   end
   
   % find non-singleton dimensions
   s = size(x);
-  d = find(s>1);
+  d = find(s > 1);
 
-  if length(d)>n_dims
+  if length(d) > n_dims
     error('Too many non-singleton dimensions.')
   end
 
   % if the first dim is there, remove it from the list
-  d = d(d~=dim1);
-  sing = find(s==1);
-  sing = sing(sing~=dim1);
+  d = d(d ~= dim1);
+  sing = find(s == 1);
+  sing = sing(sing ~= dim1);
 
   % place the first dimension at the beginning, then
   % non-singleton dimensions, then singleton
@@ -216,5 +216,4 @@ function [y,dim_order] = fix_dim(x,dim1,n_dims)
   end
   
   y = permute(x, dim_order);
-%endfunction
 
