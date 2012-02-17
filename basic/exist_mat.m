@@ -31,7 +31,11 @@ end
 ws = false;
 hd = false;
 
-if isfield(obj, 'file') && ~isempty(obj.file)
+% anything in the .mat field counts
+if isfield(obj, 'mat') && ~isempty(obj.mat)
+  ws = true;
+  
+elseif isfield(obj, 'file') && ~isempty(obj.file)
   % check if the mat is saved on disk
   obj_type = get_obj_type(obj);
   
@@ -55,11 +59,6 @@ if isfield(obj, 'file') && ~isempty(obj.file)
       hd = true;
     end
   end
-end
-
-% anything in the .mat field counts
-if isfield(obj, 'mat') && ~isempty(obj.mat)
-  ws = true;
 end
 
 bool = hd || ws;
