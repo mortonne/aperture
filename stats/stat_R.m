@@ -88,9 +88,9 @@ elseif strcmp(f, 'rmaov1.R')
     error('could not find output p-value')
   end
   
-elseif strcmp(f, 'rmaov2.R')
-  fprintf(['Currently cannot parse rmaov2.R output. ' ...
-           'Returning text results only.\n'])
+else
+  fprintf(['Currently cannot parse %s output. ' ...
+           'Returning text results only.\n'], f)
   p = NaN;
   statistic = NaN;
 end
