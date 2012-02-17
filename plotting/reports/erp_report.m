@@ -15,6 +15,8 @@ function erp_report(exp, pat_name, fig_name, varargin)
 %  passing a structure. Defaults are shown in parentheses.
 %   event_bins  - events to average over. See bin_pattern for possible
 %                 inputs. ('overall')
+%   chan_filter - array of channel numbers or cell array of channel
+%                 labels, indicating channels to include. ('')
 %   dist        - how to evaluate the subjects. See apply_to_pat for
 %                 possible inputs. (1)
 %   memory      - memory to request for each job, if dist==1. ('2G')
@@ -46,6 +48,7 @@ pat = getobj(exp.subj(1), 'pat', pat_name);
 % options
 defaults.event_bins = 'overall';
 defaults.event_labels = {};
+defaults.chan_filter = '';
 defaults.dist = 1;
 defaults.memory = '2G';
 defaults.res_dir = get_pat_dir(pat, 'reports');
@@ -53,6 +56,15 @@ defaults.report_name = [fig_name '_report'];
 defaults.title = 'Event-related potentials';
 [params, bin_params] = propval(varargin, defaults);
 bin_params = propval(bin_params, struct, 'strict', false);
+
+fig_dir = fullfile(params.res_dir, 'figs');
+
+if ~isempty(params.chan_filter)
+  exp.subj = apply_to_pat(exp.subj, pat_name, @filter_pattern, ...
+                          {'chan_filter', params.chan_filter, ...
+                           'save_as', 'temp', 'overwrite', true});
+  pat_name = 'temp';
+end
 
 % average over events (and other dimensions if specified)
 bin_params.eventbins = params.event_bins;
@@ -62,14 +74,16 @@ bin_params.overwrite = true;
 exp.subj = apply_to_pat(exp.subj, pat_name, @bin_pattern, {bin_params});
 
 % create subject ERP plots
-exp.subj = apply_to_pat(exp.subj, 'temp', @pat_erp, {fig_name}, ...
+exp.subj = apply_to_pat(exp.subj, 'temp', @pat_erp, ...
+                        {fig_name, 'res_dir', fig_dir, ...
+                         'plot_mult_events', false}, ...
                         params.dist, 'memory', params.memory);
 
 % grand average ERP
 pat = grand_average(exp.subj, 'temp', 'event_bins', params.event_bins, ...
                     'event_labels', params.event_labels, ...
                     'overwrite', true);
-pat = pat_erp(pat, fig_name);
+pat = pat_erp(pat, fig_name, 'res_dir', fig_dir, 'plot_mult_events', false);
 
 % make a report with ERPs from all subjects
 report_file = fullfile(params.res_dir, params.report_name);
