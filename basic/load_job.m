@@ -1,7 +1,7 @@
-function exp = load_job(exp, job, method, obj_type)
+function exp = load_job(exp, job, varargin)
 %LOAD_JOB   Load a completed distributed job and merge into an experiment object.
 %
-%  exp = load_job(exp, job, method, obj_type)
+%  exp = load_job(exp, job, ...)
 %
 %  INPUTS:
 %       exp:  an experiment object.
@@ -10,22 +10,26 @@ function exp = load_job(exp, job, method, obj_type)
 %             apply_to_pat, or apply_to_ev. May also be a vector of
 %             jobs, whose outputs will be merged into exp in order.
 %
-%    method:  method for dealing with conflicts if the loaded objects
-%             have the same name and type as existing objects:
-%              'merge'   - merge with existing objects (and subobjects)
-%                          using the magic of merge_objs. (default)
-%              'replace' - replace existing objects.
-%
-%  obj_type:  type of object to be loaded. If not specified, this will
-%             be determined automatically. If an object fails to load,
-%             try setting this option. May be:
-%              'subj' - job was submitted with apply_to_subj
-%              'pat'  - for apply_to_pat
-%              'ev'   - for apply_to_ev
-%
 %  OUTPUTS:
 %      exp:  experiment object that has been merged with the loaded job
 %            output.
+%
+%  PARAMS:
+%  These options may be specified using parameter, value pairs or by
+%  passing a structure. Defaults are shown in parentheses.
+%   method   - method for dealing with conflicts if the loaded objects
+%              have the same name and type as existing objects:
+%               'merge'   - merge with existing objects (and subobjects)
+%                           using the magic of merge_objs. (default)
+%               'replace' - replace existing objects.
+%   obj_type - type of object to be loaded. If not specified, this will
+%              be determined automatically. If an object fails to load,
+%              try setting this option. May be:
+%               'subj' - job was submitted with apply_to_subj
+%               'pat'  - for apply_to_pat
+%               'ev'   - for apply_to_ev
+%   obj_path - path to the sub-object to merge/replace, in obj_type,
+%              obj_name pairs (e.g. {'pat' 'my_pat_name'}). ({})
 %
 %  EXAMPLES:
 %   >> job = apply_to_subj(exp.subj, @my_analysis_func, {}, 1, 'async', 1);
@@ -36,12 +40,28 @@ function exp = load_job(exp, job, method, obj_type)
 %   Involves some potentially buggy fanciness. Backup your experiment
 %   object before running.
 
-if ~exist('method', 'var')
-  method = 'merge';
-end
-if ~exist('obj_type', 'var')
-  obj_type = '';
-end
+% Copyright 2007-2011 Neal Morton, Sean Polyn, Zachary Cohen, Matthew Mollison.
+%
+% This file is part of EEG Analysis Toolbox.
+%
+% EEG Analysis Toolbox is free software: you can redistribute it and/or modify
+% it under the terms of the GNU Lesser General Public License as published by
+% the Free Software Foundation, either version 3 of the License, or
+% (at your option) any later version.
+%
+% EEG Analysis Toolbox is distributed in the hope that it will be useful,
+% but WITHOUT ANY WARRANTY; without even the implied warranty of
+% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+% GNU Lesser General Public License for more details.
+%
+% You should have received a copy of the GNU Lesser General Public License
+% along with EEG Analysis Toolbox.  If not, see <http://www.gnu.org/licenses/>.
+
+% options
+defaults.method = 'merge';
+defaults.obj_type = '';
+defaults.obj_path = {};
+params = propval(varargin, defaults);
 
 for i = 1:length(job)
   if ~strcmp(job(i).state, 'finished')
@@ -60,23 +80,31 @@ for i = 1:length(job)
     %if strcmp(job(i).Name, 'apply_to_subj:apply_to_obj')
     issubobj = strcmp(get_obj_type(outputs{j}), 'subj') && ...
                isfield(outputs{j}, 'obj') && ...
-               isfield(outputs{j}, 'obj_name');
-    if (~isempty(obj_type) && strcmp(obj_type, 'subj')) || ~issubobj
+               isfield(outputs{j}, 'obj_name') && ...
+               ~isfield(outputs{j}, 'sess');
+    if (~isempty(params.obj_type) && ...
+        strcmp(params.obj_type, 'subj')) || ~issubobj
       obj = outputs{j};
-    elseif (~isempty(obj_type) && ismember(obj_type, {'pat' 'ev'})) || issubobj
+    elseif (~isempty(params.obj_type) && ...
+            ismember(params.obj_type, {'pat' 'ev'})) || issubobj
       % grab the object from the fake subject
       obj = outputs{j}.obj;
       if length(obj) == 2
-        [o,j] = getobj(outputs{j}, 'obj', outputs{j}.obj_name);
-        j = setdiff(1:2, j);
-        obj = obj(j);
+        [o, ind] = getobj(outputs{j}, 'obj', outputs{j}.obj_name);
+        ind = setdiff(1:2, ind);
+        obj = obj(ind);
       end
     end
 
+    % once we've loaded the obj, get a sub-object if requested
+    if ~isempty(params.obj_path)
+      obj = getobj(obj, params.obj_path{:});
+    end
+    
     obj_type = get_obj_type(obj);
     obj_name = get_obj_name(obj);
     if strcmp(obj_type, 'subj')
-      switch method
+      switch params.method
        case 'merge'
         % merge with the old subject
         if exist_obj(exp, 'subj', obj_name)
@@ -104,7 +132,7 @@ for i = 1:length(job)
         error('Object may not be nested more than one level.')
       end
       
-      switch method
+      switch params.method
        case 'merge'
         if exist_obj(obj_subj, obj_type, obj_name)
           % merge with the old object
