@@ -161,11 +161,14 @@ if isempty(params.y_label)
   end
 end
 plot_params.y_label = params.y_label;
-
 num_figs = prod(size(files));
 fprintf('making %d ERP plots from pattern %s...\n', num_figs, pat.name);
 start_fig = gcf;
 n = 1;
+if n_events > 1
+  event_labels = get_dim_labels(pat.dim, 'ev');
+end
+
 for i = 1:n_events
   for j = 1:n_chans
     for k = 1:n_freqs
