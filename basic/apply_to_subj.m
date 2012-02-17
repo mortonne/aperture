@@ -104,7 +104,7 @@ if dist == 1
   [c{:}] = findJob(sm);
   n_start = cellfun(@length, c);
   
-  REFRESH = .5;
+  REFRESH = 2;
   next = 1;
   jobs = [];
   n_finished = 0;
