@@ -7,6 +7,9 @@ args <- commandArgs(TRUE)
 data <- read.table(args[1], colClasses=c('numeric', rep('factor', 2)),
                    col.names=c('dep', 'subject', 'V1'))
 
+res <- aov(dep ~ V1 + Error(subject / V1), data)
+summary(res)
+
 wide <- reshape(data, v.names='dep', idvar='subject', timevar='V1',
                 direction='wide')
 
