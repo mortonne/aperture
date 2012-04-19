@@ -37,7 +37,7 @@ res.output = run_R('rmaov2_car.R', infile, outfile);
 fid = fopen(outfile, 'r');
 if fid == -1
   warning('no output from R.')
-  disp(output)
+  disp(res.output)
   F = NaN;
   p = NaN;
   delete(infile)
