@@ -31,7 +31,7 @@ end
 export_R(data, group, infile)
 
 % run the ANOVA in R
-res.output = run_R('RMAOV2.R', infile, outfile);
+res.output = run_R('rmaov2_car.R', infile, outfile);
 
 % read the results
 fid = fopen(outfile, 'r');
