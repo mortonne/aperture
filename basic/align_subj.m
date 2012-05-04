@@ -76,6 +76,10 @@ for sess=subj.sess
   if ~iscell(eegfiles)
     eegfiles = {eegfiles};
   end
+  sync_channels = sess.sync;
+  if ~iscell(sync_channels)
+    sync_channels = {sync_channels};
+  end
 
   % get the events structure
   eventfile = fullfile(sess.dir, params.eventfile);
@@ -105,7 +109,7 @@ for sess=subj.sess
   good_align = false;
   flip = 1;
   flipped = 0;
-  auto_mark = false;
+  auto_mark = true;
   auto_mark_thresh = 100;
   limit = 25;
   flip_limit = 90;
