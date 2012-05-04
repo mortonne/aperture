@@ -11,6 +11,7 @@ def.tasks = {};
 def.subj_fields = {'id' 'age' 'gender'};
 def.sess_fields = {'task' 'number' 'start' 'finish' 'testers' 'sync' ...
                    'notes'};
+def.repstr = {};
 opt = propval(varargin, def);
 if ischar(opt.tasks)
   opt.tasks = {opt.tasks};
@@ -32,13 +33,21 @@ for i = 1:length(s.session)
   end
   sess = copy_field(s.session{i}, struct, opt.sess_fields);
   sess.dir = s.session{i}.behavior;
+  sess.eegfile = s.session{i}.eeg;
+  if ~isempty(opt.repstr)
+    sess = struct_strrep(sess, opt.repstr{:});
+  end
+  
   if ~isempty(sess.dir) && ~exist(sess.dir, 'dir')
     warning('Behavioral session directory does not exist: %s', sess.dir)
   end
-  sess.eegfile = s.session{i}.eeg;
   if ~isempty(sess.eegfile) && ~exist(sess.eegfile, 'file')
     warning('EEG data file does not exist: %s', sess.eegfile)
   end
   subj.sess = addobj(subj.sess, sess);
+end
+
+if ~isempty(opt.repstr)
+  subj = struct_strrep(subj, opt.repstr{:});
 end
 
