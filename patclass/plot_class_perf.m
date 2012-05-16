@@ -87,12 +87,12 @@ for c=1:size(perf,2)
   perfmat = permute(perf(:,c,:,:), [4 3 1 2]);
   
   % plot the performance for this channel
-  if ns(3) && ns(4)
-    h = plot_tfr(perfmat, y, x, params);
-  elseif ns(3)
+  if ns(3)
     h = plot_erp(perfmat, x, params);
   elseif ns(4)
     h = plot_freq(perfmat, x, params);
+  elseif ns(3) && ns(4)
+    h = plot_tfr(perfmat, y, x, params);
   end
   
   % generate a filename
