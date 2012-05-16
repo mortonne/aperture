@@ -62,11 +62,8 @@ perf = nanmean(perf, 1);
 ns = size(perf) > 1;
 
 % set plotting options based on the dimensionality of the data
-if ns(3) && ns(4)
-  % spectrogram
-  x = get_dim_vals(pat.dim, 'time');
-  y = get_dim_vals(pat.dim, 'freq');
-elseif ns(3)
+
+if ns(3)
   % performance vs. time
   x = get_dim_vals(pat.dim, 'time');
   params.y_label = 'Fraction Correct';
@@ -75,7 +72,10 @@ elseif ns(4)
   x = get_dim_vals(pat.dim, 'freq');
   params.x_label = 'Frequency (Hz)';
   params.y_label = 'Fraction Correct';
-  
+elseif ns(3) && ns(4)
+  % spectrogram
+  x = get_dim_vals(pat.dim, 'time');
+  y = get_dim_vals(pat.dim, 'freq');
   % need param to make x-axis log-scale
 else
   error(['Both time and frequency dimensions are singleton. Plotting ' ...
