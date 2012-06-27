@@ -1,7 +1,7 @@
-function subj = import_channels(subj, locs_file)
+function subj = import_channels(subj, locs_file, varargin)
 %IMPORT_CHANNELS   Import channel information for one subject.
 %
-%  subj = import_channels(subj, locs_file)
+%  subj = import_channels(subj, locs_file, ...)
 %
 %  INPUTS:
 %       subj:  subject object.
@@ -13,11 +13,6 @@ function subj = import_channels(subj, locs_file)
 %  OUTPUTS:
 %       subj:  subject object with an added "chan" structure holding
 %              channel information.
-%
-%  NOTES:
-%   Currently only imports the channel labels from the locs_file. Once
-%   functions are adapted to allow saving of chan structures to disk,
-%   will also import location information.
 
 % Copyright 2007-2011 Neal Morton, Sean Polyn, Zachary Cohen, Matthew Mollison.
 %
@@ -35,6 +30,10 @@ function subj = import_channels(subj, locs_file)
 %
 % You should have received a copy of the GNU Lesser General Public License
 % along with EEG Analysis Toolbox.  If not, see <http://www.gnu.org/licenses/>.
+
+% options
+def.filetype = '';
+opt = propval(varargin, def);
 
 % input checks
 if ~exist('subj', 'var') || ~isstruct(subj)
@@ -54,16 +53,33 @@ if isnumeric(locs_file)
 end
 
 % input for readlocs
-elocs = readlocs(locs_file);
-numbers = num2cell(uint32(1:129));
-%[elocs.number] = number{:};
-%[elocs.label] = elocs.labels;
+switch opt.filetype
+  case {'loc' 'sph' 'sfp' 'xzy' 'asc' ...
+        'polhemus' 'besa' 'chanedit' 'custom'}
+    % this is compatible with EEGLAB
+    elocs = readlocs(locs_file);
+  case 'tal'
+    % this is a file from the Talairach daemon system
+    elocs = read_tal(subj.id, locs_file);
+    
+    % remove electrodes labeled as bad
+    if isfield(elocs, 'isGood')
+      elocs = elocs([elocs.isGood]);
+    end
+end
 
-% for now, just include the number (index) and label from the
-% locs file. Need to implement saving channel structures to disk
-% so we can have the location information without taking up too
-% much memory.
+% add standard number field
+c = num2cell(1:length(elocs));
+[elocs.number] = c{:};
+
+% standardize the labels
 labels = {elocs.labels};
-labels = cellfun(@(x) strrep(x, 'E', ''), labels, 'UniformOutput', false);
-subj.chan = struct('number', numbers, 'label', labels);
+if ~isempty(strfind(labels{1}, 'E'))
+  labels = cellfun(@(x) strrep(x, 'E', ''), labels, ...
+                   'UniformOutput', false);
+end
+[elocs.label] = labels{:};
+
+% add to the subject structure
+subj.chan = elocs;
 
