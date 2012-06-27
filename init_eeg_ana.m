@@ -7,25 +7,28 @@ main_dir = fileparts(which('init_eeg_ana'));
 
 % main directories
 myaddpath('basic');
-myaddpath('events/creation');
-myaddpath('events/operations');
-myaddpath('events/stats');
+myaddpath(fullfile('events', 'creation'));
+myaddpath(fullfile('events', 'operations'));
+myaddpath(fullfile('events', 'stats'));
 myaddpath('patclass');
-myaddpath('patterns/artifacts');
-myaddpath('patterns/creation');
-myaddpath('patterns/dimensions');
-myaddpath('patterns/operations');
-myaddpath('plotting/figures');
-myaddpath('plotting/reports');
+myaddpath(fullfile('patterns', 'artifacts'));
+myaddpath(fullfile('patterns', 'creation'));
+myaddpath(fullfile('patterns', 'dimensions'));
+myaddpath(fullfile('patterns', 'operations'));
+myaddpath(fullfile('plotting', 'figures'));
+myaddpath(fullfile('plotting', 'reports'));
 myaddpath('resources');
 myaddpath('stats');
 myaddpath('utils');
+myaddpath(fullfile('utils', 'distcomp'));
 
 % external packages
 addpath(genpathsafe(fullfile(main_dir, 'external', 'beh_toolbox')));
 addpath(genpathsafe(fullfile(main_dir, 'external', 'eeg_toolbox')));
-myaddpath('external/mvpa/core/learn')
-myaddpath('external/mvpa/core/util')
+myaddpath(fullfile('external', 'mvpa', 'core', 'learn'))
+myaddpath(fullfile('external', 'mvpa', 'core', 'util'))
+myaddpath(fullfile('external', 'eeglab', 'functions', 'adminfunc'))
+myaddpath(fullfile('external', 'eeglab', 'functions', 'sigprocfunc'))
 
 function myaddpath(p)
   addpath(fullfile(main_dir, p))
