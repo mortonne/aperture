@@ -35,64 +35,43 @@ function list_properties = channel_properties(EEG, eeg_chans, ref_chan)
 % median (the distributions I've seen are highly skewed).
 
 if ~isstruct(EEG)
-  newdata=EEG;
+  newdata = EEG;
   clear EEG;
-  EEG.data=newdata;
+  EEG.data = newdata;
   clear newdata;
 end
 
 measure = 1;
 
-if ~isempty(ref_chan) && length(ref_chan) == 1
-  % get channel indices sorted by distance from the reference channel
+if length(ref_chan) == 1
+  % distance from the reference channel to each recording channel
   pol_dist = distancematrix(EEG, eeg_chans);
-  
-  % NWM: changed below to use correct_ref_dist
   pol_dist = pol_dist(ref_chan, eeg_chans);
-  %[s_pol_dist, dist_inds] = sort(pol_dist(ref_chan, eeg_chans));
-  %[s_inds, idist_inds] = sort(dist_inds);
 end
-
-% TEMPORAL PROPERTIES
 
 % (1) mean correlation between each channel and all other channels
-
-% ignore zeroed channels (ie reference channels) to avoid NaN problems
-ignore = [];
-datacorr = EEG.data;
-for u = eeg_chans
-  if max(EEG.data(u,:)) == 0 && min(EEG.data(u,:)) == 0
-    ignore = [ignore u];
+if size(EEG.data, 3) > 1
+  % if epoched, calculate correlation for each epoch, so that
+  % overall shifts between epochs are not a factor
+  mcorrs = NaN(size(EEG.data, 3), length(eeg_chans));
+  for i = 1:size(EEG.data, 3)
+    % mean correlation with other channels over time within this epoch
+    mcorrs(i,:) = nanmean(abs(corrcoef(EEG.data(eeg_chans,:,i)')), 1);
   end
+  % for each channel, average over epochs
+  mcorrs = nanmean(mcorrs, 1);
+else
+  % mean correlation with other channels over time
+  mcorrs = nanmean(abs(corrcoef(EEG.data(eeg_chans,:)')), 1);
 end
-
-% calculate correlations
-calc_indices = setdiff(eeg_chans, ignore);
-ignore_indices = intersect(eeg_chans, ignore);
-corrs = abs(corrcoef(EEG.data(calc_indices,:)'));
-mcorrs = zeros(size(eeg_chans));
-for u = 1:length(calc_indices)
-  mcorrs(calc_indices(u)) = mean(corrs(u,:));
-end
-mcorrs(ignore_indices) = mean(mcorrs(calc_indices));
 
 % quadratic correction for distance from reference electrode
-if ~isempty(ref_chan) && length(ref_chan) == 1
-  % NWM: changed to use correct_ref_dist. Also stopped sorting output by
-  % distance from ref, which seems to be a bug. Changed below also
-  list_properties(:,measure) = correct_ref_dist(pol_dist, mcorrs);
-
-  %p = polyfit(s_pol_dist, mcorrs(dist_inds), 2);
-  %fitcurve = polyval(p, s_pol_dist);
-  %corrected = mcorrs(dist_inds) - fitcurve(idist_inds);
-  %list_properties(:,measure) = corrected;
-else
-  % NWM: commented code below looks like a bug, which could cause
-  % rejection of the wrong channels. Should keep same sorting as
-  % input, not sort by distance from ref
-  list_properties(:,measure) = mcorrs;
-  %list_properties(:,measure) = mcorrs(dist_inds);
+if length(ref_chan) == 1
+  bad = isnan(mcorrs);
+  mcorrs(~bad) = correct_ref_dist(pol_dist(~bad), mcorrs(~bad));
 end
+
+list_properties(:,measure) = mcorrs;
 measure = measure + 1;
 
 % (2) variance of the channels
@@ -100,35 +79,33 @@ vars = var(EEG.data(eeg_chans,:)');
 vars(~isfinite(vars)) = mean(vars(isfinite(vars)));
 
 % quadratic correction for distance from reference electrode
-if ~isempty(ref_chan) && length(ref_chan) == 1
-  % NWM: changed to use correct_ref_dist
-  list_properties(:,measure) = correct_ref_dist(pol_dist, vars);
-  
-  %p = polyfit(s_pol_dist, vars(dist_inds), 2);
-  %fitcurve = polyval(p, s_pol_dist);
-  %corrected = vars - fitcurve(idist_inds);
-  %list_properties(:,measure) = corrected;
-else
-  list_properties(:,measure) = vars;
+if length(ref_chan) == 1
+  vars = correct_ref_dist(pol_dist, vars);
 end
+
+list_properties(:,measure) = vars;
 measure = measure + 1;
 
 % (3) Hurst exponent
 for u = 1:length(eeg_chans)
   if size(EEG.data, 3) > 1
+    % if epoched data, calculate for each epoch and take the median
     hurst_epoch = NaN(1, size(EEG.data, 3));
     for i = 1:size(EEG.data, 3)
       hurst_epoch(i) = hurst_exponent(EEG.data(eeg_chans(u),:,i));
     end
     list_properties(u,measure) = median(hurst_epoch);
   else
+    % continous data
     list_properties(u,measure) = hurst_exponent(EEG.data(eeg_chans(u),:));
   end
 end
 
-% deal with remaining NaNs; subtract out the median
 for u = 1:size(list_properties, 2)
+  % set undefined stats to the mean over the other channels
   list_properties(isnan(list_properties(:,u)),u) = ...
       nanmean(list_properties(:,u));
+  
+  % subtract out the median of each property
   list_properties(:,u) = list_properties(:,u) - median(list_properties(:,u));
 end
