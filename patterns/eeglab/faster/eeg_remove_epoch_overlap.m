@@ -22,6 +22,8 @@ function eeg_cont = eeg_remove_epoch_overlap(eeg_seg)
 %  See also eeg_epoch2continuous; if there is no overlap between epochs,
 %  use that function instead, since it is simpler and faster.
 
+fprintf('Removing epoch overlap...\n')
+
 events = eeg_seg.epoch;
 
 % currently assuming all one session, so that eegoffset is on the
