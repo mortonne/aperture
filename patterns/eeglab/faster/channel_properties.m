@@ -22,17 +22,18 @@ function list_properties = channel_properties(EEG, eeg_chans, ref_chan)
 % Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 %% notes for running on segmented data
-% Just using raw channels is a bad idea for an EGI setup with
-% impedance checks with crazy voltage recordings. Also, signal
-% during breaks is often very erratic, so it would increase noise
-% in the analysis if it were included. Want to reject channels
-% based on the actual data we're using in the analysis.
+% Just using raw channels is a bad idea when e.g. between-list
+% impedance checks cause large voltage changes. Also, signal during
+% breaks is often very erratic, so it would increase noise in the
+% analysis if it were included. Want to reject channels based on the
+% actual data we're using in the analysis. So changing some code to
+% allow calculation of stats on epoched data.
 %
 % This seems to only be an issue for the Hurst exponent measure,
 % since it is a temporal measure which will be sensitive to the
 % breaks between different epochs. So that needs to be calculated
 % within the epochs (preferably not too short), then take the
-% median (the distributions I've seen are highly skewed).
+% median (the distributions can be highly skewed).
 
 if ~isstruct(EEG)
   newdata = EEG;
@@ -50,20 +51,7 @@ if length(ref_chan) == 1
 end
 
 % (1) mean correlation between each channel and all other channels
-if size(EEG.data, 3) > 1
-  % if epoched, calculate correlation for each epoch, so that
-  % overall shifts between epochs are not a factor
-  mcorrs = NaN(size(EEG.data, 3), length(eeg_chans));
-  for i = 1:size(EEG.data, 3)
-    % mean correlation with other channels over time within this epoch
-    mcorrs(i,:) = nanmean(abs(corrcoef(EEG.data(eeg_chans,:,i)')), 1);
-  end
-  % for each channel, average over epochs
-  mcorrs = nanmean(mcorrs, 1);
-else
-  % mean correlation with other channels over time
-  mcorrs = nanmean(abs(corrcoef(EEG.data(eeg_chans,:)')), 1);
-end
+mcorrs = nanmean(abs(corrcoef(EEG.data(eeg_chans,:)')), 1);
 
 % quadratic correction for distance from reference electrode
 if length(ref_chan) == 1
