@@ -20,8 +20,9 @@ function EEG=FASTER_process(option_wrapper,log_file)
 
 % HACK
 epoch_overlap = true;
-amp_diff_thresh = 100;
-bad_epoch_thresh = 10; % cf. Junghofer et al. 2000
+amp_diff_thresh = 150;
+%bad_epoch_thresh = 10; % cf. Junghofer et al. 2000
+bad_epoch_thresh = 12; % 10% of electrodes
 % END HACK
   
 EEG=[];
@@ -500,16 +501,17 @@ try
 
     if (do_saves), EEG = pop_saveset(EEG,'savemode','resave'); end
 
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % Average reference %
-    %%%%%%%%%%%%%%%%%%%%%
-    if (do_reref && ~o.ica_options.keep_ICA)
-        if ~o.channel_options.interp_after_ica
-            EEG = h_pop_reref(EEG, [], 'exclude',ext_chans, 'refstate', ref_chan);
-        else
-            EEG = h_pop_reref(EEG, [], 'exclude',[ext_chans chans_to_interp], 'refstate', ref_chan);
-        end
-    end
+    % NWM: moved this to after epoch-channel rejection
+    % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % % Average reference %
+    % %%%%%%%%%%%%%%%%%%%%%
+    % if (do_reref && ~o.ica_options.keep_ICA)
+    %     if ~o.channel_options.interp_after_ica
+    %         EEG = h_pop_reref(EEG, [], 'exclude',ext_chans, 'refstate', ref_chan);
+    %     else
+    %         EEG = h_pop_reref(EEG, [], 'exclude',[ext_chans chans_to_interp], 'refstate', ref_chan);
+    %     end
+    % end
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % ICA options %
@@ -739,6 +741,14 @@ try
         fprintf(log_file,['See ' filename(1:end-4) '_epoch_interpolations.txt for details.\n']);
     end
 
+    if save_before_epoch_interp
+        % save before average reference
+        EEGBAK=EEG;
+        EEGBAK.setname = ['pre_average_ref_' EEG.setname];
+        pop_saveset(EEGBAK,'filename',['6_pre_average_ref_' EEG.filename],'filepath',[filepath filesep 'Intermediate'],'savemode','onefile');
+        clear EEGBAK;
+    end
+    
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Average reference %
     %%%%%%%%%%%%%%%%%%%%%
@@ -761,10 +771,47 @@ try
     % Epochs in channels/epochs - Second pass with average reference %
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
-    % NWM: code similar to above, but without correction for
-    % distance from reference this time; see Junghofer et al. 2000
+    if do_epoch_interp && length(size(EEG.data)) > 2
+        status = '';
+        lengths_ep=cell(1,size(EEG.data,3));
+        for v=1:size(EEG.data,3)
+            list_properties = single_epoch_channel_properties(EEG,v,eeg_chans);
+            rejected = logical(min_z(list_properties,o.epoch_interp_options.rejection_options));
+            lengths_ep{v} = eeg_chans(rejected);
+            
+            status = [status sprintf('%d: ',v) sprintf('%d ',lengths_ep{v}) sprintf('\n')];
+
+            if length(lengths_ep{v}) > bad_epoch_thresh
+              % if there were a large number of bad channels for
+              % this epoch, will throw it out completely
+              excluded(v) = true;
+              
+              % no need to interpolate
+              lengths_ep{v} = [];
+            end
+        end
+        EEG=h_epoch_interp_spl(EEG,lengths_ep,ext_chans);
+        EEG.saved='no';
+        epoch_interps_log_file=fopen([filepath filesep filename '_epoch_interpolations_average_ref.txt'],'a');
+        fprintf(epoch_interps_log_file,'%s',status);
+        fclose(epoch_interps_log_file);
+        fprintf(log_file,'%.2f - Did per-epoch interpolation cleanup, second pass.\n',toc);
+        fprintf(log_file,['See ' filename(1:end-4) '_epoch_interpolations_average_ref.txt for details.\n']);
+    end
     
-    % reference to a single channel for the output is requested
+    if save_before_epoch_interp
+        % save before final epoch removal
+        EEGBAK=EEG;
+        EEGBAK.setname = ['pre_final_epoch_rej_' EEG.setname];
+        pop_saveset(EEGBAK,'filename',['7_pre_final_epoch_rej_' EEG.filename],'filepath',[filepath filesep 'Intermediate'],'savemode','onefile');
+        clear EEGBAK;
+    end
+    
+    % remove epochs with too many bad electrodes
+    EEG = pop_select(EEG, 'notrial', find(excluded));
+    EEG.saved = 'no';
+    
+    % reference to a single channel for the output if requested
     if ~isempty(o.channel_options.op_ref_chan)
         EEG = h_pop_reref(EEG, o.channel_options.op_ref_chan, 'exclude',ext_chans, 'refstate', [], 'keepref', 'on');
     end
@@ -776,18 +823,6 @@ try
         fprintf('Done with file %s.\nTook %d seconds.\n',[filepath filesep filename extension],toc);
     end
 
-    if save_before_epoch_interp
-        % save before final epoch removal
-        EEGBAK=EEG;
-        EEGBAK.setname = ['pre_final_epoch_rej_' EEG.setname];
-        pop_saveset(EEGBAK,'filename',['6_pre_final_epoch_rej_' EEG.filename],'filepath',[filepath filesep 'Intermediate'],'savemode','onefile');
-        clear EEGBAK;
-    end
-    
-    % remove epochs with too many bad electrodes
-    EEG = pop_select(EEG, 'notrial', find(excluded));
-    EEG.saved = 'no';
-    
     % report stats on final results
     fprintf(log_file,'%.2f - Finished.\n',toc);
     if (size(EEG.data,3>1))
