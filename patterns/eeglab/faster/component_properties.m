@@ -49,10 +49,6 @@ for u=1:size(EEG.icaact,1)
     % TEMPORAL PROPERTIES
 
     % 1 Median gradient value, for high frequency stuff
-    %list_properties(u,measure) = median(diff(EEG.icaact(u,:)));
-    % NWM: as in epoch-channel rejection, changing this to use the
-    % absolute value of the difference; this should be better at
-    % picking up EMG
     list_properties(u,measure) = median(abs(diff(EEG.icaact(u,:))));
     measure = measure + 1;
 
@@ -94,7 +90,7 @@ for u=1:size(EEG.icaact,1)
 end
 
 for u = 1:size(list_properties,2)
-    list_properties(isnan(list_properties(:,u)),u)=nanmean(list_properties(:,u));
+    list_properties(isnan(list_properties(:,u)),u)=nanmedian(list_properties(:,u));
     list_properties(:,u) = list_properties(:,u) - median(list_properties(:,u));
 end
 
