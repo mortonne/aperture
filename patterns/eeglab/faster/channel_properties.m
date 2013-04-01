@@ -2,6 +2,18 @@ function list_properties = channel_properties(EEG, eeg_chans, ref_chan)
 %CHANNEL_PROPERTIES   Stats on channels for rejection.
 %
 %  list_properties = channel_properties(EEG, eeg_chans, ref_chan)
+%
+%  INPUTS:
+%              EEG:  EEGLAB dataset struct.
+%
+%        eeg_chans:  array of indices of electrodes measuring EEG
+%                    activity.
+%
+%         ref_chan:  index of the reference channel (set to [] or
+%                    omit if average reference).
+%
+%  OUTPUTS:
+%  list_properties:  [channels X measures] matrix of channel statistics.
 
 % Copyright (C) 2010 Hugh Nolan, Robert Whelan and Richard Reilly, Trinity College Dublin,
 % Ireland
@@ -21,19 +33,9 @@ function list_properties = channel_properties(EEG, eeg_chans, ref_chan)
 % along with this program; if not, write to the Free Software
 % Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-%% notes for running on segmented data
-% Just using raw channels is a bad idea when e.g. between-list
-% impedance checks cause large voltage changes. Also, signal during
-% breaks is often very erratic, so it would increase noise in the
-% analysis if it were included. Want to reject channels based on the
-% actual data we're using in the analysis. So changing some code to
-% allow calculation of stats on epoched data.
-%
-% This seems to only be an issue for the Hurst exponent measure,
-% since it is a temporal measure which will be sensitive to the
-% breaks between different epochs. So that needs to be calculated
-% within the epochs (preferably not too short), then take the
-% median (the distributions can be highly skewed).
+if nargin < 3
+  ref_chan = [];
+end
 
 if ~isstruct(EEG)
   newdata = EEG;
@@ -55,8 +57,7 @@ mcorrs = nanmean(abs(corrcoef(EEG.data(eeg_chans,:)')), 1);
 
 % quadratic correction for distance from reference electrode
 if length(ref_chan) == 1
-  bad = isnan(mcorrs);
-  mcorrs(~bad) = correct_ref_dist(pol_dist(~bad), mcorrs(~bad));
+  mcorrs = correct_ref_dist(pol_dist, mcorrs);
 end
 
 list_properties(:,measure) = mcorrs;
@@ -92,7 +93,7 @@ end
 for u = 1:size(list_properties, 2)
   % set undefined stats to the mean over the other channels
   list_properties(isnan(list_properties(:,u)),u) = ...
-      nanmean(list_properties(:,u));
+      nanmedian(list_properties(:,u));
   
   % subtract out the median of each property
   list_properties(:,u) = list_properties(:,u) - median(list_properties(:,u));
