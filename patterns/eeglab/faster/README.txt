@@ -15,7 +15,7 @@ channel_properties.m
 Detecting EMG
 ------------
 
-For rejecting single channel epochs and components, they used the median gradient for one of their stats. This seems like a strange choice, since a lot of information was thrown away by using the median of the raw diff values rather than the median of the absolute value of change. For exemple, if for some of the time, there were large alternating positive and negative changes that were perfectly matched in amplitude, then the median change value would be 0; this is true regardless of how extreme the changes were.
+For rejecting single channel epochs and components, they used the median gradient for one of their stats. This seems like a strange choice, since a lot of information was thrown away by using the median of the raw diff values rather than the median of the absolute value of change. For exemple, if for some of the time, there were large alternating positive and negative changes that were perfectly matched in amplitude, then the median change value might be near 0; this is true regardless of how extreme the changes were.
 
 Tested on data contaminated with EMG, and found that affected channels were better identified (specificity and sensitivity) by using taking the median absolute change over time, rather than the median change.
 
