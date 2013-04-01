@@ -33,6 +33,19 @@ function y = correct_ref_dist(pol_dist, x)
 % along with this program; if not, write to the Free Software
 % Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
+if isrow(pol_dist)
+  pol_dist = pol_dist';
+end
+if isrow(x)
+  x = x';
+end
+y = NaN(size(x));
+
+% remove undefined samples, so they do not affect the regression
+undef = isnan(x);
+pol_dist = pol_dist(~undef);
+x = x(~undef);
+
 % sorted distances
 [s_pol_dist, dist_inds] = sort(pol_dist);
 
@@ -46,5 +59,5 @@ p = polyfit(s_pol_dist, x(dist_inds), 2);
 fitcurve = polyval(p, s_pol_dist);
 
 % subtract to get corrected values
-y = x - fitcurve(idist_inds);
+y(~undef) = x - fitcurve(idist_inds);
 
