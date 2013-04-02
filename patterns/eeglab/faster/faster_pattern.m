@@ -55,6 +55,7 @@ def.save_intermediate = false;
 def.plot_epoch_rej = false;
 def.eeg_chans = 1:129;
 def.ref_chan = 129;
+def.epoch_overlap = true;
 [opt, saveopt] = propval(varargin, def);
 
 % mod_pattern handles file management
@@ -67,7 +68,7 @@ function pat = run_faster(pat, opt)
   % add HEOG and VEOG channels
   pat = move_obj_to_workspace(pat);
   eog_pat = diff_pattern(pat, 'chans', opt.eog_pairs);
-  pat = cat_patterns([pat eog_pag], 'chan', 'save_mats', false);
+  pat = cat_patterns([pat eog_pat], 'chan', 'save_mats', false);
   
   % export to EEGLAB
   if isempty(opt.res_dir)
@@ -75,10 +76,10 @@ function pat = run_faster(pat, opt)
   end
   cd(opt.res_dir)
   
-  % start up EEGLAB; not sure how this will affect sessions already
-  % running. For now, assuming that EEGLAB is not open previously
+  % start up EEGLAB (or restart if already running; this might affect
+  % previously loaded datasets, so save before running this function)
   eeglab
-  [ALLEEG, EEG, CURRENTSET] = pat2eeglab(ALLEEG, pat, opt.locs_file);
+  EEG = pat2eeglab(pat, opt.locs_file);
   
   if opt.save_intermediate
     % save the original raw dataset
@@ -102,21 +103,77 @@ function pat = run_faster(pat, opt)
   % have electrical artifacts and are unsalvagable
   EEG = pop_select(EEG, 'notrial', find(m > opt.epoch_thresh));
   fprintf('Removed %d epochs.\n', nnz(m > opt.epoch_thresh))
-  
-  if opt.save_intermediate
-    % save the data with bad epochs removed
-    EEG = pop_saveset(EEG, 'filename', 'orig_epoch_rej.set', ...
-                      'filepath', opt.res_dir);
-  end
-  
-  ALLEEG(1) = EEG;
-  eeglab redraw
+
+  % save the data with bad epochs removed
+  set_name = 'orig_epoch_rej.set';
+  EEG = pop_saveset(EEG, 'filename', set_name, 'filepath', opt.res_dir);
   
   %% FASTER
   
-  % set options
-  load(opt.job_file)
-  keyboard
+  % set options. Just set the ones we can set with confidence based
+  % on input to this function; leave the rest free to vary if the
+  % users gives a custom options file
+  load(opt.job_file, '-mat')
+  
+  % top level has GUI options; just need the lower level
+  o = option_wrapper.options;
+  if opt.save_intermediate
+    o.save_options = true(1, 5);
+  else
+    o.save_options = false(1, 5);
+  end
+  
+  % file options
+  o.file_options.output_folder_name = opt.res_dir;
+  o.file_options.current_file = fullfile(opt.res_dir, set_name);
+  o.file_options.channel_locations = opt.locs_file;
+  o.file_options.searchstring = EEG.setname;
+  o.file_options.oplist = {opt.res_dir};
+  o.file_options.using_ALLEEG = false;
+  o.file_options.save_ALLEEG = false;
+  o.using_ALLEEG = false;
+  
+  % channel options
+  o.channel_options.do_reref = true;
+  o.channel_options.ref_chan = opt.ref_chan;
+  o.channel_options.eeg_chans = opt.eeg_chans;
+  max_eeg = opt.eeg_chans(end);
+  n_eog = length(opt.eog_pairs);
+  ext_chans = [max_eeg + 1:max_eeg + n_eog];
+  o.channel_options.ext_chans = ext_chans;
+  o.channel_options.interp_after_ica = true;
+  
+  % epochs already defined, so turn off epoching
+  o.epoch_options.markered_epoch = false;
+  o.epoch_options.unmarkered_epoch = false;
+  o.epoch_options.epoch_overlap = opt.epoch_overlap;
+
+  % ICA options
+  o.ica_options.ica_channels = setdiff(opt.eeg_chans, opt.ref_chan);
+  o.ica_options.EOG_channels = ext_chans;
+  
+  % epoch-channel interpolation
+  o.epoch_interp_options.epoch_interpolation_on = true;
+  o.epoch_interp_options.rejection_options.amp_diff_thresh = opt.epoch_chan_thresh;
+  o.epoch_interp_options.rejection_options.bad_epoch_thresh = opt.bad_chan_thresh;
+  
+  % GA
+  o.make_GA = false;
+  
+  option_wrapper.options = o;
+  
+  % run FASTER
+  log_file = fopen(fullfile(opt.res_dir, 'faster.log'), 'w');
+  EEG = FASTER_process(option_wrapper, log_file);
+  
+  % save the processed output
+  EEG = pop_saveset(EEG, 'filename', 'final.set', 'filepath', opt.res_dir);
+  
+  % convert back to pattern format
+  pat_file = pat.file;
+  pat = eeglab2pat(EEG);
+  clear EEG
+  pat.file = pat_file;
   
   
 function plot_epoch_rej(amp_diffs, opt)
