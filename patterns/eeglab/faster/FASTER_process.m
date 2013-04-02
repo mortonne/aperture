@@ -18,17 +18,14 @@ function EEG=FASTER_process(option_wrapper,log_file)
 % along with this program; if not, write to the Free Software
 % Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-% HACK
-epoch_overlap = true;
-amp_diff_thresh = 150;
-%bad_epoch_thresh = 10; % cf. Junghofer et al. 2000
-bad_epoch_thresh = 12; % 10% of electrodes
-% END HACK
-  
 EEG=[];
 try
     tic;
     o=option_wrapper.options;
+    
+    epoch_overlap = o.epoch_options.epoch_overlap;
+    amp_diff_thresh = o.epoch_interp_options.rejection_options.amp_diff_thresh;
+    bad_epoch_thresh = o.epoch_interp_options.rejection_options.bad_epoch_thresh;
     
     % HACK
     % commented out since I'm now sidestepping their epoch
