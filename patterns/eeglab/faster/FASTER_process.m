@@ -23,10 +23,16 @@ try
     tic;
     o=option_wrapper.options;
     
-    epoch_overlap = o.epoch_options.epoch_overlap;
-    amp_diff_thresh = o.epoch_interp_options.rejection_options.amp_diff_thresh;
-    bad_epoch_thresh = o.epoch_interp_options.rejection_options.bad_epoch_thresh;
-    
+    try
+      epoch_overlap = o.epoch_options.epoch_overlap;
+      amp_diff_thresh = o.epoch_interp_options.rejection_options.amp_diff_thresh;
+      bad_epoch_thresh = o.epoch_interp_options.rejection_options.bad_epoch_thresh;
+    catch
+      epoch_overlap = true;
+      amp_diff_thresh = 150;
+      bad_epoch_thresh = 12;
+    end
+      
     % HACK
     % commented out since I'm now sidestepping their epoch
     % rejection completely
