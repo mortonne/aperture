@@ -32,7 +32,11 @@ end
 measure = 1;
 
 % 1 Median diff value
-list_properties(:,measure) = median(abs(diff(EEG.data(eeg_chans,:,epoch_num),[],2)),2);
+x = EEG.data(eeg_chans,:,epoch_num);
+ssfast = sum(diff(x, [], 2).^2, 2);
+sstot = sum((x - repmat(mean(x, 2), [1 size(x, 2)])).^2, 2);
+list_properties(:,measure) = ssfast ./ sstot;
+%list_properties(:,measure) = median(abs(diff(EEG.data(eeg_chans,:,epoch_num),[],2)),2);
 measure = measure + 1;
 
 % 2 Variance of the channels
