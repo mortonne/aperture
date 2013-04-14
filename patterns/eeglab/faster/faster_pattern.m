@@ -46,7 +46,7 @@ function pat = faster_pattern(pat, varargin)
 % options
 def.eog_pairs = {[8 126] [25 127] [1 32]};
 def.locs_file = 'HCGSN128_eog.loc';
-def.epoch_thresh = 150;
+def.epoch_thresh = 100;
 def.epoch_chan_thresh = 150;
 def.bad_chan_thresh = 12;
 def.job_file = 'faster_overlap.eegjob';
@@ -66,13 +66,14 @@ function pat = run_faster(pat, opt)
   %% prepare files
 
   % add HEOG and VEOG channels
+  pat_file = pat.file;
   pat = move_obj_to_workspace(pat);
   eog_pat = diff_pattern(pat, 'chans', opt.eog_pairs);
   pat = cat_patterns([pat eog_pat], 'chan', 'save_mats', false);
   
   % export to EEGLAB
   if isempty(opt.res_dir)
-    opt.res_dir = get_pat_dir(pat, 'faster');
+    opt.res_dir = get_pat_dir(pat, ['faster_' pat.source]);
   end
   cd(opt.res_dir)
   
@@ -147,6 +148,7 @@ function pat = run_faster(pat, opt)
   o.epoch_options.markered_epoch = false;
   o.epoch_options.unmarkered_epoch = false;
   o.epoch_options.epoch_overlap = opt.epoch_overlap;
+  o.epoch_options.epoch_rejection_on = true;
 
   % ICA options
   o.ica_options.ica_channels = setdiff(opt.eeg_chans, opt.ref_chan);
@@ -170,7 +172,6 @@ function pat = run_faster(pat, opt)
   EEG = pop_saveset(EEG, 'filename', 'final.set', 'filepath', opt.res_dir);
   
   % convert back to pattern format
-  pat_file = pat.file;
   pat = eeglab2pat(EEG);
   clear EEG
   pat.file = pat_file;
