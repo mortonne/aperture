@@ -48,7 +48,7 @@ measure = 1;
 
 if length(ref_chan) == 1
   % distance from the reference channel to each recording channel
-  pol_dist = distancematrix(EEG, eeg_chans);
+  pol_dist = distancematrix(EEG, union(eeg_chans, ref_chan));
   pol_dist = pol_dist(ref_chan, eeg_chans);
 end
 
