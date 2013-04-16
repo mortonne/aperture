@@ -1,4 +1,5 @@
-function list_properties = component_properties(EEG,blink_chans,lpf_band)
+function [list_properties, prop_type] = component_properties(EEG, blink_chans, ...
+                                                lpf_band, emg_chans)
 
 % Copyright (C) 2010 Hugh Nolan, Robert Whelan and Richard Reilly, Trinity College Dublin,
 % Ireland
@@ -18,114 +19,106 @@ function list_properties = component_properties(EEG,blink_chans,lpf_band)
 % along with this program; if not, write to the Free Software
 % Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
+if nargin < 4
+  emg_chans = [];
+  if nargin < 3
+    lpf_band = [];
+    if nargin < 3
+      blink_chans = [];
+    end
+  end
+end
 
 list_properties = [];
-%
+
 if isempty(EEG.icaweights)
-    fprintf('No ICA data.\n');
-    return;
+  fprintf('No ICA data.\n');
+  return
 end
 
-if ~exist('lpf_band','var') || length(lpf_band)~=2 || ~any(lpf_band)
-    ignore_lpf=1;
+if ~exist('lpf_band', 'var') || length(lpf_band) ~= 2 || ~any(lpf_band)
+  ignore_lpf = true;
 else
-    ignore_lpf=0;
+  ignore_lpf = false;
 end
 
-delete_activations_after=0;
 if ~isfield(EEG,'icaact') || isempty(EEG.icaact)
-    delete_activations_after=1;
-    EEG.icaact = eeg_getica(EEG);
+  EEG.icaact = eeg_getica(EEG);
 end
 
 if ~ignore_lpf
-  for u = 1:size(EEG.icaact,1)
-    [spectra(u,:) freqs] = pwelch(EEG.icaact(u,:),[],[],(EEG.srate),EEG.srate);
+  % calculate the spectrum for each component
+  for u = 1:size(EEG.icaact, 1)
+    [spectra(u,:), freqs] = pwelch(EEG.icaact(u,:), [], [], EEG.srate, ...
+                                   EEG.srate);
   end
-  
   f_ind = find(freqs >= lpf_band(1),1):find(freqs <= lpf_band(2),1,'last');
 end
 
-% attempt to improve EMG comp-epoch detection by finding epochs with high
-% EMG. Doesn't seem to help
-%inc_chans = setdiff(1:EEG.nbchan, blink_chans);
-%chan_gradient = squeeze(median(median(abs(diff(EEG.data(inc_chans,:,:), [], 2)), 2), 1));
-%rej.measure = 1;
-%rej.z = 2;
-%lengths = min_z(chan_gradient, rej);
-%emg_ind = find(lengths);
+n_corr_prop = length(blink_chans) + length(emg_chans);
+n_prop = 4 + n_corr_prop;
+prop_type = [1 2 3 4 repmat(5, [1 n_corr_prop])];
+list_properties = NaN(size(EEG.icaact, 1), n_prop);
+for u = 1:size(EEG.icaact, 1)
+  measure = 1;
+  
+  % TEMPORAL PROPERTIES
 
-%chan_gradient = median(abs(diff(EEG.data(inc_chans,:), [], 2)), 1);
-
-list_properties = zeros(size(EEG.icaact,1),5); %This 5 corresponds to number of measurements made.
-
-for u=1:size(EEG.icaact,1)
-    measure = 1;
-    % TEMPORAL PROPERTIES
-
-    % 1 Median gradient value, for high frequency stuff
-    x = squeeze(EEG.icaact(u,:,:))';
+  % 1 Median gradient value, for high frequency stuff
+  comp = squeeze(EEG.icaact(u,:,:))';
     
-    % median over time
-    % m = median(abs(diff(x, [], 2)), 2);
-    ssfast = sum(sum(diff(x, [], 2).^2, 2), 1);
-    sstot = sum(sum((x - repmat(mean(x, 2), [1 size(x,2)])).^2, 2), 1);
-    
-    % filter to remove changes over the session due to impedance changes
-    %mf = buttfilt(double(m), .01, 1, 'high', 4);
-    
-    % max over trials, to detect cases where EMG is only high for some
-    % trials
-    %list_properties(u,measure) = median(m);
-    list_properties(u,measure) = ssfast / sstot;
+  % fast changes divided by overall squared error over time
+  ssfast = sum(sum(diff(comp, [], 2).^2, 2), 1);
+  sstot = sum(sum((comp - repmat(mean(comp, 2), [1 size(comp,2)])).^2, 2), 1);
+  list_properties(:, measure) = ssfast / sstot;
+  measure = measure + 1;
 
-    %comp_gradient = abs(diff(EEG.icaact(u,:), [], 2));
-    %list_properties(u,measure) = corr(chan_gradient, comp_gradient);
-    %list_properties(u,measure) = median(mean(abs(diff(x, [], 2)), 2));
-    %list_properties(u,measure) = median(kurtosis(diff(x, [], 2),1,1));
-    %list_properties(u,measure) = median(abs(diff(EEG.icaact(u,:))));
-    measure = measure + 1;
+  % 2 Mean slope around the LPF band (spectral)
+  if ignore_lpf
+    list_properties(u, measure) = 0;
+  else
+    x = log10(spectra(u, f_ind));
+    p = polyfit(1:length(x), x, 1);
+    list_properties(u, measure) = p(1);
+  end
+  measure = measure + 1;
 
-    % 2 Mean slope around the LPF band (spectral)
-    if ignore_lpf
-        list_properties(u,measure) = 0;
-    else
-      %list_properties(u,measure) = mean(diff(10*log10(spectra(u,find(freqs>=lpf_band(1),1):find(freqs<=lpf_band(2),1,'last')))));
-      x = log10(spectra(u, f_ind));
-      p = polyfit(1:length(x), x, 1);
-      list_properties(u,measure) = p(1);
-      %list_properties(u,measure) = mean(diff(10*log10(spectra(u, f_ind))));
-      %list_properties(u,measure) = mean(log10(spectra(u, f_ind)));
+  % SPATIAL PROPERTIES
+
+  % 3 Kurtosis of spatial map (if v peaky, i.e. one or two points high
+  % and everywhere else low, then it's probably noise on a single
+  % channel)
+  list_properties(u, measure) = kurt(EEG.icawinv(:,u));
+  measure = measure + 1;
+
+  % OTHER PROPERTIES
+
+  % 4 Hurst exponent
+  list_properties(u, measure) = hurst_exponent(EEG.icaact(u,:));
+  measure = measure + 1;
+
+  % 5a Eyeblink correlations
+  if ~isempty(blink_chans)
+    rho = corr(EEG.icaact(u,:)', EEG.data(blink_chans,:)');
+    for i = 1:length(blink_chans)
+      list_properties(u, measure) = max([abs(rho(i)) 0]);
+      measure = measure + 1;
     end
-    measure = measure + 1;
-
-    % SPATIAL PROPERTIES
-
-    % 3 Kurtosis of spatial map (if v peaky, i.e. one or two points high
-    % and everywhere else low, then it's probably noise on a single
-    % channel)
-    list_properties(u,measure) = kurt(EEG.icawinv(:,u));
-    measure = measure + 1;
-
-    % OTHER PROPERTIES
-
-    % 4 Hurst exponent
-    list_properties(u,measure) = hurst_exponent(EEG.icaact(u,:));
-    measure = measure + 1;
-
-    % 10 Eyeblink correlations
-    if exist('blink_chans','var') && ~isempty(blink_chans)
-        rho = corr(EEG.icaact(u,:)', EEG.data(blink_chans,:)');
-        list_properties(u,measure) = max([abs(rho) 0]);
-        measure = measure + 1;
+  end
+  
+  % 5b EMG correlations
+  if ~isempty(emg_chans)
+    comp = comp';
+    rho = corr(comp(:), EEG.data(emg_chans,:)');
+    for i = 1:length(emg_chans)
+      list_properties(u, measure) = max([abs(rho(i)) 0]);
+      measure = measure + 1;
     end
+  end
 end
 
-for u = 1:size(list_properties,2)
-    list_properties(isnan(list_properties(:,u)),u)=nanmedian(list_properties(:,u));
-    list_properties(:,u) = list_properties(:,u) - median(list_properties(:,u));
+for u = 1:size(list_properties, 2)
+  list_properties(isnan(list_properties(:,u)),u) = nanmedian(list_properties(:,u));
+  list_properties(:,u) = list_properties(:,u) - median(list_properties(:,u));
 end
 
-if delete_activations_after
-    EEG.icaact=[];
-end
