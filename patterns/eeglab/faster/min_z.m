@@ -1,4 +1,4 @@
-function lengths = min_z(list_properties, rejection_options)
+function lengths = min_z(list_properties, rejection_options, prop_type)
 %MIN_Z   Reject outliers in a distribution of properties.
 %
 %  lengths = min_z(list_properties, rejection_options)
@@ -18,6 +18,19 @@ if ~isfield(rejection_options, 'stat')
   rejection_options.stat = 'iqr';
 end
 
+if exist('prop_type', 'var')
+  % expand the rejection options to match list_properties
+  measure = NaN(size(prop_type));
+  z = NaN(size(prop_type));
+  uprop = unique(prop_type);
+  for i = 1:length(uprop)
+    measure(prop_type == uprop(i)) = rejection_options.measure(uprop(i));
+    z(prop_type == uprop(i)) = rejection_options.z(uprop(i));
+  end
+
+  rejection_options.measure = measure;
+  rejection_options.z = z;
+end
 rejection_options.measure = logical(rejection_options.measure);
 
 % find extreme variable-properties
