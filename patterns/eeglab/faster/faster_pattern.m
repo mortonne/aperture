@@ -44,8 +44,11 @@ function pat = faster_pattern(pat, varargin)
 % along with EEG Analysis Toolbox.  If not, see <http://www.gnu.org/licenses/>.
 
 % options
-def.eog_pairs = {[8 126] [25 127] [1 32]};
-def.locs_file = 'HCGSN128_eog.loc';
+%def.eog_pairs = {[8 126] [25 127] [1 32] [8 17] [25 17]};
+%def.locs_file = 'HCGSN128_eog_ob.loc';
+%def.eog_pairs = {[8 126] [25 127] [1 32]};
+def.emg_band = [20 50];
+def.locs_file = 'HCGSN128.loc';
 def.epoch_thresh = 100;
 def.epoch_chan_thresh = 150;
 def.bad_chan_thresh = 12;
@@ -55,6 +58,7 @@ def.save_intermediate = false;
 def.plot_epoch_rej = false;
 def.eeg_chans = 1:129;
 def.ref_chan = 129;
+def.veog_chans = [126 127];
 def.epoch_overlap = true;
 [opt, saveopt] = propval(varargin, def);
 
@@ -67,9 +71,9 @@ function pat = run_faster(pat, opt)
 
   % add HEOG and VEOG channels
   pat_file = pat.file;
-  pat = move_obj_to_workspace(pat);
-  eog_pat = diff_pattern(pat, 'chans', opt.eog_pairs);
-  pat = cat_patterns([pat eog_pat], 'chan', 'save_mats', false);
+  % pat = move_obj_to_workspace(pat);
+  % eog_pat = diff_pattern(pat, 'chans', opt.eog_pairs);
+  % pat = cat_patterns([pat eog_pat], 'chan', 'save_mats', false);
   
   % export to EEGLAB
   if isempty(opt.res_dir)
@@ -81,6 +85,15 @@ function pat = run_faster(pat, opt)
   % previously loaded datasets, so save before running this function)
   eeglab
   EEG = pat2eeglab(pat, opt.locs_file);
+  
+  % add EOG and EMG channels
+  n_prev = EEG.nbchan;
+  EEG = eog_pairs(EEG);
+  eog_chans = (n_prev + 1):EEG.nbchan;
+  
+  n_prev = EEG.nbchan;
+  EEG = emg_pairs(EEG, opt.emg_band);
+  emg_chans = (n_prev + 1):EEG.nbchan;
   
   if opt.save_intermediate
     % save the original raw dataset
@@ -138,10 +151,8 @@ function pat = run_faster(pat, opt)
   o.channel_options.do_reref = true;
   o.channel_options.ref_chan = opt.ref_chan;
   o.channel_options.eeg_chans = opt.eeg_chans;
-  max_eeg = opt.eeg_chans(end);
-  n_eog = length(opt.eog_pairs);
-  ext_chans = [max_eeg + 1:max_eeg + n_eog];
-  o.channel_options.ext_chans = ext_chans;
+  o.channel_options.ext_chans = union(eog_chans, emg_chans);
+  o.channel_options.veog_chans = opt.veog_chans;
   o.channel_options.interp_after_ica = true;
   
   % epochs already defined, so turn off epoching
@@ -152,7 +163,8 @@ function pat = run_faster(pat, opt)
 
   % ICA options
   o.ica_options.ica_channels = setdiff(opt.eeg_chans, opt.ref_chan);
-  o.ica_options.EOG_channels = ext_chans;
+  o.ica_options.EOG_channels = eog_chans;
+  o.ica_options.EMG_channels = emg_chans;
   
   % epoch-channel interpolation
   o.epoch_interp_options.epoch_interpolation_on = true;
@@ -163,7 +175,7 @@ function pat = run_faster(pat, opt)
   o.make_GA = false;
   
   option_wrapper.options = o;
-  
+
   % run FASTER
   log_file = fopen(fullfile(opt.res_dir, 'faster.log'), 'w');
   EEG = FASTER_process(option_wrapper, log_file);
