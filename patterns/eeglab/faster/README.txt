@@ -12,12 +12,33 @@ This seems to only be an issue for the Hurst exponent measure, since it is a tem
 Affected files:
 channel_properties.m
 
+Correcting for EOG to improve bad channel detection
+------------------------------------------
+
+Found that, in datasets heavily contaminated with eye artifacts, that most frontal electrodes are identified as "bad." Since we're using ICA to deal with eye artifacts, we don't want to exclude channels due to eye movements; in fact, they are critical to aid in indentifying blink and eye movement components, so they must not be excluded. Added a regression step to remove most of the variance due to eye movements; it does not distinguish between blinks and eye movements, limiting its accuracy, but it seems good enough for the purpose of bad channel detection.
+
+Also added an option to define a set of frontopolar electrodes, which are evaluated separately from other electrodes, since they tend to have higher variance (in some cases, this is still true even after EOG regression).
+
+Affected files:
+FASTER_process.m
+new function: reject_channels.m 
+
+Improved outlier detection
+---------------------
+
+Found that the z-score method performs poorly in some cases for finding outliers reflecting e.g. bad epochs. For example, if there are many highly noisy epochs, rejecting based on the z-score only removes the worst cases, while leaving many noisy epochs in the data. Added an option (now the default; can be set through rejection_options.stat) for using a non-parametric stat, inter-quartile distance, for outlier detection. The multiple of IQR to use as the threshold (below quartile 1 and above quartile 3) is an option. I've found that 3 works well as a strict threshold.
+
+Affected files:
+min_z.m
+
 Detecting EMG
 ------------
 
 For rejecting single channel epochs and components, they used the median gradient for one of their stats. This seems like a strange choice, since a lot of information was thrown away by using the median of the raw diff values rather than the median of the absolute value of change. For exemple, if for some of the time, there were large alternating positive and negative changes that were perfectly matched in amplitude, then the median change value might be near 0; this is true regardless of how extreme the changes were.
 
 Tested on data contaminated with EMG, and found that affected channels were better identified (specificity and sensitivity) by using taking the median absolute change over time, rather than the median change.
+
+UPDATE: I developed a new method after this. It takes the sum of the squared gradient, and divides by the total sum of squared deviations, where deviation is from the mean for each channel over time. This performs well for identifying components that have spiky activity for some epochs, and are nearly flat for others.
 
 Affected files:
 single_epoch_channel_properties.m
@@ -62,4 +83,7 @@ In channel_properties.m, channel correlations were being sorted in order of dist
 
 Affected files:
 channel_properties.m
+
+Possible name for new version: 
+SPEED (Signal Preprocessing of ElectroEncephalography Data)
 
