@@ -59,6 +59,10 @@ def.plot_epoch_rej = false;
 def.eeg_chans = 1:129;
 def.ref_chan = 129;
 def.veog_chans = [126 127];
+def.fp_chans = [27 23 18 16 10 3 123 ...
+                26 22 15 9 2 ...
+                128 32 25 21 14 8 1 125 ...
+                17 127 126];
 def.epoch_overlap = true;
 [opt, saveopt] = propval(varargin, def);
 
@@ -153,6 +157,7 @@ function pat = run_faster(pat, opt)
   o.channel_options.eeg_chans = opt.eeg_chans;
   o.channel_options.ext_chans = union(eog_chans, emg_chans);
   o.channel_options.veog_chans = opt.veog_chans;
+  o.channel_options.fp_chans = opt.fp_chans;
   o.channel_options.interp_after_ica = true;
   
   % epochs already defined, so turn off epoching
@@ -165,6 +170,7 @@ function pat = run_faster(pat, opt)
   o.ica_options.ica_channels = setdiff(opt.eeg_chans, opt.ref_chan);
   o.ica_options.EOG_channels = eog_chans;
   o.ica_options.EMG_channels = emg_chans;
+  o.ica_options.n_max_pca = 64;
   
   % epoch-channel interpolation
   o.epoch_interp_options.epoch_interpolation_on = true;
