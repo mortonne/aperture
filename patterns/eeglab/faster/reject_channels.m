@@ -1,10 +1,36 @@
 function bad_chans = reject_channels(EEG, opt)
+%REJECT_CHANNELS   Reject channels with poor contact.
+%
+%  Like the original channel rejection, but uses multiple regression to
+%  remove most of the variance from eye movements and blinks, so that
+%  channels near the eye are not excluded unless they have poor
+%  contact. The regression is just for detection purposes. Eye
+%  movements will be dealt with more comprehensively through ICA at
+%  a later step.
+%
+%  bad_chans = reject_channels(EEG, opt)
 
 eeg_chans = opt.eeg_chans;
 ref_chan = opt.ref_chan;
+eog_chans = opt.eog_chans;
+
+% regress out contributions from the EOG channels. This won't be as
+% good as ICA removal, since eye movements and blinks propogate
+% over the scalp with different topographies, but it will be good
+% enough to remove most of the variance of EOG
+non_ref_chans = setdiff(eeg_chans, ref_chan);
+for i = 1:length(non_ref_chans)
+  for j = 1:size(EEG.data, 3)
+    x = EEG.data(eog_chans,:,j)';
+    y = EEG.data(non_ref_chans(i),:,j)';
+    b = regress(y, x);
+    EEG.data(non_ref_chans(i),:,j) = y - (x * b);
+  end
+end
 
 if isfield(opt, 'fp_chans')
-  % reject frontopolar and non-frontopolar electrodes separately
+  % reject frontopolar and non-frontopolar electrodes separately,
+  % in case there is residual eye movement activity
   fp_chans = opt.fp_chans;
   lengths = false(length(eeg_chans), 1);
   
@@ -44,9 +70,7 @@ if isfield(opt, 'veog_chans')
   end
   
   % use special criteria to determine which VEOG channels to include
-  veog_include = select_veog(eeg_properties(:,2), ...
-                             non_veog_chans, ...
-                             veog_chans);
+  veog_include = select_veog(eeg_properties(:,2), non_veog_chans, veog_chans);
   
   % set so good VEOG channels will be included, even if they were
   % thrown out by the standard stats
@@ -57,5 +81,8 @@ end
 bad_chans = union(eeg_chans(logical(lengths)), opt.bad_channels);
 
 % ref chan may appear bad, but we shouldn't interpolate it!
-bad_chans = setdiff(bad_chans,ref_chan); 
+bad_chans = setdiff(bad_chans, ref_chan); 
 
+if opt.exclude_EOG_chans
+  bad_chans = setdiff(bad_chans, eog_chans);
+end
