@@ -18,26 +18,32 @@ eog_chans = opt.eog_chans;
 % good as ICA removal, since eye movements and blinks propogate
 % over the scalp with different topographies, but it will be good
 % enough to remove most of the variance of EOG
-s = warning('off', 'stats:glmfit:IllConditioned');
-for i = 1:length(eeg_chans)
-  [b, dev, stats] = glmfit(EEG.data(eog_chans,:)', EEG.data(i,:)', 'normal');
-  EEG.data(i,:,:) = reshape(stats.resid, ...
-                            [1 size(EEG.data, 2) size(EEG.data, 3)]);
+s(1) = warning('off', 'stats:glmfit:IllConditioned');
+s(2) = warning('off', 'stats:glmfit:IterationLimit');
+non_ref_chans = setdiff(eeg_chans, ref_chan);
+for i = 1:length(non_ref_chans)
+  for j = 1:size(EEG.data, 3)
+    [b, dev, stats] = glmfit(EEG.data(eog_chans,:,j)', ...
+                             EEG.data(non_ref_chans(i),:,j)', 'normal');
+    EEG.data(non_ref_chans(i),:,j) = stats.resid;
+    %EEG.data(non_ref_chans(i),:,:) = reshape(stats.resid, ...
+    %                       [1 size(EEG.data, 2) size(EEG.data, 3)]);
+  end
 end
 warning(s)
 
 % treat all electrodes as one distribution
-eeg_properties = channel_properties(EEG, eeg_chans, ref_chan);
+list_properties = channel_properties(EEG, eeg_chans, ref_chan);
 lengths = min_z(list_properties, opt.rejection_options);
 
 if isfield(opt, 'veog_chans')
   % use special rules for VEOG channels, since they are extremely
   % important for removing eye artifacts
   veog_chans = opt.veog_chans;
-  non_veog_chans = non_fp_chans;
+  non_veog_chans = setdiff(non_ref_chans, veog_chans);
   
   % use special criteria to determine which VEOG channels to include
-  veog_include = select_veog(eeg_properties(:,2), ...
+  veog_include = select_veog(list_properties(:,2), ...
                              non_veog_chans, ...
                              veog_chans);
   
