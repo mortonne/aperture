@@ -30,10 +30,12 @@ try
             o.epoch_interp_options.rejection_options.amp_diff_thresh;
         bad_epoch_thresh = ...
             o.epoch_interp_options.rejection_options.bad_epoch_thresh;
+        n_max_pca = o.ica_options.n_max_pca;
     catch
         epoch_overlap = true;
         amp_diff_thresh = 150;
         bad_epoch_thresh = 12;
+        n_max_pca = 64;
     end
       
     %%%%%%%%%%%%%%%%
@@ -212,7 +214,7 @@ try
     if o.channel_options.channel_rejection_on
         % find channels with poor connections
         o.channel_options.eog_chans = o.ica_options.EOG_channels;
-        chans_to_interp = reject_channels_regress(EEG, o.channel_options);
+        chans_to_interp = reject_channels(EEG, o.channel_options);
         
         if ~o.channel_options.interp_after_ica
             if ~isempty(chans_to_interp)
@@ -314,7 +316,7 @@ try
         end
         
         fprintf(log_file, 'Initial baseline variance: %.2f.\n', ...
-                baseline_var(EEGtemp))
+                baseline_var(EEGtemp));
         clear EEGtemp;
     end
 
@@ -378,15 +380,21 @@ try
             EEG = eeg_remove_epoch_overlap(EEG);
         end
       
-        % determine the number of components to reduce to before ICA
-        num_pca = min(floor(sqrt(size(EEG.data(:,:), 2) / k_value)), ...
-                      (size(EEG.data, 1) - length(chans_to_interp) - 1));
-        num_pca = min(num_pca, length(setdiff(ica_chans, chans_to_interp)));
+        % max number of components that will be estimable given the
+        % number of samples we have
+        n_max_recommend = floor(sqrt(size(EEG.data(:,:), 2) / k_value));
 
         if o.channel_options.interp_after_ica
             % exclude bad channels, which will be interpolated later
             ica_chans = intersect(setdiff(ica_chans, chans_to_interp), ...
                                   union(eeg_chans, ext_chans));
+            
+            % determine the number of components to reduce to before
+            % ICA. Don't go over: (1) the number of estimable
+            % components, (2) the number of included channels, (3)
+            % the user-specified maximum
+            num_pca = min([n_max_recommend length(ica_chans) n_max_pca]);
+            keyboard
             EEG = pop_runica(EEG, 'dataset', 1, ...
                 'chanind', setdiff(ica_chans, chans_to_interp), ...
                 'icatype', 'binica', ...
@@ -394,6 +402,7 @@ try
         else
             % bad channels already interpolated
             ica_chans = intersect(ica_chans, union(eeg_chans, ext_chans));
+            num_pca = min([n_max_recommend length(ica_chans) n_max_pca]);
             EEG = pop_runica(EEG, 'dataset', 1, 'chanind', ica_chans, ...
                              'options', {'extended', 1, 'pca', num_pca});
         end
@@ -617,12 +626,15 @@ try
     if ~isempty(o.channel_options.op_ref_chan)
         EEG = h_pop_reref(EEG, o.channel_options.op_ref_chan, 'exclude',ext_chans, 'refstate', [], 'keepref', 'on');
     end
-    if (do_saves), EEG = pop_saveset(EEG,'savemode','resave'); end
+    if do_saves
+        EEG = pop_saveset(EEG, 'savemode', 'resave');
+    end
 
     if using_ALLEEG
         fprintf('Done with ALLEEG(%d) - %s.\nTook %d seconds.\n',o.file_options.current_file_num,EEG.setname,toc);
     else
-        fprintf('Done with file %s.\nTook %d seconds.\n',[filepath filesep filename extension],toc);
+        fprintf('Done with file %s.\nTook %d seconds.\n', ...
+                fullfile(EEG.filepath, EEG.filename), toc);
     end
 
     % report stats on final results
@@ -634,8 +646,8 @@ try
     fclose(log_file);
 
     % modify ALLEEG in the base workspace
-    if (using_ALLEEG)
-        assignin('base','FASTER_TMP_EEG',EEG);
+    if using_ALLEEG
+        assignin('base', 'FASTER_TMP_EEG', EEG);
         if o.file_options.overwrite_ALLEEG
             evalin('base',sprintf('ALLEEG(%d)=FASTER_TMP_EEG; clear FASTER_TMP_EEG',o.file_options.current_file_num));
         else
@@ -644,26 +656,29 @@ try
     end
 catch
     % deal with errors encountered at any point
-    m=lasterror;
-    EEG_state{1}=evalc('disp(EEG)');
+    m = lasterror;
+    EEG_state{1} = evalc('disp(EEG)');
     try
         if ~isempty(fopen(log_file))
             frewind(log_file);
-            EEG_state{2}=fscanf(log_file,'%c',inf);
+            EEG_state{2} = fscanf(log_file, '%c', inf);
             
-            try fclose(log_file); catch; end;
+            try
+                fclose(log_file);
+            catch
+            end
         end
     catch
     end
-    EEG_state{3}=option_wrapper;
-    EEG_state{4}=builtin('version');
-    if exist('eeg_getversion','file')
-        EEG_state{5}=eeg_getversion;
+    EEG_state{3} = option_wrapper;
+    EEG_state{4} = builtin('version');
+    if exist('eeg_getversion', 'file')
+        EEG_state{5} = eeg_getversion;
     else
-        EEG_state{5}=which('eeglab');
+        EEG_state{5} = which('eeglab');
     end
     
-    assignin('caller','EEG_state',EEG_state);
+    assignin('caller', 'EEG_state', EEG_state);
     rethrow(m);
 end
 
@@ -754,13 +769,13 @@ function save_step(EEG, step_name, step_number, filepath)
                 'filepath', fullfile(filepath, 'Intermediate'), ...
                 'savemode', 'onefile');
     
-function baseline_var(EEG)
+function base_var = baseline_var(EEG)
     
     % assuming that the early bound is negative; baseline is everything
     % from that to t=0 (generally stimulus onset)
     baseline_ind = 1:round(EEG.srate * -EEG.xmin);
       
-    baseline_var = median(var(mean(EEG.data(:,baseline_ind,:), 3), [], 2)));
+    base_var = median(var(mean(EEG.data(:,baseline_ind,:), 3), [], 2));
 
 function plot_ica_rej(EEG, filepath, bad_comps)
       
