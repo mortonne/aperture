@@ -10,9 +10,9 @@ if nargin < 1
 end
 
 % set up a scheduler
-sm = findResource('scheduler', 'type', 'generic');
+sm = parallel.cluster.Generic();
 if ~exist(data_loc, 'dir')
   mkdir(data_loc);
 end
-set(sm, 'DataLocation', data_loc)
+set(sm, 'JobStorageLocation', data_loc)
 
