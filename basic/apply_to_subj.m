@@ -66,6 +66,8 @@ defaults.walltime = '00:15:00'; % Torque
 defaults.arch = '';             % Torque 
 defaults.max_jobs = Inf;
 defaults.debug = true;
+defaults.out_type = 'obj';
+defaults.dim = 1;
 params = propval(varargin, defaults);
 
 if params.debug
@@ -206,14 +208,25 @@ if dist == 1
     if isempty(temp)
       continue
     end
-    for j = 1:n_tasks
-      subj = addobj(subj, temp{j});
+    if strcmp(param.out_type, 'obj')
+      % output is some object
+      for j = 1:n_tasks
+        subj = addobj(subj, temp{j});
+      end
+    else
+      % output can use standard concatenation
+      %subj = padcat(params.dim, NaN, temp{:});
+      subj = cat(params.dim, temp{:});
     end
   end
   fprintf('done.\n')
     
 elseif dist == 2
   % use parfor
+  if ~strcmp(params.out_type, 'obj')
+    error('Only object outputs are supported for dist 2')
+  end
+  
   tic
   new_subj = [];
   parfor i = 1:length(subj)
@@ -240,6 +253,7 @@ elseif dist == 2
 else
   % run the function on each element of the subject vector
   tic
+  x = [];
   for i = 1:length(subj)
     this_subj = subj(i);
     if length(subj) > 1
@@ -259,7 +273,15 @@ else
         %subj_out = [];
       end
     end
-    subj = addobj(subj, subj_out);
+    if strcmp(params.out_type, 'obj')
+      subj = addobj(subj, subj_out);
+    else
+      x = cat(params.dim, x, subj_out);
+    end
+  end
+  
+  if strcmp(params.out_type, 'array')
+    subj = x;
   end
   if length(subj) > 1
     fprintf('apply_to_subj: finished: %.2f seconds.\n', toc);
