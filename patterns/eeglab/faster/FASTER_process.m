@@ -35,7 +35,7 @@ try
         epoch_overlap = true;
         amp_diff_thresh = 150;
         bad_epoch_thresh = 12;
-        n_max_pca = 64;
+        n_max_pca = 128;
     end
       
     %%%%%%%%%%%%%%%%
@@ -394,7 +394,6 @@ try
             % components, (2) the number of included channels, (3)
             % the user-specified maximum
             num_pca = min([n_max_recommend length(ica_chans) n_max_pca]);
-            keyboard
             EEG = pop_runica(EEG, 'dataset', 1, ...
                 'chanind', setdiff(ica_chans, chans_to_interp), ...
                 'icatype', 'binica', ...
@@ -780,12 +779,15 @@ function base_var = baseline_var(EEG)
 function plot_ica_rej(EEG, filepath, bad_comps)
       
     p = 1;
+    
+    % get component topography and variance accounted for
     activations = eeg_getica(EEG);
     perc_vars = var(activations(:,:), [], 2);
     perc_vars = 100 * perc_vars ./ sum(perc_vars);
     for u = 1:size(EEG.icawinv, 2)
         if ~mod(u - 1, 16)
             if u ~= 1
+                % have a full array of plots; print
                 fig_file = fullfile(filepath, 'Intermediate', ...
                                     sprintf('Components_%d.png', p));
                 saveas(h, fig_file);
@@ -794,12 +796,14 @@ function plot_ica_rej(EEG, filepath, bad_comps)
             end
             h = figure;
         end
-      
+
+        % plot topography of this component
         subplot(4, 4, 1 + mod(u - 1, 16));
         topoplot(EEG.icawinv(:,u), EEG.chanlocs(EEG.icachansind));
         title(sprintf('Component %d\n%.1f%% variance', u, perc_vars(u)));
 
         if any(bad_comps == u)
+            % highlight any bad components
             c = get(h, 'Children');
             c2 = get(c(1), 'Children');
             set(c2(5), 'FaceColor', [0.6 0 0]);
@@ -811,10 +815,11 @@ function plot_ica_rej(EEG, filepath, bad_comps)
             set(c2(5), 'YData', y);
         end
     end
-    
+
+    % print the final panel
     fig_file = fullfile(filepath, 'Intermediate', ...
                         sprintf('Components_%d.png', p));
-    
+    saveas(h, fig_file);
     if ~isempty(h)
         close(h);
     end     
