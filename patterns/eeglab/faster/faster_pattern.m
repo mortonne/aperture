@@ -170,7 +170,7 @@ function pat = run_faster(pat, opt)
   o.ica_options.ica_channels = setdiff(opt.eeg_chans, opt.ref_chan);
   o.ica_options.EOG_channels = eog_chans;
   o.ica_options.EMG_channels = emg_chans;
-  o.ica_options.n_max_pca = 64;
+  o.ica_options.n_max_pca = 128;
   
   % epoch-channel interpolation
   o.epoch_interp_options.epoch_interpolation_on = true;
