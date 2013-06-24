@@ -73,7 +73,8 @@ end
 
 % parse the dimension input
 try
-  [dim_name, dim_number] = read_dim_input(dimension);
+  [dim_name, dim_number, dim_long_name, dim_dir_name] = ...
+      read_dim_input(dimension);
 catch
   if isnumeric(dimension)
     % non-standard dimension; cannot track metadata, but can still
@@ -129,45 +130,29 @@ end
 
 % concatenate the dim structure
 dim = def_pat.dim;
-if strcmp(dim_name, 'ev')
-  % load each events structure
+if ~isempty(dim_name)
   if params.verbose
-    fprintf('events...')
+    fprintf('%s...', lower(dim_long_name))
   end
-    
-  events = [];
+  
+  % concatenate the dimension for each pattern
+  cat_dim = [];
   for i = 1:length(pats)
     if params.verbose
       fprintf('%s ', sources{i})
     end
-      
-    pat_events = get_mat(pats(i).dim.ev);
-    events = cat_structs(events, pat_events);
-  end
-  if params.verbose
-    fprintf('\n')
-  end
-
-  % save the concatenated events
-  ev_dir = fullfile(params.res_dir, 'events');
-  if ~exist(ev_dir)
-    mkdir(ev_dir);
-  end
-  dim.ev.file = fullfile(ev_dir, ...
-                         objfilename('events', pat_name, source));
-  dim.ev = set_mat(dim.ev, events, loc);
-  if strcmp(loc, 'ws')
-    dim.ev.modified = true;
+    pat_dim = get_dim(pats(i).dim, dim_name);
+    cat_dim = cat_structs(cat_dim, pat_dim);
   end
   
-  % update the ev object
-  dim.ev.source = source;
-  dim.ev.len = length(events);
-elseif ~isempty(dim_name)
-  % for non-events dimensions, assume fields are the same and use
-  % standard concatenation
-  dims = [pats.dim];
-  dim.(dim_name) = [dims.(dim_name)];
+  % save the concatenated dimension
+  dim_dir = fullfile(params.res_dir, dim_dir_name);
+  if ~exist(dim_dir)
+    mkdir(dim_dir);
+  end
+  dim.(dim_name).file = fullfile(dim_dir, ...
+                                 objfilename(dim_dir_name, pat_name, source));
+  dim = set_dim(dim, dim_name, cat_dim, loc);
 end
 
 % set the directory to save the pattern
