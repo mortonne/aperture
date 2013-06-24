@@ -35,8 +35,12 @@ if isempty(params.sess_numbers)
     n_sess = length(params.sess_dirs);
   elseif ~isempty(params.eeg_files)
     n_sess = length(params.eeg_files);
+  else
+    n_sess = NaN;
   end
-  params.sess_numbers = 1:n_sess;
+  if ~isnan(n_sess)
+    params.sess_numbers = 1:n_sess;
+  end
 end
 
 % fix input formatting
