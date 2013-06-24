@@ -25,7 +25,7 @@ save(pat.file, 'pat', '-v7.3', '-append');
 
 dim_info = pat.dim;
 
-for i = 2:4
+for i = 1:4
   [dim_name, t, t, dim_long_name] = read_dim_input(i);
   
   % initialize the dim in the new format
