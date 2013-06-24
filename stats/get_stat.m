@@ -31,7 +31,11 @@ function x = get_stat(stat, name, index)
 % along with EEG Analysis Toolbox.  If not, see <http://www.gnu.org/licenses/>.
 
 % load the variable
-x = getfield(load(stat.file, name), name);
+if isempty(stat.file) && isfield(stat, name)
+  x = getfield(stat, name);
+else
+  x = getfield(load(stat.file, name), name);
+end
 
 % get the right index
 if exist('index', 'var')
