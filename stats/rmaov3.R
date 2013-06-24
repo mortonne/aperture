@@ -5,7 +5,7 @@ args <- commandArgs(TRUE)
 # format should be:
 # data   subject   V1   V2   V3
 data <- read.table(args[1], colClasses=c('numeric', rep('factor', 3)),
-                  col.names=c('dep', 'subject', 'V1', 'V2', 'V3'))
+                   col.names=c('dep', 'subject', 'V1', 'V2', 'V3'))
 
 res <- aov(dep ~ (V1 * V2 * V3) + Error(subject / (V1 * V2 * V3)), data)
 
