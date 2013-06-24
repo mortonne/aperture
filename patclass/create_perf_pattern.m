@@ -82,7 +82,11 @@ stat = getobj(pat, 'stat', stat_name);
 % set params
 defaults.stat_type = 'perf';
 defaults.class_output = 'correct';
-defaults.event_bins = stat.params.selector;
+if isfield(stat.params, 'selector')
+  defaults.event_bins = stat.params.selector;
+else
+  defaults.event_bins = [];
+end
 defaults.event_labels = {};
 defaults.event_levels = {};
 defaults.precision = 'single';
@@ -105,7 +109,13 @@ function pat = get_patclass_stats(pat, stat_name, params)
   [n_iter, n_chans, n_time, n_freq] = size(res.iterations);
   
   % sanity check events
-  class_events = length(res.iterations(1).train_idx);
+  train_events = length(res.iterations(1).train_idx);
+  test_events = length(res.iterations(1).test_idx);
+  if train_events ~= test_events
+    class_events = train_events + test_events;
+  else
+    class_events = train_events;
+  end
   pat_events = patsize(pat.dim, 1);
   assert(class_events == pat_events, ...
          'different numbers of events in the pattern and classification.');
