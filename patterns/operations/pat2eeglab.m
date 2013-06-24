@@ -1,4 +1,4 @@
-function [ALLEEG, EEG, CURRENTSET] = pat2eeglab(ALLEEG, pat, chanlocs_file)
+function EEG = pat2eeglab(pat, chanlocs_file)
 %PAT2EEGLAB   Convert a pattern object to EEGLAB format.
 %
 %  Prepare a pattern object for interactive visualization/analysis in
@@ -57,37 +57,34 @@ function [ALLEEG, EEG, CURRENTSET] = pat2eeglab(ALLEEG, pat, chanlocs_file)
 % along with EEG Analysis Toolbox.  If not, see <http://www.gnu.org/licenses/>.
 
 if ~exist('chanlocs_file', 'var')
-  chanlocs_file = '~/eeg/HCGSN128.loc';
+  chanlocs_file = 'HCGSN128.loc';
 end
 
 % load the pattern with the dimensions in EEGLAB order
 pattern = permute(get_mat(pat), [2 3 1]);
 samplerate = get_pat_samplerate(pat);
-start_time = pat.dim.time(1).MSvals(1);
-end_time = pat.dim.time(end).MSvals(end);
+
+time = get_dim(pat.dim, 'time');
+start_time = time(1).range(1);
+end_time = time(end).range(end);
 
 events = get_dim(pat.dim, 'ev');
 
 % import the pattern as segmented data
 set_name = sprintf('%s-%s', pat.name, pat.source);
-cond_name = pat.dim.ev.name;
+%cond_name = pat.dim.ev.name;
+cond_name = pat.name;
 comment_str = sprintf('created by pat2eeglab on %s', datestr(now));
-EEG = pop_importdata('setname', set_name, ...
-                     'data', pattern, ...
-                     'dataformat', 'array', ...
-                     'subject', pat.source, ...
-                     'condition', cond_name, ...
-                     'chanlocs', chanlocs_file, ...
-                     'xmin', start_time / 1000, ...
+EEG = pop_importdata('data', pattern, ...
+                     'setname', set_name, ...
                      'srate', samplerate, ...
+                     'pnts', patsize(pat.dim, 'time'), ...
+                     'xmin', start_time / 1000, ...
+                     'nbchan', patsize(pat.dim, 'chan'), ...
+                     'subject', pat.source, ...
+                     'ref', 'Cz', ...
+                     'chanlocs', chanlocs_file, ...
                      'comments', comment_str);
-
-% sanity check the imported data; will also set dimensions info which
-% we didn't define above based on the size of the imported array
-[EEG, result] = eeg_checkset(EEG);
-if result == 1
-  error('problem importing data to EEGLAB.')
-end
 
 %figure
 %pop_plottopo(EEG, [1:129] , 'words', 0, 'ylim', [-10 10]);
@@ -104,11 +101,12 @@ EEG = pop_importepoch(EEG, events_cell, fieldnames(events), ...
                       'latencyfields', {'rt', 'artifactMS'}, ...
                       'timeunit', 0.001);
 
-% add RT back in as a field, since pop_importepoch strips it
-rt_events = strcmp({EEG.event.type}, 'rt');
-[EEG.event.rt] = deal(NaN);      
-[EEG.event(rt_events).rt] = deal(events.rt);
+% add latency fields back in, since pop_importepoch strips them
+word_events = strcmp({EEG.event.type}, 'WORD');
+[EEG.event.rt] = deal(NaN);
+[EEG.event(word_events).rt] = deal(events.rt);
 
-% update ALLEEG to add this dataset
-[ALLEEG, EEG, CURRENTSET] = eeg_store(ALLEEG, EEG);
+%art_events = strcmp({EEG.event.type}, 'artifactMS');
+[EEG.event.artifactMS] = deal(NaN);
+[EEG.event(word_events).artifactMS] = deal(events.artifactMS);
 
