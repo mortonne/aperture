@@ -131,35 +131,61 @@ for i = 1:n_chans
     c = i;
   end
   
-  for j = 1:n_events
-    % EEG as [1 X time]
-    eeg = permute(pattern(j,c,:), [1 3 2]);
-    [phase, power] = multiphasevec2(freqs, eeg, samplerate, params.width);
-    
-    % remove the buffer
-    if ~isempty(buffer)
-      power = power(:, buffer+1:end-buffer);
-    end
-    
-    if params.logtransform
-      % if any values are exactly 0, make them eps
-      power(power==0) = eps(0);
-      power = log10(power);
-    end
-    
-    % downsample
-    if ~isempty(params.downsample)
-      temp = NaN(n_freqs, n_samps);
-      for k = 1:n_freqs
-        temp(k,:) = decimate(double(power(k,:)), dmate);
-      end
-      if strcmp(params.precision, 'single')
-        temp = single(temp);
-      end
-      power = temp;
-    end
-    pow_pattern(j,i,:,:) = power';
+  % new version calling multiphasevec3
+  % EEG as [events X time]
+  % get power as [events X freqs X time]
+  tic
+  eeg = permute(pattern(:,c,:), [1 3 2]);
+  [~, power] = multiphasevec3(freqs, eeg, samplerate, params.width, ...
+                              precision);
+  
+  % remove the buffer
+  if ~isempty(buffer)
+    power = power(:,:,buffer+1:end-buffer);
   end
+
+  % downsample the power values
+  if ~isempty(params.downsample)
+    power = decimate_power(power, dmate);
+  end
+    
+  % log transform
+  if params.logtransform
+    power(power == 0) = eps(0);
+    power = log10(power);
+  end
+  
+  pow_pattern(:,i,:,:) = permute(power, [1 3 2]);
+  toc
+  % for j = 1:n_events
+  %   % EEG as [1 X time]
+  %   eeg = permute(pattern(j,c,:), [1 3 2]);
+  %   [phase, power] = multiphasevec2(freqs, eeg, samplerate, params.width);
+    
+  %   % remove the buffer
+  %   if ~isempty(buffer)
+  %     power = power(:, buffer+1:end-buffer);
+  %   end
+    
+  %   if params.logtransform
+  %     % if any values are exactly 0, make them eps
+  %     power(power==0) = eps(0);
+  %     power = log10(power);
+  %   end
+    
+  %   % downsample
+  %   if ~isempty(params.downsample)
+  %     temp = NaN(n_freqs, n_samps);
+  %     for k = 1:n_freqs
+  %       temp(k,:) = decimate(double(power(k,:)), dmate);
+  %     end
+  %     if strcmp(params.precision, 'single')
+  %       temp = single(temp);
+  %     end
+  %     power = temp;
+  %   end
+  %   pow_pattern(j,i,:,:) = power';
+  % end
 end
 if params.verbose
   fprintf('\n')
@@ -170,7 +196,9 @@ pat = set_mat(pat, pow_pattern, 'ws');
 pat.dim = set_dim(pat.dim, 'freq', init_freq(freqs), 'ws');
 if params.split
   pat.dim = rmfield(pat.dim, 'splitdim');
-  pat.file = pat_file;
+  %pat.file = pat_file;
+  pat.file = pat.orig_file;
+  pat = rmfield(pat, 'orig_file');
 end
 
 % remove the buffer from the time dim
@@ -189,3 +217,22 @@ if ~isempty(params.downsample)
   pat.dim = set_dim(pat.dim, 'time', time, 'ws');
 end
 
+
+function y = decimate_power(x, factor)
+
+  n_samps = ceil(size(x, 3) / factor);
+  y = NaN(size(x, 1), size(x, 2), n_samps);
+  
+  % must log transform power before decimating
+  x(x == 0) = eps(0);
+  x = log10(x);
+  for i = 1:size(x, 1)
+    for j = 1:size(x, 2)
+      time = permute(x(i,j,:), [1 3 2]);
+      time = decimate(double(time), factor);
+      y(i,j,:) = time;
+    end
+  end
+  
+  % convert back to original scale
+  y = 10.^y;
