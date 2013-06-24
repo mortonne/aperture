@@ -56,29 +56,43 @@ end
 if ~exist('params', 'var')
   params = struct();
 end
-if ~exist('ev', 'var')
-  ev = struct('name', '',  'file', '',  'len', []);
-end
-if ~exist('chan', 'var')
-  chan = struct('number', [],  'region', '',  'label', '');
-end
-if ~exist('time', 'var')
-  time = init_time();
-end
-if ~exist('freq', 'var')
-  freq = init_freq();
-end
 
 if isfield(ev, 'ev')
-	% assume a dim struct was passed in
-	dim = ev;
-	else
-	% create one from the standard dimensions
-	dim = struct('ev', ev,  'chan', chan,  'time', time,  'freq', freq);
-end
+  % assume a dim struct was passed in
+  dim = ev;
+  clear ev
+else
+  % make standard blank dimensions
+  dim = struct;
+  dim_names = {'ev' 'chan' 'time' 'freq'};
+  for i = 1:length(dim_names)
+    dim.(dim_names{i}) = init_dim(dim_names{i});
+  end
 
+  % create default structures for each dimension
+  if ~exist('ev', 'var')
+    ev = struct('type', '');
+  end
+  if ~exist('chan', 'var')
+    chan = struct('number', [],  'label', '');
+  end
+  if ~exist('time', 'var')
+    time = init_time();
+  end
+  if ~exist('freq', 'var')
+    freq = init_freq();
+  end
+
+  % set the content of each dimension
+  dim = set_dim(dim, 'ev', ev, 'ws');
+  dim = set_dim(dim, 'chan', chan, 'ws');
+  dim = set_dim(dim, 'time', time, 'ws');
+  dim = set_dim(dim, 'freq', freq, 'ws');
+end
+  
 % make the pat structure
-pat = struct('name',name, 'file','', 'source',source, 'params',params, 'dim',dim);
+pat = struct('name', name, 'file', '', 'source', source, ...
+             'params', params, 'dim', dim);
 
 % if we assign this in call to struct, pat will be made a vector structure
 pat.file = file;
