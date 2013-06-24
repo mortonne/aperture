@@ -56,7 +56,7 @@ fid = fopen(outfile, 'w');
 for i=1:n_obs
   fprintf(fid, '%.6f', data(i));
   for j=1:n_factors
-    fprintf(fid, '\t%d', group{j}(i));
+    fprintf(fid, '\t%.6f', group{j}(i));
   end
   fprintf(fid, '\n');
 end
