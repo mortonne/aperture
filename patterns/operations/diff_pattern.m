@@ -68,7 +68,7 @@ function pat = get_chandiffs(pat, params)
   new_pattern = nan(s(1), length(params.chans), s(3), s(4));
   channels = get_dim_vals(pat.dim, 'chan');
   
-  for i=1:length(params.chans)
+  for i = 1:length(params.chans)
     diff_chans = params.chans{i};
     
     % find the channels
@@ -87,8 +87,8 @@ function pat = get_chandiffs(pat, params)
     else
       label = params.chanlabels{i};
     end
-    chan_info(i) = struct('number', diff_chans, 'region', '', 'label', label);
+    chan_info(i) = struct('number', diff_chans, 'label', label);
   end
-  pat.dim.chan = chan_info;
+  pat.dim = set_dim(pat.dim, 'chan', chan_info, 'ws');
   pat = set_mat(pat, new_pattern, 'ws');
 %endfunction
