@@ -21,6 +21,10 @@ function samplerate = get_pat_samplerate(pat)
 % along with EEG Analysis Toolbox.  If not, see <http://www.gnu.org/licenses/>.
 
 ms = get_dim_vals(pat.dim, 'time');
+if isempty(ms)
+  error('Time dimension is undefined')
+end
+
 step_size = unique(diff(ms));
 if length(step_size) > 1
   error('Samplerate varies.')
