@@ -55,7 +55,7 @@ end
 % input for readlocs
 switch opt.filetype
   case {'loc' 'sph' 'sfp' 'xzy' 'asc' ...
-        'polhemus' 'besa' 'chanedit' 'custom'}
+        'polhemus' 'besa' 'chanedit' 'custom', ''}
     % this is compatible with EEGLAB
     elocs = readlocs(locs_file);
   case 'tal'
