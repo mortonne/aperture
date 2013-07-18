@@ -104,7 +104,7 @@ switch objtype
   % check the events structure
   if ~isstruct(mat)
     error('events must be a structure.')
-  elseif ~isvector(mat)
+  elseif ~isvector(mat) & ~isempty(mat)
     error('events must be a vector')
   end
 
