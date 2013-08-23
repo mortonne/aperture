@@ -53,9 +53,6 @@ function subj = create_pattern(subj, fcn_handle, params, pat_name, res_dir)
 %                     ['single' | {'double'}]
 %   overwrite       - if true, existing pattern files will be
 %                     overwritten (false)
-%   updateOnly      - if true, the pattern will not be created, but a
-%                     pattern object will be created and attached to the
-%                     subject object. (false)
 %
 %  See also create_voltage_pattern, create_power_pattern.
 
@@ -112,7 +109,6 @@ defaults.downsample = [];
 defaults.freqs = [];
 defaults.precision = 'double';
 defaults.overwrite = false;
-defaults.updateOnly = false;
 params = propval(params, defaults, 'strict', false);
 
 % print status
@@ -123,7 +119,8 @@ end
 
 % set where the pattern will be saved
 pat_dir = fullfile(res_dir, 'patterns');
-pat_file = fullfile(pat_dir, objfilename('pattern', pat_name, subj.id));
+pat_file = fullfile(pat_dir, ...
+                    [objfilename('pattern', pat_name, subj.id) '.mat']);
 
 if ~params.overwrite && exist(pat_file, 'file')
   fprintf('pattern exists in %s.\nskipping...\n', pat_file)
@@ -183,7 +180,8 @@ time = init_time(ms_values);
 freq = init_freq(params.freqs);
 
 % create a pat object to keep track of this pattern
-pat = init_pat(pat_name, pat_file, subj.id, params, ev, chan, time, freq);
+pat = init_pat(pat_name, pat_file, subj.id, params, ...
+               ev.mat, chan, time, freq);
 
 % filter events and channels
 try
@@ -201,21 +199,6 @@ end
 events = get_mat(pat.dim.ev);
 channels = get_dim_vals(pat.dim, 'chan');
 
-% finalize events for the pattern
-if pat.dim.ev.modified
-  % save the modified events struct to a new file
-  pat.dim.ev.file = fullfile(get_pat_dir(pat, 'events'), ...
-                             objfilename('events', pat_name, subj.id));
-end
-pat.dim.ev = move_obj_to_hd(pat.dim.ev, true);
-
-% if we just want to update the subject object, we're done
-if params.updateOnly
-  fprintf('pattern %s added to subj %s.\n', pat_name, subj.id)
-  subj = setobj(subj, 'pat', pat);
-  return
-end
-
 % create the pattern
 [pattern, total_params] = fcn_handle(events, channels, params);
 pat.params = combineStructs(params, total_params);
@@ -223,6 +206,9 @@ pat.params = combineStructs(params, total_params);
 % save the pattern
 pat = set_mat(pat, pattern, 'hd');
 fprintf('pattern saved in %s.\n', pat.file)
+
+% save dimension information to disk
+pat = upgrade_pattern(pat);
 
 % update subj with the new pat object
 subj = setobj(subj, 'pat', pat);

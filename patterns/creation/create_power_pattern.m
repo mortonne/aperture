@@ -60,9 +60,6 @@ function subj = create_power_pattern(subj, pat_name, params, res_dir)
 %   precision       - precision of the returned values. ('double')
 %   overwrite       - if true, existing pattern files will be
 %                     overwritten (false)
-%   updateOnly      - if true, the pattern will not be created, but a
-%                     pattern object will be created and attached to the
-%                     subject object. (false)
 %   verbose         - if true, more status will be printed. (false)
 %
 %  See also create_voltage_pattern.
