@@ -112,10 +112,8 @@ defaults.overwrite = false;
 params = propval(params, defaults, 'strict', false);
 
 % print status
-if ~params.updateOnly
-  fprintf('creating "%s" pattern from "%s" events using %s...\n', ...
-          pat_name, params.evname, func2str(fcn_handle))
-end
+fprintf('creating "%s" pattern from "%s" events using %s...\n', ...
+        pat_name, params.evname, func2str(fcn_handle))
 
 % set where the pattern will be saved
 pat_dir = fullfile(res_dir, 'patterns');
