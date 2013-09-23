@@ -52,13 +52,18 @@ measure = measure + 1;
 list_properties(:,measure) = abs(mean(EEG.data(eeg_chans,:,epoch_num),2)-mean(EEG.data(eeg_chans,:),2));
 measure = measure + 1;
 
+% find reference channel among the EEG channels
+ref_ind = find(eeg_chans == ref_chan);
+
 if length(ref_chan) == 1
   % distance from the reference channel to each recording channel
   pol_dist = distancematrix(EEG, eeg_chans);
   pol_dist = pol_dist(ref_chan, eeg_chans);
   
   % all stats are undefined at reference
-  list_properties(ref_chan,:) = NaN;
+  if ~isempty(ref_ind)
+    list_properties(ref_ind,:) = NaN;
+  end
   
   % use quadratic regression to correct each stat for distance
   for i = 1:size(list_properties, 2)
@@ -66,11 +71,11 @@ if length(ref_chan) == 1
   end
 end
 
-for u = 1:size(list_properties, 2)
+for i = 1:size(list_properties, 2)
   % set undefined stats to the mean over the other channels
-  list_properties(isnan(list_properties(:,u)),u) = ...
-      nanmedian(list_properties(:,u));
+  list_properties(isnan(list_properties(:,i)),i) = ...
+      nanmedian(list_properties(:,i));
   
   % subtract out the median of each property
-  list_properties(:,u) = list_properties(:,u) - median(list_properties(:,u));
+  list_properties(:,i) = list_properties(:,i) - median(list_properties(:,i));
 end
