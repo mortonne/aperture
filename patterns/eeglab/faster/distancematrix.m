@@ -1,5 +1,8 @@
-function [distmatrixpol distmatrixxyz distmatrixproj] = distancematrix(EEG,eeg_chans)
-
+function [distpol, distxyz, distproj] = distancematrix(EEG, eeg_chans)
+%DISTANCEMATRIX   Pairwise distance between electrodes.
+%
+%  [distpol, distxyz, distproj] = distancematrix(EEG, eeg_chans)
+  
 % Copyright (C) 2010 Hugh Nolan, Robert Whelan and Richard Reilly, Trinity College Dublin,
 % Ireland
 % nolanhu@tcd.ie, robert.whelan@tcd.ie
@@ -18,53 +21,65 @@ function [distmatrixpol distmatrixxyz distmatrixproj] = distancematrix(EEG,eeg_c
 % along with this program; if not, write to the Free Software
 % Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-num_chans = size(EEG.data,1);
-distmatrix = zeros(length(eeg_chans),length(eeg_chans));
-distmatrixpol = [];
-for chan2tst = eeg_chans;
-	for q=eeg_chans
-		distmatrixpol(chan2tst,q)=sqrt(((EEG.chanlocs(chan2tst).radius^2)+(EEG.chanlocs(q).radius^2))-(2*((EEG.chanlocs(chan2tst).radius)*...
-			(EEG.chanlocs(q).radius)*cosd(EEG.chanlocs(chan2tst).theta - EEG.chanlocs(q).theta))));%calculates the distance between electrodes using polar format
-	end
+num_chans = size(EEG.data, 1);
+
+% polar distance
+distpol = zeros(length(eeg_chans), length(eeg_chans));
+for i = eeg_chans
+  for j = eeg_chans
+    r1 = EEG.chanlocs(i).radius;
+    r2 = EEG.chanlocs(j).radius;
+    t1 = EEG.chanlocs(i).theta;
+    t2 = EEG.chanlocs(j).theta;
+    
+    distpol(i,j) = sqrt(r1^2 + r2^2 - (2 * r1 * r2 * cosd(t1 - t2)));
+  end
 end
 
+% prepare coordinates
+% NWM: why default to 0? Seems brittle
 locs = EEG.chanlocs;
-for u = eeg_chans
-	if ~isempty(locs(u).X)
-		Xs(u) = locs(u).X;
-	else
-		Xs(u) = 0;
-	end
-	if ~isempty(locs(u).Y)
-		Ys(u) = locs(u).Y;
-	else
-		Ys(u) = 0;
-		end
-	if ~isempty(locs(u).Z)
-		Zs(u) = locs(u).Z;
-	else
-		Zs(u) = 0;
-	end
+for i = eeg_chans
+  if ~isempty(locs(i).X)
+    Xs(i) = locs(i).X;
+  else
+    Xs(i) = 0;
+  end
+  if ~isempty(locs(i).Y)
+    Ys(i) = locs(i).Y;
+  else
+    Ys(i) = 0;
+  end
+  if ~isempty(locs(i).Z)
+    Zs(i) = locs(i).Z;
+  else
+    Zs(i) = 0;
+  end
 end
-Xs = round2(Xs,6);
-Ys = round2(Ys,6);
-Zs = round2(Zs,6);
 
-for u = eeg_chans
-	for v=eeg_chans
-		distmatrixxyz(u,v) = dist(Xs(u),Xs(v))+dist(Ys(u),Ys(v))+dist(Zs(u),Zs(v));
-	end
-end
-D = max(max(distmatrixxyz));
-distmatrixproj = (pi-2*(acos(distmatrixxyz./D))).*(D./2);
-	function d = dist(in1,in2)
-		d = sqrt(abs(in1.^2 - in2.^2));
-	end
+% NWM: don't know why they are rounding
+Xs = round2(Xs, 6);
+Ys = round2(Ys, 6);
+Zs = round2(Zs, 6);
 
-	function num = round2(num,decimal)
-		num = num .* 10^decimal;
-		num = round(num);
-		num = num ./ 10^decimal;
-	end
+% euclidian distance
+% NWM: this might be incorrect. Should change to use pdist
+for i = eeg_chans
+  for j = eeg_chans
+    distxyz(i,j) = dist(Xs(i), Xs(j)) + dist(Ys(i), Ys(j)) + ...
+        dist(Zs(i), Zs(j));
+  end
 end
+
+% NWM: not sure what this represents
+D = max(max(distxyz));
+distproj = (pi-2*(acos(distxyz./D))).*(D./2);
+
+function d = dist(in1,in2)
+  d = sqrt(abs(in1.^2 - in2.^2));
+
+function num = round2(num,decimal)
+  num = num .* 10^decimal;
+  num = round(num);
+  num = num ./ 10^decimal;
 
