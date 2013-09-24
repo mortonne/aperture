@@ -87,3 +87,50 @@ channel_properties.m
 Possible name for new version: 
 SPEED (Signal Preprocessing of ElectroEncephalography Data)
 
+Notes on manual component identification
+===========================
+
+Initial notes
+---------
+
+Working on new workflow that is only partially automated, relying on raters to determine whether a component should be excluded. But, rather than just using standard EEGLAB tools, will use a different interface to speed component inspection.
+
+We begin with unprocessed data. No channels have been interpolated, no rereferencing has been done. The data are exported from NetStation with a highpass filter above 0.1 Hz. I've found that filtering higher (even just 0.5 Hz) causes noticeable distortions near blink artifacts. It's possible that a different type of filter might perform better, but leaving this be for now.
+
+Channels with poor contact are identified by outlier statistics. These channels are excluded from the ICA, and interpolated after ICA is complete. Based on my initial explorations, this part of the process (implemented in faster_pattern) seems reliable for a variety of datasets.
+
+I've explored two ways of identifying epochs that will interfere with ICA. One is currently implemented in faster_pattern. It looks for epochs with many electrodes showing large voltage deflections (median change 100 uV?). This seems to do well at finding epochs with large changes that are not due to just blinks or eye movements, but to bigger problems like large movements causing electrode shifts. I'm currently investigating an alternate method, which may have fewer assumptions. In this method, ICA is run on all epochs. Then epochs with high variance in many components are identified (I look for outliers, based on IQR), and excluded from a second pass of the ICA. I'm hoping this will allow inclusion of more epochs, if some high-amplitude artifacts can be absorbed by components. It relies on a relative measure (IQR), so this might fail for particularly contaminated or pure datasets. I'll have to compare the methods on a range of datasets to be sure what the best method is. I think both are preferable to the FASTER method, which isn't very sensitive, especially for highly contaminated data.
+
+Next, we run the final ICA, with bad channels and bad epochs excluded. Any overlap between epochs is temporarily removed for this process, and then the data are placed back into the original segments. At this point, a PDF report with statistics about each component is generated, and the PDF is sent to a rater. The rater labels each channel according to the rating scheme of McMenamin et al. Figures for each component include topography, power spectrum, ERP image, and the 10 epochs with highest variance. The last part isn't included in the standard EEGLAB protocol, but seems to be part of how every ICA lab does component identification.  Hopefully these figures will be sufficient; as we test the procedure with different raters and datasets, additional required measures may become clear. The goal is to make it possible to identify components with only the PDF, making the process much faster and more convenient. Once the ratings are complete, clearly artifactual components are rejected, and the remaining components are projected back to sensor space to obtain cleaned voltage data.
+
+Next, bad channel-epochs are identified using the FASTER statistics (and others?). If less then 10% of electrodes are bad for a given epoch, they are interpolated. Otherwise, the epoch is excluded.
+
+After channel-epoch interpolation, the data are converted to an average reference. By having the interpolation step before referencing, we avoid propogating noise on individual channels to all other channels.
+
+Bad channel-epochs are identified again, and interpolation/exclusion is done as before.
+
+Finally, bad channels are interpolated from the other channels.
+
+Procedure
+--------
+
+Load voltage epochs, with a notch filter around 60 Hz and a 0.1 highpass filter. Epochs should be long enough and have high enough sample rate to allow power calculation.
+
+Identify bad electrodes, based on FASTER statistics. To keep eye movements from influencing bad electrode identification, first regress out EOG (HEOG and both VEOG pairs). Also do selection separately for frontopolar and non-frontopolar electrodes, and use special rules for the important VEOG channels. This may be complex enough to warrant going back to manual identification of bad electrodes.
+
+Run ICA on all epochs, with bad electrodes excluded. Look for epochs where the relative variance (compared to other epochs) is high on average over components. This should find epochs that were poorly separated into components, suggesting that the assumptions of ICA were violated (probably due to electrodes moving or skin potentials). Run ICA again with those epochs removed. Repeat until no more bad epochs, or 10 iterations. If reaches 10 iterations, consider excluding that session.
+
+Create PDF report with component properties. 
+
+Send PDF to rater for manual identification of component type.
+
+Read in identified component types. Including only components rated as neurogenic. Project back to sensor space.
+
+Interpolate bad channels.
+
+Identify bad channel-epochs based on statistics. Interpolate when 12 or fewer in an epoch; reject epoch if greater than 12.
+
+Convert to an average reference.
+
+Identify and interpolate bad channel-epochs.
+
