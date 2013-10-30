@@ -71,6 +71,7 @@ end
 
 defaults.row_labels_width = [];
 defaults.fig_size = [];
+defaults.max_label_length = [];
 params = propval(varargin, defaults);
 
 % number of rows is defined by fig_files
@@ -95,7 +96,9 @@ end
 table = cell(n_rows, n_cols);
 
 % calculate the optimal figure width
-max_label_length = max(cellfun(@length, row_labels));
+if isempty(params.max_label_length)
+  params.max_label_length = max(cellfun(@length, row_labels));
+end
 n_figs = size(fig_files, 2);
 if isempty(params.fig_size)
   page_length = 11;
@@ -105,8 +108,9 @@ if isempty(params.fig_size)
     label_length = params.row_labels_width / page_length;
   else
     % estimate the length based on 10 pt font
-    % pt/inches * width ~ half of size * length of paper * max num chars    
-    label_length = ((1/72) * (1/2) * 10 * max_label_length) / page_length;
+    % pt/inches * width ~ half of size * length of paper * max num chars
+    label_length = ((1/72) * (1/2) * 10 * params.max_label_length) / ...
+        page_length;
   end
   pad_per_figure = (n_figs * 1/10) / page_length;
   %margin = 1 / page_length;
