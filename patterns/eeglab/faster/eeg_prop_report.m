@@ -101,8 +101,8 @@ longtable(report_file, table, 'orientation', 'portrait', ...
           'header', header);
 
 % compilation fails for some reason when called from within matlab
-%pdf_file = pdflatex(report_file, 'pdflatex');
-pdf_file = '';
+pdf_file = pdflatex(report_file, 'pdflatex');
+%pdf_file = '';
 
 close(f);
 
