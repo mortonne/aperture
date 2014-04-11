@@ -54,14 +54,73 @@ if ~exist('pat', 'var') || ~isstruct(pat)
 end
 
 % default params
+defaults.eventbins = [];
+defaults.eventbinlabels = {};
+defaults.eventbinlevels = {};
+defaults.weights = [];
 defaults.chans = {};
 defaults.chanlabels = {};
 [params, saveopts] = propval(varargin, defaults);
 
 % make the new pattern
-pat = mod_pattern(pat, @get_chandiffs, {params}, saveopts);
+if ~isempty(params.eventbins)
+  pat = mod_pattern(pat, @get_evdiffs, {params}, saveopts);
+end
+if ~isempty(params.chans)
+  pat = mod_pattern(pat, @get_chandiffs, {params}, saveopts);
+end
+
+function pat = get_evdiffs(pat, params)
+  def.eventbins = [];
+  def.eventbinlabels = {};
+  def.eventbinlevels = {};
+  def.weights = [];
+  [params, ~] = propval(params, def);
+  
+  % default for weights with 2 bins, difference; [1 -1]
+  if isempty(params.weights) && iscell(params.eventbins) && ...
+        length(params.eventbins) == 2
+    params.weights = [1 -1];
+  end
+    
+  pattern = get_mat(pat);
+  
+  % apply the bins to the pat object
+  p = rmfield(params, {'weights'});
+  [pat, bins] = patBins(pat, p);
+  
+  if ~all(cellfun(@isempty, bins))
+    % binning happened; apply to pattern
+    pattern = patMeans(pattern, bins, @nanmean);
+  end
+  
+  s = patsize(pat.dim);
+  new_pattern = NaN(1, s(2), s(3), s(4));
+  
+  % linear combination
+  if ~isempty(params.weights)
+    new_pattern = params.weights(1).*pattern(1,:,:,:);
+    
+    for w=2:length(params.weights)
+      new_pattern = params.weights(w).*pattern(w,:,:,:) + new_pattern;
+    end
+    
+    % update events to reflect operation across bins
+    p2.eventbins = 'overall';
+    [pat, bins ] = patBins(pat, p2);
+    
+  else
+    % no weights, just keep old pattern
+    new_pattern = pattern;
+  end
+  
+  pat = set_mat(pat, new_pattern, 'ws');
 
 function pat = get_chandiffs(pat, params)
+  def.chans = {};
+  def.chanlabels = {};
+  [params, ~] = propval(params, def);
+  
   pattern = get_mat(pat);
   
   s = patsize(pat.dim);
