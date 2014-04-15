@@ -38,5 +38,10 @@ function m = cell2num(c)
 % You should have received a copy of the GNU Lesser General Public License
 % along with EEG Analysis Toolbox.  If not, see <http://www.gnu.org/licenses/>.
 
+if all(cellfun(@isempty, c))
+  m = [];
+  return
+end
+
 m = reshape([c{:}], size(c));
 
