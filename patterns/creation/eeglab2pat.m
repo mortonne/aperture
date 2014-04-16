@@ -32,7 +32,7 @@ function events = convert_events(events)
   strip = false(1, length(f));
   for i = 1:length(f)
     if length(f{i}) >= 5 && strcmp(f{i}(1:5), 'event')
-      strip = true;
+      strip(i) = true;
     end
   end
   events = rmfield(events, f(strip));
