@@ -93,7 +93,13 @@ defaults.absThresh = [];
 defaults.kthresh = [];
 defaults.logtransform = true;
 defaults.verbose = false;
-[params, unused] = propval(varargin, defaults);
+[params, run_opt] = propval(varargin, defaults);
+
+defaults = struct;
+defaults.dist = 0;
+defaults.walltime = '00:30:00';
+defaults.memory = '4G';
+run_opt = propval(run_opt, defaults, 'strict', false);
 
 if isempty(params.freqs)
   error('You must specify frequencies at which to calculate power.')
@@ -132,16 +138,47 @@ params.absthresh = params.absThresh;
 params.resampledrate = params.resampledRate;
 params = rmfield(params, {'absThresh', 'resampledRate'});
 
-fprintf('channels: ')
-for i=1:n_chans
-  % get the current channel number
-  channel = channels(i);
-  fprintf('%d ', channel);
+if run_opt.dist
+  % run channels in parallel
+  f_inputs = cell(1, n_chans);
+  for i = 1:n_chans
+    channel = channels(i);
+    f_inputs{i} = {events channel params};
+  end
+  
+  job = submit_job(@get_chan_power, 1, f_inputs, ...
+                   'walltime', run_opt.walltime, ...
+                   'memory', run_opt.memory, ...
+                   'name', 'power_pattern');
+  
+  wait(job)
+  
+  % concatenate to get a [events X time X freq X chan] matrix
+  pattern = getAllOutputArguments(job);
+  pattern = cat(4, pattern{:});
+  
+  % reorder the dimensions
+  pattern = permute(pattern, [1 4 2 3]);  
+else
+  fprintf('channels: ')
+  for i = 1:n_chans
+    % get the current channel number
+    channel = channels(i);
+    fprintf('%d ', channel);
+    
+    pattern(:,i,:,:) = get_chan_power(events, channel, params);
+  end
+  fprintf('\n')
+end
+
+
+function power = get_chan_power(events, channel, params)
 
   % using version in eeg_toolbox/branches/unstable...
   % calculate power from raw voltage for a set of frequencies
-  power = getphasepow(events, channel, params.freqs, params.durationMS, ...
-                      params.offsetMS, params, params.verbose);
+  power = getphasepow(events, channel, params.freqs, ...
+                      params.durationMS, params.offsetMS, ...
+                      params, params.verbose);
   
   % change the order of dimensions to [events X time X frequency]
   power = permute(power, [1 3 2]);
@@ -153,8 +190,3 @@ for i=1:n_chans
     power = log10(power);
   end
   
-  % calculate power and add to the pattern
-  pattern(:,i,:,:) = power;
-end
-fprintf('\n')
-
