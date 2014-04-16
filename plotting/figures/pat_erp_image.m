@@ -85,16 +85,6 @@ if isempty(params.plot_index)
   end
 end
 
-% if iscellstr(channels)
-%   match = ismember({pat.dim.chan.label}, channels);
-% elseif isnumeric(channels)
-%   match = ismember([pat.dim.chan.number], channels);
-% elseif isempty(channels)
-%   match = true(1, patsize(pat.dim, 'chan'));
-% end
-% chan_inds = find(match);
-% n_chans = length(chan_inds);
-
 % apply event bins
 if ~isempty(params.event_bins)
   [binned, bins] = patBins(pat, 'eventbins', params.event_bins);
@@ -199,8 +189,11 @@ for i = 1:n_bins
         data = squeeze(pattern(:,j,:,k));
       end
       if isempty(params.map_limits)
-        absmax = max(abs(data(:)));
-        z_lim = [-absmax absmax];
+        % use the absolute 99th percentile instead of the absolute
+        % max, so a small number of high or low values doesn't ruin
+        % our ability to see the rest of the variability
+        abs99 = prctile(abs(data(:)), 99);
+        z_lim = [-abs99 abs99];
       end
 
       % plot the events, sorted by index if desired
@@ -235,9 +228,12 @@ for i = 1:n_bins
         filename = filename(1:end-1);
       end
 
-      %files{1,i,1,j} = fullfile(params.res_dir, [filename '.eps']);
-      files{i,j,1,k} = fullfile(params.res_dir, [filename '.jpg']);
-      
+      if ~isempty(strfind([params.print_input{:}], 'eps'))
+        files{i,j,1,k} = fullfile(params.res_dir, [filename '.eps']);
+      else
+        files{i,j,1,k} = fullfile(params.res_dir, [filename '.jpg']);
+      end
+
       % save
       print(gcf, params.print_input{:}, files{i,j,1,k});
     end
