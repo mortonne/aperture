@@ -1,4 +1,4 @@
-function stat = init_stat(name,file,source,params)
+function stat = init_stat(name, file, source, params)
 %INIT_STAT   Initialize a structure to hold metadata about a statistic.
 %
 %  stat = init_stat(name, file, source, params)
@@ -45,18 +45,19 @@ function stat = init_stat(name,file,source,params)
 % along with EEG Analysis Toolbox.  If not, see <http://www.gnu.org/licenses/>.
 
 % input checks
-if ~exist('name','var')
+if ~exist('name', 'var')
   name = '';
 end
-if ~exist('file','var')
+if ~exist('file', 'var')
   file = '';
 end
-if ~exist('source','var')
+if ~exist('source', 'var')
   source = '';
 end
-if ~exist('params','var')
+if ~exist('params', 'var')
   params = struct();
 end
 
 % make the structure
-stat = struct('name',name, 'file',file, 'source',source, 'params',params);
+stat = struct('name', name, 'file', file, 'source', source, ...
+              'params', params, 'vars', {{}});
