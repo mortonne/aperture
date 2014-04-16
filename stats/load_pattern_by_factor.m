@@ -24,6 +24,10 @@ function [x, levels] = load_pattern_by_factor(pat, bin_defs, varargin)
 %            original labels for the factors. levels{i}{j} contains the
 %            label for level j of factor i.
 
+def.data_type = 'pattern';
+def.field = '';
+opt = propval(varargin, def);
+
 pat_size = patsize(pat.dim);
 if any(pat_size(2:end) > 1)
   error('Dimensions other than events must be singleton.')
@@ -45,7 +49,16 @@ end
 
 % fill the matrix, organized by factor levels
 x = NaN(x_size);
-pattern = get_mat(pat);
+
+switch opt.data_type
+  case 'pattern'
+    pattern = get_mat(pat);
+  case 'events'
+    pattern = [events.(opt.field)];
+  otherwise
+    error('Unknown data_type: %s', opt.data_type);
+end
+
 for i = 1:n_samples
   % get the index for each dimension for this sample
   ind = cell(1, n_factors);
