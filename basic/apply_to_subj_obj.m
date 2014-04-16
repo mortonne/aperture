@@ -70,7 +70,8 @@ if dist
                             dist, varargin{:});
 
   % check if we're running asynchronously
-  if strcmp(class(temp_subj), 'distcomp.simplejob')
+  if ismember(class(temp_subj), ...
+              {'distcomp.simplejob' 'parallel.job.CJSIndependentJob'})
     subj = temp_subj;
     return
   end
