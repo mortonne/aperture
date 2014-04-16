@@ -1,4 +1,4 @@
-function freq = init_freq(freqs, labels)
+function freq = init_freq(freqs, labels, vals)
 %INIT_FREQ   Initialize a frequency dimension.
 %
 %  freq = init_freq(freqs, labels)
@@ -29,6 +29,10 @@ function freq = init_freq(freqs, labels)
 % You should have received a copy of the GNU Lesser General Public License
 % along with EEG Analysis Toolbox.  If not, see <http://www.gnu.org/licenses/>.
 
+if nargin < 3
+  vals = [];
+end
+
 % input checks
 if ~exist('freqs', 'var') || isempty(freqs)
   freq = struct('vals', [],  'avg', [],  'label', '');
@@ -40,7 +44,7 @@ if ~exist('labels', 'var')
   labels = {};
 elseif ~iscellstr(labels)
   error('labels must be a cell array of strings.')
-elseif length(labels) ~= length(freqs)
+elseif ~isempty(labels) && (length(labels) ~= length(freqs))
   error('labels must be the same length as freqs.')
 end
 
@@ -53,3 +57,8 @@ if isempty(labels)
 end
 freq = struct('vals', freqs_cell, 'avg', freqs_cell, 'label', labels);
 
+if ~isempty(vals)
+  for i = 1:size(vals, 1)
+    freq(i).vals = vals(i,:);
+  end
+end
