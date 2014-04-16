@@ -151,7 +151,7 @@ if ~isempty(dim_name)
     mkdir(dim_dir);
   end
   dim.(dim_name).file = fullfile(dim_dir, ...
-                                 objfilename(dim_dir_name, pat_name, source));
+      objfilename(dim_dir_name, pat_name, source));
   dim = set_dim(dim, dim_name, cat_dim, loc);
 end
 
