@@ -85,7 +85,14 @@ elseif strcmp(loc, 'hd')
     end
     
   else
-    % load the matrix  
+    % load the matrix
+    if strcmp(objtype, 'pattern')
+      s = whos('-file', obj.file, objtype);
+      if s.bytes > 200000000
+        % print status if loading more than 200 Mb
+        fprintf('Reading pattern file %s ...\n', strtrim(obj.file));
+      end
+    end
     mat = getfield(load(strtrim(obj.file), objtype), objtype);
   end
   
@@ -104,7 +111,7 @@ switch objtype
   % check the events structure
   if ~isstruct(mat)
     error('events must be a structure.')
-  elseif ~isvector(mat) & ~isempty(mat)
+  elseif ~isvector(mat) && ~isempty(mat)
     error('events must be a vector')
   end
 
