@@ -1,12 +1,14 @@
-function set_stat(stat, varargin)
+function stat = set_stat(stat, varargin)
 %SET_STAT  Save variables to a statistics object.
 %
-%  set_stat(stat, var_name1, var1, var_name2, var2, ...)
+%  stat = set_stat(stat, var_name1, var1, var_name2, var2, ...)
 
 large_vars = false;
+all_vars = {};
 for i = 1:2:length(varargin)
   % move to the specified variable name
   var_name = varargin{i};
+  all_vars = [all_vars {var_name}];
   eval([var_name ' = varargin{i+1};'])
   
   % check the size
@@ -40,4 +42,7 @@ if large_vars
 else
   save(stat.file, 'stat', 'obj', '-append')  
 end
+
+% update the list of variables stored in the file
+stat.vars = who('-file', stat.file);
 
