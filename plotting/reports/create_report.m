@@ -24,6 +24,10 @@ function table = create_report(fig_files, row_labels, varargin)
 %       table:  cell array of strings containing LaTeX code. To create a
 %               LaTeX document from this, use longtable.
 %
+%  OPTIONS:
+%   row_labels_width - ([])
+%   fig_size         - ([])
+%
 %  EXAMPLE:
 %   To make a document with the following table, where *.eps are saved
 %   figures:
