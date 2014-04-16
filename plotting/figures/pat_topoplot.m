@@ -123,7 +123,7 @@ defaults.diff = 0;
 defaults.mult_fig_window = false;
 defaults.stat_name = '';
 defaults.stat_index = 1;
-defaults.alpha_range = [0.005 0.05];
+defaults.alpha_range = [0.001 0.05];
 defaults.cap_type = 'HCGSN128';
 defaults.correctm = '';
 defaults.correctm_scale = 'fig';
@@ -152,12 +152,25 @@ if ~isempty(params.stat_name)
   % load the p-values
   stat = getobj(pat, 'stat', params.stat_name);
   pattern = get_stat(stat, 'p', params.stat_index);
+  
+  w = who('-file', stat.file);
+  if ismember('statistic', w)
+    statistic = get_stat(stat, 'statistic', params.stat_index);
+    effect_dir = sign(statistic);
+    params.alpha_range = params.alpha_range / 2;
+  else
+    effect_dir = [];
+  end
 
+  if strcmp(params.plot_type, 'topo')
+    params.plot_input = [params.plot_input {'style' 'map'}];
+  end
+  
   if strcmp(params.correctm_scale, 'all')
     % make the colormap, set the pattern to be plotted as the
     % z-scores of the p-values
-    [pattern, map, map_limits] = prep_sig_map(pattern, params.alpha_range, ...
-                                              params.correctm, true);
+    [pattern, map, map_limits, crit, p_crit] = prep_sig_map(pattern, ...
+        params.alpha_range, params.correctm, true, effect_dir);
   end
 
 else
@@ -219,26 +232,37 @@ for e = 1:n_events
       if ~isempty(params.stat_name) && strcmp(params.correctm_scale, 'fig')
         % make the colormap, set the pattern to be plotted as the
         % z-scores of the p-values
-        [x, map, map_limits] = prep_sig_map(x, params.alpha_range, ...
-                                            params.correctm, true);
+        if ~isempty(effect_dir)
+          x_dir = squeeze(effect_dir(e,:,t,f));
+        else
+          x_dir = [];
+        end
+        
+        [x, map, map_limits, crit, p_crit] = prep_sig_map(x, ...
+            params.alpha_range, params.correctm, true, x_dir);
+        
+        if ~isempty(x_dir)
+          p_crit = p_crit * 2;
+        end
       end
       
       % remove perimeter channels
       x(to_blank) = mean(map_limits);
       
+      clf reset
       publishfig
       colormap(map)
-      
+
       % make the plot
       switch params.plot_type
        case 'topo'
         % make the plot for this slice using the supplied function
         if all(isnan(x))
           x(:) = 1;
-          topoplot(x, params.chan_locs, 'colormap',[1 1 1], ...
+          topoplot(single(x), params.chan_locs, 'colormap',[1 1 1], ...
                    params.plot_input{:});
         else
-          topoplot(x, params.chan_locs, 'maplimits', map_limits, ...
+          topoplot(single(x), params.chan_locs, 'maplimits', map_limits, ...
                    params.plot_input{:});
         end
         if params.colorbar
@@ -257,14 +281,16 @@ for e = 1:n_events
 
           % left
           subplot('position', [0 0 width 1]);
-          headplot(x, params.splinefile, 'colormap', map, ...
+          headplot(single(x), params.splinefile, 'colormap', map, ...
                    'maplimits', map_limits, 'view', views{1}, ...
                    params.plot_input{:});
                    
           % right
           subplot('position', [width 0 width 1]);
-          [h, c_temp] = headplot(x, params.splinefile, 'colormap', map, ...
-                                 'maplimits', map_limits, 'view',views{2}, ...
+          [h, c_temp] = headplot(single(x), params.splinefile, ...
+                                 'colormap', map, ...
+                                 'maplimits', map_limits, ...
+                                 'view',views{2}, ...
                                  'cbar', 0, params.plot_input{:});
           
           % position the colorbar
@@ -273,13 +299,13 @@ for e = 1:n_events
         else
           % left
           subplot('position', [0 0 .5 1]);
-          headplot(x, params.splinefile, 'colormap', map, ...          
+          headplot(single(x), params.splinefile, 'colormap', map, ...
                    'maplimits', map_limits, 'view', views{1}, ...
                    params.plot_input{:});
           
           % right
           subplot('position', [0.5 0 .5 1]);
-          headplot(x, params.splinefile, 'colormap', map, ...          
+          headplot(single(x), params.splinefile, 'colormap', map, ...
                    'maplimits', map_limits, 'view', views{2}, ...
                    params.plot_input{:});
         end
@@ -296,6 +322,11 @@ for e = 1:n_events
         set(gcf, params.figure_prop{:});
       end
       
+      if ~isempty(params.stat_name)
+        c = colorbar;
+        set(c, 'YTick', crit, 'YTickLabel', p_crit);
+      end
+
       % set the filename
       filename = [base_filename '_'];
       if n_events > 1
@@ -326,11 +357,8 @@ fprintf('\n')
 fig = init_fig(fig_name, files, pat.name);
 pat = setobj(pat, 'fig', fig);
 
-function [z, map, map_limits] = prep_sig_map(p, alpha_range, correctm, ...
-                                             verbose)
-  if ~exist('verbose', 'var')
-    verbose = false;
-  end
+function [z, map, limits, crit, p_crit] = prep_sig_map(p, alpha_range, correctm, ...
+                                                    verbose, effect_dir)
   
   % darkest color
   max_sig = alpha_range(1);
@@ -351,5 +379,6 @@ function [z, map, map_limits] = prep_sig_map(p, alpha_range, correctm, ...
   
   % make the colormap, set the pattern to be plotted as the
   % z-scores of the p-values
-  [z, map, map_limits] = sig_colormap(p, [sig max_sig]);
+  [z, map, limits, crit, p_crit] = sig_colormap(p, ...
+       'alpha_range', [sig max_sig], 'dir', effect_dir);
 
