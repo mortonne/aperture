@@ -64,6 +64,7 @@ defaults.downsample = [];
 defaults.split = true;
 defaults.precision = '';
 defaults.verbose = true;
+defaults.dist = false;
 [params, saveopts] = propval(varargin, defaults);
 
 % make the new pattern
@@ -73,7 +74,7 @@ pat = mod_pattern(pat, @get_pow_pat, {freqs, params}, saveopts);
 function pat = get_pow_pat(pat, freqs, params)
 
 % load the full pattern and then save out each channel separately
-if params.split && ~isfield(pat.dim, 'splitdim')
+if (params.split || params.dist) && ~isfield(pat.dim, 'splitdim')
   pat_file = pat.file;
   pat = split_pattern(pat, 'chan');
 elseif ~isfield(pat.dim, 'splitdim')
@@ -111,11 +112,29 @@ else
   precision = class(pattern);
 end
 n_freqs = length(freqs);
-pow_pattern = NaN(n_events, n_chans, n_samps, n_freqs, precision);
 
+if ~params.dist
+  pow_pattern = NaN(n_events, n_chans, n_samps, n_freqs, precision);
+else
+  run_opt.memory = '4G';
+  run_opt.walltime = '02:00:00';
+  sm = getScheduler();
+  sm = setQsub(sm, run_opt);
+
+  % create the job
+  main_dir = fileparts(which('accre'));
+  job_startup_file = fullfile(main_dir, 'jobStartup.m');
+  job = createJob(sm, 'AttachedFiles', {job_startup_file});
+  job.Name = mfilename;
+end
+  
 % calculate power
 if params.verbose
-  fprintf('calculating power...\n')
+  if params.dist
+    fprintf('Creating tasks...\n')
+  else
+    fprintf('calculating power...\n')
+  end
 end
 
 chan_labels = get_dim_labels(pat.dim, 'chan');
@@ -124,71 +143,40 @@ for i = 1:n_chans
     fprintf('%s ', chan_labels{i})
   end
   
-  if isfield(pat.dim, 'splitdim')
-    load(pat.file{i});
-    c = 1;
+  if ~params.dist
+    if isfield(pat.dim, 'splitdim')
+      load(pat.file{i});
+      eeg = permute(pattern, [1 3 2]);
+    else
+      eeg = permute(pattern(:,i,:), [1 3 2]);
+    end
+    
+    power = calc_power(freqs, eeg, samplerate, precision, ...
+                       buffer, dmate, params);
+    pow_pattern(:,i,:,:) = permute(power, [1 3 2]);
   else
-    c = i;
+    createTask(job, @calc_power, 1, {freqs, pat.file{i}, samplerate, ...
+               precision, buffer, dmate, params});
   end
-  
-  % new version calling multiphasevec3
-  % EEG as [events X time]
-  % get power as [events X freqs X time]
-  tic
-  eeg = permute(pattern(:,c,:), [1 3 2]);
-  [~, power] = multiphasevec3(freqs, eeg, samplerate, params.width, ...
-                              precision);
-  
-  % remove the buffer
-  if ~isempty(buffer)
-    power = power(:,:,buffer+1:end-buffer);
-  end
-
-  % downsample the power values
-  if ~isempty(params.downsample)
-    power = decimate_power(power, dmate);
-  end
-    
-  % log transform
-  if params.logtransform
-    power(power == 0) = eps(0);
-    power = log10(power);
-  end
-  
-  pow_pattern(:,i,:,:) = permute(power, [1 3 2]);
-  toc
-  % for j = 1:n_events
-  %   % EEG as [1 X time]
-  %   eeg = permute(pattern(j,c,:), [1 3 2]);
-  %   [phase, power] = multiphasevec2(freqs, eeg, samplerate, params.width);
-    
-  %   % remove the buffer
-  %   if ~isempty(buffer)
-  %     power = power(:, buffer+1:end-buffer);
-  %   end
-    
-  %   if params.logtransform
-  %     % if any values are exactly 0, make them eps
-  %     power(power==0) = eps(0);
-  %     power = log10(power);
-  %   end
-    
-  %   % downsample
-  %   if ~isempty(params.downsample)
-  %     temp = NaN(n_freqs, n_samps);
-  %     for k = 1:n_freqs
-  %       temp(k,:) = decimate(double(power(k,:)), dmate);
-  %     end
-  %     if strcmp(params.precision, 'single')
-  %       temp = single(temp);
-  %     end
-  %     power = temp;
-  %   end
-  %   pow_pattern(j,i,:,:) = power';
-  % end
 end
 if params.verbose
   fprintf('\n')
+end
+
+if params.dist
+  clear pattern eeg
+
+  fprintf('Submitting job...\n')
+  submit(job)
+  
+  fprintf('Job submitted. Waiting for job to finish...\n')
+  wait(job)
+
+  o = fetchOutputs(job);
+  pow_pattern = NaN(n_events, n_chans, n_samps, n_freqs, precision);
+  for i = 1:length(o)
+    pow_pattern(:,i,:,:) = permute(o{i}, [1 3 2]);
+  end
 end
 
 % set the matrix
@@ -236,3 +224,30 @@ function y = decimate_power(x, factor)
   
   % convert back to original scale
   y = 10.^y;
+
+function power = calc_power(freqs, eeg, samplerate, precision, ...
+                            buffer, dmate, params)
+  
+  if ischar(eeg)
+    eeg = getfield(load(eeg, 'pattern'), 'pattern');
+    eeg = permute(eeg, [1 3 2]);
+  end
+  
+  [~, power] = multiphasevec3(freqs, eeg, samplerate, ...
+                              params.width, precision);
+  
+  % remove the buffer
+  if ~isempty(buffer)
+    power = power(:,:,buffer+1:end-buffer);
+  end
+
+  % downsample the power values
+  if ~isempty(params.downsample)
+    power = decimate_power(power, dmate);
+  end
+    
+  % log transform
+  if params.logtransform
+    power(power == 0) = eps(0);
+    power = log10(power);
+  end
