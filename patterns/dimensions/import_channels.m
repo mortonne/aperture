@@ -42,6 +42,11 @@ elseif ~isscalar(subj)
   error('Only one subject at a time.')
 end
 
+if isempty(opt.filetype) && ischar(locs_file)
+  [~, ~, ext] = fileparts(locs_file);
+  opt.filetype = ext(2:end);
+end
+
 % number of channels
 if isnumeric(locs_file)
   n_chans = locs_file;
@@ -66,19 +71,29 @@ switch opt.filetype
     if isfield(elocs, 'isGood')
       elocs = elocs([elocs.isGood]);
     end
+  case 'txt'
+    [numbers, labels] = read_chan_labels(locs_file);
+    c = num2cell(numbers);
+    elocs = struct('number', c, 'label', labels);
+  otherwise
+    error('Unknown filetype: %s', opt.filetype)
 end
 
 % add standard number field
-c = num2cell(1:length(elocs));
-[elocs.number] = c{:};
+if ~isfield(elocs, 'number')
+  c = num2cell(1:length(elocs));
+  [elocs.number] = c{:};
+end
 
 % standardize the labels
-labels = {elocs.labels};
-if ~isempty(strfind(labels{1}, 'E'))
-  labels = cellfun(@(x) strrep(x, 'E', ''), labels, ...
-                   'UniformOutput', false);
+if ~isfield(elocs, 'label')
+  labels = {elocs.labels};
+  if ~isempty(strfind(labels{1}, 'E'))
+    labels = cellfun(@(x) strrep(x, 'E', ''), labels, ...
+                     'UniformOutput', false);
+  end
+  [elocs.label] = labels{:};
 end
-[elocs.label] = labels{:};
 
 % add to the subject structure
 subj.chan = elocs;
