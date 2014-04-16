@@ -81,17 +81,8 @@ if dist == 1
     error('Job manager not found.')
   end
     
-  % set up a scheduler
-  sm = get_sm();
-
-  % set SubmitFcn according to resource manager
-  if strcmp('SGE', jm)
-    set(sm, 'SubmitFcn', {@distributedSubmitFcn2, params.memory});
-  
-  elseif strcmp('TORQUE', jm)
-    params.memory = torque_mem_format(params.memory);
-    set(sm, 'SubmitFcn', {@distributedSubmitFcn2, params});
-  end
+  sm = getScheduler();
+  sm = setQsub(sm, params);
   
   % create a job to run all subjects
   % use the current path, and override pathdef.m, jobStartup.m, etc.
@@ -111,9 +102,19 @@ if dist == 1
   jobs = [];
   n_finished = 0;
   n_submitted = 0;
+  if strcmp(params.out_type, 'obj')
+    n_out = 1;
+  else
+    n_out = nargout(fcn_handle);
+  end
   tic
+  first = false;
   while n_finished < n_jobs
-    pause(REFRESH)
+    if ~first
+      pause(REFRESH)
+    else
+      first = false;
+    end
 
     % update counts
     [c{:}] = findJob(sm);
@@ -122,7 +123,7 @@ if dist == 1
     totals = zeros(1, 4);
     for i = 1:length(c)
       for j = n_start(i) + 1:length(c{i})
-        totals(i) = totals(i) + length(c{i}(j).tasks);
+        totals(i) = totals(i) + length(c{i}(j).Tasks);
       end
     end
     
@@ -150,16 +151,15 @@ if dist == 1
     if n_left > 0 && n_running < params.max_jobs
       n_needed = min([n_left params.max_jobs - n_running]);
       job_name = sprintf('apply_to_subj:%s', func2str(fcn_handle));
-      job = createJob(sm, 'FileDependencies', {job_startup_file}, ...
+      job = createJob(sm, 'AttachedFiles', {job_startup_file}, ...
                       'Name', job_name);
-      job.PathDependencies = path_cell;
       
       for i = 1:n_needed
         this_subj = subj(next);
         name = get_obj_name(this_subj);
         
         % make a task
-        createTask(job, fcn_handle, 1, ...
+        createTask(job, fcn_handle, n_out, ...
                    {this_subj fcn_inputs{:}}, 'Name', name);
         next = next + 1;
         n_submitted = n_submitted + 1;
@@ -168,17 +168,9 @@ if dist == 1
       % capture command window output for all tasks
       % (helpful for debugging)
       alltasks = get(job, 'Tasks');
-      set(alltasks, 'CaptureCommandWindowOutput', true);
+      set(alltasks, 'CaptureDiary', true);
       submit(job);
       fprintf('job %d submitted with %d tasks.\n', job.ID, n_needed);
-      
-      % % get the scheduler's job IDs
-      % switch jm
-      %  case 'TORQUE'
-      %   % doesn't find jobs when running in MATLAB for some reason
-      %   command = sprintf('q | grep Job%d', job.ID);
-      %   [s, output] = unix(command);
-      % end
       
       jobs = [jobs job];
     end
@@ -191,11 +183,12 @@ if dist == 1
   fprintf('apply_to_subj: jobs finished: %.2f seconds.\n', toc);
   
   % report any errors
+  x = [];
   fprintf('loading updated subjects...')
   for i = 1:length(jobs)
-    n_tasks = length(jobs(i).tasks);
+    n_tasks = length(jobs(i).Tasks);
     for j = 1:n_tasks
-      task = jobs(i).tasks(j);
+      task = jobs(i).Tasks(j);
       if ~isempty(task.ErrorMessage)
         warning('eeg_ana:apply_to_subj:SubjError', ...
                 '%s threw an error for subject %s:\n  %s', ...
@@ -208,16 +201,27 @@ if dist == 1
     if isempty(temp)
       continue
     end
-    if strcmp(param.out_type, 'obj')
-      % output is some object
-      for j = 1:n_tasks
-        subj = addobj(subj, temp{j});
-      end
-    else
-      % output can use standard concatenation
-      %subj = padcat(params.dim, NaN, temp{:});
-      subj = cat(params.dim, temp{:});
+    switch params.out_type
+      case 'obj'
+        % output is some object
+        for j = 1:n_tasks
+          subj = addobj(subj, temp{j});
+        end
+      case 'array'
+        % output can use standard concatenation
+        x = cat(params.dim, x, temp{:});
+      case 'cell'
+        if isempty(x)
+          x = temp;
+        else
+          x = [x temp];
+        end
+      otherwise
+        error('Invalid out_type.')
     end
+  end
+  if ~isempty(x)
+    subj = x;
   end
   fprintf('done.\n')
     
