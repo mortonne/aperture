@@ -95,6 +95,7 @@ defaults.legend = {};
 defaults.print_input = {'-djpeg10'};
 defaults.mult_fig_windows = false;
 defaults.res_dir = get_pat_dir(pat, 'reports', 'figs');
+defaults.filename = '';
 [params, plot_params] = propval(varargin, defaults);
 plot_params = propval(plot_params, struct, 'strict', false);
 
@@ -123,6 +124,15 @@ if ~isempty(params.stat_name)
   stat = getobj(pat, 'stat', params.stat_name);
   p = get_stat(stat, 'p', params.stat_index);
   
+  w = who('-file', stat.file);
+  if ismember('statistic', w)
+    statistic = get_stat(stat, 'statistic', params.stat_index);
+    effect_dir = sign(statistic);
+    params.alpha_range = params.alpha_range / 2;
+  else
+    effect_dir = [];
+  end
+  
   sig = params.alpha_range(2); % threshold for significance
   max_sig = params.alpha_range(1); % color gradient will max out here
   
@@ -135,16 +145,19 @@ if ~isempty(params.stat_name)
     fprintf('max alpha: %.8f\n', max_sig)
   end
   
-  % make the colormap, set the pattern to be plotted as the
-  % z-scores of the p-values
-  [pattern, map, params.map_limits] = sig_colormap(p, [sig max_sig]);
+  [pattern, map, params.map_limits, crit, p_crit] = sig_colormap(p, ...
+       'alpha_range', [sig max_sig], 'dir', effect_dir);
+  if ~isempty(effect_dir)
+    p_crit = p_crit * 2;
+  end
   colormap(map)
 else
   if params.diff
     if size(pattern,1)~=2
       error('Can only take difference if there are two event types.')
     end
-    pattern = pattern(2,:,:,:) - pattern(1,:,:,:);
+    pattern = pattern(1,:,:,:) - pattern(2,:,:,:);
+    n_events = 1;
   end
   
   if strcmp(params.map_limits, 'absmax')
@@ -174,7 +187,11 @@ files = cell(num_events, size(pattern,2));
 n_figs = prod(size(files));
 fprintf('making %d TFR plots from pattern "%s"...\n', n_figs, pat.name);
 
-base_filename = sprintf('%s_%s_%s', pat.name, fig_name, pat.source);
+if ~isempty(params.filename)
+  base_filename = params.filename;
+else
+  base_filename = sprintf('%s_%s_%s', pat.name, fig_name, pat.source);
+end
 
 n = 1;
 start_fig = gcf;
@@ -206,6 +223,11 @@ for i = 1:num_events
       data = permute(data, [4 3 1 2]);
       plot_params.map_limits = params.map_limits;
       h = plot_tfr(data, freq, time, plot_params);
+      
+      if ~isempty(params.stat_name)
+        cb = colorbar;
+        set(cb, 'YTick', crit, 'YTickLabel', p_crit);
+      end
     elseif t_sing && f_sing
       error(['Cannot plot if both time and freqeuncy dimensions are ' ...
              'singleton.'])
@@ -218,7 +240,7 @@ for i = 1:num_events
       data = permute(data, [1 4 2 3]);
       h = plot_freq(data, freq, plot_params);
     end
-
+    
     % legend
     if (t_sing || f_sing) && num_events == 1
       if ~isempty(params.legend)
