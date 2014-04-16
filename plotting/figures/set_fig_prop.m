@@ -61,10 +61,10 @@ if ~isempty(opt.fig_style)
 end
 
 % axis limits
-if ~isempty(opt.x_lim)
+if ~isempty(opt.x_lim) && ~any(isnan(opt.x_lim)) && opt.x_lim(2) > opt.x_lim(1)
   set(a, 'XLim', opt.x_lim)
 end
-if ~isempty(opt.y_lim)
+if ~isempty(opt.y_lim) && ~any(isnan(opt.y_lim)) && opt.y_lim(2) > opt.y_lim(1)
   set(a, 'YLim', opt.y_lim)
 end
 
