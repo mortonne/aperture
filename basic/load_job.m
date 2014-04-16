@@ -64,16 +64,16 @@ defaults.obj_path = {};
 params = propval(varargin, defaults);
 
 for i = 1:length(job)
-  if ~strcmp(job(i).state, 'finished')
+  if ~strcmp(job(i).State, 'finished')
     fprintf('Job %d not finished yet. Skipping...\n', job(i).ID)
     continue
   end
   
-  outputs = getAllOutputArguments(job(i));
+  outputs = fetchOutputs(job(i));
   for j = 1:length(outputs)
     if isempty(outputs{j})
       fprintf('Output from job "%s" for %s is empty.\n', ...
-              job(i).name, job(i).tasks(j).name)
+              job(i).Name, job(i).Tasks(j).Name)
       continue
     end
 
