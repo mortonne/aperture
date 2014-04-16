@@ -20,9 +20,22 @@ function pdf_file = report_from_files(res_dir, sub_dirs, report_file, ...
 %  PARAMS:
 %  These options may be specified using parameter, value pairs or by
 %  passing a structure. Defaults are shown in parentheses.
-%   title - string giving a title for report. ('')
-%   ext   - file extension for all the graphics files. Set to '' to
-%           include all files. ('.eps')
+%   title           - string giving a title for report. ('')
+%   ext             - file extension for all the graphics files.
+%                     Set to '' to include all files. ('.eps')
+%   orientation     - orientation of the report; may be 'landscape'
+%                     or 'portrait'. ('landscape')
+%   layout          - layout of the report. May be:
+%                      'fig_dir' - different figure types are on the
+%                                  rows, and different directories are
+%                                  on the columns. (default)
+%                      'dir_fig' - different directories are on the
+%                                  rows, and different figure types are
+%                                  on the columns.
+%   sub_dir_labels  - cell array of string labels for each of the
+%                     directories. ({})
+%   fig_type_labels - cell array of string labels for each of the
+%                     figure types. ({})
 %
 %  EXAMPLE:
 %   In my_dir, there are subdirectories called analysis1 and analysis2.
@@ -56,6 +69,10 @@ function pdf_file = report_from_files(res_dir, sub_dirs, report_file, ...
 % options
 defaults.title = '';
 defaults.ext = '.eps';
+defaults.orientation = 'landscape';
+defaults.layout = 'fig_dir';
+defaults.sub_dir_labels = {};
+defaults.fig_type_labels = {};
 params = propval(varargin, defaults);
 
 % find the figures
@@ -72,27 +89,54 @@ for i = 1:length(sub_dirs)
   end
 end
 
+names = unique(names);
+
 % convert to create_report format
 fig_files = cat(1, file_cell{:})';
 
-% get row labels
-row_labels = cell(1, size(fig_files, 1));
-for i = 1:size(fig_files, 1)
-  [p, row_labels{i}, ext] = fileparts(names{i});
-  row_labels{i} = strrep(row_labels{i}, '_', ' ');
+% labels for the sub_dirs
+if ~isempty(params.sub_dir_labels)
+  sub_dir_labels = params.sub_dir_labels;
+else
+  sub_dir_labels = cell(1, length(sub_dirs));
+  for i = 1:length(sub_dirs)
+    sub_dir_labels{i} = strrep(sub_dirs{i}, '_', ' ');
+  end
+end
+
+% labels for the figure types
+if ischar(params.fig_type_labels) && strcmp(params.fig_type_labels, ...
+                                            'none')
+  fig_type_labels = repmat({''}, 1, length(names));
+elseif ~isempty(params.fig_type_labels)
+  fig_type_labels = params.fig_type_labels;
+else
+  fig_type_labels = cell(1, length(names));
+  for i = 1:length(names)
+    [~, fig_type_labels{i}, ~] = fileparts(names{i});
+    fig_type_labels{i} = strrep(fig_type_labels{i}, '_', ' ');
+  end
+end
+
+switch params.layout
+  case 'fig_dir'
+    % figure types X subdirectories
+    row_labels = fig_type_labels;
+    header = sub_dir_labels;
+   
+  case 'dir_fig'
+    % subdirectories X figure types
+    fig_files = fig_files';
+    
+    row_labels = sub_dir_labels;
+    header = fig_type_labels;
 end
 
 % create latex code for the cells
-table = create_report(fig_files, row_labels);
-
-% define the header based on the directory path
-header = cell(1, length(sub_dirs));
-for i = 1:length(sub_dirs)
-  header{i} = strrep(sub_dirs{i}, '_', ' ');
-end
+table = create_report(fig_files, row_labels, 'row_labels_width', 0.5);
 
 longtable(report_file, table, 'header', [{''} header], ...
-          'orientation', 'portrait', 'title', params.title);
+          'orientation', params.orientation, 'title', params.title);
 
 pdf_file = pdflatex(report_file, 'latexdvipdf');
 
