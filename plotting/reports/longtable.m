@@ -198,9 +198,9 @@ fprintf(fid,'\n');
 fprintf(fid,'\\multicolumn{%d}{c}{\\textbf{%s}} \\\\\n', n_cols, params.title);
 
 % first page table header
-fprintf(fid,'\\hline \\multicolumn{1}{|c|}{\\textbf{%s}} ', params.header{1});
+fprintf(fid,'\\hline \\multicolumn{1}{|c|}{\\footnotesize{\\textbf{%s}}} ', params.header{1});
 for j = 2:n_cols
-  fprintf(fid,'& \\multicolumn{1}{c|}{\\textbf{%s}} ', params.header{j});
+  fprintf(fid,'& \\multicolumn{1}{c|}{\\footnotesize{\\textbf{%s}}} ', params.header{j});
 end
 fprintf(fid,'\\\\ \\hline\n');
 fprintf(fid,'\\endfirsthead\n');
