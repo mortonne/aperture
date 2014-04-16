@@ -45,6 +45,10 @@ end
 % write data to a text file
 export_R(data, group, infile)
 
+if ~exist(infile, 'file')
+  error('infile %s not written', infile)
+end
+
 % run the ANOVA in R
 res.output = run_R(f, infile, outfile);
 res.levels = levels;
