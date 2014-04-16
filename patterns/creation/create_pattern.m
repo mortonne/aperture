@@ -107,6 +107,7 @@ defaults.durationMS = 2200;
 defaults.resampledRate = [];
 defaults.downsample = [];
 defaults.freqs = [];
+defaults.freq_bands = [];
 defaults.precision = 'double';
 defaults.overwrite = false;
 params = propval(params, defaults, 'strict', false);
@@ -175,7 +176,11 @@ end
 time = init_time(ms_values);
 
 % frequency dimension
-freq = init_freq(params.freqs);
+if ~isempty(params.freq_bands)
+  freq = init_freq(mean(params.freq_bands, 2), {}, params.freq_bands);
+else
+  freq = init_freq(params.freqs);
+end
 
 % create a pat object to keep track of this pattern
 pat = init_pat(pat_name, pat_file, subj.id, params, ...
