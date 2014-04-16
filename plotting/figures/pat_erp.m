@@ -90,6 +90,7 @@ defaults.alpha = 0.05;
 defaults.correctm = '';
 defaults.y_label = '';
 defaults.plot_mult_events = true;
+defaults.show_legend = true;
 defaults.legend = {};
 defaults.print_input = {'-depsc'};
 defaults.mult_fig_windows = false;
@@ -137,8 +138,18 @@ if n_events > 1 && params.plot_mult_events && isempty(params.legend)
     params.legend = get_dim_labels(pat.dim, 'ev');
   end
 end
-if n_events > 1 && params.plot_mult_events
-  plot_params.colors = {'r' 'b' 'g'};
+if n_events == 3 && params.plot_mult_events
+  plot_params.colors = {[0.8195 0.0588 0.1882] ...
+                        [0.1804 0.1765 0.4667] ...
+                        [0.1451 0.5569 0.2627] + .1};
+else
+  plot_params.colors = {[     0         0    1.0000] ...
+                        [     0    0.5000         0] ...
+                        [1.0000         0         0] ...
+                        [     0    0.7500    0.7500] ...
+                        [0.7500         0    0.7500] ...
+                        [0.7500    0.7500         0] ...
+                        [0.2500    0.2500    0.2500]};
 end
 if params.plot_mult_events
   n_events = 1;
@@ -216,7 +227,7 @@ for i = 1:n_events
       end
 
       % legend
-      if n_events == 1 && ~isempty(params.legend)
+      if n_events == 1 && ~isempty(params.legend) & params.show_legend
         l = legend(h, params.legend);
         set(l, 'Location', 'NorthEast')
       end
