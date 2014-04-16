@@ -89,6 +89,7 @@ else
 end
 defaults.event_labels = {};
 defaults.event_levels = {};
+defaults.transform = '';
 defaults.precision = 'single';
 defaults.save_as = [pat.name '-' stat_name];
 defaults.overwrite = true;
@@ -251,6 +252,7 @@ function pat = get_patclass_stats(pat, stat_name, params)
           else
             inputs = {params.class_output};
           end
+          inputs{3} = params.transform;
           pattern(:,c,t,f) = get_acts(res.iterations(:,c,t,f), ...
                                       params.stat_type, inputs{:});
           
@@ -274,14 +276,14 @@ function pat = get_patclass_stats(pat, stat_name, params)
   pat = set_mat(pat, pattern, 'ws');
 
 
-function acts = get_acts(res, stat_type, class_output, classes)
+function acts = get_acts(res, stat_type, class_output, classes, transform)
 %GET_ACTS   Get information from classifier output.
 %
 %  acts = get_acts(res, stat_type, class_output, classes)
 
   n_events = length(res(1).test_idx);
   acts = NaN(n_events, 1);
-  
+
   for i = 1:length(res)
     iter_res = res(i);
     missing = all(all(isnan(iter_res.acts), 1), 3);
@@ -307,12 +309,19 @@ function acts = get_acts(res, stat_type, class_output, classes)
           mat(:,j) = iter_res.acts(correct_targ(j),j,:);
         end
         
+        if strcmp(transform, 'z')
+          mat = norminv(mat);
+        end
+        
         % average over replications
         mat = nanmean(mat, 1);
         
       elseif isscalar(class_output) && isnumeric(class_output)
         % get the specified unit
         mat = iter_res.acts(class_output, :);
+        if strcmp(transform, 'z')
+          mat = norminv(mat);
+        end
         
       elseif isnumeric(class_output)
         % vector of category labels
@@ -326,7 +335,10 @@ function acts = get_acts(res, stat_type, class_output, classes)
             continue
           end
           mat(j) = iter_res.acts(act_ind,j);
-        end        
+        end
+        if strcmp(transform, 'z')
+          mat = norminv(mat);
+        end
       else
         error('Invalid setting for class_output.')
       end
