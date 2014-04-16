@@ -61,50 +61,52 @@ if ~exist('time', 'var')
 end
 
 % set default parameters
-defaults.time_units = 'ms';
-defaults.volt_units = '\muV';
-defaults.colors = {};
-defaults.x_lim = [];
-defaults.y_lim = [];
-defaults.x_label = '';
-defaults.y_label = '';
-defaults.plot_input = {'LineWidth', 3};
-defaults.mark = [];
-defaults.fill_color = [.8 .8 .8];
-defaults.labels = {};
-defaults.legend_input = {};
-params = propval(varargin, defaults);
+def.time_units = 'ms';
+def.volt_units = '\muV';
+def.colors = {};
+def.plot_input = {'LineWidth', 3};
+def.mark = [];
+def.fill_color = [.8 .8 .8];
+def.labels = {};
+def.legend_input = {};
+def.plot_zero = true;
+[opt, plot_opt] = propval(varargin, def);
 
-publishfig
+def = [];
+def.x_lim = [];
+def.y_lim = [];
+def.x_label = '';
+def.y_label = '';
+plot_opt = propval(plot_opt, def, 'strict', false);
 
-% x-axis values
+%% x-axis
+
+% time values
 if ~isempty(time)
   x = time;
 else
   x = 1:size(data, 2);
 end
 
-% x-axis label
-if ~isempty(params.x_label)
-  xlabel(params.x_label)
-elseif ~isempty(time)
-  xlabel(sprintf('Time (%s)', params.time_units))
-else
-  xlabel('Time (samples)')
+% label
+if isempty(plot_opt.x_label)
+  if ~isempty(time)
+    plot_opt.x_label = sprintf('Time (%s)', opt.time_units);
+  else
+    plot_opt.x_label = 'Time (samples)';
+  end
 end
 
-% set the x-limits
-if ~isempty(params.x_lim)
-  x_lim = params.x_lim;
-else
-  x_lim = [x(1) x(end)];
+% limits
+if isempty(plot_opt.x_lim)
+  plot_opt.x_lim = [x(1) x(end)];
 end
 
-% y-axis
-if ~isempty(params.y_label)
-  ylabel(params.y_label)
-else
-  ylabel(sprintf('Voltage (%s)', params.volt_units))
+%% y-axis
+
+% label
+if isempty(plot_opt.y_label)
+  plot_opt.y_label = sprintf('Voltage (%s)', opt.volt_units);
 end
 
 % min and max of the data
@@ -117,57 +119,57 @@ if isnan(y_max)
   y_max = 1;
 end
 
-% set the y-limits
-if ~isempty(params.y_lim)
-  % use standard y-limits
-  y_lim = params.y_lim;
-else
+% limits
+if isempty(plot_opt.y_lim)
   % buffer from top and bottom
   buffer = (y_max - y_min) * 0.2;
-  y_lim = [y_min - buffer y_max + buffer];
+  plot_opt.y_lim = [y_min - buffer y_max + buffer];
 end
 
 % mark samples
 hold on
-if ~isempty(params.mark)
-  if ~isvector(params.mark)
-    error('params.mark must be a vector.')
-  elseif length(params.mark)~=length(x)
-    error('params.mark must be the same length as data.')
+if ~isempty(opt.mark)
+  if ~isvector(opt.mark)
+    error('opt.mark must be a vector.')
+  elseif length(opt.mark) ~= length(x)
+    error('opt.mark must be the same length as data.')
   end
   
-  offset = diff(y_lim) * 0.07;
+  offset = diff(plot_opt.y_lim) * 0.07;
   bar_y = y_min - offset;
   bar_y_lim = [(bar_y - offset / 2) bar_y];
-  shade_regions(x, params.mark, bar_y_lim, params.fill_color);
+  shade_regions(x, opt.mark, bar_y_lim, opt.fill_color);
 end
 
 % make the plot
-h = plot(x, double(data), '-k', params.plot_input{:});
+h = plot(x, double(data), '-k', opt.plot_input{:});
 
 % change line colors from their defaults
-if ~isempty(params.colors)
-  for i=1:length(h)
-    set(h(i), 'Color', params.colors{mod(i - 1, length(params.colors)) + 1})
+if ~isempty(opt.colors)
+  for i = 1:length(h)
+    set(h(i), 'Color', opt.colors{mod(i - 1, length(opt.colors)) + 1})
   end
 end
 
 % add legend and line labels
-if ~isempty(params.labels)
-  l = legend(h, params.labels, params.legend_input{:});
+if ~isempty(opt.labels)
+  l = legend(h, opt.labels, opt.legend_input{:});
 end
 
-% set limits
-set(gca, 'YLimMode', 'manual')
-set(gca, 'XLim', x_lim, 'YLim', y_lim)
-set(gca, 'FontSize', 26, 'LineWidth', 3)
-set(get(gca, 'XLabel'), 'FontSize', 26)
-set(get(gca, 'YLabel'), 'FontSize', 26)
+% set figure properties, style
+set_fig_prop(gcf, plot_opt);
 
 % plot axes
-plot(get(gca, 'XLim'), [0 0], '--k', 'LineWidth', 3);
-plot([0 0], y_lim, '--k', 'LineWidth', 3);
+if opt.plot_zero
+  x_lim = get(gca, 'XLim');
+  y_lim = get(gca, 'YLim');
+  plot(x_lim, [0 0], '--k', 'LineWidth', 3);
+  if x_lim(1) < 0
+    plot([0 0], y_lim, '--k', 'LineWidth', 3);
+  end
+end
 hold off
+
 
 function shade_regions(x, mark, y_lim, fill_color)
   %SHADE_REGIONS   Shade in multiple rectangles.
@@ -207,4 +209,4 @@ function shade_regions(x, mark, y_lim, fill_color)
     set(h, 'edgecolor', fill_color)
     hold on
   end
-%endfunction
+
