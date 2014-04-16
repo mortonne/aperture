@@ -43,10 +43,10 @@ function h = image_sorted(data, x, index, varargin)
 % along with EEG Analysis Toolbox.  If not, see <http://www.gnu.org/licenses/>.
 
 % input checks
-if ~exist('x', 'var')
+if nargin < 2 || isempty(x)
   x = 1:size(data, 2);
 end
-if ~exist('index', 'var')
+if nargin < 3 || isempty(index)
   index = 1:size(data, 1);
   defaults.plot_index = false;
 else
