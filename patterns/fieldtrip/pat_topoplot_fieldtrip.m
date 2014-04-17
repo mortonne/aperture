@@ -291,6 +291,7 @@ for e=1:size(pattern,1)
       % remove perimeter channels
       x(to_blank) = mean(map_limits);
       
+      clf
       publishfig
       colormap(map)
       
@@ -314,7 +315,7 @@ for e=1:size(pattern,1)
               % topoplot with emarker2 and emarker3 here
               topoplot_fieldtrip(x, params.chan_locs, 'maplimits', map_limits, ...
                            'emarker2', {[mark_chans_pos], 'o', 'r', 10, 1}, ...
-                           'emarker3', {[mark_chans_neg], 'o', 'k', 10, 1}, ...
+                           'emarker3', {[mark_chans_neg], 'o', 'b', 10, 1}, ...
                            params.plot_input{:});
               else
                 % topoplot with emarker2 here
@@ -329,7 +330,7 @@ for e=1:size(pattern,1)
                 elseif ~isempty(mark_chans_neg)
                   mark_chans = mark_chans_neg;
                   topoplot(x, params.chan_locs, 'maplimits', map_limits, ...
-                           'emarker2', {[mark_chans], 'o', 'k', 10, 1}, ...
+                           'emarker2', {[mark_chans], 'o', 'b', 10, 1}, ...
                            params.plot_input{:});
                 end
               end

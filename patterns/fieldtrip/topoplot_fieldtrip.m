@@ -1558,6 +1558,7 @@ end
 
 
 if ~isempty(Values)
+    Values = double(Values);
 	if length(Values) == length(Th)  % if as many map Values as channel locs
 		intValues = Values(intchans);
 		Values = Values(pltchans);
@@ -1658,7 +1659,7 @@ if ~strcmpi(STYLE,'blank') % if draw interpolated scalp map
   xi = linspace(xmin,xmax,GRID_SCALE);   % x-axis description (row vector)
   yi = linspace(ymin,ymax,GRID_SCALE);   % y-axis description (row vector)
 
-  [Xi,Yi,Zi] = griddata(inty,intx,intValues,yi',xi,'invdist'); % interpolate data
+  [Xi,Yi,Zi] = griddata(inty,intx,intValues,yi',xi,'v4'); % interpolate data
   %
   %%%%%%%%%%%%%%%%%%%%%%% Mask out data outside the head %%%%%%%%%%%%%%%%%%%%%
   %
