@@ -26,30 +26,26 @@ fprintf('Removing epoch overlap...\n')
 
 events = eeg_seg.epoch;
 
-% currently assuming all one session, so that eegoffset is on the
-% same scale for all events
-if isfield(events, 'session') && length(unique([events.session])) > 1
-  % fix the eegoffset field so that it will be unique for each
-  % session. Assuming that eegoffsets in each session are sorted in the
-  % epoch structure
-  session = [events.session];
-  usession = unique(session);
+if length(unique({events.eegfile})) > 1
+  eegfile = {events.eegfile};
+  ueegfile = unique(eegfile);
   
-  max_prev = NaN;
-  range_prev = NaN;
-  for i = 1:length(usession)
-    ind = find(session == usession(i));
+  % determine an adequate buffer so that epochs in different EEG
+  % files are not assigned too close of eegoffsets
+  time_range = NaN(1, length(ueegfile));
+  time_max = NaN(1, length(ueegfile));
+  for i = 1:length(ueegfile)
+    ind = find(strcmp(eegfile, ueegfile{i}));
+    time_max(i) = events(ind(end)).eegoffset;
+    time_range(i) = time_max(i) - events(ind(1)).eegoffset;
+  end
+  buffer = max(time_range);
+  
+  for i = 2:length(ueegfile)
+    ind = find(strcmp(eegfile, ueegfile{i}));
     
-    if ~isnan(max_prev)
-      % shift the offset times so they will not overlap. Use the range of
-      % the previous session to determine a (presumably) adequate
-      % buffer so that epochs in different sessions do not overlap
-      c = num2cell([events(ind).eegoffset] + max_prev + range_prev);
-      [events(ind).eegoffset] = c{:};
-    end
-    
-    max_prev = events(ind(end)).eegoffset;
-    range_prev = max_prev - events(ind(1)).eegoffset;
+    c = num2cell([events(ind).eegoffset] + time_max(i-1) + buffer);
+    [events(ind).eegoffset] = c{:};
   end
 end
 
