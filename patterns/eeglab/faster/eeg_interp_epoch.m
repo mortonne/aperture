@@ -11,16 +11,22 @@ function [EEG, rej_epoch_chan, rej_epoch] = eeg_interp_epoch(EEG, ...
 %      eeg_chans, ref_chan, ...)
 
 % options
-def.amp_diff_thresh = 100;
+def.amp_diff_thresh = 150;
 def.bad_epoch_thresh = floor(length(eeg_chans) / 10);
 def.rej_measure = ones(1, 4);
 def.rej_thresh = 3;
 def.rej_stat = 'iqr';
+def.baseline = [];
 def.log_file = '';
 def.verbose = false;
 opt = propval(varargin, def);
 
-% first, mark channel-epochs with amplitude differences above a
+% baseline correction
+if ~isempty(opt.baseline)
+  EEG = pop_rmbase(EEG, opt.baseline);
+end
+
+% mark channel-epochs with amplitude differences above a
 % threshold. This ensures that remaining epochs are below a certain
 % level of noise, before the less sensitive statistical thresholds
 % below
