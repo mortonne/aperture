@@ -11,7 +11,7 @@ function list_prop = epoch_channel_properties(EEG, eeg_chans, ref_chan)
 %
 %  list_prop = epoch_channel_properties(EEG, eeg_chans, ref_chan)
 
-if nargin < 4
+if nargin < 3
   ref_chan = [];
 end
 
