@@ -1,10 +1,5 @@
-function EEG = eeg_faster_post_ica(EEG, bad_comp, eeg_chans, ref_chan)
-
-% % add component information
-% f = {'icaact' 'icawinv' 'icasphere' 'icaweights' 'icachansind' 'etc'};
-% for i = 1:length(f)
-%   EEG.(f{i}) = ica_info.(f{i});
-% end
+function EEG = eeg_faster_post_ica(EEG, bad_comp, eeg_chans, ref_chan, ...
+                                   varargin)
 
 % reject components
 EEG = pop_subcomp(EEG, bad_comp, 0);
@@ -16,11 +11,17 @@ if ~isempty(chans_to_interp)
 end
 
 % interpolate bad epoch-channels
-EEG = eeg_interp_epoch(EEG, eeg_chans, ref_chan);
+n_epochs_orig = EEG.trials;
+[EEG, rej_epoch_chan, rej_epoch1] = eeg_interp_epoch(EEG, eeg_chans, ...
+                                                  ref_chan, varargin{:});
 
 % average reference
 EEG = pop_reref(EEG, [], 'keepref', 'on');
 
 % interpolate epoch-channels again
-EEG = eeg_interp_epoch(EEG, eeg_chans, []);
+[EEG, rej_epoch_chan, rej_epoch2] = eeg_interp_epoch(EEG, eeg_chans, ...
+                                                  [], varargin{:});
 
+n_epochs_rej = length(rej_epoch1) + length(rej_epoch2);
+fprintf('%d/%d (%.f%%) of trials rejected.\n', ...
+        n_epochs_rej, n_epochs_orig, (n_epochs_rej/n_epochs_orig) * 100)
