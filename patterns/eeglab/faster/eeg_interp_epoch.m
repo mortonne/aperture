@@ -11,10 +11,10 @@ function [EEG, rej_epoch_chan, rej_epoch] = eeg_interp_epoch(EEG, ...
 %      eeg_chans, ref_chan, ...)
 
 % options
-def.amp_diff_thresh = 150;
+def.amp_diff_thresh = 100;
 def.bad_epoch_thresh = floor(length(eeg_chans) / 10);
-def.rej_measure = ones(1, 4);
-def.rej_thresh = 3;
+def.rej_measure = [1 1 1 0];
+def.rej_thresh = 4;
 def.rej_stat = 'iqr';
 def.baseline = [];
 def.log_file = '';
