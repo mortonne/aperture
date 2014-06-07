@@ -11,11 +11,9 @@ function [EEG, rej_epoch_chan, rej_epoch] = eeg_interp_epoch(EEG, ...
 %      eeg_chans, ref_chan, ...)
 
 % options
-def.amp_diff_thresh = 100;
+def.amp_diff_thresh = 150;
 def.bad_epoch_thresh = floor(length(eeg_chans) / 10);
-def.rej_measure = [1 1 1 0];
-def.rej_thresh = 4;
-def.rej_stat = 'iqr';
+def.rej_thresh = 6;
 def.baseline = [];
 def.log_file = '';
 def.verbose = false;
@@ -32,10 +30,6 @@ end
 % below
 amp_diffs = epoch_amp_diff(EEG, eeg_chans);
 
-rej_opt = struct('measure', opt.rej_measure, ...
-                 'z', opt.rej_thresh, ...
-                 'stat', opt.rej_stat);
-
 if ~isempty(opt.log_file)
   fid = fopen(opt.log_file, 'w');
   print_log = true;
@@ -46,14 +40,20 @@ else
   print_log = false;
 end
 
+% calculate diagnostic channel properties
+list_prop = epoch_channel_properties(EEG, eeg_chans, ref_chan);
+
+% normalize the properties and get the multiple of the IQR for the
+% most outlying property for each channel-epoch
+max_prop = norm_list_prop(list_prop);
+
 rej_epoch_chan = cell(1, size(EEG.data, 3));
 do_reject = cell(1, size(EEG.data, 3));
 excluded = false(1, size(EEG.data, 3));
-list_prop = epoch_channel_properties(EEG, eeg_chans, ref_chan);
 for i = 1:size(EEG.data, 3)
   % channels with large amplitude changes
   high_amp_diff = amp_diffs(:,i) > opt.amp_diff_thresh;
-  rejected = min_z(list_prop(:,:,i), rej_opt);
+  rejected = max_prop(:,i) > opt.rej_thresh;
   
   % get full list of excluded channels
   rej_epoch_chan{i} = sort([eeg_chans(high_amp_diff) eeg_chans(rejected)]);
