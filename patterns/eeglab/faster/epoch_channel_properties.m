@@ -15,7 +15,7 @@ if nargin < 3
   ref_chan = [];
 end
 
-n_measures = 4;
+n_measures = 3;
 list_prop = NaN(length(eeg_chans), n_measures, EEG.trials);
 
 measure = 1;
@@ -36,11 +36,6 @@ measure = measure + 1;
 list_prop(:,measure,:) = range(EEG.data(eeg_chans,:,:), 2);
 measure = measure + 1;
 
-% deviation from channel mean
-chan_mean = mean(EEG.data(eeg_chans,:), 2);
-list_prop(:,measure,:) = abs(mean(EEG.data(eeg_chans,:,:), 2) - ...
-                             repmat(chan_mean, [1 1 EEG.trials]));
-
 if length(ref_chan) == 1
   % distance from the reference channel to each recording channel
   ref_ind = find(eeg_chans == ref_chan);
@@ -55,16 +50,6 @@ if length(ref_chan) == 1
     for j = 1:size(list_prop, 3)
       list_prop(:,i,j) = correct_ref_dist(pol_dist, list_prop(:,i,j));
     end
-  end
-end
-
-for i = 1:size(list_prop, 2)
-  for j = 1:size(list_prop, 3)
-    % set undefined stats to the median over the other channels
-    list_prop(isnan(list_prop(:,i,j)),i,j) = nanmedian(list_prop(:,i,j));
-  
-    % subtract out the median of each property
-    list_prop(:,i,j) = list_prop(:,i,j) - median(list_prop(:,i,j));
   end
 end
 
