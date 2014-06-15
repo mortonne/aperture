@@ -4,7 +4,7 @@ function wait_for_jobs(jobs, refresh)
 %  wait_for_jobs(jobs, refresh)
 %
 %  INPUTS:
-%     jobs:  vector of job objects.
+%     jobs:  vector of job handles.
 %
 %  refresh:  seconds to pause between checking job status. Setting to
 %            check less often will reduce the load on the scheduler.
