@@ -259,11 +259,34 @@ if params.save_mats && strcmp(get_obj_loc(pat), 'ws')
       fprintf('saved.\n')
     end
   end
-elseif params.verbose
-  % nothing to do
-  if new_file
-    fprintf('returning as "%s".\n', pat.name)
-  else
-    fprintf('updated.\n')
+else
+  if new_file && ~params.save_mats && strcmp(get_obj_loc(pat), 'ws')
+    % attempt to remove directories that were created
+    % automatically. Directories will not be removed if there is
+    % anything in them. Ideally, these directories would just not
+    % be created if they aren't needed, but it's easier to add code
+    % here than deal with the fairly complicated code above.
+    pat_dir = gen_pat_dir(pat);
+    for i = 1:length(patsize(pat.dim))
+      [dim_name, t, t, dim_long_name] = read_dim_input(i);
+      dir = fullfile(pat_dir, dim_long_name);
+      if exist(dir, 'dir')
+        [s,m,d] = rmdir(dir);
+      end
+    end
+    if exist(fullfile(pat_dir, 'patterns'), 'dir')
+      [s,m,d] = rmdir(fullfile(pat_dir, 'patterns'));
+    end
+    if exist(pat_dir, 'dir')
+      [s,m,d] = rmdir(pat_dir);
+    end
+  end
+  
+  if params.verbose
+    if new_file
+      fprintf('returning as "%s".\n', pat.name)
+    else
+      fprintf('updated.\n')
+    end
   end
 end
