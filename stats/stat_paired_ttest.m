@@ -39,6 +39,10 @@ function [p, statistic, res] = stat_paired_ttest(data, group, tail)
 % You should have received a copy of the GNU Lesser General Public License
 % along with EEG Analysis Toolbox.  If not, see <http://www.gnu.org/licenses/>.
 
+if nargin < 3
+  tail = 'both';
+end
+
 if length(group) ~= 2
   error('must have exactly two factors.')
 end
