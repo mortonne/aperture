@@ -1,5 +1,8 @@
 function pat = ica_pattern(pat, varargin)
-
+%ICA_PATTERN   Run independent components analysis on a pattern.
+%
+%  pat = ica_pattern(pat, ...)
+  
 % options
 def.locs_file = 'HCGSN128.loc';
 def.reject_epochs = false;
@@ -85,7 +88,7 @@ EEG = pop_runica(EEG, 'chanind', opt.ica_chans, ...
 if opt.epoch_overlap
   EEG = eeg_epoch_overlap(EEG);
 end
-             
+
 %% save results
 
 if isempty(opt.finalname)
