@@ -28,27 +28,7 @@ def.data_type = 'pattern';
 def.field = '';
 opt = propval(varargin, def);
 
-pat_size = patsize(pat.dim);
-if any(pat_size(2:end) > 1)
-  error('Dimensions other than events must be singleton.')
-end
-
-% load the factors
-n_factors = length(bin_defs);
-n_samples = pat_size(1);
-index = NaN(n_samples, n_factors);
 events = get_dim(pat.dim, 'ev');
-levels = cell(1, n_factors);
-uindex = cell(1, n_factors);
-x_size = NaN(1, n_factors);
-for i = 1:n_factors
-  [index(:,i), levels{i}] = make_event_index(events, bin_defs{i});
-  uindex{i} = nanunique(index(:,i));
-  x_size(i) = length(uindex{i});
-end
-
-% fill the matrix, organized by factor levels
-x = NaN(x_size);
 
 switch opt.data_type
   case 'pattern'
@@ -59,13 +39,5 @@ switch opt.data_type
     error('Unknown data_type: %s', opt.data_type);
 end
 
-for i = 1:n_samples
-  % get the index for each dimension for this sample
-  ind = cell(1, n_factors);
-  for j = 1:n_factors
-    ind{j} = index(i,j);
-  end
-  
-  x(ind{:}) = pattern(i);
-end
+[x, levels] = load_mat_by_factor(pattern, events, bin_defs);
 
