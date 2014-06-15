@@ -1,4 +1,4 @@
-function dir = check_dir(dir)
+function dir = check_dir(dir, create)
 %CHECK_DIR   Check a directory path string.
 %
 %  Fixes formatting issues (replaces tildes with $HOME, adds ./ if
@@ -23,6 +23,10 @@ function dir = check_dir(dir)
 % You should have received a copy of the GNU Lesser General Public License
 % along with EEG Analysis Toolbox.  If not, see <http://www.gnu.org/licenses/>.
 
+if nargin < 2
+  create = true;
+end
+
 % fix formatting that can cause problems
 if strcmp(dir(1), '~')
   % replace tilde with $HOME
@@ -33,7 +37,7 @@ elseif ~ismember(dir(1), {'/', '.'})
 end
 
 % make the directory if necessary
-if ~exist(dir, 'dir')
+if create && ~exist(dir, 'dir')
   mkdir(dir)
 end  
 
