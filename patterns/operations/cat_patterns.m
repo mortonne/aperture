@@ -55,11 +55,20 @@ else
   default_pat_name = 'cat_pattern';
 end
 
+% get a source identifier to set filenames
+source = unique({pats.source});
+if length(source) > 1
+  source = 'multiple';
+else
+  source = source{:};
+end
+
 % options
 defaults.save_mats = true;
 defaults.save_as = default_pat_name;
-defaults.res_dir = get_pat_dir(def_pat);
+defaults.res_dir = gen_pat_dir(def_pat);
 defaults.verbose = true;
+defaults.source = source;
 params = propval(varargin, defaults);
 pat_name = params.save_as;
 
@@ -106,14 +115,6 @@ if ~isequal(pat_sizes{:})
   error('pattern dimensions do not match.')
 end
 
-% get a source identifier to set filenames
-source = unique({pats.source});
-if length(source) > 1
-  source = 'multiple';
-else
-  source = source{:};
-end
-
 if params.save_mats
   loc = 'hd';
 else
@@ -151,7 +152,7 @@ if ~isempty(dim_name)
     mkdir(dim_dir);
   end
   dim.(dim_name).file = fullfile(dim_dir, ...
-      objfilename(dim_dir_name, pat_name, source));
+      objfilename(dim_dir_name, pat_name, params.source));
   dim = set_dim(dim, dim_name, cat_dim, loc);
 end
 
@@ -178,8 +179,8 @@ end
 
 % create the new pat object
 pat_file = fullfile(pat_dir, ...
-                    objfilename('pattern', pat_name, source));
-pat = init_pat(pat_name, pat_file, source, def_pat.params, dim);
+                    objfilename('pattern', pat_name, params.source));
+pat = init_pat(pat_name, pat_file, params.source, def_pat.params, dim);
 if params.verbose
   fprintf('pattern "%s" created.\n', pat_name)
 end
