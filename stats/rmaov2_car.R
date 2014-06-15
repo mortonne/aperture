@@ -9,7 +9,17 @@ data <- read.table(args[1], colClasses=c('numeric', rep('factor', 3)),
 
 n <- length(levels(data$subject))
 conds <- length(data$dep) / n
-data$time <- rep(seq(1, conds), each=n)
+
+l1 <- levels(data$V1)
+l2 <- levels(data$V2)
+k <- 1
+data$time = vector('numeric', length(data$dep))
+for (i in 1:length(l1)) {
+  for (j in 1:length(l2)) {
+    data$time[data$V1 == l1[i] & data$V2 == l2[j]] = k
+    k = k + 1
+  }
+}
 
 # reshape to wide format
 wide <- reshape(data, v.names='dep', timevar='time', idvar='subject', direction='wide', drop=c('V1','V2'))
