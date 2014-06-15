@@ -61,8 +61,8 @@ end
 
 % options
 defaults.async = false;
-defaults.memory = '1.7G';
-defaults.walltime = '00:15:00'; % Torque
+defaults.memory = '2G';
+defaults.walltime = '00:30:00'; % Torque
 defaults.arch = '';             % Torque 
 defaults.max_jobs = Inf;
 defaults.debug = true;
@@ -75,32 +75,15 @@ if params.debug
 end
 
 if dist == 1
-  % determine which resource manager is being used
-  jm = which_resource_manager;
-  if strcmp('none', jm)
-    error('Job manager not found.')
-  end
-    
   sm = getScheduler();
   sm = setQsub(sm, params);
   
-  % create a job to run all subjects
-  % use the current path, and override pathdef.m, jobStartup.m, etc.
-  path_cell = regexp(path, ':', 'split');
-  main_dir = fileparts(which('eeg_ana'));
-  job_startup_file = fullfile(main_dir, 'utils', 'jobStartup.m');
-  
   % set limits on active at any time
   n_jobs = length(subj);
-  n_running = 0;
-  c = cell(1, 4);
-  [c{:}] = findJob(sm);
-  n_start = cellfun(@length, c);
-  
   REFRESH = 2;
   next = 1;
   jobs = [];
-  n_finished = 0;
+  n_running = 0;
   n_submitted = 0;
   if strcmp(params.out_type, 'obj')
     n_out = 1;
@@ -109,7 +92,7 @@ if dist == 1
   end
   tic
   first = false;
-  while n_finished < n_jobs
+  while n_submitted < n_jobs
     if ~first
       pause(REFRESH)
     else
@@ -117,42 +100,15 @@ if dist == 1
     end
 
     % update counts
-    [c{:}] = findJob(sm);
-    
-    % get total number of tasks for each type
-    totals = zeros(1, 4);
-    for i = 1:length(c)
-      for j = n_start(i) + 1:length(c{i})
-        totals(i) = totals(i) + length(c{i}(j).Tasks);
-      end
-    end
-    
-    % for running, some tasks may be finished
-    counts = zeros(1, 4);
-    counts([1 2 4]) = totals([1 2 4]);
-    for j = n_start(3) + 1:length(c{3})
-      try
-        % this command sometimes fails (probably intermittently,
-        % due to some sort of scheduler or filesystem issues)
-        [p, r, f] = findTask(c{3}(j));
-      catch
-        % if getting status fails, just wait, then check again
-        continue
-      end
-      counts(3) = counts(3) + length(r);
-      counts(4) = counts(4) + length(f);
-    end
-    
+    counts = get_task_states(jobs);
     n_running = sum(counts(1:3));
-    n_finished = counts(4);
-    n_left = n_jobs - (next - 1);
+    n_left = n_jobs - n_submitted;
     
     % submit more jobs
     if n_left > 0 && n_running < params.max_jobs
       n_needed = min([n_left params.max_jobs - n_running]);
-      job_name = sprintf('apply_to_subj:%s', func2str(fcn_handle));
-      job = createJob(sm, 'AttachedFiles', {job_startup_file}, ...
-                      'Name', job_name);
+      job_name = get_job_name(fcn_handle, subj(next), fcn_inputs);
+      job = createJob(sm, 'Name', job_name);
       
       for i = 1:n_needed
         this_subj = subj(next);
@@ -166,7 +122,6 @@ if dist == 1
       end
       
       % capture command window output for all tasks
-      % (helpful for debugging)
       alltasks = get(job, 'Tasks');
       set(alltasks, 'CaptureDiary', true);
       submit(job);
@@ -174,12 +129,16 @@ if dist == 1
       
       jobs = [jobs job];
     end
-    
-    if params.async && n_submitted == n_jobs
-      subj = jobs;
-      return
-    end
   end
+  
+  if params.async
+    subj = jobs;
+    return
+  end
+
+  % wait for remaining tasks to finish
+  wait_for_jobs(jobs)
+  
   fprintf('apply_to_subj: jobs finished: %.2f seconds.\n', toc);
   
   % report any errors
@@ -197,7 +156,7 @@ if dist == 1
       end
     end
     
-    temp = getAllOutputArguments(jobs(i));
+    temp = fetch_outputs_robust(jobs(i));
     if isempty(temp)
       continue
     end
@@ -291,3 +250,20 @@ else
     fprintf('apply_to_subj: finished: %.2f seconds.\n', toc);
   end
 end
+
+
+function job_name = get_job_name(f, subj, inputs)
+
+  f_name = func2str(f);
+  issubobj = isfield(subj, 'obj') && ...
+      isfield(subj, 'obj_name') && ...
+      ~isfield(subj, 'sess') && ...
+      strcmp(f_name, 'apply_to_obj');
+  if issubobj
+    obj_type = get_obj_type(subj.obj);
+    sub_f_name = func2str(inputs{2});
+    job_name = sprintf('apply_to_%s:%s', obj_type, sub_f_name);
+  else
+    job_name = sprintf('apply_to_subj:%s', f_name);
+  end
+  
