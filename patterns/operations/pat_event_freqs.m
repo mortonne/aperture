@@ -2,14 +2,12 @@ function [n, labels] = pat_event_freqs(subj, pat_name, event_bins, ...
                                        event_filter)
 %PAT_EVENT_FREQS   Frequency of different event types in patterns.
 %
-%  *** DEPRECATED ***
-%  Use the more general pat_group_freqs instead.
-%  *** DEPRECATED ***
-%
 %  Use this to see how frequent different types of events are for
 %  a set of subjects.
 %
 %  [n, labels] = pat_event_freqs(subj, pat_name, event_bins, event_filter)
+%
+%  See also pat_group_freqs.
 
 if ~exist('event_filter', 'var')
   event_filter = '';
@@ -19,7 +17,7 @@ end
 n_subj = length(subj);
 all_n = cell(1, n_subj);
 all_labels = cell(1, n_subj);
-parfor i = 1:n_subj
+for i = 1:n_subj
   fprintf('%s\n', subj(i).id)
   pat = getobj(subj(i), 'pat', pat_name);
   [subj_n, subj_labels] = get_subj_freq(pat, event_bins, event_filter);
