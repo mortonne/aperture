@@ -66,7 +66,7 @@ if exist(outfile, 'file')
   p = c{2};
 
   delete(outfile)
-elseif strcmp(f, 'rmaov1.R')
+elseif strcmp(f, 'rmaov1_car.R')
   % assume using the CAR package, which doesn't give machine-
   % readable output; must parse the printed summary instead
 
