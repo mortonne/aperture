@@ -237,7 +237,7 @@ else
     map_limits = [-absmax absmax];
   end
 
-  colormap('default');
+  colormap('jet');
   map = colormap;
 end
 
