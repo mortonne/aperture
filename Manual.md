@@ -1,0 +1,3 @@
+# APERTURE manual #
+
+This manual gives overviews of the different components of the toolbox. [DataStructures](DataStructures.md) gives information about the data structures used throughout the toolbox. [BatchProcessing](BatchProcessing.md) gives information about processing multiple subjects in serial or in parallel. [Importing](Importing.md) discusses methods of importing data. [Statistics](Statistics.md) gives information about running mass-univariate and multivariate statistics. [Plotting](Plotting.md) documents creation of individual figures and reports with many figures.

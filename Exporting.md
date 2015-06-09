@@ -1,0 +1,13 @@
+# Exporting #
+
+eeg\_ana supports limited interfacing with other toolboxes:
+| Toolbox     | Common Uses |
+|:------------|:------------|
+| EEGLAB      | Useful for visualizing data and running ICA |
+| Fieldtrip   | Provides advanced statistics |
+| MVPA        | Provides support for pattern classification |
+| R           | Advanced univariate statistics for making stat maps |
+| beh\_toolbox | Advanced analysis of memory experiments |
+| eeg\_toolbox | Wavelet analysis |
+
+Use `pat2fieldtrip` and `pat2eeglab` to export a pattern object for use with fieldTrip or EEGLAB. The R statistics program can be used to run advanced statistics, through `stat_R`, which can be used with `pattern_statmap` to create statistical maps. Pattern classification is run using the Princeton MVPA toolbox; all the pattern classifiers and performance metrics included in that toolbox can be used. eeg\_toolbox is a MATLAB toolbox developed by the Kahana lab, which provides a backend for many functions, including reading raw continuous EEG data and calculating power spectra using wavelets. Behavioral Toolbox (beh\_toolbox) is a set of functions developed by the Kahana and Polyn labs for analysis of data from memory experiments.
