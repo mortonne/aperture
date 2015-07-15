@@ -1,4 +1,4 @@
-function varargout=shadedErrorBar(x,y,errBar,lineProps,transparent)
+function varargout=errorbar_shaded(x,y,errBar,lineProps,transparent)
 % function H=shadedErrorBar(x,y,errBar,lineProps,transparent)
 %
 % Purpose 
@@ -123,9 +123,10 @@ end
 
     
 %Calculate the error bars
-uE=y+errBar(1,:);
-lE=y-errBar(2,:);
-
+%uE=y+errBar(1,:);
+%lE=y-errBar(2,:);
+lE = errBar(2,:);
+uE = errBar(1,:);
 
 %Add the patch error bar
 holdStatus=ishold;
