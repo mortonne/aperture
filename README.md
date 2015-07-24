@@ -1,6 +1,6 @@
 # APERTURE
 
-APERTURE is a MATLAB-based toolbox for exploratory analysis of EEG data. It supports both univariate analysis and multivariate pattern analysis, and can process large amounts of data in parallel. It interfaces with R to provide advanced statistics, and includes advanced plotting functions and can generate PDF reports to help with exploratory analysis.
+APERTURE is a MATLAB-based toolbox for exploratory analysis of EEG data. It supports both univariate analysis and multivariate pattern analysis, and can process large amounts of data in parallel. It interfaces with R to provide advanced statistics, and includes advanced plotting functions and can generate PDF reports to help with exploratory analysis. See the [Wiki](https://github.com/mortonne/aperture/wiki) for an introduction to using the various capabilities of the toolbox.
 
 APERTURE is built on a collection of functions for analyzing scalp EEG and ECoG data developed in the Computational Memory Lab at University of Pennsylvania. The project is currently maintained by the Polyn lab at Vanderbilt University. The toolbox was formerly known as eeg_ana or EEG Analysis Toolbox.
 
