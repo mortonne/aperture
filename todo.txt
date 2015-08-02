@@ -8,15 +8,6 @@
 
  * make clearer separation between core and EEG functions
 
- * new name that is easier to say/less generic. Ideas:
-  * EEG Toolbox (if replacing Penn EEG Toolbox)
-  * Vanderbilt Electrophysiology Classication TOolbox for Research (VECTOR)
-  * Analysis, Classification, and Reporting of Electrophysiology data (ACRE)
-  * Toolbox for Reporting, Analysis, and Classification of Electrophysiology
-  data (TRACE)
-  * Reporting, Analysis, and Classification of Electrophysiology data (RACE)
-  * Analysis and Classification of Electrophysiology data (ACE)
-
 == General Issues ==
 
  * work toward greater compatibility with FieldTrip. Integrating cluster
@@ -25,8 +16,6 @@
    eeg_ana as a batch handler, leading to a much wider audience. This would
    require a great deal of compatibility work, since FieldTrip supports more
    data types than eeg_ana.
-
- * script for looking at session data using EEGLAB or FieldTrip scrolling interfaces
 
  * improve consistency:
 
