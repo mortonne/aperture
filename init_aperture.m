@@ -1,9 +1,9 @@
-function init_eeg_ana()
-%INIT_EEG_ANA   Add paths necessary to use the EEG Analysis Toolbox.
+function init_aperture()
+%INIT_APERTURE   Add paths necessary to use Aperture.
 %
-%  init_eeg_ana()
+%  init_aperture()
 
-main_dir = fileparts(which('init_eeg_ana'));
+main_dir = fileparts(which('init_aperture'));
 
 % main directories
 myaddpath('basic');
