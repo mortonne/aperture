@@ -5,18 +5,26 @@ APERTURE is a MATLAB-based toolbox for exploratory analysis of EEG data. It supp
 APERTURE is built on a collection of functions for analyzing scalp EEG and ECoG data developed in the Computational Memory Lab at University of Pennsylvania. The project is currently maintained by the Polyn lab at Vanderbilt University. The toolbox was formerly known as eeg_ana or EEG Analysis Toolbox.
 
 # Installation
-To install, add all project subdirectories to your MATLAB path. For
-example:
-`addpath(genpath('path_to_eeg_ana'))`
 
-You must also install some dependencies, including the
-[UPenn Behavioral Toolbox](http://memory.psych.upenn.edu/Behavioral_toolbox),
-the UPenn EEG Toolbox, EEGLAB, and the
-[Princeton MVPA Toolbox](http://code.google.com/p/princeton-mvpa-toolbox/). It
-is recommended that you use the versions of these dependencies that
-are available on the Google Code site's
+For a full installation, you must obtain some dependencies:
+
+* [Princeton MVPA Toolbox](http://code.google.com/p/princeton-mvpa-toolbox/)
+  * Place in aperture/externals/mvpa
+* [EEGLAB](http://sccn.ucsd.edu/eeglab/)
+  * Place in aperture/externals/eeglab
+
+You may also edit `init_aperture.m` to change the expected paths if
+you have these dependencies installed somewhere else. Compatibility
+with the latest versions of these external packages has not been
+tested. If you run into issues, try using the versions of these
+dependencies that are available on the project's old Google Code site
 [download page](https://code.google.com/p/eeg-analysis-toolbox/downloads/detail?name=eeg_ana_0.6.0.zip),
 in the `external` directory.
+
+To install the package, simply download the package, add the main
+project directory to your path (e.g. `addpath('my/path/to/aperture')`)
+and type `init_aperture` to add the necessary directories to your
+path.
 
 To use reporting functions that produce PDF reports, you must have LaTeX 
 installed and have latex, pdflatex and dvipdf on your path.
