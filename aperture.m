@@ -1,2 +1,2 @@
-% EEG analysis toolbox, for use with the Penn eeg_toolbox.
+% APERTURE toolbox for univariate and multivariate analysis of EEG data.
 
