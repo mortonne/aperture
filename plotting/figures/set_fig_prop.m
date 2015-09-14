@@ -36,7 +36,7 @@ def.x_tick = [];
 def.y_tick = [];
 def.legend_loc = '';
 def.fig_style = 'minimal';
-opt = propval(varargin, def);
+opt = propval(varargin, def, 'strict', false);
 
 % assumes only one axis
 a = get(fig, 'CurrentAxes');
