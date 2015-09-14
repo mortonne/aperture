@@ -51,6 +51,7 @@ defaults.landscape = true;
 defaults.report_file = '';
 defaults.label_col_width = [];
 defaults.col_width_units = 'in';
+defaults.delete_source = false;
 [params, report_params] = propval(varargin, defaults);
 report_params = propval(report_params, struct, 'strict', false);
 
@@ -99,3 +100,6 @@ longtable(report_file, table, ...
 % compile
 pdf_file = pdflatex(report_file, params.compile_method);
 
+if params.delete_source
+  delete_latex_source(report_file)
+end
