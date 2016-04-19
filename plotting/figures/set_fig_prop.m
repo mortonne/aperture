@@ -36,7 +36,7 @@ def.x_tick = [];
 def.y_tick = [];
 def.legend_loc = '';
 def.fig_style = 'minimal';
-opt = propval(varargin, def);
+opt = propval(varargin, def, 'strict', false);
 
 % assumes only one axis
 a = get(fig, 'CurrentAxes');
@@ -57,7 +57,7 @@ end
 
 % font size, box, etc.
 if ~isempty(opt.fig_style)
-  set_fig_style(fig, 'minimal')
+  set_fig_style(fig, opt.fig_style)
 end
 
 % axis limits
