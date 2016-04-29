@@ -28,6 +28,14 @@ function [p, statistic, res] = stat_R(data, group, f, varargin)
 % You should have received a copy of the GNU Lesser General Public License
 % along with EEG Analysis Toolbox.  If not, see <http://www.gnu.org/licenses/>.
 
+if isnumeric(group)
+  c = cell(1, size(group, 2));
+  for i = 1:length(c)
+    c{i} = group(:,i);
+  end
+  group = c;
+end
+
 % get temporary files to write to
 tempdir = '~/.Rtemp';
 if ~exist(tempdir, 'dir')
