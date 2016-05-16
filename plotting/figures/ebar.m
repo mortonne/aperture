@@ -18,6 +18,8 @@ function [hbar, herr] = ebar(varargin)
 if ishandle(varargin{1})
   ax = varargin{1};
   varargin = varargin(2:end);
+else
+  ax = gca;
 end
 
 if length(varargin) == 4
@@ -49,14 +51,14 @@ if isempty(x)
   x = [1:n_group]';
 end
 xe = repmat(x, [1 n_bar]);
-htemp = errorbar(xe, y, rl, ru);
-y_lim = get(gca, 'YLim');
+htemp = errorbar(ax, xe, y, rl, ru);
+y_lim = get(ax, 'YLim');
 delete(htemp)
 
 % plot bars
-hold on
+hold(ax, 'on')
 
-hbar = bar(x, y);
+hbar = bar(ax, x, y);
 
 for i = 1:n_bar
   if verLessThan('matlab', '8.4')
@@ -67,8 +69,8 @@ for i = 1:n_bar
     % HG2
     bx = hbar(i).XData + hbar(i).XOffset;
   end
-  herr(i) = errorbar(bx, y(:,i), rl(:,i), ru(:,i), 'k', ...
+  herr(i) = errorbar(ax, bx, y(:,i), rl(:,i), ru(:,i), 'k', ...
                      'LineStyle', 'none');
 end
-set(gca, 'YLim', y_lim);
-hold off
+set(ax, 'YLim', y_lim);
+hold(ax, 'off')
