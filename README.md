@@ -34,6 +34,8 @@ Distributed computing options require the MATLAB Distributed Computing
 
 # Publications using APERTURE
 
+Rose, N. S., LaRocque, J. J., Riggall, A. C., Gosseries, O., Starrett, M. J., Meyering, E. E., & Postle, B. R. (2016). Reactivation of latent working memories with transcranial magnetic stimulation. Science, 354(6316), 1136–1139. [http://doi.org/10.1126/science.aah7011]
+
 Morton, N. W, Kahana, M. J., Rosenberg, E. A., Baltuch, G. H., Litt, B., Sharan, A. D., Sperling, M. R., and Polyn, S. M. (2013) Category-specific neural oscillations predict recall organization during memory search. Cerebral Cortex, 23(10), 2407-2422.
 
 LaRocque, J. J., Lewis-Peacock, J. A., Drysdale, A. T., Oberauer, K., and Postle, B. R. (2012) Decoding attended information in short-term memory: An EEG study. Journal of Cognitive Neuroscience 25(1), 127-142.
