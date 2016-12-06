@@ -1,8 +1,8 @@
-# APERTURE
+# Aperture
 
-APERTURE is a MATLAB-based toolbox for exploratory analysis of EEG data. It supports both univariate analysis and multivariate pattern analysis, and can process large amounts of data in parallel. It interfaces with R to provide advanced statistics, and includes advanced plotting functions and can generate PDF reports to help with exploratory analysis. See the [Wiki](https://github.com/mortonne/aperture/wiki) for an introduction to using the various capabilities of the toolbox.
+Aperture is a MATLAB-based toolbox for exploratory analysis of EEG data. It supports both univariate analysis and multivariate pattern analysis, and can process large amounts of data in parallel. It interfaces with R to provide advanced statistics, and includes advanced plotting functions and can generate PDF reports to help with exploratory analysis. See the [Wiki](https://github.com/mortonne/aperture/wiki) for an introduction to using the various capabilities of the toolbox.
 
-APERTURE is built on a collection of functions for analyzing scalp EEG and ECoG data developed in the Computational Memory Lab at University of Pennsylvania. The project is currently maintained by the Polyn lab at Vanderbilt University. The toolbox was formerly known as eeg_ana or EEG Analysis Toolbox.
+Aperture is built on a collection of functions for analyzing scalp EEG and ECoG data developed in the Computational Memory Lab at University of Pennsylvania. The project is currently maintained by the Polyn lab at Vanderbilt University. The toolbox was formerly known as eeg_ana or EEG Analysis Toolbox.
 
 # Installation
 
@@ -32,7 +32,7 @@ installed and have latex, pdflatex and dvipdf on your path.
 Distributed computing options require the MATLAB Distributed Computing
  Toolbox.
 
-# Publications using APERTURE
+# Publications using Aperture
 
 Rose, N. S., LaRocque, J. J., Riggall, A. C., Gosseries, O., Starrett, M. J., Meyering, E. E., & Postle, B. R. (2016). Reactivation of latent working memories with transcranial magnetic stimulation. Science, 354(6316), 1136–1139. http://doi.org/10.1126/science.aah7011
 
