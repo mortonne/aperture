@@ -45,6 +45,12 @@ for j = 1:length(fnames)
       continue
     end
     
+    % not simple to compare two arrays, so remove field if not
+    % scalar
+    if ~(all(cellfun(@isscalar, field)))
+      continue
+    end
+    
     % NaNs are tricky, since each NaN is treated as unique
     n_nans = nnz(cellfun(@isnan, field));
     if n_nans == 0;
