@@ -38,7 +38,9 @@ Rose, N. S., LaRocque, J. J., Riggall, A. C., Gosseries, O., Starrett, M. J., Me
 
 Morton, N. W, Kahana, M. J., Rosenberg, E. A., Baltuch, G. H., Litt, B., Sharan, A. D., Sperling, M. R., and Polyn, S. M. (2013) Category-specific neural oscillations predict recall organization during memory search. Cerebral Cortex, 23(10), 2407-2422.
 
-LaRocque, J. J., Lewis-Peacock, J. A., Drysdale, A. T., Oberauer, K., and Postle, B. R. (2012) Decoding attended information in short-term memory: An EEG study. Journal of Cognitive Neuroscience 25(1), 127-142.
+LaRocque, J. J., Lewis-Peacock, J. A., Drysdale, A. T., Oberauer, K., and Postle, B. R. (2012) Decoding attended information in short-term memory: An EEG study. Journal of Cognitive Neuroscience, 25(1), 127-142.
+
+Morton, N. W, and Polyn, S. M. (2017) Beta-band activity represents the recent past during episodic encoding. NeuroImage, 147, 692-702.
 
 # Authors
 * Neal Morton
