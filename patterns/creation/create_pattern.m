@@ -143,6 +143,21 @@ if ~isempty(params.replace_eegfile)
   ev.modified = true;
 end
 
+if ~strcmp(ev.mat(1).eegfile(1), '/')
+  % relative path; assume relative to subject directory
+  if ~isfield(subj, 'dir')
+    error('If EEG files are in relative paths, subject dir must be defined.')
+  end
+  subj_dir = subj.dir{1};
+  if strcmp(subj_dir(1), '~')
+    % replace tilde with $HOME
+    subj_dir = fullfile(getenv('HOME'), subj_dir(2:end));
+  end
+  for i = 1:length(ev.mat)
+    ev.mat(i).eegfile = fullfile(subj_dir, ev.mat(i).eegfile);
+  end
+end
+
 % get channel info from the subject
 chan = get_dim(subj, 'chan');
 
