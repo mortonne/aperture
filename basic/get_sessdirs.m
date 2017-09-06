@@ -18,8 +18,7 @@ function subj = get_sessdirs(dataroot,subjstr,file2check,sesspath)
 %
 %  file2check:  cell array of paths, relative to each session directory,
 %               to files that must exist for a given session to be
-%               included. Default: {'session.log'}. This is standard for
-%               pyEPL behavioral experiments. Set to {} to return all
+%               included. Set to {} (default) to return all
 %               session directories, regardless of whether they contain
 %               data.
 %
@@ -52,7 +51,7 @@ if ~exist('subjstr','var')
   subjstr = '*';
 end
 if ~exist('file2check','var')
-  file2check = {'session.log'};
+  file2check = {};
 end
 if ~iscell(file2check)
   file2check = {file2check};
