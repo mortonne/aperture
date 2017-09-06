@@ -21,7 +21,7 @@ function pat = upgrade_pattern(pat)
 % along with EEG Analysis Toolbox.  If not, see <http://www.gnu.org/licenses/>.
 
 % backup the pat object before we change it
-save(pat.file, 'pat', '-v7.3', '-append');
+save(pat.file, 'pat', '-append');
 
 dim_info = pat.dim;
 
