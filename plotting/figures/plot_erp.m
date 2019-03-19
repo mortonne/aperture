@@ -168,8 +168,16 @@ if opt.plot_zero
     plot([0 0], y_lim, '--k', 'LineWidth', 3);
   end
 end
-hold off
 
+% remove the legend if there aren't any labels
+if isempty(opt.labels)
+  axhand = gca;
+  leghand = get(axhand,'Legend');
+  set(leghand,'Visible','off');
+end
+
+hold off
+keyboard
 
 function shade_regions(x, mark, y_lim, fill_color)
   %SHADE_REGIONS   Shade in multiple rectangles.
