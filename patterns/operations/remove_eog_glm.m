@@ -322,6 +322,11 @@ end
 % get the best, move it to disk
 [y, best_ind] = min(bad_samp);
 eog_pat = eog_pats{best_ind};
+% if the target directory doesn't exist, make it
+[fpath,~,~] = fileparts(eog_pat.file);
+if ~exist(fpath,'dir')
+  mkdir(fpath)
+end
 eog_pat = move_obj_to_hd(eog_pat);
 
 function [first_repeat, uniq, repeated] = find_repeats(x)
