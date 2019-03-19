@@ -177,7 +177,7 @@ if isempty(opt.labels)
 end
 
 hold off
-keyboard
+
 
 function shade_regions(x, mark, y_lim, fill_color)
   %SHADE_REGIONS   Shade in multiple rectangles.
