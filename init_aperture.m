@@ -23,13 +23,14 @@ myaddpath('utils');
 myaddpath(fullfile('utils', 'distcomp'));
 
 % external packages
+myaddpath(fullfile('external', 'eeglab', 'functions', 'adminfunc'))
+myaddpath(fullfile('external', 'eeglab', 'functions', 'sigprocfunc'))
+myaddpath(fullfile('external', 'eeglab', 'functions', 'guifunc'))
 addpath(genpathsafe(fullfile(main_dir, 'external', 'beh_toolbox')));
 addpath(genpathsafe(fullfile(main_dir, 'external', 'eeg_toolbox')));
 myaddpath(fullfile('external', 'mvpa', 'core', 'learn'))
 myaddpath(fullfile('external', 'mvpa', 'core', 'util'))
-myaddpath(fullfile('external', 'eeglab', 'functions', 'adminfunc'))
-myaddpath(fullfile('external', 'eeglab', 'functions', 'sigprocfunc'))
-myaddpath(fullfile('external', 'eeglab', 'functions', 'guifunc'))
+
 
 function myaddpath(p)
   addpath(fullfile(main_dir, p))
